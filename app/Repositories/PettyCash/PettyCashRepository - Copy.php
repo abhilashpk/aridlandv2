@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\PettyCash;
+<?php namespace App\Repositories\PettyCash;
 
 use App\Models\PettyCash;
 use App\Models\PettyCashEntry;
@@ -9,7 +7,8 @@ use App\Exceptions\Validation\ValidationException;
 use App\Repositories\UpdateUtility;
 
 use Config;
-use Illuminate\Support\Facades\DB;
+use DB;
+use Auth;
 
 class PettyCashRepository extends AbstractValidator implements PettyCashInterface {
 	
@@ -44,6 +43,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 		$this->pettycash->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
 		$this->pettycash->trn_no = isset($attributes['trn_no'])?$attributes['trn_no']:'';
 		$this->pettycash->group_id = $attributes['group_id'][0];
+		$this->pettycash->department_id = env('DEPARTMENT_ID');
 		
 		return true;
 	}
@@ -65,7 +65,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 		//$pettycashEntryTr->fc_amount    		= $attributes['amount_fc'][$key];
 		//$pettycashEntryTr->fc_id    		= $attributes['fc'][$key];
 		//$pettycashEntryTr->currency_rate    		= $attributes['currency_rate'][$key];
-		$pettycashEntryTr->job_id    		= $attributes['job_id'][$key];
+		$pettycashEntryTr->job_id    		= isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
 		$pettycashEntryTr->department_id    = isset($attributes['department'][$key])?$attributes['department'][$key]:'';
 		$pettycashEntryTr->cheque_no    		= isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
 		$pettycashEntryTr->cheque_date    		=  isset($attributes['cheque_date'][$key])?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
@@ -73,7 +73,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 		$pettycashEntryTr->party_account_id   = isset($attributes['partyac_id'][$key])?$attributes['partyac_id'][$key]:'';
 		
 		//PDCR list inserting....
-		if($attributes['group_id'][$key]=='PDCR') {
+		/*if($attributes['group_id'][$key]=='PDCR') {
 			
 			$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
 			
@@ -85,7 +85,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 										'reference'  => $attributes['reference'][$key],
 										'amount'   			=> $attributes['line_amount'][$key],
 										'status' 			=> 0,
-										'created_at' 		=> now(),
+										'created_at' 		=> date('Y-m-d H:i:s'),
 										'created_by' 		=> Auth::User()->id,
 										'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):'',
 										'customer_id' => $attributes['partyac_id'][$key],
@@ -94,7 +94,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 										'voucher_no' => $attributes['voucher_no'],
 										'description' => $attributes['description'][$key]
 									]);
-		}
+		}*/
 		
 		return array('dr_amount' => $dr_amount, 'cr_amount' => $cr_amount);
 	}
@@ -127,13 +127,13 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 							'transaction_type'  => $attributes['account_type'][$key],
 							'amount'   			=> $attributes['line_amount'][$key],
 							'status' 			=> 1,
-							'created_at' 		=> now(),
+							'created_at' 		=> date('Y-m-d H:i:s'),
 							'created_by' 		=> 1,
 							'description' 		=> $attributes['description'][$key],
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
-							'department_id'    => isset($attributes['department'][$key])?$attributes['department'][$key]:''
+							'department_id'    => env('DEPARTMENT_ID')//isset($attributes['department'][$key])?$attributes['department'][$key]:''
 							]);
 		
 		return true;
@@ -144,17 +144,18 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 		
 		DB::table('account_transaction')
 				->where('voucher_type', 'PC')
+				->where('department_id',env('DEPARTMENT_ID'))
 				->where('voucher_type_id', $petty_cash_id)
 				->update([ 'account_master_id' => $attributes['account_id'][$key],
 							'transaction_type'  => $attributes['account_type'][$key],
 							'amount'   			=> $attributes['line_amount'][$key],
-							'modify_at' 		=> now(),
+							'modify_at' 		=> date('Y-m-d H:i:s'),
 							'modify_by' 		=> 1,
 							'description' 		=> $attributes['description'][$key],
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
-							'department_id'    => isset($attributes['department'][$key])?$attributes['department'][$key]:''
+							'department_id'    => env('DEPARTMENT_ID')//isset($attributes['department'][$key])?$attributes['department'][$key]:''
 							]);
 		
 		return true;
@@ -165,69 +166,105 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 		
 		DB::table('account_transaction')
 				->where('voucher_type', 'PC')
+				->where('department_id',env('DEPARTMENT_ID'))
 				->where('voucher_type_id', $petty_cash_id)
 				->update([ 'status' 		=> 0,
-						   'deleted_at' 	=> now()]);
+						   'deleted_at' 	=> date('Y-m-d H:i:s')]);
 		
 		return true;
 	}
 	
-		
+	private function voucherNoGenerate($attributes) {
+	    
+        $voucher = $attributes['voucher'];
+		$cnt = 0;
+		do {
+			$jvset = DB::table('account_setting')->where('voucher_type_id', $voucher)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('prefix','is_prefix','voucher_no')->first();
+			if($jvset) {
+				if($jvset->is_prefix==0) {
+					$newattributes['voucher_no'] = $jvset->voucher_no + $cnt;
+					$newattributes['vno'] = $jvset->voucher_no + $cnt;
+				} else {
+					$newattributes['voucher_no'] = $jvset->prefix.($jvset->voucher_no + $cnt);
+					$newattributes['vno'] = $jvset->voucher_no + $cnt;
+				}
+				$newattributes['curno'] = $newattributes['voucher_no'];
+			}
+            //JAN25
+			if(isset($attributes['department_id']) && Session::get('department')==1)
+				$inv = DB::table('petty_cash')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('department_id', $attributes['department_id'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+			else
+				$inv = DB::table('petty_cash')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+
+			$cnt++;
+		} while ($inv!=0);
+
+		return $newattributes;
+	}
+
 	public function create($attributes)
 	{ //echo '<pre>';print_r($attributes);exit;
 		if($this->isValid($attributes)) {
 			
 			DB::beginTransaction();
 			try {
-				//VOUCHER NO INCREMENT LOGIC//
-			if( $attributes['curno'] == $attributes['voucher_no'] ) {
-				$cnt = 0;
-				do {
-					$jvset = DB::table('account_setting')->where('id', $attributes['voucher'])->select('prefix','is_prefix','voucher_no')->first();
-					
-					if($jvset) {
-						if($jvset->is_prefix==0) {
-							$attributes['voucher_no'] = $jvset->voucher_no + $cnt;
-							$attributes['vno'] = $jvset->voucher_no + $cnt;
-						} else {
-							$attributes['voucher_no'] = $jvset->prefix.($jvset->voucher_no + $cnt);
-							$attributes['vno'] = $jvset->voucher_no + $cnt;
-						}
-						$attributes['curno'] = $attributes['voucher_no'];
-					}
-					if(isset($attributes['department_id']) && Session::get('department')==1)
-						$inv = DB::table('petty_cash')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type','PC')->where('department_id', $attributes['department_id'])->where('status',1)->whereNull('deleted_at')->count();
-					else
-						$inv = DB::table('petty_cash')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type','PC')->where('status',1)->whereNull('deleted_at')->count();
+					//VOUCHER NO LOGIC.....................
+				// 2️⃣ Get the highest numeric part from voucher_master
+				$maxNumeric = DB::table('petty_cash')
+					->where('deleted_at', '0000-00-00 00:0:00')
+					->where('department_id', env('DEPARTMENT_ID'))
+					->where('status', 1)
+					->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+					->value('max_no');
+				
+				$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+				$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+				//VOUCHER NO LOGIC.....................
+				//exit;
+				$maxRetries = 5; // prevent infinite loop
+				$retryCount = 0;
+				$saved = false;
 
-					$cnt++;
-				} while ($inv!=0);
-			} 
-			//VOUCHER NO INCREMENT LOGIC//
-				//JN13
-				/*do {
-					$jvset = DB::table('account_setting')->where('id', $attributes['voucher'])->select('prefix','is_prefix','voucher_no')->first();
-					if($jvset) {
-						if($jvset->is_prefix==0) {
-							$attributes['voucher_no'] = $jvset->voucher_no;
-							//$attributes['voucher_no'] = $jvset->voucher_no;
+				while (!$saved && $retryCount < $maxRetries) {
+					try {
+						if ($this->setInputValue($attributes)) {
+
+							$this->pettycash->status = 1;
+							$this->pettycash->created_at = date('Y-m-d H:i:s');
+							$this->pettycash->created_by = 1;
+							$this->pettycash->fill($attributes)->save();
+							$saved = true; // success ✅
+
+						}	
+					} catch (\Illuminate\Database\QueryException $ex) {
+
+						// Check if it's a duplicate voucher number error
+						if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+							strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+							$maxNumeric = DB::table('petty_cash')
+								->where('deleted_at', '0000-00-00 00:0:00')
+								->where('department_id', env('DEPARTMENT_ID'))
+								->where('status', 1)
+								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+								->value('max_no');
+							
+							$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+							$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->first();
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+
+							$retryCount++;
 						} else {
-							$attributes['voucher_no'] = $jvset->prefix.$jvset->voucher_no;
-							//$attributes['vno'] = $jvset->voucher_no;
+							throw $ex; //echo $ex;exit;// rethrow if different DB error
 						}
 					}
-					$inv = DB::table('petty_cash')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type','PC')->where('status',1)->whereNull('deleted_at')->count();
-				} while ($inv!=0);*/
-				
-				if($this->setInputValue($attributes)) {
-					$this->pettycash->status = 1;
-					$this->pettycash->created_at = now();
-					$this->pettycash->created_by = 1;
-					$this->pettycash->fill($attributes)->save();
 				}
+
 				
+
 				//transactions insert
-				if($this->pettycash->id && !empty( array_filter($attributes['line_amount']))) {
+				if($this->pettycash->id && !empty( array_filter($attributes['line_amount']))) { 
 					$cr_amount = 0; $dr_amount = 0;
 					foreach($attributes['line_amount'] as $key => $value) { 
 					  if($value!='' && $value!=0 && $attributes['account_id'][$key]!='' && $attributes['account_id'][$key]!=0) {
@@ -254,24 +291,16 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 					  
 					}
 					
-					$difference = $dr_amount - $cr_amount;
-					if($difference==0.00) { //JN1
+					//JN1
 						//update debit, credit, difference amount
 						DB::table('petty_cash')
 									->where('id', $this->pettycash->id)
 									->update(['debit'     => $dr_amount,
 											  'credit' 	  => $cr_amount,
-											  'difference' => $difference ]);
+											  'difference' => 0 ]);
 											  
 						//update voucher no........
-						if( ($this->pettycash->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) { 
-							DB::table('account_setting')
-									->where('id', $attributes['voucher'])
-									->update(['voucher_no' => DB::raw('voucher_no + 1') ]);
-						}	
-					} else {
-						throw new ValidationException('Petty cash entry validation error! Please try again.');
-					}
+						
 									
 				}
 				
@@ -281,7 +310,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 				return true;
 			
 			} catch (\Exception $e) {
-				DB::rollback();
+				DB::rollback(); echo $e->getLine().' '.$e->getMessage();exit;
 				return false;
 			}
 		}
@@ -314,7 +343,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 							$jerow['reference']    		= $attributes['reference'][$key];
 							$jerow['entry_type']    		= $attributes['account_type'][$key];
 							$jerow['amount']    		= $attributes['line_amount'][$key];
-							$jerow['job_id']    		= $attributes['job_id'][$key];
+							$jerow['job_id']    		= isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
 							$jerow['department_id']    	= isset($attributes['department'][$key])?$attributes['department'][$key]:'';
 							$jerow['cheque_no']   		= isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
 							$jerow['cheque_date']    		=  isset($attributes['cheque_date'][$key])?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
@@ -324,7 +353,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 							$pettycashEntryTr->update($jerow);
 							
 							if($value=='' || $value==0) {
-								DB::table('petty_cash_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => now()]);
+								DB::table('petty_cash_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 							}
 							
 							$this->setAccountTransactionUpdate($attributes, $pettycashEntryTr->id, $key);
@@ -371,7 +400,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 					$arrids = array_unique(explode(',', $attributes['remove_item']));
 					$remline_total = $remtax_total = 0;
 					foreach($arrids as $row) {
-						DB::table('petty_cash_entry')->where('id', $row)->update(['status' => 0, 'deleted_at' => now()]);
+						DB::table('petty_cash_entry')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 						
 						$this->setAccountTransactionDelete($attributes, $row);
 			
@@ -379,7 +408,6 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 				}
 			}
 			
-			if($difference==0.00) { //JN1
 				//echo 'dr: '.$dr_amount.' cr: '.$cr_amount;//exit;
 				$this->pettycash->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
 				$this->pettycash->trn_no = isset($attributes['trn_no'])?$attributes['trn_no']:'';
@@ -387,18 +415,17 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 				$this->pettycash->debit = $dr_amount;
 				$this->pettycash->credit = $cr_amount;
 				$this->pettycash->difference = $difference;
-				$this->pettycash->modify_at = now();
+				$this->pettycash->department_id = env('DEPARTMENT_ID');
+				$this->pettycash->modify_at = date('Y-m-d H:i:s');
 				$this->pettycash->modify_by = 1;
 				$this->pettycash->fill($attributes)->save();
-			} else {
-				throw new ValidationException('Petty cash entry validation error! Please try again.');
-			}
+			
 			
 			DB::commit();
 			return true;
 			
 		} catch (\Exception $e) {
-			DB::rollback();  //echo $e->getLine().' '.$e->getMessage();exit;
+			DB::rollback();  echo $e->getLine().' '.$e->getMessage();exit;
 			return false;
 		}
 	}
@@ -414,7 +441,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 			$rows = DB::table('petty_cash_entry')->where('petty_cash_id', $id)->select('id','account_id','entry_type','amount')->get();
 			foreach($rows as $row) {
 				//Transaction update....
-				DB::table('account_transaction')->where('voucher_type', 'PC')->where('voucher_type_id', $row->id)->update(['status' => 0,'deleted_at' => now() ]);
+				DB::table('account_transaction')->where('voucher_type', 'PC')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id', $row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
 			
 				$this->objUtility->tallyClosingBalance($row->account_id);
 				/* if($row->entry_type=='Dr')
@@ -425,6 +452,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 			//...........ok
 			
 			DB::table('petty_cash_entry')->where('petty_cash_id', $id)->update(['status' => 0 ]);
+			DB::table('petty_cash')->where('id', $id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id  ]);
 			$this->pettycash->delete();
 		
 			DB::commit();
@@ -436,7 +464,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 		}
 	}
 	
-	public function pettycashList()
+	public function pettycashListOld()
 	{
 		$result = $this->pettycash->where('petty_cash.status', 1)
 							 ->join('petty_cash_entry AS PE', function($join) {
@@ -444,21 +472,75 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 							 })
 							 ->where('voucher_type','PC')
 							 ->where('PE.status',1)
+							 ->where('PE.entry_type','Cr')
 							 ->where('PE.deleted_at','0000-00-00 00:00:00')
-							 ->select('petty_cash.*','PE.description')
+							 ->select('petty_cash.*','PE.description','PE.reference')
 							 ->orderBy('petty_cash.id', 'DESC')
 							 ->groupBy('petty_cash.id')
 							 ->get();
 		return $result;
 	}
 	
+		public function pettycashListCount()
+	{
+		$result = $this->pettycash->where('petty_cash.status', 1)->where('petty_cash.department_id',env('DEPARTMENT_ID'))
+							 ->join('petty_cash_entry AS PE', function($join) {
+								 $join->on('PE.petty_cash_id', '=', 'petty_cash.id');
+							 })
+							 ->where('voucher_type','PC')
+							 ->where('PE.status',1)
+							 ->where('PE.entry_type','Cr')
+							 ->where('PE.deleted_at','0000-00-00 00:00:00')
+							 ->select('petty_cash.*','PE.description','PE.reference')
+							 ->orderBy('petty_cash.id', 'DESC')
+							 ->groupBy('petty_cash.id')
+							 ->count();
+		return $result;
+	}
+	
+		public function pettycashList($type,$start,$limit,$order,$dir,$search)
+	{
+		$query = $this->pettycash->where('petty_cash.status', 1)->where('petty_cash.department_id',env('DEPARTMENT_ID'))
+							 ->join('petty_cash_entry AS PE', function($join) {
+								 $join->on('PE.petty_cash_id', '=', 'petty_cash.id');
+							 });
+							 
+			          if($search) {
+										$query->where(function($query) use ($search){
+											 $query->where('petty_cash.id','LIKE',"%{$search}%")
+												   ->orWhere('petty_cash.voucher_no', 'LIKE',"%{$search}%")
+												   ->orWhere('PE.description', 'LIKE',"%{$search}%")
+												   ->orWhere('PE.reference', 'LIKE',"%{$search}%");
+										});
+										
+									
+									}				 
+							$query ->where('voucher_type','PC')
+							 ->where('PE.status',1)
+							 ->where('PE.entry_type','Cr')
+							 ->where('PE.deleted_at','0000-00-00 00:00:00')
+							 ->select('petty_cash.*','PE.description','PE.reference')
+							 ->offset($start)
+							->limit($limit)
+							->orderBy($order,$dir)
+							->groupBy('petty_cash.id');
+							
+		                  if($type=='get')
+										return $query->get();
+									else
+										return $query->count();
+	}
+	
+	
 	public function findPEdata($id)
 	{
 		return DB::table('petty_cash_entry')->where('petty_cash_entry.petty_cash_id', $id)
 						->join('account_master', 'account_master.id', '=', 'petty_cash_entry.account_id')
 						->leftJoin('account_master AS AM', 'AM.id', '=', 'petty_cash_entry.party_account_id')
+						->leftjoin('jobmaster','jobmaster.id','=','petty_cash_entry.job_id')
 						->where('petty_cash_entry.status', 1)
-						->select('petty_cash_entry.*','account_master.master_name','AM.master_name AS party_name','account_master.category')
+						->where('petty_cash_entry.entry_type', 'Dr')
+						->select('petty_cash_entry.*','account_master.master_name','AM.master_name AS party_name','account_master.category','jobmaster.code')
 						->orderBY('petty_cash_entry.id','ASC')->get();
 	}
 	
@@ -479,4 +561,3 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 
 	}
 }
-

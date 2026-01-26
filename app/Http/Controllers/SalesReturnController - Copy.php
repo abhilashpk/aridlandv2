@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use Session;
 use Response;
+use Input;
 use Excel;
 use App;
 use DB;
@@ -416,7 +417,7 @@ class SalesReturnController extends Controller
 	//
 	public function save(Request $request) {
 		
-		//echo '<pre>';print_r($request->all());exit;
+		//echo '<pre>';print_r(Input::all());exit;
 		
 		
 		
@@ -448,7 +449,7 @@ class SalesReturnController extends Controller
 		//if dept active... set department cost and stock account...
 		if(Session::get('department')==1 && Session::get('cost_accounting')==1) { 
 			
-			$dept_accounts = $this->accountsetting->getCostAccountsDept($request->get('department_id'));
+			$dept_accounts = $this->accountsetting->getCostAccountsDept(Input::get('department_id'));
 			if($dept_accounts) {
 				Session::set('stock', $dept_accounts->stock_acid);
 				Session::set('cost_of_sale', $dept_accounts->cost_acid);
@@ -458,13 +459,13 @@ class SalesReturnController extends Controller
 			}
 			
 		}
-		$attributes	= $request->all();
+		$attributes	= Input::all();
 		
 				
 		if($this->sales_return->create($attributes)) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
 			if($this->mod_autocost->is_active==1) {
-				$this->objUtility->reEvalItemCostQuantity($request->get('item_id'),$this->acsettings);
+				$this->objUtility->reEvalItemCostQuantity(Input::get('item_id'),$this->acsettings);
 			}
 
 			#### mail
@@ -659,7 +660,7 @@ class SalesReturnController extends Controller
 
 			return redirect('sales_return/edit/'.$id)->withInput()->withErrors();
 		}
-		$attributes=$request->all();
+		$attributes=Input::all();
 		if( $this->sales_return->update($id, $attributes) ){
         #### mail
 		if(isset($attributes['send_email']) && $attributes['send_email']==1) {
@@ -931,10 +932,10 @@ class SalesReturnController extends Controller
 				 $voucher = $row->prefix.''.$no;
 			 }
 			 
-			 //Session::set('sl_voucher_id', $request->get('vchr_id'));
+			 //Session::set('sl_voucher_id', Input::get('vchr_id'));
 			Session::set('sl_voucher_no', $voucher);
-			//Session::set('sl_stock_ac', $request->get('acnt'));
-			//Session::set('sl_ac_master', $request->get('ac_mstr'));
+			//Session::set('sl_stock_ac', Input::get('acnt'));
+			//Session::set('sl_ac_master', Input::get('ac_mstr'));
 		
 			 return $result = array('voucher_no' => $voucher,
 								'account_id' => $row->account_id, 
@@ -975,24 +976,24 @@ class SalesReturnController extends Controller
 	
 	public function setSessionVal()
 	{
-		Session::set('sl_voucher_id', $request->get('vchr_id'));
-		Session::set('sl_voucher_no', $request->get('vchr_no'));
-		Session::set('sl_stock_ac', $request->get('acnt'));
-		Session::set('sl_ac_master', $request->get('ac_mstr'));
+		Session::set('sl_voucher_id', Input::get('vchr_id'));
+		Session::set('sl_voucher_no', Input::get('vchr_no'));
+		Session::set('sl_stock_ac', Input::get('acnt'));
+		Session::set('sl_ac_master', Input::get('ac_mstr'));
 	}
 	
-	public function checkRefNo(Request $request) {
+	public function checkRefNo() {
 
-		$check = $this->sales_return->check_reference_no($request->get('reference_no'), $request->get('id'));
+		$check = $this->sales_return->check_reference_no(Input::get('reference_no'), Input::get('id'));
 		$isAvailable = ($check) ? false : true;
 		echo json_encode(array(
 							'valid' => $isAvailable,
 						));
 	}
 	
-	public function checkVchrNo(Request $request) {
+	public function checkVchrNo() {
 
-		$check = $this->sales_return->check_voucher_no($request->get('voucher_no'),$request->get('deptid'), $request->get('id'));
+		$check = $this->sales_return->check_voucher_no(Input::get('voucher_no'),Input::get('deptid'), Input::get('id'));
 		$isAvailable = ($check) ? false : true;
 		echo json_encode(array(
 							'valid' => $isAvailable,
@@ -1070,58 +1071,58 @@ class SalesReturnController extends Controller
 			return $data;
 		}
 	
-	public function getSearch(Request $request)
+	public function getSearch()
 	{
 		$data = array();
-	//	echo '<pre>';print_r($request->all());exit;
+	//	echo '<pre>';print_r(Input::all());exit;
 		$dname = '';
 		$dname = '';
 		$cusid = $itemid = '';
 		$voucher_head  = '';
-		$report = $this->sales_return->getReportsales($request->all());
-		if($request->get('search_type')=="summary")
+		$report = $this->sales_return->getReportsales(Input::all());
+		if(Input::get('search_type')=="summary")
 		{
 			$voucher_head = 'Sales Return Summary';
-			$reports = $this->sales_return->getReportsales($request->all());
+			$reports = $this->sales_return->getReportsales(Input::all());
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
 			//$reports = ($report);
 			//echo '<pre>';print_r($reports);exit;
             
 		}
 		
-		else if($request->get('search_type')=="detail") {
+		else if(Input::get('search_type')=="detail") {
 			$voucher_head = 'Sales Return Detail';
-			$report = $this->sales_return->getReportsales($request->all());
+			$report = $this->sales_return->getReportsales(Input::all());
 			$reports = $this->makeTreeVoucher($report);
 			//echo '<pre>';print_r($reports);exit;
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
 			//$reports = $this->groupbyVoucherNo($reports);
-		} else if($request->get('search_type')=="item") {
+		} else if(Input::get('search_type')=="item") {
 			$voucher_head = 'Sales Return by Itemwise';
-			$report = $this->sales_return->getReportsales($request->all());
+			$report = $this->sales_return->getReportsales(Input::all());
 			$reports = $this->groupbyItemwise($report);
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
 			//echo '<pre>';print_r($reports);exit;
-			if($request->get('item_id')!==null)
-				$itemid = implode(',', $request->get('item_id'));
+			if(Input::get('item_id')!==null)
+				$itemid = implode(',', Input::get('item_id'));
 			else
 				$itemid = '';
 		
 		
-	}else if($request->get('search_type')=='customer') {
+	}else if(Input::get('search_type')=='customer') {
 	//	
 			$voucher_head = 'Sales Return by customerwise';
 			
 		    $reports = $this->makeTreeSup($report);
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
-			if($request->get('supplier_id')!==null)
-				$cusid = implode(',', $request->get('supplier_id'));
+			if(Input::get('supplier_id')!==null)
+				$cusid = implode(',', Input::get('supplier_id'));
 			else
 				$cusid = '';
 		}
-		// if($request->get('search_type')=="summary")
+		// if(Input::get('search_type')=="summary")
 		// 	$voucher_head = 'Sales Return Summary';
-		// else if($request->get('search_type')=="detail") {
+		// else if(Input::get('search_type')=="detail") {
 		// 	$voucher_head = 'Sales Return Detail';
 		// 	$reports = $this->makeTree($reports);
 		// } 
@@ -1130,9 +1131,9 @@ class SalesReturnController extends Controller
 		return view('body.salesreturn.preprint')
 					->withReports($reports)
 					->withVoucherhead($voucher_head)
-					->withType($request->get('search_type'))
-					->withFromdate($request->get('date_from'))
-					->withTodate($request->get('date_to'))
+					->withType(Input::get('search_type'))
+					->withFromdate(Input::get('date_from'))
+					->withTodate(Input::get('date_to'))
 					->withI(0)
 					->withCustomer($cusid)
 					->withItem($itemid)
@@ -1141,58 +1142,58 @@ class SalesReturnController extends Controller
 					->withData($data);
 	}
 	
-	public function dataExport(Request $request)
+	public function dataExport()
 	{
 		$data = array();
-		//echo '<pre>';print_r($request->all());exit;
-		$request->merge(['type' => 'export']);
-		// $reports = $this->sales_return->getReport($request->all());
+		//echo '<pre>';print_r(Input::all());exit;
+		Input::merge(['type' => 'export']);
+		// $reports = $this->sales_return->getReport(Input::all());
 		
-		// if($request->get('search_type')=="summary")
+		// if(Input::get('search_type')=="summary")
 		// 	$voucher_head = 'Sales Return Summary';
-		// else if($request->get('search_type')=="detail") {
+		// else if(Input::get('search_type')=="detail") {
 		// 	$voucher_head = 'Sales Return Detail';
 		// 	//$reports = $this->makeTree($reports);
 		// } 
-		if($request->get('search_type')=="summary")
+		if(Input::get('search_type')=="summary")
 		{
 			$voucher_head = 'Sales Return Summary';
-			$reports = $this->sales_return->getReportsales($request->all());
+			$reports = $this->sales_return->getReportsales(Input::all());
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
 			//$reports = ($report);
 		//	echo '<pre>';print_r($reports);exit;
             
-		}else if($request->get('search_type')=="detail") {
+		}else if(Input::get('search_type')=="detail") {
 			$voucher_head = 'Sales Return Detail';
-			$report = $this->sales_return->getReportsales($request->all());
+			$report = $this->sales_return->getReportsales(Input::all());
 			$reports = $this->makeTreeVoucher($report);
 		//	echo '<pre>';print_r($reports);exit;
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
 			//$reports = $this->groupbyVoucherNo($reports);
-		}else if($request->get('search_type')=="item") {
+		}else if(Input::get('search_type')=="item") {
 			$voucher_head = 'Sales Return by Itemwise';
-			$report = $this->sales_return->getReportsales($request->all());
+			$report = $this->sales_return->getReportsales(Input::all());
 			$reports = $this->groupbyItemwise($report);
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
 			//echo '<pre>';print_r($reports);exit;
-			if($request->get('item_id')!==null)
-				$itemid = implode(',', $request->get('item_id'));
+			if(Input::get('item_id')!==null)
+				$itemid = implode(',', Input::get('item_id'));
 			else
 				$itemid = '';
 		
 		
-	}else if($request->get('search_type')=='customer') {
+	}else if(Input::get('search_type')=='customer') {
 	//	
 			$voucher_head = 'Sales Return by customerwise';
 			
 		    $reports = $this->makeTreeSup($report);
 			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
-			if($request->get('supplier_id')!==null)
-				$cusid = implode(',', $request->get('supplier_id'));
+			if(Input::get('supplier_id')!==null)
+				$cusid = implode(',', Input::get('supplier_id'));
 			else
 				$cusid = '';
 	 } //echo '<pre>';print_r($reports);exit;
-		if($request->get('search_type')=='detail') {
+		if(Input::get('search_type')=='detail') {
 		    $qty_total = $net_total = $vat_total = $gross_total = $i = 0;
 			foreach ($reports as $report) {
 			    $datareport[] = ['SINo.:'.$i,'SR.Date:'.date('d-m-Y', strtotime($report[0]->voucher_date)),'SR No.:'.$report[0]->voucher_no,'','','','','Customer:'.$report[0]->customer,''];

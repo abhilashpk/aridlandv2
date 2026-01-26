@@ -290,13 +290,13 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
 								
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->total_price / $orderrow->currency_rate,2, '.', '');

@@ -65,9 +65,14 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		$this->sales_return->location_id = $attributes['location_id'] ?? 0;
 		$this->sales_return->is_prior  = $attributes['is_prior'] ?? 0; //JN23
 		$this->sales_return->foot_description = (isset($attributes['foot_description']))?$attributes['foot_description']:'';
+		$this->sales_return->department_id  = env('DEPARTMENT_ID');
+		$this->sales_return->prefix = (isset($attributes['prefix']))?$attributes['prefix']:'';
+		$this->sales_return->is_intercompany = (isset($attributes['is_intercompany']))?$attributes['is_intercompany']:'';
+		
 		
 		
 		return true;
+
 	}
 	
 	
@@ -82,7 +87,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			
 		} else {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 			
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 						
@@ -94,7 +99,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
+				$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				
@@ -147,7 +152,8 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		$cost_value = 0;
 		if(Session::get('cost_accounting')==1) {
-			$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
+			$item = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])
+			                                         ->where('department_id',env('DEPARTMENT_ID'))
 										  ->where('unit_id', $attributes['unit_id'][$key])
 										  ->first();
 			$cost_avg = ($item->cost_avg==0)?$item->last_purchase_cost:$item->cost_avg;
@@ -190,6 +196,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		//echo $voucher_id.' '.$account_id.' '.$amount;exit;
 		DB::table('account_transaction')
 				->where('voucher_type_id', $voucher_id)
+				->where('department_id',env('DEPARTMENT_ID'))
 				->where('account_master_id', $account_id) //CHNG
 				->where('voucher_type', 'SR')
 				->update([  'amount'   			=> $amount,  //JUL9
@@ -199,7 +206,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['sales_invoice_no'],
 							'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
-							'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+							'department_id'		=> env('DEPARTMENT_ID')
 						]);
 		
 		$this->objUtility->tallyClosingBalance(($type=='Cr')?$cr_acnt_id:$dr_acnt_id);
@@ -220,67 +227,68 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 	private function setItemInputValue($attributes, $salesReturnItem, $key, $value, $lineTotal) 
 	{
+		$row_total='';
 		if( isset($attributes['is_fc']) ) {
-			$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
-			$item_total = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key] ) * $attributes['currency_rate'];
-			$tax_total  = round($tax * $attributes['quantity'][$key],2);
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+			$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$attributes['currency_rate'];
+			$item_total = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * $attributes['currency_rate'];
+			$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 			
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 			$rate = $attributes['cost'][$key]*$attributes['currency_rate']; //14JN24
 		} else {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 			
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 						
 			if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
-				$idiscount = ($attributes['line_discount'][$key]!='')?$attributes['line_discount'][$key]:0;
+				$idiscount = ((float)$attributes['line_discount'][$key]!='')?(float)$attributes['line_discount'][$key]:0;
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $idiscount;
-				$tax_total  = round($tax * $attributes['quantity'][$key],2);
-				$rate = $attributes['cost'][$key];//14JN24
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - $idiscount;
+				$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
+				$rate = (float)$attributes['cost'][$key];//14JN24
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
+				$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				
 				//14JN24
 				if((float)$attributes['line_discount'][$key] > 0) {
-					$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
-					$row_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);//14JN24
+					$rate = (float)$attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
+					$row_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);//14JN24
 				} else {
 					$vatPlus = 100 + $attributes['line_vat'][$key];
 					$vatLine = round( (($attributes['cost'][$key] * $attributes['line_vat'][$key]) / $vatPlus),2 );
-					$rate = $attributes['cost'][$key] - $vatLine;
-					$row_total = ($rate * $attributes['quantity'][$key]);//14JN24
+					$rate = (float)$attributes['cost'][$key] - $vatLine;
+					$row_total = ($rate * (float)$attributes['quantity'][$key]);//14JN24
 				}
 				
 			} else {
-				$idiscount = ($attributes['line_discount'][$key]!='')?$attributes['line_discount'][$key]:0;
-				$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $idiscount;
-				$tax_total  = round($tax * $attributes['quantity'][$key],2);
+				$idiscount = ($attributes['line_discount'][$key]!='')?(float)$attributes['line_discount'][$key]:0;
+				$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - $idiscount;
+				$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
 				
 				//14LN24
-				$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];//31MY
-				$row_total = ($rate * $attributes['quantity'][$key]);//31MY
+				$rate = (float)$attributes['cost'][$key] - (float)$attributes['line_discount'][$key];//31MY
+				$row_total = ($rate * (float)$attributes['quantity'][$key]);//31MY
 			}
 		}
 		
 		//********DISCOUNT Calculation.............
-		$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+		$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 		$type = 'tax_exclude';
 			
 		if($attributes['tax_include'][$key]==1 ) {
 			$vatPlus = 100 + $attributes['line_vat'][$key];
-			$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+			$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 			$type = 'tax_include';
 		} else {
 			$vatPlus = 100;
-			$total = $attributes['line_total'][$key];
+			$total = (float)$attributes['line_total'][$key];
 			$type = 'tax_exclude';
 		}
 		
@@ -292,15 +300,15 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			$tax_total = $vatLine; 
 			
 			//14JN24
-			$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+			$vat_exc = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 			$rate = $vat_exc / $attributes['quantity'][$key];
 		} else { //31MY
 			if($attributes['tax_include'][$key]==1 ) {
 				$vatLine = round( (($total * $attributes['line_vat'][$key]) / $vatPlus),2 );
 				$vat_exc = $total - $vatLine;
-				//$row_total = $vat_exc + $tax_total;
+				$row_total = '';//$vat_exc + $tax_total;
 			} else {
-				$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				$vat_exc = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				 
 			}
 		}
@@ -329,7 +337,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		//14JN24
 		$salesReturnItem->rate 			= $rate;//29MY
-		$salesReturnItem->row_total 		= $row_total;//31MY
+		$salesReturnItem->row_total 		= ($row_total)?$row_total:0;//31MY
 		$salesReturnItem->vat_exc 			= $vat_exc;//31MY
 		$salesReturnItem->vat_exc_fc		= (isset($attributes['is_fc']))?round(($vat_exc /  $attributes['currency_rate']),2):$vat_exc;//31MY
 		
@@ -340,7 +348,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		$cost_value = 0;
 		if(Session::get('cost_accounting')==1) {
-			$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
+			$item = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
 										  ->where('unit_id', $attributes['unit_id'][$key])
 										  ->first();
 			$cost_avg = ($item->cost_avg==0)?$item->last_purchase_cost:$item->cost_avg;
@@ -378,6 +386,11 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		DB::table('item_unit')
 				->where('itemmaster_id', $attributes['item_id'][$key])->where('unit_id', $attributes['unit_id'][$key])
 				->update(['cur_quantity' => DB::raw('cur_quantity + '.$attributes['quantity'][$key] ) ]);
+		DB::table('itemstock_department')
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->where('department_id',env('DEPARTMENT_ID'))
+				->where('unit_id', $attributes['unit_id'][$key])
+				->update(['cur_quantity' => DB::raw('cur_quantity + '.$attributes['quantity'][$key] ) ]);		
 		return true;
 	}
 	
@@ -429,7 +442,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> ($attributes['is_prior']==1)?$attributes['sales_invoice_id']:$attributes['sales_invoice_no'],
 							'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
-							'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+							'department_id'		=> env('DEPARTMENT_ID'),
 							'version_no'		=> $attributes['version_no']
 						]);
 		
@@ -615,16 +628,14 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			try {
 
 					//VOUCHER NO LOGIC.....................
-					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-					// 2️⃣ Get the highest numeric part from voucher_master
-					$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
-					if($dept > 0)	
-						$qry->where('department_id', $dept);
+				$dept = env('DEPARTMENT_ID');
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id',env('DEPARTMENT_ID'));
 
-					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
-					
-					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
-					//VOUCHER NO LOGIC.....................
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+				//VOUCHER NO LOGIC.....................
 					
 					//exit;
 					$maxRetries = 5; // prevent infinite loop
@@ -649,15 +660,13 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
 									strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-									$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-									// 2️⃣ Get the highest numeric part from voucher_master
-									$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
-									if($dept > 0)	
-										$qry->where('department_id', $dept);
+									$dept = env('DEPARTMENT_ID');
+									// ⿢ Get the highest numeric part from voucher_master
+									$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
 
 									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 									
-									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
+									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 									$retryCount++;
 								} else {
@@ -725,13 +734,15 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                                 		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                                 		}
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+																	->where('department_id',env('DEPARTMENT_ID'))
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 										if($qtys) {
-											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+											DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 										} else {
 											$itemLocation = new ItemLocation();
 											$itemLocation->location_id = $attributes['locid'][$key][$lk];
+											$itemLocation->department_id = env('DEPARTMENT_ID');
 											$itemLocation->item_id = $value;
 											$itemLocation->unit_id = $attributes['unit_id'][$key];
 											$itemLocation->quantity = $lcqty;
@@ -741,6 +752,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 										
 										$itemLocationSR = new ItemLocationSR();
 										$itemLocationSR->location_id = $attributes['locid'][$key][$lk];
+										$itemLocationSR->department_id = env('DEPARTMENT_ID');
 										$itemLocationSR->item_id = $value;
 										$itemLocationSR->unit_id = $attributes['unit_id'][$key];
 										$itemLocationSR->quantity = $lcqty;
@@ -757,7 +769,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 									
 									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
-																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+->where('department_id',env('DEPARTMENT_ID'))																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																	  
 									//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
@@ -771,11 +783,13 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                             		}
                             		
 									if($qtys) {
-										DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
-									} 
+										DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))
+										                               ->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+									}
 									
 									$itemLocationSR = new ItemLocationSR();
 									$itemLocationSR->location_id = $attributes['default_location'];
+									$itemLocationSR->department_id = env('DEPARTMENT_ID');
 									$itemLocationSR->item_id = $value;
 									$itemLocationSR->unit_id = $attributes['unit_id'][$key];
 									$itemLocationSR->quantity = $lcqty;
@@ -1046,25 +1060,26 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
                             		
-									$edit = DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->first();
+									$edit = DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->where('department_id',env('DEPARTMENT_ID'))->first();
 									$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
-																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+->where('department_id',env('DEPARTMENT_ID'))  																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																  //echo '<pre>';print_r($edit);exit;
 									if($edit) {
 										
 										if($edit->quantity < $lcqty) {
 											$balqty = $lcqty - $edit->quantity;
-											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$balqty)]);
 										} else {
 											$balqty = $edit->quantity - $lcqty;
-											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$balqty)]);
 										}
 										
 									} else {
 										
 										$itemLocationSR = new ItemLocationSR();
 										$itemLocationSR->location_id = $attributes['locid'][$key][$lk];
+										$itemLocationSR->department_id =env('DEPARTMENT_ID');
 										$itemLocationSR->item_id = $value;
 										$itemLocationSR->unit_id = $attributes['unit_id'][$key];
 										$itemLocationSR->quantity = $lcqty;
@@ -1074,7 +1089,9 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 										$itemLocationSR->save();
 									}
 									
-									DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty, 'qty_entry' => $lq]);
+									DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->where('department_id',env('DEPARTMENT_ID'))
+									                                ->update(['quantity' => $lcqty, 'qty_entry' => $lq]);
+
 
 								}
 							}
@@ -1084,6 +1101,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 								
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+								->where('department_id',env('DEPARTMENT_ID'))
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
 																  
@@ -1098,9 +1116,9 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                         		}
                         		
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 									DB::table('item_location_sr')->where('invoice_id', $attributes['order_item_id'][$key] )
-																 ->where('location_id', $qtys->location_id)
+->where('department_id',env('DEPARTMENT_ID'))																 ->where('location_id', $qtys->location_id)
 																 ->where('item_id', $qtys->item_id)
 																 ->where('unit_id', $qtys->unit_id)
 																 ->update(['quantity' => DB::raw('quantity - '.$lcqty),'qty_entry' => $lq ]);
@@ -1108,7 +1126,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								
 								$itemLocationSR = new ItemLocationSR();
 								$itemLocationSR->location_id = $attributes['default_location'];
-								$itemLocationSR->item_id = $value;
+$itemLocationSR->department_id =env('DEPARTMENT_ID');								$itemLocationSR->item_id = $value;
 								$itemLocationSR->unit_id = $attributes['unit_id'][$key];
 								$itemLocationSR->quantity = $lcqty;
 								$itemLocationSR->status = 1;
@@ -1200,14 +1218,16 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                                 		   if($pkgar[0] > 0)
                                 		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                                 		}
-										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+										$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))
+										                                  ->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 										if($qtys) {
-											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+											DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 										} else {
 											$itemLocation = new ItemLocation();
 											$itemLocation->location_id = $attributes['locid'][$key][$lk];
+											$itemLocation->department_id = env('DEPARTMENT_ID');
 											$itemLocation->item_id = $value;
 											$itemLocation->unit_id = $attributes['unit_id'][$key];
 											$itemLocation->quantity = $lcqty;
@@ -1217,6 +1237,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 										
 										$itemLocationSR = new ItemLocationSR();
 										$itemLocationSR->location_id = $attributes['locid'][$key][$lk];
+										$itemLocationSR->department_id = env('DEPARTMENT_ID');
 										$itemLocationSR->item_id = $value;
 										$itemLocationSR->unit_id = $attributes['unit_id'][$key];
 										$itemLocationSR->quantity = $lcqty;
@@ -1233,6 +1254,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+								                                   ->where('department_id',env('DEPARTMENT_ID'))
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																  
@@ -1247,11 +1269,12 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                         		}
                         		
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 								} 
 								
 								$itemLocationSR = new ItemLocationSR();
 								$itemLocationSR->location_id = $attributes['default_location'];
+								$itemLocationSR->department_id = env('DEPARTMENT_ID');
 								$itemLocationSR->item_id = $value;
 								$itemLocationSR->unit_id = $attributes['unit_id'][$key];
 								$itemLocationSR->quantity = $lcqty;
@@ -1458,7 +1481,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	
 	public function getItems($id) //JUL9
 	{
-		$query = $this->sales_return->where('sales_return.id',$id);
+		$query = $this->sales_return->where('sales_return.id',$id)->where('sales_return.department_id',env('DEPARTMENT_ID'));
 		
 		return $query->join('sales_return_item AS poi', function($join) {
 							$join->on('poi.sales_return_id','=','sales_return.id');
@@ -1473,14 +1496,19 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 					  ->join('itemmaster AS im', function($join){
 						  $join->on('im.id','=','poi.item_id');
 					  })
+					  ->join('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','poi.item_id');
+							   
+					  })
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.status',1)
-					  ->select('poi.*','u.unit_name','im.item_code','iu.packing','iu.is_baseqty','iu.pkno')
+					  ->select('poi.*','u.unit_name','im.item_code','isd.packing','isd.is_baseqty','isd.pkno')
 					  ->groupBy('poi.id')->get();
 	}
 	
 	public function salesReturnListCount()
 	{
-		$query = $this->sales_return->where('sales_return.status',1);
+		$query = $this->sales_return->where('sales_return.status',1)->where('sales_return.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_return.customer_id');
 						} )
@@ -1489,7 +1517,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	
 	public function salesReturnList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->sales_return->where('sales_return.status',1)
+		$query = $this->sales_return->where('sales_return.status',1)->where('sales_return.department_id',env('DEPARTMENT_ID'))
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_return.customer_id');
 						} );
@@ -1688,6 +1716,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						->where('POI.status',1)
 						->where('POI.deleted_at','0000-00-00 00:00-00')
 						->where('sales_return.status',1)
+						->where('sales_return.department_id',env('DEPARTMENT_ID'))
 						->where('sales_return.deleted_at','0000-00-00 00:00-00');
 				if(isset($attributes['job_id']))
 					$query->whereIn('sales_return.job_id', $attributes['job_id']);		
@@ -1847,7 +1876,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			} */
 			
 			//Transaction update....
-			DB::table('account_transaction')->where('voucher_type', 'SR')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+			DB::table('account_transaction')->where('voucher_type', 'SR')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			
 			//DB::table('account_master')->where('id', $this->sales_return->dr_account_id)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->net_amount)]);
 			$this->objUtility->tallyClosingBalance($this->sales_return->dr_account_id);
@@ -1897,6 +1926,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
 						->where('account_master.status',1)
 						->where('account_master.deleted_at','0000-00-00 00:00:00')
+						->where('account_transaction.department_id',env('DEPARTMENT_ID'))
 						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
 						->whereBetween('account_transaction.invoice_date',[$date->from_date, $date->to_date])
 						->select('account_master.id','account_master.master_name','account_master.cl_balance','account_master.category',
@@ -1954,7 +1984,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	
 	private function updateLastPurchaseCostAndCostAvg($attributes, $key)
 	{
-		$sirow = DB::table('item_log')->where('document_type','SI')
+		$sirow = DB::table('item_log')->where('document_type','SI')->where('department_id',env('DEPARTMENT_ID'))
 							 ->where('document_id', $attributes['sales_invoice_id'])
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
@@ -1965,6 +1995,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
+										->where('department_id',env('DEPARTMENT_ID'))
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
 										->where('deleted_at','0000-00-00 00:00:00')
@@ -1994,6 +2025,13 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						  'pur_count' 		   => DB::raw('pur_count + 1'),
 						  'cost_avg'		   => $cost_avg
 						]);
+
+		DB::table('itemstock_department')
+				->where('id', $attributes['item_id'][$key])->where('department_id',env('DEPARTMENT_ID'))
+				->update(['last_purchase_cost' => $cost,
+						  'pur_count' 		   => DB::raw('pur_count + 1'),
+						  'cost_avg'		   => $cost_avg
+						]);				
 							
 		return $cost_avg;
 		
@@ -2001,7 +2039,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	
 	private function setPurchaseLog($attributes, $key, $document_id, $cost_avg, $action)
 	{
-		$sirow = DB::table('item_log')->where('document_type','SI')
+		$sirow = DB::table('item_log')->where('document_type','SI')->where('department_id',env('DEPARTMENT_ID'))
 							 ->where('document_id', $attributes['sales_invoice_id'])
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
@@ -2010,7 +2048,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							 ->select('pur_cost')
 							 ->first();
 		
-		$irow = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
+		$irow = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])->where('department_id',env('DEPARTMENT_ID'))->select('cur_quantity')->first();
 		
 		$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']):($attributes['cost'][$key]);
 
@@ -2031,6 +2069,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			$logid = DB::table('item_log')->insertGetId([
 							 'document_type' => 'SR',
 							 'document_id'   => $document_id,
+							 'department_id' =>env('DEPARTMENT_ID'),
 							 'item_id' 	  => $attributes['item_id'][$key],
 							 'unit_id'    => $attributes['unit_id'][$key],
 							 'quantity'   => $quantity, //$attributes['quantity'][$key] * $attributes['packing'][$key],//14JN24
@@ -2056,6 +2095,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			//-----------ITEM LOG----------------							
 			DB::table('item_log')->where('document_type','SR')
 							->where('document_id', $document_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('item_id', $attributes['item_id'][$key])
 							->where('unit_id', $attributes['unit_id'][$key])
 							->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
@@ -2078,12 +2118,24 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	{
 		$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 									  ->where('is_baseqty', 1)->first();
-									  
+		$items = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])
+		                                          ->where('department_id',env('DEPARTMENT_ID'))
+									  ->where('is_baseqty', 1)->first();							  
 		if($item) {
-			$qty = $attributes['quantity'][$key];
+			$qty = (float)$attributes['quantity'][$key];
 			$baseqty = ($qty * $attributes['packing'][$key]);
 			DB::table('item_unit')
 				->where('id', $item->id)
+				->update([ 'cur_quantity' => $item->cur_quantity + $baseqty,
+						   'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
+							
+		}
+
+		if($items) {
+			$qty = $attributes['quantity'][$key];
+			$baseqty = ($qty * $attributes['packing'][$key]);
+			DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+				->where('id', $items->id)
 				->update([ 'cur_quantity' => $item->cur_quantity + $baseqty,
 						   'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
 							
@@ -2098,6 +2150,10 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			
 			$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 										  ->where('is_baseqty', 1)->first();
+
+			$item = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])
+			                                          ->where('department_id',env('DEPARTMENT_ID'))
+										              ->where('is_baseqty', 1)->first();
 										  
 			if($item) {
 				$qty = $attributes['quantity'][$key];
@@ -2120,6 +2176,28 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 					
 			}
 
+			if($items) {
+				$qty = $attributes['quantity'][$key];
+				//$packing = ($item->is_baseqty==1)?1:$item->packing;
+				$baseqty = ($qty * $attributes['packing'][$key]);
+				$diffqty = ($attributes['actual_quantity'][$key] * $attributes['packing'][$key]) - ($qty * $attributes['packing'][$key]);
+				$received_qty = $diffqty * -1;
+				
+				if($attributes['actual_quantity'][$key] < $qty) {
+					$cur_quantity = $item->cur_quantity + $received_qty;
+				} else { 
+					$cur_quantity = $item->cur_quantity - $diffqty;
+				}
+				
+				DB::table('itemstock_department')
+					->where('itemmaster_id',  $attributes['item_id'][$key])
+					->where('department_id',env('DEPARTMENT_ID'))
+					->where('is_baseqty',1)
+					->update([ 'cur_quantity' => $cur_quantity,
+								'received_qty' => DB::raw('received_qty + '.$received_qty) ]);
+					
+			}
+
 			return true;
 		}
 	}
@@ -2129,12 +2207,15 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		foreach($items as $item) {
 									
 			//COST AVG Updating on DELETE section....
-			DB::table('item_log')->where('document_id', $id)->where('document_type','SR')
+			DB::table('item_log')->where('document_id', $id)->where('document_type','SR')->where('department_id',env('DEPARTMENT_ID'))
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
 								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);
+
+			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id',env('DEPARTMENT_ID'))->where('unit_id',$item->unit_id)
+								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);					  
 									  
 			/* DB::table('item_location')->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)
 									  ->where('location_id', $this->purchase_invoice->location_id)

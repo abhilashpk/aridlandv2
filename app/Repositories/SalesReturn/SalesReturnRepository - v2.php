@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\SalesReturn;
+<?php namespace App\Repositories\SalesReturn;
 
 use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
@@ -8,6 +6,7 @@ use App\Models\AccountTransaction;
 use App\Models\ItemStock;
 use App\Models\SalesInvoice;
 use App\Models\ItemLocationSI;
+use App\Models\ConLocationSR;
 use App\Models\SalesInvoiceItem;
 use App\Models\ItemLocationSR;
 use App\Repositories\AbstractValidator;
@@ -15,10 +14,11 @@ use App\Exceptions\Validation\ValidationException;
 use App\Repositories\UpdateUtility;
 
 use Config;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
+use DB;
+use Session;
 use Auth;
 use Curl;
+
 
 class SalesReturnRepository extends AbstractValidator implements SalesReturnInterface {
 	
@@ -51,42 +51,25 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		$this->sales_return->voucher_id    = $attributes['voucher_id'];
 		$this->sales_return->voucher_no    = $attributes['voucher_no'];
 		$this->sales_return->reference_no    = $attributes['reference_no'];
-		$this->sales_return->sales_invoice_id  = $attributes['sales_invoice_id'];
+		$this->sales_return->sales_invoice_id  = ($attributes['is_prior'])?0:$attributes['sales_invoice_id'];
 		$this->sales_return->voucher_date  = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->sales_return->customer_id   = $attributes['customer_id'];
 		$this->sales_return->dr_account_id = $attributes['dr_account_id'];
 		$this->sales_return->cr_account_id = $attributes['cr_account_id'];
-		$this->sales_return->job_id 		= $attributes['job_id'];
-		$this->sales_return->description   = $attributes['description'];
+		$this->sales_return->job_id 		= $attributes['job_id'] ?? 0;
+		$this->sales_return->description   = $attributes['description'] ?? null;
 		$this->sales_return->is_fc 		= isset($attributes['is_fc'])?1:0;
-		$this->sales_return->currency_id   = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
-		$this->sales_return->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
-		$this->sales_return->sales_invoice_no  = $attributes['sales_invoice_no'];
-		$this->sales_return->location_id = $attributes['location_id'];
+		$this->sales_return->currency_id   = (isset($attributes['currency_id']))?$attributes['currency_id'] ?? 0:'';
+		$this->sales_return->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate'] ?? 0:'';
+		$this->sales_return->sales_invoice_no  = ($attributes['is_prior'])?$attributes['sales_invoice_id']:$attributes['sales_invoice_no'];
+		$this->sales_return->location_id = $attributes['location_id'] ?? 0;
+		$this->sales_return->is_prior  = $attributes['is_prior'] ?? 0; //JN23
+		$this->sales_return->foot_description = (isset($attributes['foot_description']))?$attributes['foot_description']:'';
+		
 		
 		return true;
 	}
 	
-	private function setSalesInvoiceInputValue($attributes, $salesInvoice)
-	{
-		$salesInvoice->voucher_id = 0;//previous year
-		$salesInvoice->voucher_no = $attributes['sales_invoice_id'];
-		$salesInvoice->reference_no = $attributes['reference_no'];
-		$salesInvoice->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
-		$salesInvoice->document_type = 4;//sales invoice
-		$salesInvoice->customer_id = $attributes['customer_id'];
-		$salesInvoice->document_id = '';
-		$salesInvoice->job_id = $attributes['job_id'];
-		$salesInvoice->description = $attributes['description'];
-		$salesInvoice->cr_account_id = $attributes['cr_account_id'];
-		$salesInvoice->dr_account_id = $attributes['dr_account_id'];
-		$salesInvoice->is_fc = isset($attributes['is_fc'])?1:0;
-		$salesInvoice->currency_id = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
-		$salesInvoice->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
-		$salesInvoice->save();
-		
-		return $salesInvoice->id;
-	}
 	
 	private function setSalesInvoiceInvoiceItemInputValue($attributes, $salesInvoiceItem, $key, $value, $sales_invoice_id,$lineTotal)
 	{
@@ -154,11 +137,13 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		$salesInvoiceItem->unit_price 		= (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		$salesInvoiceItem->vat		    	= $attributes['line_vat'][$key];
 		$salesInvoiceItem->vat_amount 		= $tax_total;
-		$salesInvoiceItem->discount   		= $attributes['line_discount'][$key];
+		$salesInvoiceItem->discount   		= $attributes['line_discount'][$key] ?? 0;
 		$salesInvoiceItem->line_total 		= $line_total;
 		$salesInvoiceItem->tax_code 		= $tax_code;
 		$salesInvoiceItem->tax_include 		= $attributes['tax_include'][$key];
 		$salesInvoiceItem->item_total 		= $item_total; //CHG
+		
+		
 		
 		$cost_value = 0;
 		if(Session::get('cost_accounting')==1) {
@@ -171,37 +156,12 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		return array('line_total' => $line_total, 'tax_total' => $tax_total, 'cost_value' => $cost_value, 'type' => $type, 'item_total' => $item_total);//CHG
 	}
 	
-	private function setSaleLog($attributes, $key, $document_id)
-	{
-		DB::table('item_sale_log')->insert(['document_type' => 4,
-											'document_id'   => $document_id,
-											'item_id' 	  	=> $attributes['item_id'][$key],
-											'unit_id'    	=> $attributes['unit_id'][$key],
-											'quantity'   	=> $attributes['quantity'][$key],
-											'created_at' 	=> now(),
-											'created_by' 	=> 1]);
-		return true;
-	}
-	
-	/* private function updateItemQuantity($attributes, $key)
-	{
-		$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
-									  ->where('unit_id', $attributes['unit_id'][$key])
-									  ->first();
-		if($item) {
-			DB::table('item_unit')
-					->where('id', $item->id)
-					->update([ 'cur_quantity' => $item->cur_quantity - $attributes['quantity'][$key] ]);
-			return true;		
-		}
-	} */
-	
-	
+		
 	private function setAccountTransactionUpdate($attributes, $amount, $voucher_id, $type, $amount_type)
 	{
 		$cr_acnt_id = $dr_acnt_id = '';
 		if($amount_type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//VAT OUTPUT
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//VAT OUTPUT
 			if($vatrow) {
 				$dr_acnt_id = $account_id = $vatrow->payment_account;
 			}
@@ -216,7 +176,12 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		} else if($amount_type == 'DIS') {
 			if(Session::get('cost_accounting')==1 && Session::get('department')==1) { 
 				$vatrow = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('saledis_acid')->first();
-				$cr_acnt_id = $vatrow->saledis_acid;
+				if($vatrow)
+					$cr_acnt_id = $vatrow->saledis_acid;
+				else {
+					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+					$cr_acnt_id = $vatrow->account_id;
+				}
 			} else {
 				$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
 				$cr_acnt_id = $account_id = $vatrow->account_id;
@@ -228,11 +193,11 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 				->where('account_master_id', $account_id) //CHNG
 				->where('voucher_type', 'SR')
 				->update([  'amount'   			=> $amount,  //JUL9
-							'modify_at' 		=> now(),
+							'modify_at' 		=> date('Y-m-d H:i:s'),
 							'modify_by' 		=> Auth::User()->id,
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-							'reference_from'	=> $attributes['reference_no'],
+							'reference_from'	=> $attributes['sales_invoice_no'],
 							'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 							'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
 						]);
@@ -262,6 +227,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
 			
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
+			$rate = $attributes['cost'][$key]*$attributes['currency_rate']; //14JN24
 		} else {
 			
 			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
@@ -269,10 +235,11 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 						
 			if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
-				
+				$idiscount = ($attributes['line_discount'][$key]!='')?$attributes['line_discount'][$key]:0;
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $idiscount;
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
+				$rate = $attributes['cost'][$key];//14JN24
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
@@ -280,11 +247,26 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				
-			} else {
+				//14JN24
+				if((float)$attributes['line_discount'][$key] > 0) {
+					$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
+					$row_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);//14JN24
+				} else {
+					$vatPlus = 100 + $attributes['line_vat'][$key];
+					$vatLine = round( (($attributes['cost'][$key] * $attributes['line_vat'][$key]) / $vatPlus),2 );
+					$rate = $attributes['cost'][$key] - $vatLine;
+					$row_total = ($rate * $attributes['quantity'][$key]);//14JN24
+				}
 				
+			} else {
+				$idiscount = ($attributes['line_discount'][$key]!='')?$attributes['line_discount'][$key]:0;
 				$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $idiscount;
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
+				
+				//14LN24
+				$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];//31MY
+				$row_total = ($rate * $attributes['quantity'][$key]);//31MY
 			}
 		}
 		
@@ -308,7 +290,20 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			$vatLine = round( (($amountTotal * $attributes['line_vat'][$key]) / $vatPlus),2 );
 			//$line_total = $amountTotal;
 			$tax_total = $vatLine; 
-		} 
+			
+			//14JN24
+			$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+			$rate = $vat_exc / $attributes['quantity'][$key];
+		} else { //31MY
+			if($attributes['tax_include'][$key]==1 ) {
+				$vatLine = round( (($total * $attributes['line_vat'][$key]) / $vatPlus),2 );
+				$vat_exc = $total - $vatLine;
+				//$row_total = $vat_exc + $tax_total;
+			} else {
+				$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				 
+			}
+		}
 		
 		
 		$salesReturnItem->sales_return_id = $this->sales_return->id;
@@ -324,16 +319,33 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		$salesReturnItem->tax_code 			= $tax_code;
 		$salesReturnItem->tax_include 		= $attributes['tax_include'][$key];
 		$salesReturnItem->item_total 		= $item_total; //CHG
-		$salesReturnItem->item_cost = $cost_value = $attributes['item_cost'][$key];
+		$salesReturnItem->item_cost 		= $attributes['item_cost'][$key];
 		
-		/* $cost_value = 0;
+		$salesReturnItem->width = isset($attributes['item_wit'][$key])?$attributes['item_wit'][$key]:0;
+		$salesReturnItem->length = isset($attributes['item_lnt'][$key])?$attributes['item_lnt'][$key]:0;
+		$salesReturnItem->mp_qty = isset($attributes['mpquantity'][$key])?$attributes['mpquantity'][$key]:0;
+		
+		$salesReturnItem->cat_id   		= isset($attributes['cat_id'][$key])?$attributes['cat_id'][$key]:'';
+		
+		//14JN24
+		$salesReturnItem->rate 			= $rate;//29MY
+		$salesReturnItem->row_total 		= $row_total;//31MY
+		$salesReturnItem->vat_exc 			= $vat_exc;//31MY
+		$salesReturnItem->vat_exc_fc		= (isset($attributes['is_fc']))?round(($vat_exc /  $attributes['currency_rate']),2):$vat_exc;//31MY
+		
+		if(isset($attributes['conloc_id'][$key]) && $attributes['conloc_id'][$key]!='') {
+			$salesReturnItem->conloc_id = $attributes['conloc_id'][$key];
+			$salesReturnItem->conloc_qty = $attributes['conloc_qty'][$key];
+		}
+		
+		$cost_value = 0;
 		if(Session::get('cost_accounting')==1) {
 			$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 										  ->where('unit_id', $attributes['unit_id'][$key])
 										  ->first();
 			$cost_avg = ($item->cost_avg==0)?$item->last_purchase_cost:$item->cost_avg;
 			$cost_value = $cost_avg * $attributes['quantity'][$key];
-		} */
+		}
 		
 		return array('line_total' => $line_total, 'tax_total' => $tax_total, 'cost_value' => $cost_value, 'type' => $type, 'item_total' => $item_total);//CHG
 		
@@ -360,27 +372,6 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		}
 	}
 	
-	private function setSalesReturnLog($attributes, $key, $document_id)
-	{
-		$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
-									  ->where('unit_id', $attributes['unit_id'][$key])
-									  ->first();
-				  
-		$balance_qty = $item->cur_quantity + $attributes['quantity'][$key];	
-		
-		DB::table('item_sale_log')->insert(['document_type' => 'SR',//sales return
-											'document_id'   => $document_id,
-											'item_id' 	  	=> $attributes['item_id'][$key],
-											'unit_id'    	=> $attributes['unit_id'][$key],
-											'quantity'   	=> $attributes['quantity'][$key],
-											'created_at' 	=> now(),
-											'created_by' 	=> 1,
-											'unit_cost'   	=> (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key],
-											'balance_qty' => $balance_qty
-											]);
-											
-		return true;
-	}
 	
 	private function updateItemReturnQuantity($attributes, $key)
 	{
@@ -398,7 +389,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		$cr_acnt_id = $dr_acnt_id = '';
 		if($amount_type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//VAT OUTPUT
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//VAT OUTPUT
 			if($vatrow) {
 				$dr_acnt_id = $vatrow->payment_account;
 			}
@@ -413,7 +404,12 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		} else if($amount_type == 'DIS') {
 			if(Session::get('cost_accounting')==1 && Session::get('department')==1) { 
 				$vatrow = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('saledis_acid')->first();
-				$cr_acnt_id = $vatrow->saledis_acid;
+				if($vatrow)	
+					$cr_acnt_id = $vatrow->saledis_acid;
+				else {
+					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+					$cr_acnt_id = $vatrow->account_id;
+				}
 			} else {
 				$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
 				$cr_acnt_id = $vatrow->account_id;
@@ -427,13 +423,14 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							'transaction_type'  => $type,
 							'amount'   			=> $amount,
 							'status' 			=> 1,
-							'created_at' 		=> now(),
-							'created_by' 		=> 1,
+							'created_at' 		=> date('Y-m-d H:i:s'),
+							'created_by' 		=> Auth::User()->id,
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-							'reference_from'	=> $attributes['reference_no'],
+							'reference_from'	=> ($attributes['is_prior']==1)?$attributes['sales_invoice_id']:$attributes['sales_invoice_no'],
 							'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
-							'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+							'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+							'version_no'		=> $attributes['version_no']
 						]);
 		
 		$this->objUtility->tallyClosingBalance(($type=='Cr')?$cr_acnt_id:$dr_acnt_id);
@@ -616,160 +613,61 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			
 			DB::beginTransaction();
 			try {
-				//check whether previous year transaction or not....
-				if($attributes['is_prior']) { 
-					$salesInvoice = new SalesInvoice();
-					$sales_invoice_id = $this->setSalesInvoiceInputValue($attributes, $salesInvoice);
-					//order items insert
-					if($sales_invoice_id && !empty( array_filter($attributes['item_id']))) {
-						
-						$line_total = 0; $tax_total = 0; $item_total = $item_total = $total = 0;
-						//calculate total amount....
-						$discount = (isset($attributes['discount']))?$attributes['discount']:0;
-						if($discount > 0) 
-							$total = $this->calculateTotalAmount($attributes);
-					
-						foreach($attributes['item_id'] as $key => $value) { 
-							$salesInvoiceItem = new SalesInvoiceItem();
-							
-							$vat = $attributes['line_vat'][$key];
-							$arrResult = $this->setSalesInvoiceInvoiceItemInputValue($attributes, $salesInvoiceItem, $key, $value, $sales_invoice_id,$total);
-							if($arrResult['line_total']) {
-								$line_total			     += $arrResult['line_total'];
-								$tax_total      	     += $arrResult['tax_total'];
-								//$cost_value 			 += $arrResult['cost_value'];
-								$taxtype				  = $arrResult['type'];
-								$item_total				 += $arrResult['item_total']; //CHG
-								
-								$salesInvoiceItem->status = 1;
-								//$this->sales_invoice->salesInvoiceItemAdd()->save($salesInvoiceItem);
-								$itemObj = $salesInvoiceItem->save();
-								
-								$CostAvg_log = $this->updateLastPurchaseCostAndCostAvg($attributes, $key);
-								
-								//stock update section............................
-								//check whether stock updation enable or not in settings.. ****************needed to implement********************
-								/* if($this->setSaleLog($attributes, $key, $sales_invoice_id))
-									$this->updateItemQuantity($attributes, $key); */
-								
-								if($this->setPurchaseLog($attributes, $key, $sales_invoice_id, $CostAvg_log,'add'))
-									$this->updateItemQuantity($attributes, $key);
-							}
-							
-							//################ Location Stock Entry ####################
-							//Item Location specific add....
-							$updated = false;
-							if(isset($attributes['locqty'][$key])) {
-								foreach($attributes['locqty'][$key] as $lk => $lq) {
-									if($lq!='') {
-										$updated = true;
-										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
-																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->whereNull('deleted_at')->select('id')->first();
-										if($qtys) {
-											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lq) ]);
-										} 										
-										$itemLocationSR = new ItemLocationSR();
-										$itemLocationSR->location_id = $attributes['locid'][$key][$lk];
-										$itemLocationSR->item_id = $value;
-										$itemLocationSR->unit_id = $attributes['unit_id'][$key];
-										$itemLocationSR->quantity = $lq;
-										$itemLocationSR->status = 1;
-										$itemLocationSR->invoice_id = $itemObj->id;
-										$itemLocationSR->save();
-									}
-								}
-							}
-							
-							//Item default location add...
-							if(($attributes['location_id']!='') && ($updated == false)) {
-									
-									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
-																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->whereNull('deleted_at')->select('id')->first();
-									if($qtys) {
-										DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
-									}
-									$itemLocationSR = new ItemLocationSR();
-									$itemLocationSR->location_id = $attributes['location_id'];
-									$itemLocationSR->item_id = $value;
-									$itemLocationSR->unit_id = $attributes['unit_id'][$key];
-									$itemLocationSR->quantity = $attributes['quantity'][$key];
-									$itemLocationSR->status = 1;
-									$itemLocationSR->invoice_id = $itemObj->id;
-									$itemLocationSR->save();
-									
-								}
-								
-							//################ Location Stock Entry End ####################
-							
-						}
-						
-						/*CHG*/
-						$subtotal = $line_total - $discount;
-						if($taxtype=='tax_include' && $attributes['discount'] == 0) {
-						  
-						  $net_amount = $subtotal;
-						  $tax_total = ($subtotal * $vat) / (100 + $vat);
-						  $subtotal = $subtotal - $tax_total;
-						  
-						} elseif($taxtype=='tax_include' && $attributes['discount'] > 0) { 
-						
-						   $tax_total = ($subtotal * $vat) / (100 + $vat);
-						   $net_amount = $subtotal - $tax_total;
-						} else 
-							$net_amount = $subtotal + $tax_total;
-						/*CHG*/
-						
-						if( isset($attributes['is_fc']) ) {
-						$total_fc 	   = $line_total / $attributes['currency_rate'];
-						$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
-						$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
-						$tax_fc 	   = round($tax_total / $attributes['currency_rate'],2);
-						$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
-						$subtotal_fc	   = $subtotal / $attributes['currency_rate']; //CHG
-						
-						} else 
-							$total_fc = $discount_fc = $tax_fc = $net_amount_fc = $vat_fc = $subtotal_fc = 0; //CHG
-						
-						//update discount, total amount
-						DB::table('sales_invoice')
-									->where('id', $sales_invoice_id)
-									->update(['total'    	  => $line_total,
-											  'discount' 	  => (isset($attributes['discount']))?$attributes['discount']:0,
-											  'vat_amount'	  => $tax_total,
-											  'net_total'	  => $net_amount,
-											  'total_fc' 	  => $total_fc,
-											  'discount_fc'   => $discount_fc,
-											  'vat_amount_fc' => $tax_fc,
-											  'net_total_fc'  => $net_amount_fc,
-											  'subtotal'	  => $subtotal, //CHG
-											  'subtotal_fc'	  => $subtotal_fc ]); //CHG
-											  
-						$this->PurchaseAndSalesMethod($attributes, $subtotal, $tax_total, $net_amount, $sales_invoice_id, $taxtype);//CHG
-						
-						//update voucher no........
-						if( ($sales_invoice_id) && ($attributes['curno'] <= $attributes['voucher_no']) ) { 
-							 DB::table('account_setting')
-								->where('id', $attributes['voucher_id'])
-								->update(['voucher_no' => $attributes['voucher_no'] + 1 ]);//$this->sales_invoice->id
-						}
 
-						
-					}
+					//VOUCHER NO LOGIC.....................
+					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+					// 2️⃣ Get the highest numeric part from voucher_master
+					$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+					if($dept > 0)	
+						$qry->where('department_id', $dept);
+
+					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 					
+					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
+					//VOUCHER NO LOGIC.....................
 					
-				} else { 
-				
-					//***********SALES RETURN SECTION***********************..........
+					//exit;
+					$maxRetries = 5; // prevent infinite loop
+					$retryCount = 0;
+					$saved = false;
+
+					while (!$saved && $retryCount < $maxRetries) {
+						try {
+								if ($this->setInputValue($attributes)) {
+
+									$this->sales_return->status = 1;
+									$this->sales_return->created_at = date('Y-m-d H:i:s');
+									$this->sales_return->created_by = Auth::User()->id;
+									$this->sales_return->save();
+
+									$saved = true; // success ✅
+									
+								}	
+							} catch (\Illuminate\Database\QueryException $ex) {
+
+								// Check if it's a duplicate voucher number error
+								if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+									strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+									$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+									// 2️⃣ Get the highest numeric part from voucher_master
+									$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+									if($dept > 0)	
+										$qry->where('department_id', $dept);
+
+									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+									
+									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
+
+									$retryCount++;
+								} else {
+									throw $ex; // rethrow if different DB error
+								}
+							}
+						}
 					
-					if($this->setInputValue($attributes)) {
-						$this->sales_return->status = 1;
-						$this->sales_return->created_at = now();
-						$this->sales_return->created_by = 1;
-						$this->sales_return->fill($attributes)->save();
-					}
-					
+					$attributes['version_no'] = 1;
+
 					//order items insert
 					if($this->sales_return->id && !empty( array_filter($attributes['item_id']))) {
 						
@@ -793,19 +691,20 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								$salesReturnItem->status = 1;
 								$itemObj = $this->sales_return->salesReturnItemAdd()->save($salesReturnItem);
 								
+								$zero = DB::table('sales_return_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+							    if($zero && $zero->item_id != 0){
+						              $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						             DB::table('sales_return_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						          }
+								
 								$CostAvg_log = $this->updateLastPurchaseCostAndCostAvg($attributes, $key);
 								
 								//update item transfer status...
 								$this->setTransferStatusItem($attributes, $key);
-							
-								//stock update section............................
-								//check whether stock updation enable or not in settings.. ****************needed to implement********************
-								/* if($this->setSalesReturnLog($attributes, $key, $this->sales_return->id))
-								{
-									$this->updateItemReturnQuantity($attributes, $key);
-								} */
 								
-								if($this->setPurchaseLog($attributes, $key, $this->sales_return->id, $CostAvg_log,'add'))
+							    $attributes['item_row_id'][$key] = $itemObj->id; //OCT24
+								//stock update section............................
+								$logid = $this->setPurchaseLog($attributes, $key, $this->sales_return->id, $CostAvg_log,'add');
 									$this->updateItemQuantity($attributes, $key);
 							}
 								
@@ -816,51 +715,120 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								foreach($attributes['locqty'][$key] as $lk => $lq) {
 									if($lq!='') {
 										$updated = true;
+										//$lcqty = $lq * $attributes['packing'][$key];
+										$lcqty = $lq;
+                                		if($attributes['packing'][$key]=="1") 
+                                		    $lcqty = $lq;
+                                		else {
+                                		   $pkgar = explode('-', $attributes['packing'][$key]);
+                                		   if($pkgar[0] > 0)
+                                		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
+                                		}
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
-																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->whereNull('deleted_at')->select('id')->first();
+																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 										if($qtys) {
-											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lq) ]);
-										} 
+											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+										} else {
+											$itemLocation = new ItemLocation();
+											$itemLocation->location_id = $attributes['locid'][$key][$lk];
+											$itemLocation->item_id = $value;
+											$itemLocation->unit_id = $attributes['unit_id'][$key];
+											$itemLocation->quantity = $lcqty;
+											$itemLocation->status = 1;
+											$itemLocation->save();
+										}
 										
 										$itemLocationSR = new ItemLocationSR();
 										$itemLocationSR->location_id = $attributes['locid'][$key][$lk];
 										$itemLocationSR->item_id = $value;
 										$itemLocationSR->unit_id = $attributes['unit_id'][$key];
-										$itemLocationSR->quantity = $lq;
+										$itemLocationSR->quantity = $lcqty;
 										$itemLocationSR->status = 1;
 										$itemLocationSR->invoice_id = $itemObj->id;
+										$itemLocationSR->logid = $logid;
+										$itemLocationSR->qty_entry = $lq;
 										$itemLocationSR->save();
 									}
 								}
 							}
 							
 							//Item default location add...
-							if(($attributes['location_id']!='') && ($updated == false)) {
+							if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 									
-									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
-																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->whereNull('deleted_at')->select('id')->first();
+									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  
+									//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
+									$lcqty = $attributes['quantity'][$key];
+                            		if($attributes['packing'][$key]=="1") 
+                            		    $lcqty = $attributes['quantity'][$key];
+                            		else {
+                            		   $pkgar = explode('-', $attributes['packing'][$key]);
+                            		   if($pkgar[0] > 0)
+                            		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+                            		}
+                            		
 									if($qtys) {
-										DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
+										DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 									} 
 									
 									$itemLocationSR = new ItemLocationSR();
-									$itemLocationSR->location_id = $attributes['location_id'];
+									$itemLocationSR->location_id = $attributes['default_location'];
 									$itemLocationSR->item_id = $value;
 									$itemLocationSR->unit_id = $attributes['unit_id'][$key];
-									$itemLocationSR->quantity = $attributes['quantity'][$key];
+									$itemLocationSR->quantity = $lcqty;
 									$itemLocationSR->status = 1;
 									$itemLocationSR->invoice_id = $itemObj->id;
+									$itemLocationSR->logid = $logid;//DEC24
+									$itemLocationSR->qty_entry = $attributes['quantity'][$key];
 									$itemLocationSR->save();
 									
 								}
 								
+								
 							//################ Location Stock Entry End ####################
+							
+							
+							//MAY25 BATCH NO ENTRY............
+							if(isset($attributes['batchNos'][$key]) && $attributes['batchNos'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
+            				    
+            				    $batchArr = explode(',', $attributes['batchNos'][$key]);
+            				    $qtyArr = explode(',', $attributes['qtyBatchs'][$key]);
+            				    $bthidsArr = explode(',', $attributes['batchIds'][$key]);
+            				    
+            				    foreach($bthidsArr as $bkey => $bval) {
+    
+                    			    DB::table('batch_log')
+                				                ->insert([
+                				                    'batch_id' => $bval,
+                				                    'item_id' => $value,
+                				                    'document_type' => 'SR',
+                				                    'document_id' => $this->sales_return->id,
+                				                    'doc_row_id' => $itemObj->id,
+                				                    'quantity' => $qtyArr[$bkey],
+                				                    'trtype' => 1,
+                				                    'invoice_date' => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+                				                    'log_id' => $logid,
+                				                    'created_at' => date('Y-m-d h:i:s'),
+                				                    'created_by' => Auth::User()->id
+                				                    ]);
+    
+                        			DB::table('item_batch')
+                        			                    ->where('id',$bval)
+                        				                ->update([
+                        				                    'quantity' => DB::raw('quantity + '.$qtyArr[$bkey])
+                        				                ]);	                
+                        				                
+            				    }
+            				
+            				}
+            				//.....END BATCH ENTRY
 								
 						}
 						
-						$subtotal = $line_total - $discount;
+						$subtotal = (float)$line_total - (float)$discount;
 						if($taxtype=='tax_include' && $attributes['discount'] == 0) {
 						  
 						  $net_amount = $subtotal;
@@ -886,10 +854,13 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							$total_fc = $discount_fc = $tax_fc = $net_amount_fc = $vat_fc = $subtotal_fc = 0;  
 						}
 						
+					
 						//update discount, total amount, vat and other cost....
 						DB::table('sales_return')
 									->where('id', $this->sales_return->id)
-									->update(['total'    	  => $line_total,
+									->update([
+										     //'voucher_no'	  => $attributes['voucher_no'],
+										     'total'    	  => $line_total,
 											  'discount' 	  => (isset($attributes['discount']))?$attributes['discount']:0,
 											  'vat_amount'	  => $tax_total,
 											  'net_amount'	  => $net_amount,
@@ -902,14 +873,16 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							
 						//update invoice  balance amount..
 						$sirow = DB::table('sales_invoice')->where('id', $attributes['sales_invoice_id'])->select('balance_amount')->first();
-						if($sirow->balance_amount==0) {
-							DB::table('sales_invoice')
-									->where('id', $attributes['sales_invoice_id'])
-									->update(['balance_amount' => DB::raw('balance_amount + net_total - '.$net_amount) ]);
-						} else {
-							DB::table('sales_invoice')
-									->where('id', $attributes['sales_invoice_id'])
-									->update(['balance_amount' => DB::raw('balance_amount - '.$net_amount) ]); //$net_amount ]); //->update(['balance_amount' => DB::raw('balance_amount + net_total - '.$net_amount) ]);
+						if($sirow) {
+							if($sirow->balance_amount==0) {
+								DB::table('sales_invoice')
+										->where('id', $attributes['sales_invoice_id'])
+										->update(['balance_amount' => DB::raw('balance_amount + net_total - '.$net_amount) ]);
+							} else {
+								DB::table('sales_invoice')
+										->where('id', $attributes['sales_invoice_id'])
+										->update(['balance_amount' => DB::raw('balance_amount - '.$net_amount) ]); //$net_amount ]); //->update(['balance_amount' => DB::raw('balance_amount + net_total - '.$net_amount) ]);
+							}
 						}
 						
 						//check whether Cost Accounting method or not.....
@@ -923,23 +896,9 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						if(isset($attributes['sales_invoice_id'])) 
 							$this->setTransferStatusQuote($attributes);	
 			
-						//update voucher no........
-						if( ($this->sales_return->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) { 
-							 DB::table('account_setting')
-								->where('id', $attributes['voucher_id'])
-								->update(['voucher_no' => $attributes['voucher_no'] + 1]);
-						}
 						
 					}
-					
-					//API calls...
-					/*$attributes['invoice_id'] = $this->sales_return->id;
-					$response = Curl::to($this->api_url.'salesreturn.php')
-								->withData($attributes)
-								->asJson()
-								->post();*/ //echo '<pre>';print_r($response);exit;
-					
-				}
+				
 				
 				DB::commit();
 				return true;
@@ -951,6 +910,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			}
 		}
 	}
+	
 	
 	public function update($id, $attributes)
 	{	//echo '<pre>';print_r($attributes);exit;
@@ -978,9 +938,9 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
 							
 							if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
-								
+								$idiscount = ($attributes['line_discount'][$key]!='')?$attributes['line_discount'][$key]:0;
 								$tax        = 0;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $idiscount;
 								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
 								
 							} else if($attributes['tax_include'][$key]==1){
@@ -990,9 +950,9 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								$itemtotal = $ln_total - $taxtotal;
 								
 							} else {
-								
+								$idiscount = ($attributes['line_discount'][$key]!='')?$attributes['line_discount'][$key]:0;
 								$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $idiscount;
 								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
 							}
 						}
@@ -1040,6 +1000,10 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						$items['total_price'] = $linetotal;
 						$items['item_cost'] = $item_cost = $attributes['item_cost'][$key];
 						
+						$items['width'] = isset($attributes['item_wit'][$key])?$attributes['item_wit'][$key]:0;
+						$items['length'] = isset($attributes['item_lnt'][$key])?$attributes['item_lnt'][$key]:0;
+						$items['mp_qty'] = isset($attributes['mpquantity'][$key])?$attributes['mpquantity'][$key]:0;
+						$items['cat_id'] = isset($attributes['cat_id'][$key])?$attributes['cat_id'][$key]:'';//CHG
 						//if(Session::get('cost_accounting')==1) {
 							/* $item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 														  ->where('unit_id', $attributes['unit_id'][$key])
@@ -1050,33 +1014,137 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						
 						$salesReturnItem->update($items);
 						
+						 $zero = DB::table('sales_return_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+						
+						if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('sales_return_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+						 }
+						
 						$cost_value += $item_cost;
 						
 						$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, null, null);
 								
-							if($this->setPurchaseLog($attributes, $key, $this->sales_return->id, $CostAvg_log,'update'))
+							$logid = $this->setPurchaseLog($attributes, $key, $this->sales_return->id, $CostAvg_log,'update');
 								$this->updateItemQuantityonEdit($attributes, $key);
 							
+						
 						//################ Location Stock Entry ####################
-						/* if($attributes['location_id']!='') {
-							$idloc = DB::table('item_location')
-									->where('location_id', $attributes['location_id'])
-									->where('item_id', $value)
-									->where('unit_id', $attributes['unit_id'][$key])
-									->where('status', 1)
-									->whereNull('deleted_at')
-									->select('id')->first();//echo $oldqty; print_r($idloc);exit;
+						//Item Location specific add....
+						$updated = false;
+						if(isset($attributes['locqty'][$key])) {
+							foreach($attributes['locqty'][$key] as $lk => $lq) {
+								if($lq!='') {
+									$updated = true;
+									//$lcqty = $lq * $attributes['packing'][$key];
+									$lcqty = $lq;
+                            		if($attributes['packing'][$key]=="1") 
+                            		    $lcqty = $lq;
+                            		else {
+                            		   $pkgar = explode('-', $attributes['packing'][$key]);
+                            		   if($pkgar[0] > 0)
+                            		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
+                            		}
+                            		
+									$edit = DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->first();
+									$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  //echo '<pre>';print_r($edit);exit;
+									if($edit) {
+										
+										if($edit->quantity < $lcqty) {
+											$balqty = $lcqty - $edit->quantity;
+											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
+										} else {
+											$balqty = $edit->quantity - $lcqty;
+											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+										}
+										
+									} else {
+										
+										$itemLocationSR = new ItemLocationSR();
+										$itemLocationSR->location_id = $attributes['locid'][$key][$lk];
+										$itemLocationSR->item_id = $value;
+										$itemLocationSR->unit_id = $attributes['unit_id'][$key];
+										$itemLocationSR->quantity = $lcqty;
+										$itemLocationSR->status = 1;
+										$itemLocationSR->invoice_id = $attributes['order_item_id'][$key];
+										$itemLocationSR->qty_entry = $lq;
+										$itemLocationSR->save();
+									}
 									
-							if($idloc) {
-								if($oldqty < $attributes['quantity'][$key]) {
-									$balqty = $attributes['quantity'][$key] - $oldqty;
-									DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
-								} else {
-									$balqty = $oldqty - $attributes['quantity'][$key];
-									DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+									DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty, 'qty_entry' => $lq]);
+
 								}
-							} 
-						} */
+							}
+						}
+						
+						//Item default location add...
+						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
+								
+								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+																  
+								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
+								$lcqty = $attributes['quantity'][$key];
+                        		if($attributes['packing'][$key]=="1") 
+                        		    $lcqty = $attributes['quantity'][$key];
+                        		else {
+                        		   $pkgar = explode('-', $attributes['packing'][$key]);
+                        		   if($pkgar[0] > 0)
+                        		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+                        		}
+                        		
+								if($qtys) {
+									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
+									DB::table('item_location_sr')->where('invoice_id', $attributes['order_item_id'][$key] )
+																 ->where('location_id', $qtys->location_id)
+																 ->where('item_id', $qtys->item_id)
+																 ->where('unit_id', $qtys->unit_id)
+																 ->update(['quantity' => DB::raw('quantity - '.$lcqty),'qty_entry' => $lq ]);
+								} 
+								
+								$itemLocationSR = new ItemLocationSR();
+								$itemLocationSR->location_id = $attributes['default_location'];
+								$itemLocationSR->item_id = $value;
+								$itemLocationSR->unit_id = $attributes['unit_id'][$key];
+								$itemLocationSR->quantity = $lcqty;
+								$itemLocationSR->status = 1;
+								$itemLocationSR->invoice_id = $attributes['order_item_id'][$key];
+								$itemLocationSR->qty_entry = $attributes['quantity'][$key];
+								$itemLocationSR->save();
+							}
+
+
+							//**************** Consignment Location *********************
+							if(isset($attributes['conloc_id'][$key]) && $attributes['conloc_id'][$key]!='') {
+								
+								$items['conloc_id'] 	= $attributes['conloc_id'][$key]; 
+								$items['conloc_qty'] 	= $attributes['conloc_qty'][$key];
+								if($attributes['conloc_id'][$key]!=$attributes['conloc_id_old'][$key]) {
+									//SET ALL ITEMS ARE DELETED...
+									$oldidarr = explode(',',$attributes['conloc_id_old'][$key]);
+									$curidarr = explode(',',$attributes['conloc_id'][$key]);
+									$curqty = explode(',',$attributes['conloc_qty'][$key]);
+									
+									DB::table('con_location_sr')->where('invoice_id', $attributes['order_item_id'][$key])
+														 ->whereIn('location_id', $oldidarr)
+														 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+														 
+									foreach($curidarr as $ky => $rw) {					 
+										DB::table('con_location_sr')->where('invoice_id', $attributes['order_item_id'][$key])
+														 ->where('location_id', $rw)
+														 ->update(['quantity' => $curqty[$ky],'status' => 1, 'deleted_at' => '0000-00-00 00:00:00']);
+									
+									}
+								}
+								
+							}
+							//***********************************************************
+
+							
 						//################ Location Stock Entry End ####################
 						
 					} else { //new entry...
@@ -1101,32 +1169,125 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							$cost_value 		     += $arrResult['cost_value'];
 
 							$salesReturnItem->status = 1;
-							$this->sales_return->salesReturnItemAdd()->save($salesReturnItem);
+							$itemObj = $this->sales_return->salesReturnItemAdd()->save($salesReturnItem);
 							
-							//update sales return log....
-							/* if($this->setSalesReturnLog($attributes, $key, $this->sales_return->id))
-							{
-								$this->updateItemReturnQuantity($attributes, $key);
-							} */
-							
+							$zero = DB::table('sales_return_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+							    if($zero && $zero->item_id != 0){
+						              $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						             DB::table('sales_return_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						          }
 							$CostAvg_log = $this->updateLastPurchaseCostAndCostAvg($attributes, $key);
-								
+							
+							$attributes['item_row_id'][$key] = $itemObj->id; //OCT24
 							//update item transfer status...
-							if($this->setPurchaseLog($attributes, $key, $this->sales_return->id, $CostAvg_log,'add'))
+							$logid = $this->setPurchaseLog($attributes, $key, $this->sales_return->id, $CostAvg_log,'add');
 								$this->updateItemQuantity($attributes, $key);
 								
 						}
 						
-						//################ Location Stock Entry ####################
-						/* if($attributes['location_id']!='') {
-							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
-															  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-													          ->whereNull('deleted_at')->select('id')->first();
-							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
-							} 
-						} */
-						//################ Location Stock Entry End####################
+							//################ Location Stock Entry ####################
+							//Item Location specific add....
+							if(isset($attributes['locqty'][$key])) {
+								foreach($attributes['locqty'][$key] as $lk => $lq) {
+									if($lq!='') {
+										$updated = true;
+										//$lcqty = $lq * $attributes['packing'][$key];
+										$lcqty = $lq;
+                                		if($attributes['packing'][$key]=="1") 
+                                		    $lcqty = $lq;
+                                		else {
+                                		   $pkgar = explode('-', $attributes['packing'][$key]);
+                                		   if($pkgar[0] > 0)
+                                		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
+                                		}
+										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+										if($qtys) {
+											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+										} else {
+											$itemLocation = new ItemLocation();
+											$itemLocation->location_id = $attributes['locid'][$key][$lk];
+											$itemLocation->item_id = $value;
+											$itemLocation->unit_id = $attributes['unit_id'][$key];
+											$itemLocation->quantity = $lcqty;
+											$itemLocation->status = 1;
+											$itemLocation->save();
+										}
+										
+										$itemLocationSR = new ItemLocationSR();
+										$itemLocationSR->location_id = $attributes['locid'][$key][$lk];
+										$itemLocationSR->item_id = $value;
+										$itemLocationSR->unit_id = $attributes['unit_id'][$key];
+										$itemLocationSR->quantity = $lcqty;
+										$itemLocationSR->status = 1;
+										$itemLocationSR->invoice_id = $itemObj->id;
+										$itemLocationSR->logid = $logid;//DEC24
+										$itemLocationSR->qty_entry = $lq;
+										$itemLocationSR->save();
+									}
+								}
+							}
+							
+							//Item default location add...
+							if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
+									
+								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  
+								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
+								$lcqty = $attributes['quantity'][$key];
+                        		if($attributes['packing'][$key]=="1") 
+                        		    $lcqty = $attributes['quantity'][$key];
+                        		else {
+                        		   $pkgar = explode('-', $attributes['packing'][$key]);
+                        		   if($pkgar[0] > 0)
+                        		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+                        		}
+                        		
+								if($qtys) {
+									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+								} 
+								
+								$itemLocationSR = new ItemLocationSR();
+								$itemLocationSR->location_id = $attributes['default_location'];
+								$itemLocationSR->item_id = $value;
+								$itemLocationSR->unit_id = $attributes['unit_id'][$key];
+								$itemLocationSR->quantity = $lcqty;
+								$itemLocationSR->status = 1;
+								$itemLocationSR->invoice_id = $itemObj->id;
+								$itemLocationSR->logid = $logid;//DEC24
+								$itemLocationSR->qty_entry = $lq;
+								$itemLocationSR->save();
+								
+							}
+								
+
+								//**************** Consignment Location *********************
+								if(isset($attributes['conloc_id'][$key]) && $attributes['conloc_id'][$key]!='') {
+
+									if(isset($attributes['conloc_qty'][$key])) {
+
+										$locarr = explode(',',$attributes['conloc_id'][$key]);
+										$qtyarr = explode(',',$attributes['conloc_qty'][$key]);
+
+										foreach($locarr as $lk => $lq) {
+											$conLocationsr = new ConLocationSR();
+											$conLocationsr->location_id = $attributes['cnlocid'][$key][$lk];
+											$conLocationsr->item_id = $value;
+											$conLocationsr->unit_id = $attributes['unit_id'][$key];
+											$conLocationsr->quantity = $lq;
+											$conLocationsr->status = 1;
+											$conLocationsr->invoice_id = $itemObj->id;
+											$conLocationsr->save();
+										}
+									}
+
+								}
+								//***********************************************************
+
+							//################ Location Stock Entry End ####################
 					}
 					
 				}
@@ -1138,16 +1299,22 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 				$arrids = explode(',', $attributes['remove_item']);
 				$remline_total = $remtax_total = 0;
 				foreach($arrids as $row) {
+										
+					DB::table('sales_return_item')->where('id', $row)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
 					$res = DB::table('sales_return_item')->where('id',$row)->first();
 					
-					DB::table('sales_return_item')->where('id', $row)->update(['status' => 0]);
+					//REMOVE FROM CONSIGNMENT LOCATION
+					DB::table('con_location_sr')->where('invoice_id',$row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+						
+					//$this->objUtility->updateLastPurchaseCostAndCostAvgonDelete($res, $attributes['sales_invoice_id']);
+					//update item unit quantity..
 					
 					 
 				}
 			}
 			
 			if($this->setInputValue($attributes)) {
-				$this->sales_return->modify_at = now();
+				$this->sales_return->modify_at = date('Y-m-d H:i:s');
 				$this->sales_return->modify_by = 1;
 				$this->sales_return->fill($attributes)->save();
 			}
@@ -1197,10 +1364,25 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 					->where('id', $attributes['sales_invoice_id'])
 					->update(['balance_amount' => $net_amount ]); //->update(['balance_amount' => DB::raw('balance_amount + net_total - '.$net_amount) ]);
 			
+			//FIND CURRENT VERSION	 
+			$voucher_type = 'SR';
+			$currentVersion = DB::table('account_transaction')->where('voucher_type', $voucher_type)->where('voucher_type_id', $id)->max('version_no');
+			$newVersion = $currentVersion + 1;
+			$attributes['version_no'] = $newVersion;
+
+			//SOFT DELETE OLD VERSION
+			DB::table('account_transaction')->where('voucher_type', $voucher_type)->where('voucher_type_id', $id)
+						->update([
+									'status' => 0,
+									'deleted_at' => date('Y-m-d h:i:s'),
+									'deleted_by'  => Auth::User()->id,
+								]);
+
+
 			if(Session::get('cost_accounting')==1) {
-				$this->CostAccountingMethodUpdate($attributes, $subtotal, $tax_total, $net_amount, $this->sales_return->id, $taxtype, $cost_value);
+				$this->CostAccountingMethod($attributes, $subtotal, $tax_total, $net_amount, $this->sales_return->id, $taxtype, $cost_value);
 			} else {
-				$this->PurchaseAndSalesMethodUpdate($attributes, $subtotal, $tax_total, $net_amount, $this->sales_return->id, $taxtype);
+				$this->PurchaseAndSalesMethod($attributes, $subtotal, $tax_total, $net_amount, $this->sales_return->id, $taxtype);
 			}
 						
 			DB::commit();
@@ -1252,20 +1434,24 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	
 	public function findSRdata($id)
 	{
+	    
 		$query = $this->sales_return->where('sales_return.id', $id);
-		return $query->join('account_master AS am', function($join) {
+		return $query->leftjoin('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_return.dr_account_id');
 						} )
-					->join('account_master AS am2', function($join){
+					->leftjoin('account_master AS am2', function($join){
 						  $join->on('am2.id','=','sales_return.cr_account_id');
 					  }) 
+					  	->leftJoin('jobmaster AS J', function($join){
+					  $join->on('J.id','=','sales_return.job_id');
+					})
 					/*->leftJoin('header_footer AS f',function($join) {
 						$join->on('f.id','=','sales_return.footer_id');
 					})
 					 ->leftJoin('salesman AS S',function($join) {
 						$join->on('S.id','=','sales_return.salesman_id');
 					}) */
-					->select('sales_return.*','am.master_name AS account','am2.master_name AS customer')//'S.name AS salesman'
+					->select('sales_return.*','am.master_name AS account','am2.master_name AS customer','J.code')//'S.name AS salesman'
 					->orderBY('sales_return.id', 'ASC')
 					->first();
 	}
@@ -1288,7 +1474,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 						  $join->on('im.id','=','poi.item_id');
 					  })
 					  ->where('poi.status',1)
-					  ->select('poi.*','u.unit_name','im.item_code','iu.packing','iu.is_baseqty')
+					  ->select('poi.*','u.unit_name','im.item_code','iu.packing','iu.is_baseqty','iu.pkno')
 					  ->groupBy('poi.id')->get();
 	}
 	
@@ -1453,66 +1639,172 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		if($id)
 			return $this->sales_return->where('voucher_no',$refno)->where('id', '!=', $id)->count();
-		else
-			return $this->sales_return->where('voucher_no',$refno)->count();
+		else{
+			$query =  $this->sales_return->where('voucher_no',$refno);
+			return $result = isset($deptid)?$query->where('department_id', $deptid)->count():$query->count();
+
+		}
 	}
-	
-	public function getReport($attributes)
+	public function getReportsales($attributes)
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
 		
-		switch($attributes['search_type']) {
-			case 'summary':
-				$query = $this->sales_return
-								->join('sales_return_item AS POI', function($join) {
-									$join->on('POI.sales_return_id','=','sales_return.id');
-								})
-								->join('account_master AS AM', function($join) {
-									$join->on('AM.id','=','sales_return.customer_id');
-								})
-								/* ->leftJoin('salesman AS S', function($join) {
-									$join->on('S.id','=','sales_return.salesman_id');
-								}) */
-								->where('POI.status',1);
-								
-						if( $date_from!='' && $date_to!='' ) { 
-							$query->whereBetween('sales_return.voucher_date', array($date_from, $date_to));
-						}
+		$query = DB::table('sales_return')//$this->sales_invoice deleted_at
+						->join('sales_return_item AS POI', function($join) {
+							$join->on('POI.sales_return_id','=','sales_return.id');
+						})
+						->join('itemmaster AS IM', function($join) {
+							$join->on('IM.id','=','POI.item_id');
+						})
+						->join('account_master AS AM', function($join) {
+							$join->on('AM.id','=','sales_return.customer_id');
+						})
+						->join('account_setting AS AST', function($join) {
+							$join->on('AST.id','=','sales_return.voucher_id');
+						})
+						// ->leftJoin('salesman AS S', function($join) {
+						// 	$join->on('S.id','=','sales_return.salesman_id');
+						// })
+						// ->leftJoin('department AS D', function($join) {
+						// 	$join->on('D.id','=','sales_return.department_id');
+								 //->where('sales_invoice.department_id','>',0);
+					//	})
+						->leftJoin('groupcat AS GP', function($join) {
+							$join->on('GP.id','=','IM.group_id');
+						})
+						->leftJoin('groupcat AS SGP', function($join) {
+							$join->on('GP.id','=','IM.subgroup_id');
+						})
+						->leftJoin('category AS CAT', function($join) {
+							$join->on('CAT.id','=','IM.category_id');
+						})
+						->leftJoin('category AS SCAT', function($join) {
+							$join->on('CAT.id','=','IM.subcategory_id');
+						})
+						// ->leftJoin('vehicle AS V', function($join) {
+						// 	$join->on('V.id','=','sales_invoice.vehicle_id');
+						// })
+						->where('POI.status',1)
+						->where('POI.deleted_at','0000-00-00 00:00-00')
+						->where('sales_return.status',1)
+						->where('sales_return.deleted_at','0000-00-00 00:00-00');
+				if(isset($attributes['job_id']))
+					$query->whereIn('sales_return.job_id', $attributes['job_id']);		
+				if(isset($attributes['group_id']))
+					$query->whereIn('IM.group_id', $attributes['group_id']);
+				
+				if(isset($attributes['subgroup_id']))
+					$query->whereIn('IM.subgroup_id', $attributes['subgroup_id']);
+				
+				if(isset($attributes['category_id']))
+					$query->whereIn('IM.category_id', $attributes['category_id']);
+				
+				if(isset($attributes['subcategory_id']))
+					$query->whereIn('IM.subcategory_id', $attributes['subcategory_id']);
 						
-						/* if($attributes['salesman']!='') { 
-							$query->where('sales_return.salesman_id', $attributes['salesman']);
-						} */
-						 
-				return $query->select('sales_return.voucher_no','sales_return.reference_no','sales_return.total','sales_return.vat_amount','sales_return.discount',
-									  'sales_return.voucher_date','POI.quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no','sales_return.net_amount')
-								->groupBy('sales_return.id')->get();
-			break;
+				if( $date_from!='' && $date_to!='' ) { 
+					$query->whereBetween('sales_return.voucher_date', array($date_from, $date_to));
+				}
+				if(isset($attributes['customer_iid']) && $attributes['customer_iid']!=''){
+					$query->where('sales_return.customer_id', $attributes['customer_iid']);	
+				} 
+				if( $attributes['search_type']=='daily' ) { 
+					$query->whereBetween( 'sales_return.voucher_date', array(date('Y-m-d'), date('Y-m-d')) );
+				}
+				
+				/*if($attributes['salesman']!='') { 
+					$query->where('sales_invoice.salesman_id', $attributes['salesman']);
+				}*/
+				// if($attributes['salesman']!='') { 
+				// 	$query->where('sales_return.salesman_id', $attributes['salesman']);
+				// }
+				
+				// if( $attributes['search_type']=='department') { 
+				// 	$query->where('sales_return.department_id','!=',0);
+			//	}
+		if(isset($attributes['customer_id']) && $attributes['customer_id']!='')
+				$query->whereIn('sales_return.customer_id', $attributes['customer_id']);		
 			
-			case 'detail':
-				$query = $this->sales_return
-								->join('sales_return_item AS SOI', function($join) {
-									$join->on('SOI.sales_return_id','=','sales_return.id');
-								})
-								->join('account_master AS AM', function($join) {
-									$join->on('AM.id','=','sales_return.customer_id');
-								})
-								->join('itemmaster AS IM', function($join) {
-									$join->on('IM.id','=','SOI.item_id');
-								})
-								->where('SOI.status',1);
-								
-						if( $date_from!='' && $date_to!='' ) { 
-							$query->whereBetween('sales_return.voucher_date', array($date_from, $date_to));
-						}
-						
-						
-				return $query->select('sales_return.voucher_no','sales_return.reference_no','IM.item_code','IM.description','sales_return.discount',
-									  'SOI.quantity','SOI.unit_price','SOI.total_price','AM.master_name','sales_return.net_amount')
-								->get();
-				break;
-		}
+
+		if(isset($attributes['item_id']) && $attributes['item_id']!='')
+					$query->whereIn('POI.item_id', $attributes['item_id']);	
+				// if($attributes['vehicle_no']!='') { 
+				// 	$query->where('V.reg_no', $attributes['vehicle_no']);//voucher_id subtotal
+				// 'V.reg_no',}
+				
+		 $query->select('sales_return.voucher_no','AM.master_name AS customer','sales_return.reference_no','sales_return.customer_id','sales_return.total','sales_return.vat_amount','sales_return.subtotal',
+							  'sales_return.amount_transfer','sales_return.discount AS total_discount','AST.is_cash_voucher',
+							  'POI.total_price','POI.item_total','POI.vat_amount','POI.item_name','POI.unit_price','sales_return.vat_amount','POI.discount','IM.description','sales_return.voucher_date','POI.item_id',
+							  'POI.quantity','POI.vat_amount AS item_vat','POI.tax_include','AM.account_id','AM.master_name','AM.vat_no',
+							  'sales_return.net_amount','POI.tax_code',
+							  'POI.tax_include','IM.item_code','GP.group_name AS group','SGP.group_name AS subgroup','AST.voucher_name',
+							  'CAT.category_name AS category','SCAT.category_name AS subcategory','sales_return.voucher_id');
+								  
+		//if(isset($attributes['type']))
+		//	return $query->groupBy('sales_return.id')->get()->toArray();
+		//else
+		if($attributes['search_type']=='summary')
+			return $query->groupBy('sales_return.id')->get();
+		else
+		return $query->get();
 	}
+	// public function getReport($attributes)
+	// {
+	// 	$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
+	// 	$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
+		
+	// 	switch($attributes['search_type']) {
+	// 		case 'summary':
+	// 			$query = $this->sales_return
+	// 							->join('sales_return_item AS POI', function($join) {
+	// 								$join->on('POI.sales_return_id','=','sales_return.id');
+	// 							})
+	// 							->join('account_master AS AM', function($join) {
+	// 								$join->on('AM.id','=','sales_return.customer_id');
+	// 							})
+	// 							/* ->leftJoin('salesman AS S', function($join) {
+	// 								$join->on('S.id','=','sales_return.salesman_id');
+	// 							}) */
+	// 							->where('POI.status',1);
+								
+	// 					if( $date_from!='' && $date_to!='' ) { 
+	// 						$query->whereBetween('sales_return.voucher_date', array($date_from, $date_to));
+	// 					}
+						
+	// 					/* if($attributes['salesman']!='') { 
+	// 						$query->where('sales_return.salesman_id', $attributes['salesman']);
+	// 					} */
+						 
+	// 			return $query->select('sales_return.voucher_no','sales_return.reference_no','sales_return.total','sales_return.vat_amount','sales_return.discount',
+	// 								  'sales_return.voucher_date','POI.quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no','sales_return.net_amount')
+	// 							->groupBy('sales_return.id')->get();
+	// 		break;
+			
+	// 		case 'detail':
+	// 			$query = $this->sales_return
+	// 							->join('sales_return_item AS SOI', function($join) {
+	// 								$join->on('SOI.sales_return_id','=','sales_return.id');
+	// 							})
+	// 							->join('account_master AS AM', function($join) {
+	// 								$join->on('AM.id','=','sales_return.customer_id');
+	// 							})
+	// 							->join('itemmaster AS IM', function($join) {
+	// 								$join->on('IM.id','=','SOI.item_id');
+	// 							})
+	// 							->where('SOI.status',1);
+								
+	// 					if( $date_from!='' && $date_to!='' ) { 
+	// 						$query->whereBetween('sales_return.voucher_date', array($date_from, $date_to));
+	// 					}
+						
+						
+	// 			return $query->select('sales_return.voucher_no','sales_return.reference_no','IM.item_code','IM.description','sales_return.discount',
+	// 								  'SOI.quantity','SOI.unit_price','SOI.total_price','AM.master_name','sales_return.net_amount')
+	// 							->get();
+	// 			break;
+	// 	}
+	// }
 	
 	public function check_order($id)
 	{
@@ -1534,12 +1826,17 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			if($this->sales_return->sales_invoice_id!='') {
 				DB::table('sales_invoice')
 							->where('id', $this->sales_return->sales_invoice_id)
-							->update(['is_transfer' => 0,'is_editable' => 0]);
+							->update(['is_transfer' => 0,'is_editable' => 0,'amount_transfer' => 0, 'balance_amount' => 0]);
 			}
 			
 			//inventory update...
-			$items = DB::table('sales_return_item')->where('sales_return_id', $id)->select('item_id','unit_id','quantity')->get();
+			$items = DB::table('sales_return_item')->where('sales_return_id', $id)->select('id','item_id','unit_id','quantity')->get();
 			$this->updateLastPurchaseCostAndCostAvgonDelete($items, $id);
+			
+			//REMOVE FROM CONSIGNMENT LOCATION
+			foreach($items as $item) {
+				DB::table('con_location_sr')->where('invoice_id',$item->id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+			}	
 			/* foreach($items as $item) {
 				DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
 									  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);
@@ -1550,7 +1847,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			} */
 			
 			//Transaction update....
-			DB::table('account_transaction')->where('voucher_type', 'SR')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id ]);
+			DB::table('account_transaction')->where('voucher_type', 'SR')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			
 			//DB::table('account_master')->where('id', $this->sales_return->dr_account_id)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->net_amount)]);
 			$this->objUtility->tallyClosingBalance($this->sales_return->dr_account_id);
@@ -1558,16 +1855,18 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			//DB::table('account_master')->where('id', $this->sales_return->cr_account_id)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->total)]);
 			$this->objUtility->tallyClosingBalance($this->sales_return->cr_account_id);
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
 			if($vatrow) {
 				//DB::table('account_master')->where('id', $vatrow->payment_account)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->vat_amount)]);
 				$this->objUtility->tallyClosingBalance($vatrow->payment_account);
 			}
 			
 			//update transfer status...
-			DB::table('sales_invoice')->where('id', $this->sales_return->sales_invoice_id)
-									  ->update(['is_transfer' => 0]);
-									  
+			/* DB::table('sales_invoice')->where('id', $this->sales_return->sales_invoice_id)
+									  ->update(['is_transfer' => 0]); */
+			DB::table('sales_return')->where('id', $id)
+									  ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);	
+						  
 			$this->sales_return->delete();
 			
 			DB::commit();
@@ -1660,7 +1959,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
 							 ->where('status', 1)
-							 ->whereNull('deleted_at')
+							 ->where('deleted_at','0000-00-00 00:00:00')
 							 ->select('pur_cost','sale_reference')
 							 ->first();
 		
@@ -1668,7 +1967,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->whereNull('deleted_at')
+										->where('deleted_at','0000-00-00 00:00:00')
 										->select('cur_quantity','pur_cost')
 										->get();
 										
@@ -1707,55 +2006,72 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
 							 ->where('status', 1)
-							 ->whereNull('deleted_at')
+							 ->where('deleted_at','0000-00-00 00:00:00')
 							 ->select('pur_cost')
 							 ->first();
-			
+		
 		$irow = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
+		
+		$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']):($attributes['cost'][$key]);
+
+		if($attributes['packing'][$key]=="1") 
+		    $quantity = $attributes['quantity'][$key];
+		else {
+		   $pkgar = explode('-', $attributes['packing'][$key]);
+		   $quantity = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+		   
+		   //COST...
+		   $unit_cost = ($unit_cost * $pkgar[0]) / $pkgar[1];
+		}
 		
 		if($action=='add') {
 			$cur_quantity = ($irow)?$irow->cur_quantity + $attributes['quantity'][$key]:0;
 			
 			//-----------ITEM LOG----------------							
-			DB::table('item_log')->insert([
+			$logid = DB::table('item_log')->insertGetId([
 							 'document_type' => 'SR',
 							 'document_id'   => $document_id,
 							 'item_id' 	  => $attributes['item_id'][$key],
 							 'unit_id'    => $attributes['unit_id'][$key],
-							 'quantity'   => $attributes['quantity'][$key],
-							 'unit_cost'  => (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key],
+							 'quantity'   => $quantity, //$attributes['quantity'][$key] * $attributes['packing'][$key],//14JN24
+							 'unit_cost'  => $unit_cost,//(isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key],
 							 'trtype'	  => 1,
 							 'cur_quantity' => $attributes['quantity'][$key],
 							 'cost_avg' => $cost_avg,
 							 'pur_cost' => ($sirow)?$sirow->pur_cost:0,
 							 'packing' => 1,
 							 'status'     => 1,
-							 'created_at' => now(),
+							 'created_at' => date('Y-m-d H:i:s'),
 							 'created_by' => Auth::User()->id,
 							 'voucher_date' => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-							 'sale_reference' => $cur_quantity
+							 'sale_reference' => $cur_quantity,
+							 'return_ref_id'  => ($attributes['is_prior'])?0:$attributes['sales_invoice_id'],
+							 'item_row_id'	=> $attributes['item_row_id'][$key], //OCT24
+							 'category_id' => isset($attributes['cat_id'][$key])?$attributes['cat_id'][$key]:''
 							]);
 			//-------------ITEM LOG------------------
 			
 		} else if($action=='update') {
-			
+			$logid = '';
 			//-----------ITEM LOG----------------							
 			DB::table('item_log')->where('document_type','SR')
 							->where('document_id', $document_id)
 							->where('item_id', $attributes['item_id'][$key])
 							->where('unit_id', $attributes['unit_id'][$key])
+							->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
 							->update([
-								 'quantity'   => $attributes['quantity'][$key],
-								 'unit_cost'  => (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key],
+								 'quantity'   => $quantity, //$attributes['quantity'][$key] * $attributes['packing'][$key],//14JN24
+								 'unit_cost'  => $unit_cost, //(isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key],
 								 'cur_quantity' => $attributes['quantity'][$key],
 								 'cost_avg' => $cost_avg,
-								 'pur_cost' => $sirow->pur_cost,
-								 'voucher_date' => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']))
+								 'pur_cost' => ($sirow)?$sirow->pur_cost:0,
+								 'voucher_date' => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+								 'category_id' => isset($attributes['cat_id'][$key])?$attributes['cat_id'][$key]:''
 							]);
 			//-------------ITEM LOG------------------
 		}
 							
-		return true;
+		return $logid;
 	}
 	
 	private function updateItemQuantity($attributes, $key)
@@ -1815,7 +2131,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			//COST AVG Updating on DELETE section....
 			DB::table('item_log')->where('document_id', $id)->where('document_type','SR')
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
-								 ->update(['status' => 0, 'deleted_at' => now()]);
+								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);
@@ -1847,6 +2163,18 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							
 							if($date_from !='' && $date_to != '')	   
 								$qry->whereBetween('sales_return.voucher_date',[$date_from, $date_to]);
+
+							/*	if($attributes['search_by']=='Group')
+						        $qry->where('IM.group_id','!=',0);
+							
+							if($attributes['search_by']=='Subgroup')
+						        $qry->where('IM.subgroup_id','!=',0);
+								
+							if($attributes['search_by']=='Category')
+						        $qry->where('IM.category_id','!=',0);
+
+							if($attributes['search_by']=='Subcategory')
+						        $qry->where('IM.subcategory_id','!=',0);*/	
 					
 		$result = $qry->select('sales_return.id','sales_return.voucher_no','sales_return.voucher_date',
 								'IM.item_code','IM.description','SI.quantity','SI.unit_price','SI.vat_amount','SI.total_price')
@@ -1859,9 +2187,12 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	private function getVatAccounts($department_id=null) {
 		
 		if(Session::get('department')==1 && $department_id!=null) {
-			return DB::table('vat_department')->where('department_id', $department_id)->first();
+			$vatres = DB::table('vat_department')->where('department_id', $department_id)->first();
+			if(!$vatres)
+				$vatres = DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			return $vatres;
 		} else {
-			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
+			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		}
 	}
 	
@@ -1870,12 +2201,11 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		if(Session::get('cost_accounting')==1 && Session::get('department')==1) { 
 			$result = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('stock_acid','cost_acid')->first();
 			if($result){
-				Session::put('stock', $result->stock_acid);
-				Session::put('cost_of_sale', $result->cost_acid);
+				Session::set('stock', $result->stock_acid);
+				Session::set('cost_of_sale', $result->cost_acid);
 			}
 		
 		}
 		
 	}
 }
-
