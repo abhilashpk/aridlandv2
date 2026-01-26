@@ -33,7 +33,7 @@
         <section class="content-header">
             <!--section starts-->
             <h1>
-                Location Transfer
+                Material Transfer
             </h1>
             <ol class="breadcrumb">
                 <li>
@@ -42,7 +42,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#">Location Transfer</a>
+                    <a href="#">Material  Transfer</a>
                 </li>
                 <li class="active">
                     Add
@@ -65,31 +65,60 @@
                     <div class="panel panel-primary">
                         <div class="panel-heading clearfix">
                             <h3 class="panel-title pull-left m-t-6">
-                                <i class="fa fa-fw fa-crosshairs"></i> New Location Transfer
+                                <i class="fa fa-fw fa-crosshairs"></i> New Material Transfer
                             </h3>
 							
 							<div class="pull-right">
-							<?php if($printid) { ?>
-								@can('pv-print')
-								 <a href="{{ url('stock_transferout/print/'.$printid->id) }}" target="_blank" class="btn btn-info btn-sm">
+							 <a href="{{ url('location_transfer/add') }}"  class="btn btn-info btn-sm">
 									<span class="btn-label">
-										<i class="fa fa-fw fa-print"></i>
+										<i class="fa fa-fw fa-refresh"></i>
 									</span>
-								 </a>
-								@endcan
-							<?php } ?>
+							</a>
+								
+							
 							</div>
                         </div>
                         <div class="panel-body">
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmLocTransfer" id="frmLocTransfer" action="{{ url('location_transfer/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
+
+
+							<div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location From</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                 <div id="locationRadioGroup">
+                                   @foreach($location as $loc)
+                                <label class="radio-inline">
+                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+                                 </label>
+                                 @endforeach
+								 <small class="text-muted" id="locfrom-hint">
+                                             Select one location — once chosen, it becomes fixed.
+                                    </small>
+                                 </div>
+
+                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id">
+                                  <small class="text-muted" id="locfrom-mand">
+                                             '*' is mandatory fields
+                                    </small>
+                             </div>
+                        </div>
+
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">LT. No.</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$voucherno}}">
-                                    </div>
+									  <div class="input-group">
+											<span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+                                   <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="{{$voucherno->no}}">
+                                    <input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
+									<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
+											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
+									<span class="input-group-addon inputvn"><i class="fa fa-fw fa-edit"></i></span>
+										</div>
+										<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$voucherno->no}}">
+									</div>
                                 </div>
 								
 								<div class="form-group">
@@ -106,22 +135,9 @@
                                     </div>
                                 </div>
 								
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location From</label>
-                                    <div class="col-sm-10">
-                                        <select id="locfrom_id" class="form-control select2" style="width:100%" name="locfrom_id">
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}">{{ $loc['name'] }}</option>
-											<?php } ?>
-											<option value="" selected>Select Location..</option>
-                                        </select>
-                                    </div>
-                                </div>
 								
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location To</label>
+                                    <label for="input-text" class="col-sm-2 control-label"><b>Location To</b><span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
                                         <select id="locto_id" class="form-control select2" style="width:100%" name="locto_id">
 											<?php 
@@ -191,10 +207,22 @@
 											<div id="loc" style="float:left; padding-right:5px;">
 												<button type="button" id="loc_1" class="btn btn-primary btn-xs loc-info">Location</button>
 											</div>
+
+											<div id="locin" style="float:left; padding-right:5px;">
+												<button type="button" id="locin_1" class="btn btn-primary btn-xs locin-info">Intra Location</button>
+											</div>
 											
 											<div class="locPrntItm" id="locPrntItm_1">
 													<div class="locChldItm">							
 														<div class="table-responsive loc-data" id="locData_1"></div>
+													</div>
+												</div>
+
+												
+											
+											<div class="locinPrntItm" id="locinPrntItm_1">
+													<div class="locinChldItm">							
+														<div class="table-responsive locin-data" id="locinData_1"></div>
 													</div>
 												</div>
 
@@ -295,7 +323,45 @@ $('#voucher_date').datepicker( { autoClose:true ,dateFormat: 'dd-mm-yyyy' } );
 
 $(document).ready(function () { 
 	
-	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle();
+	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle();$('.locPrntItm').toggle();$('.locinPrntItm').toggle();
+   
+
+  $(document).on('ifChecked', '.locfrom-radio', function (e) {
+          var val = $(this).val();
+		 
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  let prefix = $('input[name="prefix"]').val();   // Example: LT
+             let newPrefix = prefix + locCode;               // LTWH1
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix);
+
+               $('.locfrom-radio').prop('disabled', true);
+         // store the value in the hidden field
+              $('#selected_locfrom_id').val(val);
+
+        // update message
+        $('#locfrom-hint').text('Default location selected and locked.');
+     });
+
+	 // enable all options first
+             $('#locto_id option').show();
+
+    // reset dropdown if same was selected before
+    if ($('#locto_id').val() == val) {
+        $('#locto_id').val(''); 
+    }
+
+    // hide the selected "Location From" from the "Location To"
+    $('#locto_id option[value="' + val + '"]').hide();
+
+    // If using Select2, you must refresh it
+    $('#locto_id').trigger('change.select2');
+    });
+
+
 	var urlcode = "{{ url('location_transfer/checkrefno/') }}";
     $('#frmLocTransfer').bootstrapValidator({
         fields: {
@@ -344,6 +410,12 @@ $(function() {
 	$(document).on('click', '.btn-add-item', function(e)  { 
         rowNum++; //console.log(rowNum);
 		e.preventDefault();
+		if( $('.locPrntItm').is(":visible") ){
+			$('.locPrntItm').toggle();	
+			}
+		if( $('.locinPrntItm').is(":visible") ){
+			 $('.locinPrntItm').toggle();
+			}
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),
             newEntry = $(currentEntry.clone()).appendTo(controlForm);
@@ -358,9 +430,17 @@ $(function() {
 			newEntry.find($('button[type="button"]')).attr('data-id', 'rem_' + rowNum); //NEW CHNG
 			newEntry.find('input').val(''); 
 			newEntry.find('.line-unit').find('option').remove().end().append('<option value="">Unit</option>');//new change
-			
+			newEntry.find($('.loc-info')).attr('id', 'loc_' + rowNum);
+			newEntry.find($('.loc-data')).attr('id', 'locData_' + rowNum);
+			newEntry.find($('.locPrntItm')).attr('id', 'locPrntItm_' + rowNum);  
+            newEntry.find($('.locin-info')).attr('id', 'locin_' + rowNum);
+			newEntry.find($('.locin-data')).attr('id', 'locinData_' + rowNum);
+			newEntry.find($('.locinPrntItm')).attr('id', 'locinPrntItm_' + rowNum);  
+ 
 			if( $('#infodivPrntItm_'+rowNum).is(":visible") ) 
 				$('#infodivPrntItm_'+rowNum).toggle();
+			if( $('#locPrntItm_'+rowNum).is(":visible") ) 
+				$('#locPrntItm_'+rowNum).toggle();	
 			controlForm.find('.btn-add-item:not(:last)')
             .removeClass('btn-default').addClass('btn-danger')
             .removeClass('btn-add-item').addClass('btn-remove-item')
@@ -376,6 +456,13 @@ $(function() {
 		return false;
 	});
 	
+
+	$(document).on('blur', '#voucher_no', function(e) {  
+		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
+			alert('Voucher no is greater than current range!');
+			$('#voucher_no').val('');
+		}
+	});
 	
 	//new change.................
 	$(document).on('click', '.itemRow', function(e) { 
@@ -446,18 +533,49 @@ $(function() {
 	   e.preventDefault();
 	   var res = this.id.split('_');
 	   var curNum = res[1];  
+	    if( $('#locinPrntItm_'+curNum).is(":visible") ){
+			$('#locinPrntItm_'+curNum).toggle(); 
+			}
 	   var item_id = $('#itmid_'+curNum).val();
 	   if(item_id!='') {
-		   var locUrl = "{{ url('itemmaster/view_locinfo/') }}/"+item_id+"/"+curNum
-		   if ($('#locData_'+curNum).is(':empty')){
+		   var locUrl = "{{ url('itemmaster/view_locinfo/') }}/"+item_id
+		  // if ($('#locData_'+curNum).is(':empty')){
     		   $('#locData_'+curNum).load(locUrl, function(result) {
     			  $('#myModal').modal({show:true});
     		   });
     		  
-		   } else
+		 // } else
 		       $('#locPrntItm_'+curNum).toggle(); 
 	   }
     });
+
+	$(document).on('click', '.locin-info', function(e) { 
+	   e.preventDefault();
+	   
+	   var res = this.id.split('_');
+	   var curNum = res[1];  
+	   if( $('#locPrntItm_'+curNum).is(":visible") ){
+			$('#locPrntItm_'+curNum).toggle(); 
+			}
+	   var item_id = $('#itmid_'+curNum).val();
+	   if(item_id!='') {
+		   var locUrl = "{{ url('itemmaster/view_intralocinfo/') }}/"+item_id
+		  
+    		   $('#locinData_'+curNum).load(locUrl, function(result) {
+    			  $('#myModal').modal({show:true});
+    		   });
+    		  
+		
+		       $('#locinPrntItm_'+curNum).toggle(); 
+	   }
+    });
+
+	// --------------------------------------------------------
+// LOCATION FROM radio selection - permanent lock
+// --------------------------------------------------------
+
+
+
 	
 });
 

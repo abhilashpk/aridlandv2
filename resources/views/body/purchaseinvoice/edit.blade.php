@@ -75,13 +75,13 @@
                             </h3>
 							
 							<div class="pull-right">
-							@can('pi-print')
+							@permission('pi-print')
 							 <a href="{{ url('purchase_invoice/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank"  class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endcan
+							@endpermission
 							</div>
                         </div>
                         <div class="panel-body">
@@ -90,23 +90,12 @@
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="purchase_invoice_id" id="purchase_invoice_id" value="{{ $orderrow->id }}">
 								<input type="hidden" name="voucher_id" value="{{ $orderrow->voucher_id }}">
-								<input type="hidden" name="default_location" value="{{ Auth::user()->location_id }}">
+								@php $selectedLocId = $orderrow->location_id; @endphp
+								<input type="hidden" name="default_location" id="default_location" value="{{ $selectedLocId }}">
 									@if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
 								@else
 								<input type="hidden" name="send_email" value="0">
-								@endif
-								@if($isdept)
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Department</b></label>
-                                    <div class="col-sm-10">
-                                       <select id="department_id" class="form-control select2" style="width:100% ;background-color:#85d3ef;" name="department_id">
-											@foreach($departments as $drow)
-												<option value="{{ $drow->id }}" {{($orderrow->department_id==$drow->id)?'selected':''}} >{{ $drow->name }}</option>
-											@endforeach
-                                        </select>
-                                    </div>
-                                </div>
 								@endif
 								
 								<div class="form-group">
@@ -119,12 +108,25 @@
 										</select>
 									</div>
 								</div>
+								<div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+								 </div>
 								
 								<div class="form-group">
                                    <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label"><b>PI. No.</b></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
-                                    </div>
+                                        <input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
+									</div>
                                 </div>
 								
 								<?php if($formdata['reference_no']==1) { ?>
@@ -187,7 +189,7 @@
                                            <option value="">Select Document...</option>
 										   <option value="PO" <?php if($orderrow->document_type=='PO') echo 'selected';?>>Purchase Order</option>
 										   <option value="MR" <?php if($orderrow->document_type=='MR') echo 'selected';?>>MaterialRequisition</option>
-										   <option value="SDO" <?php if($orderrow->document_type=='SDO') echo 'selected';?>>Supplier Delivery Order</option>
+										   <option value="SDO" <?php if($orderrow->document_type=='SDO') echo 'selected';?>>Goods Receipt Note</option>
                                        </select>
                                     </div>
                                 </div>
@@ -199,7 +201,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Document#</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="document" readonly name="document_no" value="{{$orderrow->document_no}}" placeholder="Document#" autocomplete="off">
+                                        <input type="text" class="form-control" id="document" readonly name="document" value="{{($orderrow->doc_nos!='')?$orderrow->doc_nos:$orderrow->document_no}}" placeholder="Document#" autocomplete="off">
                                         <input type="hidden" id="document_id" name="document_id" value="{{$orderrow->document_id}}">
                                     </div>
                                 </div>
@@ -262,6 +264,8 @@
 								<?php } else { ?>
 								<input type="hidden" name="terms_id" id="terms_id">
 								<?php } ?>
+
+								<?php if($formdata['due_dates']==1) { ?>
 								
 									<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Day</label>
@@ -276,6 +280,8 @@
                                     </div>
                                     </div>
                                 </div>
+
+								<?php } ?>
 								
 								<?php if($formdata['job']==1) { ?>
 								<div class="form-group">
@@ -303,29 +309,7 @@
 								<input type="hidden" name="po_no" id="po_no">
 								<?php } ?>
 								
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$orderrow->location_id) echo 'selected';?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($orderrow->location_id==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+								
 								
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -408,7 +392,7 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -614,7 +598,7 @@
 									
 								@foreach($orditems as $item)
 								@php $max_quantity = $item->do_balance_quantity + $item->quantity; @endphp
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<div class="itemdivChld">							
 										
 											<table border="0" class="table-dy-row">
@@ -747,16 +731,7 @@
 								<input type="hidden" name="net_cost" id="net_cost">
 								<?php } ?>
 								
-								<!--MAY25-->
-								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
-									<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-									<div class="form-group"><input type="text" name="batchNos[]" id="batchNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches'] ?? ''}}"></div>
-									<input type="hidden" id="batchIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids'] ?? ''}}">
-									<input type="hidden" id="mfgDates_{{$i}}" name="mfgDates[]" value="{{$batchitems[$item->id]['mfgs'] ?? ''}}">
-                                    <input type="hidden" id="expDates_{{$i}}" name="expDates[]" value="{{$batchitems[$item->id]['exps'] ?? ''}}">
-                                    <input type="hidden" id="qtyBatchs_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys'] ?? ''}}">
-                                    <input type="hidden" id="batchRem_{{$i}}" name="batchRem[]">
-								</div>
+								
 											
 								<?php if($formdata['location_item']==1) { ?>
 											<div id="loc" style="float:left; padding-right:5px;">
@@ -764,7 +739,8 @@
 												<div class="form-group"><input type="text" name="iloc[]" id="iloc_{{$i}}" style="border:none;color:#FFF;"></div><!--NOV24-->
 											</div>	<?php } else { ?>
 								<input type="hidden" name="location_item" id="location_item">
-								<?php } ?><?php if($formdata['supersede']==1) { ?>
+								<?php } ?>
+								<?php if($formdata['supersede']==1) { ?>
 											<div id="ssede" style="float:left; padding-right:5px;">
 												<button type="button" id="sede_{{$i}}" class="btn btn-primary btn-xs sup-sede">Supersede</button>
 											</div><?php } else { ?>
@@ -909,8 +885,9 @@
 													<td width="8%">
 														<span class="small">Currency</span>
 														<select id="occrncy_{{$i}}" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-															@foreach($currency as $curr)
-															<option value="{{$curr['id']}}" <?php if($row->currency_id==$curr['id']) echo 'selected';?>>{{$curr['code']}}</option>
+														    <option value="{{$settings->bcurrency_id}}">Select</option>
+														    @foreach($fcurrency as $curr)
+															<option value="{{$curr->id}}" <?php if($row->currency_id==$curr->id) echo 'selected';?> >{{$curr->code}}</option>
 															@endforeach
 														</select>
 													</td>
@@ -925,7 +902,7 @@
 													</td>
 													<td width="10%">
 														<div class="oc-amount-fc">
-															<span class="small">Convrt Amt</span>
+															<span class="small">FC Amount</span>
 															<input type="number" name="oc_fc_amount[]" id="ocfcamt_{{$i}}" step="any" value="{{($row->is_fc==1)?$row->oc_amount:$row->oc_amount}}" autocomplete="off" class="form-control oc-line-fc" placeholder="FC Amount">
 														</div>
 													</td>
@@ -993,8 +970,9 @@
 														<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_1" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+																<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 														</td>
@@ -1615,12 +1593,18 @@ $(document).ready(function () {
 	$('.oc').toggle(); $('.sedePrntItm').toggle(); $('.dimnInfodivPrntItm').toggle();
 	
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $('#other_cost_fc').toggle(); 
+    
+	if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+		}
+
+
 	var urlcode = "{{ url('purchase_invoice/checkrefno/') }}";
     $('#frmPurchaseInvoice').bootstrapValidator({
         fields: {
 			//voucher_id: { validators: { notEmpty: { message: 'The voucher type is required and cannot be empty!' } }},
 			//voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},
-			reference_no: {
+			/*reference_no: {
                 validators: {
                      notEmpty: {
                         message: 'The reference no is required and cannot be empty!'
@@ -1635,7 +1619,7 @@ $(document).ready(function () {
                         message: 'The reference no is not available'
                     }
                 }
-            },
+            },*/
             //'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }}  //NOV24
 			//voucher_date: { validators: { notEmpty: { message: 'The voucher date is required and cannot be empty!' } }},
 			//description: { validators: { notEmpty: { message: 'The description is required and cannot be empty!' } }},
@@ -2612,10 +2596,10 @@ $(function() {
 		var res = this.id.split('_');
 		var curNum = res[1]; //console.log(curNum);
 		
-		/*if(parseFloat(this.value) > parseFloat( $('#itmaxqty_'+curNum).val() )) {
+		if(parseFloat(this.value) > parseFloat( $('#itmaxqty_'+curNum).val() )) {
 			alert('Quantity should not exceed than Quotation/PO/SDO.');
 			$('#itmqty_'+curNum).val( $('#itmaxqty_'+curNum).val() );
-		}*/
+		}
 		
 		var isPrice = getAutoPrice(curNum);
 		//if(isPrice)

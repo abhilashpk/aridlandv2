@@ -111,10 +111,15 @@ function setTransfer() {
 	var sid = $('#sid').val();
 	//alert(items);
 	if(curl=='CDO') {
-		if(sid=='')
+	    
+		if(sid==''){
 			url = "{{ url('sales_invoice/add/') }}/"+items+"/CDO";
-		else
+        }else if(sid=='cash'){
+		url = "{{ url('sales_invoice/addc/') }}/"+items+"/CDO";
+		}
+		else{
 			url = "{{ url('sales_invoice/edit/') }}/"+sid+"/CDO/"+items;
+			}
 	} else
 		url = "{{ url('customers_do/add/') }}/"+items+"/2";
 	

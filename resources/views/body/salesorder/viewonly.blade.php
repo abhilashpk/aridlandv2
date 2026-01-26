@@ -348,7 +348,7 @@
 								</table>
 								
 								<!-- ROWCHNG -->
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -453,7 +453,7 @@
 								<?php $i++; } } else if(count($orditems)>0) { ?>
 								
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -962,7 +962,7 @@
 								<br/>
 								
 								
-								@can('so-aprv')
+								@permission('so-aprv')
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
                                     <div class="col-sm-10">
@@ -980,7 +980,7 @@
                                         <input type="text" class="form-control" id="comment" value="<?php echo (old('comment'))?old('comment'):$orderrow->comment; ?>" name="comment" placeholder="comment">
                                     </div>
                                 </div>
-								@endcan
+								@endpermission
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">

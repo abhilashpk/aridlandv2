@@ -12,6 +12,7 @@ use App\Repositories\UpdateUtility;
 use Config;
 use DB;
 use Auth;
+use Session;
 
 
 class QuotationSalesRepository extends AbstractValidator implements QuotationSalesInterface {
@@ -54,6 +55,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		$this->quotation_sales->reference_no = $attributes['reference_no'] ?? null;
 		$this->quotation_sales->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->quotation_sales->customer_id  = $attributes['customer_id'];
+		$this->quotation_sales->department_id  = env('DEPARTMENT_ID');
 		$this->quotation_sales->salesman_id  = $attributes['salesman_id'] ?? 0;
 		$this->quotation_sales->subject 	 = $attributes['subject'] ?? null;
 		$this->quotation_sales->description  = $attributes['description'] ?? null;
@@ -77,6 +79,12 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		$this->quotation_sales->foot_description = (isset($attributes['foot_description']))?$attributes['foot_description']:'';	
 		$this->quotation_sales->metre_in = (isset($attributes['metre_in']))?$attributes['metre_in']:'';
 		$this->quotation_sales->metre_out = (isset($attributes['metre_out']))?$attributes['metre_out']:'';
+		$this->quotation_sales->is_draft = (isset($attributes['is_draft']))?$attributes['is_draft']:0;
+		$this->quotation_sales->document_id   = (isset($attributes['quotation_id']))?$attributes['quotation_id']:'';
+		$this->quotation_sales->document_type   = (isset($attributes['document_type']))?$attributes['document_type']:'';
+		$this->quotation_sales->document_no   = (isset($attributes['quotation']))?$attributes['quotation']:'';
+		$this->quotation_sales->is_editable  = (isset($attributes['quotation_id']) && $attributes['quotation_id']!='')?2:0; //APR25
+		
 	//	$this->quotation_sales->location_id = isset($attributes['location_id'])?$attributes['location_id']:$attributes['location_id'];
 		
 		return true;
@@ -139,49 +147,49 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	private function setItemInputValue($attributes, $purchaseOrderItem, $key, $value, $lineTotal) 
 	{
 		if( isset($attributes['is_fc']) ) {
-			$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
-			$item_total = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key] ) * $attributes['currency_rate'];
+			$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$attributes['currency_rate'];
+			$item_total = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * $attributes['currency_rate'];
 			$tax_total  = round($tax * $attributes['quantity'][$key],2);
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 			$type = 'tax_exclude';
 		} else {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 			
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 						
 			if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
 				
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key];
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
-				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
+				$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
+				$tax_total  = $ln_total *  (float)$attributes['line_vat'][$key] / (100 +  (float)$attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				
 			} else {
 				
-				$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key];
+				$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
 			}
 		}
 		
 		//********DISCOUNT Calculation.............
-		$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+		$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 		$type = 'tax_exclude';
 			
 		if($attributes['tax_include'][$key]==1 ) {
-			$vatPlus = 100 + $attributes['line_vat'][$key];
-			$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+			$vatPlus = 100 + (float)$attributes['line_vat'][$key];
+			$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 			$type = 'tax_include';
 		} else {
 			$vatPlus = 100;
-			$total = $attributes['line_total'][$key];
+			$total = (float)$attributes['line_total'][$key];
 			$type = 'tax_exclude';
 		}
 		
@@ -207,6 +215,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		$purchaseOrderItem->tax_include 	   = $attributes['tax_include'][$key];
 		$purchaseOrderItem->item_total 		   = $item_total;
 		$purchaseOrderItem->orderno 		   = isset($attributes['orderno'][$key])?$attributes['orderno'][$key]:''; //JN23
+		$purchaseOrderItem->doc_row_id         = isset($attributes['quote_sales_item_id'][$key])?$attributes['quote_sales_item_id'][$key]:0; //APR25
 		
 		return array('line_total' => $line_total, 'tax_total' => $tax_total, 'type' => $type, 'item_total' => $item_total);//CHG
 	}
@@ -234,7 +243,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		if(isset($attributes['lbitem_id'])) {
 			foreach($attributes['lbitem_id'] as $key => $value){ 
 				
-				$total += $attributes['lbquantity'][$key] * $attributes['lbcost'][$key];
+				$total += (float)$attributes['lbquantity'][$key] * (float)$attributes['lbcost'][$key];
 			}
 		}
 		
@@ -260,25 +269,57 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->update(['balance_quantity' => 0, 'is_transfer' => 1]);
 			}
 		}
+		else if(isset($attributes['so_item_id'])) {
+			if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+				if( isset($attributes['so_item_id'][$key]) ) {
+					$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+					//update as partially delivered.
+					DB::table('sales_order_item')
+								->where('id', $attributes['so_item_id'][$key])
+								->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+				}
+			} else {
+					//update as completely delivered.
+					DB::table('sales_order_item')
+								->where('id', $attributes['so_item_id'][$key])
+								->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+			}
+		}
 	}
 	
 	private function setTransferStatusQuote($attributes)
 	{
 		//update purchase order transfer status....
-		if(isset($attributes['quotation_id'])) {
-			$idarr = explode(',',$attributes['quotation_id']);
-			if($idarr) {
-				foreach($idarr as $id) {
-					DB::table('customer_enquiry')->where('id', $id)->update(['is_editable' => 0]);
-					$row1 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-					$row2 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
-					if($row1==$row2) {
-						DB::table('customer_enquiry')
-								->where('id', $id)
-								->update(['is_transfer' => 1]);
-					}
-				}
-			}
+		if(Session::get('mod_jo_to_je')==0) {
+    		if(isset($attributes['quotation_id'])) {
+    			$idarr = explode(',',$attributes['quotation_id']);
+    			if($idarr) {
+    				foreach($idarr as $id) {
+    					DB::table('customer_enquiry')->where('id', $id)->update(['is_editable' => 0]);
+    					$row1 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    					$row2 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+    					if($row1==$row2) {
+    						DB::table('customer_enquiry')
+    								->where('id', $id)
+    								->update(['is_transfer' => 1]);
+    					}
+    				}
+    			}
+    		}
+		} else {
+		    if(isset($attributes['document_id'])) {
+    			$idarr = explode(',',$attributes['document_id']);
+    			if($idarr) {
+    				foreach($idarr as $id) {
+    					DB::table('sales_order')->where('id', $id)->update(['is_editable' => 0]);
+    					$row1 = DB::table('sales_order_item')->where('sales_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    					$row2 = DB::table('sales_order_item')->where('sales_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+    					if($row1==$row2) {
+    						DB::table('sales_order')->where('id', $id)->update(['is_transfer' => 1]);
+    					}
+    				}
+    			}
+    		}
 		}
 	}
 	
@@ -544,16 +585,15 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 
 
 				//VOUCHER NO LOGIC.....................
-				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+				$dept = env('DEPARTMENT_ID');
 
-				 // 2️⃣ Get the highest numeric part from voucher_master
-				$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-				if($dept > 0)	
-					$qry->where('department_id', $dept);
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -581,16 +621,15 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+							$dept = env('DEPARTMENT_ID');
 
-							// 2️⃣ Get the highest numeric part from voucher_master
-							$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-							if($dept > 0)	
-								$qry->where('department_id', $dept);
+							// ⿢ Get the highest numeric part from voucher_master
+							$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no']);
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -601,7 +640,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 				
 				
 				$line_total = 0; $tax_total = 0; $total = $item_total = 0; $taxtype = '';
-				$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+				$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 				
 				//quotation sales items insert
 				if($this->quotation_sales->id && !empty( array_filter($attributes['item_id']))) {
@@ -615,7 +654,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 						$purchaseOrderItem 		   = new QuotationSalesItem();
 						$vat = $attributes['line_vat'][$key];
 						$arrResult 			  	   = $this->setItemInputValue($attributes, $purchaseOrderItem, $key, $value, $total);
-						if($arrResult['line_total']) {
+						//if($arrResult['line_total']) {
 							$line_total				  += $arrResult['line_total'];
 							$tax_total      		  += $arrResult['tax_total'];
 							$taxtype				  = $arrResult['type'];
@@ -643,7 +682,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 									}
 								}
 							}*/
-						}
+						//}
 						
 					}
 				 }
@@ -793,6 +832,13 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 					->filter()
 					->implode(',');
 			}
+
+			if(isset($attributes['is_draft']) && $attributes['is_draft']==0) {
+				    $voucherno = explode('-',$attributes['voucher_no']);
+				    //echo '<pre>';print_r($voucherno[1]);exit;
+				    $attributes['voucher_no']=$voucherno[1];
+				   
+					}
 
 			$discount = (isset($attributes['discount']))?$attributes['discount']:0; $taxtype = '';
 			$lineTotal = $this->calculateTotalAmount($attributes);
@@ -1070,6 +1116,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 									  'doc_status' 	  => (isset($attributes['doc_status']))?$attributes['doc_status']:'',
 									  'metre_in'	  => isset($attributes['metre_in'])?$attributes['metre_in']:'',
 									  'metre_out'	  => isset($attributes['metre_out'])?$attributes['metre_out']:'',
+									  'is_draft'	  => isset($attributes['is_draft'])?$attributes['is_draft']:0,
 									  'comment'		  => (isset($attributes['comment']))?$attributes['comment']:((isset($attributes['comment_hd']))?$attributes['comment_hd']:'')
 									  ]); //CHG
 									  
@@ -1198,9 +1245,27 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	
 	
 	public function delete($id)
-	{
+	{  //DOING........
 		$this->quotation_sales = $this->quotation_sales->find($id);
-		$this->quotation_sales->delete();
+    	DB::beginTransaction();
+    	try {
+    	    if($this->quotation_sales->document_id > 0 && $this->quotation_sales->document_type) {
+    	        $ids = explode(',', $this->quotation_sales->document_id);
+    	        
+    	       // DB::table('customer_enquiry')->whereIn('id', $ids)->update(['is_transfer' => 0, 'is_editable' => 0]);
+				//DB::table('customer_enquiryitem')->whereIn('customer_do_id', $ids)->update(['is_transfer' => 0]);
+					    
+    	         
+        		DB::table('quotation_sales')->where('id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+        		$this->quotation_sales->delete();
+    	    } 	
+        	DB::commit();
+			return true; 
+		} catch(\Exception $e) {
+			
+			DB::rollback(); echo $e->getLine().'-'.$e->getMessage().' '.$e->getFile();exit;
+			return false;
+		}
 	}
 	
 	public function quotationSalesList()
@@ -1226,7 +1291,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 							 ->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								} )
-							 ->where('quotation_sales.status', 1);
+							 ->where('quotation_sales.status', 1)->where('quotation_sales.department_id', env('DEPARTMENT_ID'));
 							 
 				if($customer_id)
 					$qry->where('quotation_sales.customer_id', $customer_id);
@@ -1238,12 +1303,35 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		
 	}
 	
+	public function getCustomerJobQuotation($customer_id=null)
+	{
+		 $qry = $this->quotation_sales
+								->leftJoin('vehicle AS V', function($join) {
+									$join->on('V.id','=','quotation_sales.vehicle_id');
+								} )
+							 ->leftJoin('salesman AS S', function($join) {
+									$join->on('S.id','=','quotation_sales.salesman_id');
+								} )
+							 ->where('quotation_sales.status', 1);
+							 
+				if($customer_id)
+					$qry->where('quotation_sales.customer_id', $customer_id);
+					
+				return	$qry->where('quotation_sales.is_transfer', 0)->where('quotation_sales.is_rental',2)
+							 ->select('quotation_sales.id','quotation_sales.voucher_no','quotation_sales.voucher_date','V.reg_no',
+							 'V.name AS vehicle','quotation_sales.prefix','quotation_sales.net_total','S.name')
+							 ->get();
+		
+	}	
 		
 	public function findQuoteData($id)
 	{
-		$query = $this->quotation_sales->where('quotation_sales.id', $id)->where('quotation_sales.is_transfer', 0);
+		$query = $this->quotation_sales->where('quotation_sales.id', $id)->where('quotation_sales.is_transfer', 0)->where('quotation_sales.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','quotation_sales.customer_id');
+						} )
+						->Join('location AS L', function($join) {
+							$join->on('L.id','=','quotation_sales.location_id');
 						} )
 					->leftJoin('header_footer AS h',function($join) {
 						$join->on('h.id','=','quotation_sales.header_id');
@@ -1316,7 +1404,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	
 	public function getQuotation($attributes)
 	{
-		$order = $this->quotation_sales->where('quotation_sales.id', $attributes['document_id'])
+		$order = $this->quotation_sales->where('quotation_sales.id', $attributes['document_id'])->where('quotation_sales.department_id', env('DEPARTMENT_ID'))
 								   ->join('account_master AS AM', function($join) {
 									   $join->on('AM.id','=','quotation_sales.customer_id');
 								   })
@@ -1414,6 +1502,19 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 							 'f.description AS footer','S.name AS salesman','h.id AS hid','f.id AS fid','V.name AS vehicle','V.reg_no')
 					->first();
 	}
+
+	public function getapprovalList()
+	{
+		return $this->quotation_sales
+					 ->Join('account_master AS AM', function($join) {
+							$join->on('AM.id','=','quotation_sales.customer_id');
+						} )
+					 ->where('quotation_sales.status', 1)
+					 ->where('quotation_sales.approval_status', 0)
+					 ->select('quotation_sales.id','quotation_sales.voucher_no','quotation_sales.voucher_date','quotation_sales.net_total','AM.master_name')
+					 ->get();
+		
+	}
 	
 	public function getItems($id,$mod=null)
 	{
@@ -1431,6 +1532,9 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 					  ->join('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
 					  })
+					  ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
 					  ->where('poi.status',1);
 					  
 					  if($mod) {
@@ -1438,8 +1542,8 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 						$query->where('im.class_id',$val);
 					  }
 					  
-		return $query->where('poi.deleted_at','0000-00-00 00:00:00')
-					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
+		return $query->where('poi.deleted_at','0000-00-00 00:00:00')->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.orderno') //JN23
 					  ->get();
@@ -1460,12 +1564,15 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 					  })
 					  ->leftjoin('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on('iu.unit_id','=','poi.unit_id');
+						  $join->on(DB::raw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)'), DB::raw(''), DB::raw('')); //$join->on('iu.unit_id','=','poi.unit_id');
 					  })
-					  ->where('poi.status',1)
+					  ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
+					  ->where('poi.status',1)->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->whereIn('poi.is_transfer',[0,2])
 					  ->where('poi.deleted_at','0000-00-00 00:00:00')
-					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.cur_quantity')
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity','isd.packing','isd.pkno')
 					  ->orderBY('poi.id')->groupBy('poi.id')
 					  ->get();
 					  
@@ -1619,9 +1726,10 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
+		$pending=isset($attributes['pending'])?$attributes['pending']:0;
 		
-		switch($attributes['search_type']) {
-			case 'summary':
+		if($attributes['search_type']=='summary' && $pending==0){
+			
 				$query = $this->quotation_sales->where('is_rental',0)
 								->join('quotation_sales_item AS QSI', function($join) {
 									$join->on('QSI.quotation_sales_id','=','quotation_sales.id');
@@ -1638,6 +1746,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','quotation_sales.job_id');
 								})
+								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1655,9 +1764,10 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 				return $query->select('quotation_sales.voucher_no','quotation_sales.reference_no','quotation_sales.total','quotation_sales.vat_amount','S.name AS salesman',
 									  'QSI.quantity','QSI.balance_quantity','QSI.unit_price','AM.master_name','quotation_sales.net_total','quotation_sales.discount','J.code AS jobcode')
 								->groupBy('quotation_sales.id')->get();
-				break;
 				
-			case 'summary_pending':
+				
+	} else if($attributes['search_type']=='summary' && $pending==1){
+
 				$query = $this->quotation_sales->where('QSI.is_transfer','!=',1)->where('is_rental',0)
 								->join('quotation_sales_item AS QSI', function($join) {
 									$join->on('QSI.quotation_sales_id','=','quotation_sales.id');
@@ -1671,6 +1781,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								})
+								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1689,9 +1800,10 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 									  'QSI.quantity','QSI.balance_quantity','QSI.unit_price','AM.master_name','quotation_sales.net_total','S.name AS salesman','QSI.vat_amount AS unit_vat')
 								->get(); //->groupBy('quotation_sales.id')
 								
-				break;
 				
-			case 'detail':
+				
+	} else if($attributes['search_type']=='detail' && $pending==0){
+
 				$query = $this->quotation_sales->where('is_rental',0)
 								->join('quotation_sales_item AS QSI', function($join) {
 									$join->on('QSI.quotation_sales_id','=','quotation_sales.id');
@@ -1705,6 +1817,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								})
+								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1722,9 +1835,9 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 				return $query->select('quotation_sales.voucher_no','quotation_sales.voucher_date','quotation_sales.reference_no','IM.item_code','IM.description','S.name AS salesman','QSI.vat_amount AS unit_vat',
 									  'QSI.quantity','QSI.unit_price','QSI.line_total','AM.master_name','quotation_sales.net_total','quotation_sales.discount')
 								->get();
-				break;
-				
-			case 'detail_pending'||'qty_report':
+
+	} else if($attributes['search_type']=='detail' && $pending==1){
+
 				$query = $this->quotation_sales->where('QSI.is_transfer','!=',1)->where('is_rental',0)
 								->join('quotation_sales_item AS QSI', function($join) {
 									$join->on('QSI.quotation_sales_id','=','quotation_sales.id');
@@ -1738,6 +1851,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								})
+								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1755,7 +1869,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 				return $query->select('quotation_sales.voucher_no','quotation_sales.voucher_date','quotation_sales.reference_no','IM.item_code','IM.description','quotation_sales.total','quotation_sales.vat_amount',
 									  'QSI.quantity','QSI.balance_quantity','QSI.unit_price','QSI.line_total','AM.master_name','quotation_sales.net_total','S.name AS salesman','quotation_sales.discount')
 								->get();
-				break;
+			
 		}
 	}
 	
@@ -1945,7 +2059,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		
 		if($file) {
 			$ext = $file->getClientOriginalExtension();
-			if($ext=='.jpg' ||$ext=='.JPG' || $ext=='.png' || $ext=='.PNG') {
+			if($ext=='.jpg' ||$ext=='.JPG' || $ext=='.png' || $ext=='.PNG' || $ext=='.pdf') {
 				$photo = rand(1, 999).$fname.'.'.$ext;
 				$destinationPath = public_path() . $this->imgDir.'/'.$photo;
 				$destinationPathThumb = public_path() . $this->imgDir.'/thumb_'.$photo;
@@ -2019,7 +2133,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	}
 	public function salesEstimateListCount()
 	{
-		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0);
+		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0)->where('quotation_sales.department_id',env('DEPARTMENT_ID'));
 		if(Auth::user()->roles[0]->name=='Salesman')
 					$query->where('quotation_sales.salesman_id',Session::get('salesman_id'));  // for CRM
 	
@@ -2063,7 +2177,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	}
 	public function salesEstimateList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0)
+		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0)->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','quotation_sales.customer_id');
 						} )

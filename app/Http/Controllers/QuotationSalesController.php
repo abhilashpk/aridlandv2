@@ -14,6 +14,7 @@ use App\Repositories\Forms\FormsInterface;
 use App\Repositories\CustomerEnquiry\CustomerEnquiryInterface;
 use App\Repositories\Location\LocationInterface;
 
+
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -61,10 +62,10 @@ class QuotationSalesController extends Controller
 		$this->formData = $this->forms->getFormData('QS');
 		$this->customer_enquiry = $customer_enquiry;
 		$this->location = $location;
-		if (Auth::check() && Auth::user()->hasRole('Salesman')) {
+		if(Auth::user()->roles[0]->name=='Salesman') {
 		    $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
 		    if($srec)
-		        Session::put('salesman_id',$srec->id);
+		        Session::set('salesman_id',$srec->id);
 		}
 		
 		
@@ -130,6 +131,7 @@ class QuotationSalesController extends Controller
 			foreach ($invoices as $row)
             {
                 $edit =  url('quotation_sales/edit/'.$row->id);
+                $editd =  '"'.url('quotation_sales/edit_draft/'.$row->id).'"';
                 $revice =  url('quotation_sales/revice/'.$row->id);
                 $delete =  'funDelete("'.$row->id.'","'.$row->is_editable.'")';
 				$print = url('quotation_sales/print/'.$row->id);
@@ -153,7 +155,10 @@ class QuotationSalesController extends Controller
 				$nestedData['approval'] = ($row->approval_status==1)?'Approved':'Not Approved';
                 $nestedData['edit2'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$edit}'>
 												<span class='glyphicon glyphicon-pencil'></span></button></p>";
-												
+				if($row->is_draft==1) {								
+			 $nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$editd}'>
+												<span class='glyphicon glyphicon-pencil'></span></button></p>";						
+				}else{													
 				$nestedData['edit'] = "<div class='btn-group drop_btn' role='group'>
 											<button type='button' class='btn btn-primary btn-xs dropdown-toggle m-r-50'
 													id='exampleIconDropdown1' data-toggle='dropdown' aria-expanded='false'>
@@ -161,11 +166,12 @@ class QuotationSalesController extends Controller
 											</button>
 											<ul style='min-width:100px !important;' class='dropdown-menu' aria-labelledby='exampleIconDropdown1' role='menu'>
 												<li role='presentation'><a href='{$edit}' role='menuitem'>Edit</a></li>
-												<li role='presentation'><a href='{$revice}' role='menuitem'>Revice</a></li>
+												
 												<li role='presentation'><a href='{$refresh}' role='menuitem'>Refresh</a></li>
 											</ul>
 										</div>";
-												
+				}						
+										//<li role='presentation'><a href='{$revice}' role='menuitem'>Revice</a></li>		
 				$nestedData['open'] = "<p><button class='btn btn-success btn-xs'  onClick='location.href={$open}' target='_blank'>
 												<i class='fa fa-fw fa-folder-open'></i></button></p>";
 				
@@ -270,7 +276,7 @@ class QuotationSalesController extends Controller
 		$res = $this->voucherno->getVoucherNo('QS'); //echo '<pre>';print_r($res);exit;
 		//$vno = $res->no;//echo '<pre>';print_r($currency);exit;
 		$location = $this->location->locationList();
-		$row = DB::table('quotation_sales')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
+		$row = DB::table('quotation_sales')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
 		$apr = ($this->acsettings->doc_approve==1)?[1]:[0,1,2];
 		if($row && in_array($row->doc_status, $apr))
 			$lastid = $row->id;
@@ -352,9 +358,10 @@ class QuotationSalesController extends Controller
 		/* $this->validate($request, [
         'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
     ]); */
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			[//'reference_no' => 'required',
+			 'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
@@ -362,13 +369,17 @@ class QuotationSalesController extends Controller
 			 'cost.*' => 'required'
 			],
 			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
+			//echo '<pre>';print_r($request->flash());exit;
+			return redirect('quotation_sales/add')->withInput()->withErrors();
+		}
 
 		/*$request['voucher_no']='';
 		$res = $this->voucherno->getVoucherNo('QS');
@@ -380,6 +391,51 @@ class QuotationSalesController extends Controller
 			return redirect('quotation_sales/add');
 		} else {
 			Session::flash('error', 'Something went wrong, Order failed to add!');
+			return redirect('quotation_sales/add');
+		}
+		
+		
+	}
+	
+	public function saveDraft(Request $request) { 
+		
+		//echo '<pre>';print_r( $request->all() );exit;
+		/* $this->validate($request, [
+        'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
+    ]); */
+		if( $this->validate(
+			$request, 
+			[//'reference_no' => 'required',
+			 'location_id' =>'required','location_id' => 'required',
+			 'customer_name' => 'required','customer_id' => 'required',
+			 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			 'unit_id.*' => 'required',
+			 'quantity.*' => 'required',
+			 'cost.*' => 'required'
+			],
+			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
+			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			 'unit_id.*' => 'Item unit is required.',
+			 'quantity.*' => 'Item quantity is required.',
+			 'cost.*' => 'Item cost is required.'
+			]
+		)) {
+			//echo '<pre>';print_r($request->flash());exit;
+			return redirect('quotation_sales/add')->withInput()->withErrors();
+		}
+
+		/*$request['voucher_no']='';
+		$res = $this->voucherno->getVoucherNo('QS');
+		$request['voucher_no']=$res->no;*/
+		
+		$id = $this->quotation_sales->create($request->all());
+		if($id) {
+			Session::flash('message', 'Quotation saved as draft successfully.'); 
+			return redirect('quotation_sales/add');
+		} else {
+			Session::flash('error', 'Something went wrong, Order failed to draft!');
 			return redirect('quotation_sales/add');
 		}
 		
@@ -639,6 +695,7 @@ private function createItem($row) {
 		$data = array();
 		$itemmaster = $this->itemmaster->activeItemmasterList();
 		$terms = $this->terms->activeTermsList();
+		$location = $this->location->locationList();
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
 		$orderrow = $this->quotation_sales->findPOdata($id);
@@ -669,6 +726,7 @@ private function createItem($row) {
 					->withItems($itemmaster)
 					->withTerms($terms)
 					->withJobs($jobs)
+					->withLocation($location)
 					->withCurrency($currency)
 					->withOrderrow($orderrow)
 					->withOrditems($orditems)
@@ -688,9 +746,10 @@ private function createItem($row) {
 	{	
 		//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('quotation_order_id');
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			[//'reference_no' => 'required',
+			 'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
@@ -698,13 +757,17 @@ private function createItem($row) {
 			 'cost.*' => 'required'
 			],
 			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
+			//echo '<pre>';print_r($request->flash());exit;
+			return redirect('quotation_sales/edit/'.$id)->withInput()->withErrors();
+		}
 		
 		$this->quotation_sales->update($id, $request->all()); 
 		//echo '<pre>';print_r($request->all());exit;
@@ -753,6 +816,94 @@ private function createItem($row) {
 		}
 		
 		Session::flash('message', 'Quotation sales updated successfully');
+		return redirect('quotation_sales');
+	}
+	
+	public function editDraft($id) { 
+
+		$data = array();
+		$itemmaster = $this->itemmaster->activeItemmasterList();
+		$terms = $this->terms->activeTermsList();
+		$location = $this->location->locationList();
+		$jobs = $this->jobmaster->activeJobmasterList();
+		$currency = $this->currency->activeCurrencyList();
+		$orderrow = $this->quotation_sales->findPOdata($id);
+		$orditems = $this->quotation_sales->getItems($id);
+		$itemdesc = $this->makeTreeArr($this->quotation_sales->getItemDesc($id)); //echo '<pre>';print_r($orditems);exit;
+		$photos = DB::table('quot_fotos')->where('quot_id',$id)->get(); 
+		$val = '';
+		foreach($photos as $row) {
+			$val .= ($val=='')?$row->photo:','.$row->photo;
+		}		
+		$apr = ($this->acsettings->doc_approve==1)?[1]:[0,1,2];
+		if(in_array($orderrow->doc_status, $apr))
+			$isprint = true;
+		else
+			$isprint = null;
+		
+		$print = DB::table('report_view_detail')
+							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
+							->where('report_view.code','QS')
+							->where('report_view_detail.is_default',1)
+							->select('report_view_detail.id')
+							->first();
+		
+		//DEC22
+		$infodata = DB::table('quotation_sales_info')->where('quotation_sales_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','ASC')->get();
+		//echo '<pre>';print_r($infoedit);exit;	
+		return view('body.quotationsales.edit-draft') //edit-eqwep
+					->withItems($itemmaster)
+					->withTerms($terms)
+					->withJobs($jobs)
+					->withLocation($location)
+					->withCurrency($currency)
+					->withOrderrow($orderrow)
+					->withOrditems($orditems)
+					->withItemdesc($itemdesc)
+					->withPhotos($val)
+					->withVatdata($this->vatdata)
+					->withSettings($this->acsettings)
+					->withFormdata($this->formData)
+					->withIsprint($isprint)
+					->withPrint($print)
+					->withInfos($infodata)//DEC22
+					->withData($data);
+
+	}
+	
+	public function updateDraft(Request $request)
+	{	
+		//echo '<pre>';print_r($request->all());exit;
+		$id = $request->input('quotation_order_id');
+		if( $this->validate(
+			$request, 
+			[//'reference_no' => 'required',
+			 'location_id' =>'required','location_id' => 'required',
+			 'customer_name' => 'required','customer_id' => 'required',
+			 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			 'unit_id.*' => 'required',
+			 'quantity.*' => 'required',
+			 'cost.*' => 'required'
+			],
+			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
+			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			 'unit_id.*' => 'Item unit is required.',
+			 'quantity.*' => 'Item quantity is required.',
+			 'cost.*' => 'Item cost is required.'
+			]
+		)) {
+			//echo '<pre>';print_r($request->flash());exit;
+			return redirect('quotation_sales/edit/'.$id)->withInput()->withErrors();
+		}
+		
+		$this->quotation_sales->update($id, $request->all()); 
+		//echo '<pre>';print_r($request->all());exit;
+		
+	
+		
+		Session::flash('message', 'Quotation sales draft updated successfully');
 		return redirect('quotation_sales');
 	}
 	
@@ -1409,7 +1560,7 @@ private function createItem($row) {
 			//  "\r"           13           New Line in Mac
 			//  " "            32           Space
 		   
-			$what   = "\x00-\x20";    //all white-spaces and control chars
+			$what   = "\\x00-\\x20";    //all white-spaces and control chars
 		}
 	   
 		return trim( preg_replace( "/[".$what."]+/" , $with , $str ) , $what );
@@ -1492,5 +1643,3 @@ private function createItem($row) {
 	}
 	
 }
-
-

@@ -21,7 +21,7 @@
         <section class="content-header">
             <!--section starts-->
             <h1>
-                Location Transfer
+                Material Transfer
             </h1>
             <ol class="breadcrumb">
                 <li>
@@ -50,16 +50,16 @@
                 <div class="panel panel-info">
                     <div class="panel-heading clearfix">
                         <h3 class="panel-title pull-left m-t-6">
-                            <i class="fa fa-fw fa-list-alt"></i> Location Transfer List
+                            <i class="fa fa-fw fa-list-alt"></i> Material Transfer List
                         </h3>
                         <div class="pull-right">
-							@can('loc-tran-create')
+							@permission('loc-tran-create')
                              <a href="{{ url('location_transfer/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endcan
+							@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -83,17 +83,17 @@
 										<td>{{ $location->locfrom }}</td>
 										<td>{{ $location->locto }}</td>
 										<td>
-											@can('loc-tran-edit')<p>
+											@permission('loc-tran-edit')<p>
 												<button class="btn btn-primary btn-xs" onClick="location.href='{{ url('location_transfer/edit/'.$location->id) }}'">
 												<span class="glyphicon glyphicon-pencil"></span></button>
-											</p>@endcan
+											</p>@endpermission
 										</td>
 										<td>
-											@can('loc-tran-delete')<p>
+											@permission('loc-tran-delete')<p>
 												<button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $location->id }}')"><span
 															class="glyphicon glyphicon-trash"></span></button>
 											</p>
-											@endcan
+											@endpermission
 										</td>
 										<td>
 											<p><a href="{{url('location_transfer/print/'.$location->id)}}" class="btn btn-primary btn-xs" target="_blank"><span class="fa fa-fw fa-print"></span></a></p>

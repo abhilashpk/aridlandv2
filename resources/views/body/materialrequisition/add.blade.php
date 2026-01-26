@@ -43,13 +43,10 @@
     <!-- Content Header (Page header) -->
          <section class="content-header">
             <!--section starts-->
-            @foreach($mod_purchase_enquiry as $mod_purchase_enquiry)
+           
             <h1>
             	
-               <?php  if($mod_purchase_enquiry==1)
-				$heading="Purchase Enquiry";
-			          else 
-				$heading="Material Requisition"; echo "$heading"; ?>
+               Material Requisition 
 
             </h1>
             
@@ -58,7 +55,7 @@
                       <i class="fa fa-fw fa-shield"></i> Inventory
                 </li>
 				<li>
-                    <a href="#"><?php echo "$heading"; ?></a>
+                    <a href="#"> Material Requisition </a>
                 </li>
                 <li class="active">
                     Add
@@ -67,28 +64,83 @@
            
         </section>
         <!--section ends-->
+        
+        <!--section ends-->
+		@if(Session::has('message'))
+		<div class="alert alert-success">
+			<p>{{ Session::get('message') }}</p>
+		</div>
+		@endif
+        
+		@if(Session::has('error'))
+		<div class="alert alert-danger">
+			<p>{{ Session::get('error') }}</p>
+		</div>
+		@endif
+		
+		@if (count($errors) > 0)
+			<div class="alert alert-danger">
+				<ul>
+					@foreach ($errors->all() as $error)
+						<li>{{ $error }}</li>
+					@endforeach
+				</ul>
+			</div>
+		@endif
+		
+        
         <section class="content">
             <div class="row">
                 <div class="col-md-12">
                     <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">
-                                <i class="fa fa-fw fa-crosshairs"></i> New <?php echo "$heading"; ?>
+                        <div class="panel-heading clearfix">
+                            <h3 class="panel-title pull-left m-t-6">
+                                <i class="fa fa-fw fa-crosshairs"></i> New Material Requisition
                             </h3>
+							<div class="pull-right">
+							 <a href="{{ url('material_requisition/add') }}"  class="btn btn-info btn-sm">
+									<span class="btn-label">
+										<i class="fa fa-fw fa-refresh"></i>
+									</span>
+							</a>
+								</div>
                         </div>
-        @endforeach
+       
                         <div class="panel-body">
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmMaterialRequisition" id="frmMaterialRequisition" action="{{ url('material_requisition/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-							
+                                 
+								 <div class="form-group">
+                                <font color="#16A085"> <label class="col-sm-2 control-label"><b>Location From</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                 <div id="locationRadioGroup">
+                                   @foreach($location as $loc)
+                                <label class="radio-inline">
+                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+                                 </label>
+                                 @endforeach
+								  <small class="text-muted" id="locfrom-hint">
+                                             Select one location — once chosen, it becomes fixed.
+                                    </small>
+                                 </div>
+                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{(old('locfrom_id'))?old('locfrom_id'):''}}">
+                                  
+									<small class="text-muted" id="locfrom-mand">
+                                             '*' is mandatory fields
+                                    </small>
+                             </div>
+							 
+                        </div>
+								
+							 
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('voucher_no')) echo 'form-error';?>">MR. No.</label>
                                     <div class="col-sm-10">
 										<?php if($voucherno->prefix!='') { ?>
 										<div class="input-group">
-											<span class="input-group-addon">{{$voucherno->prefix}}</span>
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly value="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
+											<span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
 											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
@@ -96,7 +148,7 @@
 										</div>
 										<?php } else { ?>
 										<div class="input-group">
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly value="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
 											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
@@ -116,10 +168,10 @@
 
 								<?php if($formdata['jobname']==1) { ?>
 								<div class="form-group">
-                                   <font color="#16A085"><label for="input-text" class="col-sm-2 control-label"><b>Job Code</b></label></font>
+                                   <font color="#16A085"><label for="input-text" class="col-sm-2 control-label"><b>Job Code</b><span class="text-danger">*</span></label></font>
                                     <div class="col-sm-10">
-                                        <input type="text" name="jobname" id="jobname" class="form-control" autocomplete="off" data-toggle="modal" data-target="#job_modal" placeholder="Job Code">
-										<input type="hidden" name="job_id" id="job_id">
+                                        <input type="text" name="jobname" id="jobname" value="{{old('jobname')}}" class="form-control" autocomplete="off" data-toggle="modal" data-target="#job_modal" placeholder="Job Code">
+										<input type="hidden" name="job_id" id="job_id" value="{{old('job_id')}}">
 									</div>
                                 </div>
                                 <?php } else { ?>
@@ -129,7 +181,7 @@
 
 								<?php if($formdata['supplier_name']==1) { ?>
                                <div class="form-group">
-                                  <font color="#16A085">   <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b></label></font>
+                                  <font color="#16A085">   <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b><span class="text-danger">*</span></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" name="supplier_name" id="supplier_name" value="{{ old('supplier_name') }}" class="form-control <?php if($errors->has('supplier_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#supplier_modal" placeholder="Supplier">
 										<input type="hidden" name="supplier_id" id="supplier_id" value="{{ old('supplier_id') }}">
@@ -144,7 +196,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Description</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="description" name="description" placeholder="Description">
+                                        <input type="text" class="form-control" id="description" name="description" value="{{ old('description') }}" placeholder="Description">
                                     </div>
                                 </div>
                                 <?php } else { ?>
@@ -155,7 +207,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Engineer</label>
                                     <div class="col-sm-10">
-                                        <input type="text" name="salesman" id="salesman" class="form-control" autocomplete="off" data-toggle="modal" data-target="#salesman_modal" placeholder="Engineer">
+                                        <input type="text" name="salesman" id="salesman" class="form-control" value="{{ old('salesman') }}" autocomplete="off" data-toggle="modal" data-target="#salesman_modal" placeholder="Engineer">
 										<input type="hidden" name="salesman_id" id="salesman_id" value="{{ old('salesman_id') }}">
 									</div>
                                 </div>
@@ -163,9 +215,9 @@
 								<input type="hidden" name="salesman" id="salesman">
 								<input type="hidden" name="salesman_id" id="salesman_id">
 								<?php } ?>
-								
+								<?php if($formdata['location']==1) { ?>
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
+                                    <label for="input-text" class="col-sm-2 control-label"><b>Location To </b><span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
                                         <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
 										<option value="" selected>Select Location..</option>
@@ -177,7 +229,11 @@
                                         </select>
                                     </div>
                                 </div>
-								<!-- <?php // if($formdata['document_type']==1) { ?>
+                                <?php } else { ?>
+                                
+								<input type="hidden" name="location_id" id="location_id">
+								<?php } ?>
+								<!-- <//?php if($formdata['document_type']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Type</label>
                                     <div class="col-sm-10">
@@ -189,57 +245,151 @@
                                        </select>
                                     </div>
                                 </div>
-								<?php // } else { ?>
+								<//?php  } else { ?>
 								<input type="hidden" name="document_type" id="document_type">
-								<?php // } ?>
+								<//?php  } ?>
 								
-								<?php // if($formdata['document_type']==1) { ?>
+								<//?php  if($formdata['document_type']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Document#</label>
                                     <div class="col-sm-10">
                                         <input type="text" class="form-control" id="document_id" readonly name="document_id" placeholder="Document ID" autocomplete="off" onclick="getDocument()">
                                     </div>
                                 </div>
-								<?php // } else { ?>
+								<//?php  } else { ?>
 								<input type="hidden" name="document_id" id="document_id">
-								<?php // } ?> -->
+								<//?php  } ?> -->
 								<br/>
 								<fieldset>
 								<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Item Details</span></h5></legend>
 								<table class="table table-bordered" style="margin-bottom:0px !important;">
 									<thead>
 									<tr>
-										<th width="14%" class="itmHd">
-											<span class="small">Item Code</span>
+										<th width="10%" class="itmHd">
+											<span class="small" class="text-danger">Item Code*</span>
 										</th>
-										<th width="25%" class="itmHd">
-											<span class="small">Item Description</span>
+										<th width="18%" class="itmHd">
+											<span class="small" class="text-danger">Item Description*</span>
 										</th>
 										<th width="7%" class="itmHd">
 											<span class="small">Unit</span>
 										</th>
-										<th width="7%" class="itmHd">
-											<span class="small">Quantity</span>
+										<th width="8%" class="itmHd">
+											<span class="small" class="text-danger">Quantity*</span>
 										</th>
-										<th width="5%" class="itmHd">
+										<th width="6%" class="itmHd">
 											<span class="small">Cost/Unit</span>
 										</th>
-										<th width="14%" class="itmHd">
+										<th width="10%" class="itmHd">
 											<span class="small">Total</span> 
+										</th>
+										<th width="11%" class="itmHd">
+											<span class="small">Remarks</span> 
 										</th>
 										
 									</tr>
 									</thead>
 								</table>
 								<div class="itemdivPrnt">
+								    <?php if(old('item_code')) { $i = 0; 
+										foreach(old('item_code') as $item) { $j = $i+1;?>
+											<div class="itemdivChld">
+										<table border="0" class="table-dy-row">
+											<tr>
+												<td width="12%">
+													<input type="hidden" name="item_id[]" id="itmid_{{$j}}" value="{{ old('item_id')[$i]}}">
+													<input type="text" id="itmcod_{{$j}}" name="item_code[]" class="form-control <?php if($errors->has('item_code.'.$i)) echo 'form-error';?>" value="{{ $item }}" autocomplete="off" placeholder="Item Code" data-toggle="modal" data-target="#item_modal">
+												</td>
+												<td width="22%">
+													<input type="text" name="item_name[]" value="{{ old('item_name')[$i]}}" id="itmdes_{{$j}}" autocomplete="off" class="form-control" placeholder="Item Description">
+												</td>
+												<td width="7%">
+													<select id="itmunt_{{$j}}" class="form-control select2 <?php if($errors->has('unit_id.'.$i)) echo 'form-error';?> line-unit" style="width:100%" name="unit_id[]"><option value="{{old('unit_id')[$i]}}">{{old('hidunit')[$i]}}</option></select>
+												</td>
+												<td width="8%">
+													<input type="number" id="itmqty_{{$j}}" step="any" name="quantity[]" value="{{ old('quantity')[$i]}}" autocomplete="off" class="form-control <?php if($errors->has('quantity.'.$i)) echo 'form-error';?> line-quantity" placeholder="Qty.">
+												</td>
+												<td width="8%">
+													<input type="number" id="itmcst_{{$j}}" step="any" name="cost[]" value="{{ old('cost')[$i]}}" autocomplete="off" class="form-control <?php if($errors->has('cost.'.$i)) echo 'form-error';?> line-cost" placeholder="Cost/Unit">
+												     <input type="hidden" id="vatdiv_{{$j}}" step="any" readonly name="vatdiv[]" value="{{ old('vatdiv')[$i]}}" class="form-control vatdiv" placeholder="VAT Amt"> 
+													<input type="hidden" id="vat_{{$j}}" name="line_vat[]" value="{{ old('line_vat')[$i]}}" class="form-control vat">
+													<input type="hidden" id="vatlineamt_{{$j}}" name="vatline_amt[]" value="{{ old('vatline_amt')[$i]}}" class="form-control vatline-amt" value="0">
+													<input type="hidden" id="itmdsnt_{{$j}}" name="line_discount[]" value="{{ old('line_discount')[$i]}}">
+
+												</td>
+												<td width="10%">
+													<input type="number" id="itmttl_{{$j}}" step="any" name="line_total[]" value="{{ old('item_total')[$i]}}" class="form-control line-total" readonly placeholder="Total">
+													
+												</td>
+												<td width="14%">
+													<input type="text" id="remrk_{{$j}}"  name="remarks[]" value="{{ old('remarks')[$i]}}"  autocomplete="off" class="form-control line-remarks"  placeholder="Remarks">
+													
+												</td>
+												<td width="1%">
+													<?php if(count(old('item_code'))==$j) { ?>
+														<button type="button" class="btn-success btn-add-item" >
+															<i class="fa fa-fw fa-plus-square"></i>
+														 </button>
+														 <button type="button" class="btn-danger btn-remove-item" data-id="rem_{{$j}}">
+															<i class="fa fa-fw fa-minus-square"></i>
+														 </button>
+														<?php } else { ?>
+														 <button type="button" class="btn-success btn-add-item" >
+															<i class="fa fa-fw fa-plus-square"></i>
+														 </button>
+														<button type="button" class="btn-danger btn-remove-item" data-id="rem_{{$j}}">
+															<i class="fa fa-fw fa-minus-square"></i>
+														 </button>
+														<?php } ?>
+												</td>
+											</tr>
+										</table>
+										<?php if($formdata['more_info']==1) { ?>
+											<div id="moreinfo" style="float:left; padding-right:5px;">
+												<button type="button" id="moreinfoItm_{{$j}}" class="btn btn-primary btn-xs more-info">More Info</button>
+											</div>
+											<?php } else { ?>
+								<input type="hidden" name="more_info" id="more_info">
+								<?php } ?>
+									<?php if($formdata['location_item']==1) { ?>
+											<div id="loc" style="float:left; padding-right:5px;">
+												<button type="button" id="loc_{{$j}}" class="btn btn-primary btn-xs loc-info">Location</button>
+											</div>
+											
+											<?php } else { ?>
+								<input type="hidden" name="location_item" id="location_item">
+								<?php } ?>	
+								                <div id="locin" style="float:left; padding-right:5px;">
+												<button type="button" id="locin_{{$j}}" class="btn btn-primary btn-xs locin-info">Intra Location</button>
+											</div>
+								          <div class="infodivPrntItm" id="infodivPrntItm_{{$j}}">
+												<div class="infodivChldItm">							
+													<div class="table-responsive item-data" id="itemData_{{$j}}">	</div>
+												</div>
+											</div>
+											
+											<div class="locPrntItm" id="locPrntItm_{{$j}}">
+												<div class="locChldItm">							
+													<div class="table-responsive loc-data" id="locData_{{$j}}"></div>
+												</div>
+											</div>
+
+											
+											<div class="locinPrntItm" id="locinPrntItm_{{$j}}">
+												<div class="locinChldItm">							
+													<div class="table-responsive locin-data" id="locinData_{{$j}}"></div>
+												</div>
+											</div>
+
+										<?php $i++; } } else { ?>	
 									<div class="itemdivChld">	
 										<table border="0" class="table-dy-row">
 											<tr>
-												<td width="16%">
+												<td width="12%">
 													<input type="hidden" name="item_id[]" id="itmid_1">
 													<input type="text" id="itmcod_1" name="item_code[]" class="form-control" autocomplete="off" data-toggle="modal" data-target="#item_modal" placeholder="Item Code">
 												</td>
-												<td width="29%">
+												<td width="22%">
 													<input type="text" name="item_name[]" id="itmdes_1" autocomplete="off" class="form-control" placeholder="Item Description">
 												</td>
 												<td width="7%">
@@ -250,13 +400,18 @@
 												</td>
 												<td width="8%">
 													<input type="number" id="itmcst_1" step="any" name="cost[]" autocomplete="off" class="form-control line-cost" placeholder="Cost/Unit">
-													<input type="hidden" id="vatdiv_1" step="any" readonly name="vatdiv[]" class="form-control cost" placeholder="Vat"><!--<div class="h5" id="vatdiv_1"></div>--> 
+													<input type="hidden" id="hidunit_1" name="hidunit[]" class="hidunt">
+													<input type="hidden" id="vatdiv_1" step="any"  name="vatdiv[]" class="form-control cost" placeholder="Vat"><!--<div class="h5" id="vatdiv_1"></div>--> 
 													<input type="hidden" id="vat_1" name="line_vat[]" class="form-control cost">
 													<input type="hidden" id="vatlineamt_1" name="vatline_amt[]" class="form-control vatline-amt" value="0">
 													<input type="hidden" id="itmdsnt_1" step="any" name="line_discount[]" class="form-control line-discount" placeholder="Discount">
 												</td>
-												<td width="11%">
+												<td width="10%">
 													<input type="number" id="itmttl_1" step="any" name="line_total[]" class="form-control line-total" readonly placeholder="Total">
+												</td>
+												<td width="14%">
+													<input type="text" id="remrk_1"  name="remarks[]"   autocomplete="off" class="form-control line-remarks"  placeholder="Remarks">
+													
 												</td>
 												<td width="1%">
 													<button type="button" class="btn-success btn-add-item" >
@@ -276,12 +431,16 @@
 											<?php } else { ?>
 								<input type="hidden" name="more_info" id="more_info">
 								<?php } ?><?php if($formdata['location_item']==1) { ?>
-											<div id="loc">
+											<div id="loc" style="float:left; padding-right:5px;">
 												<button type="button" id="loc_1" class="btn btn-primary btn-xs loc-info">Location</button>
 											</div>
+											
 											<?php } else { ?>
 								<input type="hidden" name="location_item" id="location_item">
 								<?php } ?>
+								         <div id="locin" style="float:left; padding-right:5px;">
+												<button type="button" id="locin_1" class="btn btn-primary btn-xs locin-info">Intra Location</button>
+											</div>
 											<div class="infodivPrntItm" id="infodivPrntItm_1">
 												<div class="infodivChldItm">							
 													<div class="table-responsive item-data" id="itemData_1"></div>
@@ -293,8 +452,15 @@
 													<div class="table-responsive loc-data" id="locData_1"></div>
 												</div>
 											</div>
+
+											<div class="locinPrntItm" id="locinPrntItm_1">
+												<div class="locinChldItm">							
+													<div class="table-responsive locin-data" id="locinData_1"></div>
+												</div>
+											</div>
 										
 									</div>
+									<?php } ?>
 								</div>
 								
 								</fieldset>
@@ -308,10 +474,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" class="form-control spl" readonly placeholder="0">
+											<input type="number" id="total" step="any" name="total" value="{{old('total')}}"class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
-										<span class="small" id="c_label">Currency Dhs</span>	<input type="number" id="total_fc" step="any" name="total_fc" class="form-control spl" readonly placeholder="0">
+											<input type="hidden" id="total_fc" step="any" name="total_fc" value="{{old('total_fc')}}" class="form-control spl" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>
@@ -328,10 +494,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" value="{{old('net_amount')}}" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" readonly placeholder="0">
+											<input type="hidden" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="{{old('net_amount_fc')}}" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>
@@ -342,8 +508,8 @@
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">
                                         <button type="submit" class="btn btn-primary">Submit</button>
-										<a href="{{ url('goods_issued') }}" class="btn btn-danger">Cancel</a>
-										<a href="{{ url('goods_issued/add') }}" class="btn btn-warning">Clear</a>
+										<a href="{{ url('material_requisition') }}" class="btn btn-danger">Cancel</a>
+										<a href="{{ url('material_requisition/add') }}" class="btn btn-warning">Clear</a>
                                     </div>
                                 </div>
 
@@ -504,8 +670,15 @@ $(document).ready(function () {
 	@else
 		$('#voucher_date').val('{{old('voucher_date')}}'); 
 	@endif
+	<?php if(!old('item_code')) { ?>
 	
-	$('.locPrntItm').toggle();
+	if ( $('.itemdivPrnt').children().length == 1 ) {
+		$('.itemdivPrnt').find('.btn-remove-item').hide();
+	}
+	<?php } else { ?>
+	$('.itemdivPrnt').find('.btn-add-item:not(:last)').hide();
+	<?php } ?>
+	$('.locPrntItm').toggle(); $('.locinPrntItm').toggle();	
 	if ( $('.itemdivPrnt').children().length == 1 ) {
 		$('.itemdivPrnt').find('.btn-remove-item').hide();
 	}
@@ -513,14 +686,48 @@ $(document).ready(function () {
 	
 	$("#c_label").toggle();$("#fc_label").toggle(); $("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $('#other_cost_fc').toggle(); $('.OCdivPrnt').toggle(); 
+
+        $(document).on('ifChecked', '.locfrom-radio', function (e) {
+                    var val = $(this).val();
+           $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  let prefix = $('input[name="prefix"]').val();   // Example: MR
+             let newPrefix = prefix + locCode;               // MRWH1
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix);
+              $('.locfrom-radio').prop('disabled', true);
+
+                // store the value in the hidden field
+              $('#selected_locfrom_id').val(val);
+        // update message
+           $('#locfrom-hint').text('Default location selected and locked.');
+         });
+
+		 // enable all options first
+             $('#location_id option').show();
+
+    // reset dropdown if same was selected before
+    if ($('#location_id').val() == val) {
+        $('#location_id').val(''); 
+    }
+
+    // hide the selected "Location From" from the "Location To"
+    $('#location_id option[value="' + val + '"]').hide();
+
+    // If using Select2, you must refresh it
+    $('#location_id').trigger('change.select2');
+        });
     $('#frmMaterialRequisition').bootstrapValidator({
         fields: {
-			voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},
-			jobname: { validators: { notEmpty: { message: 'The job name is required and cannot be empty!' } }},
+			//voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},
+			//location_from: { validators: { notEmpty: { message: 'The From Location is required and cannot be empty!' } }},
+			//jobname: { validators: { notEmpty: { message: 'The job name is required and cannot be empty!' } }},
 			//description: { validators: { notEmpty: { message: 'The description is required and cannot be empty!' } }},
-			'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }},
+			//'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }},
 			//'item_name[]': { validators: { notEmpty: { message: 'The item description is required and cannot be empty!' } }},
-			'quantity[]': { validators: { notEmpty: { message: 'The item quantity is required and cannot be empty!' } }}
+			//'quantity[]': { validators: { notEmpty: { message: 'The item quantity is required and cannot be empty!' } }}
 			//'cost[]': { validators: { notEmpty: { message: 'The item cost is required and cannot be empty!' } }}
         }
         
@@ -628,6 +835,14 @@ $(function() {
 		   $('input[name="dr_acnt_id[]"]').val( $('#account_master_id').val() );
            $('.OCdivPrnt').toggle();
     });
+
+	$(document).on('blur', '#voucher_no', function(e) {  
+		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
+			alert('Voucher no is greater than current range!');
+			$('#voucher_no').val('');
+		}
+	});
+
 	
 	//item more info view section
 	$(document).on('click', '.more-info', function(e) { 
@@ -650,6 +865,13 @@ $(function() {
 	$(document).on('click', '.btn-add-item', function(e)  { 
         rowNum++; //console.log(rowNum);
 		e.preventDefault();
+		
+		if( $('.locPrntItm').is(":visible") ){
+			$('.locPrntItm').toggle();	
+			}
+		if( $('.locinPrntItm').is(":visible") ){
+			 $('.locinPrntItm').toggle();
+			}
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),
             newEntry = $(currentEntry.clone()).appendTo(controlForm);
@@ -663,6 +885,7 @@ $(function() {
 			newEntry.find($('input[name="line_vat[]"]')).attr('id', 'vat_' + rowNum);
 			newEntry.find($('input[name="line_discount[]"]')).attr('id', 'itmdsnt_' + rowNum);
 			newEntry.find($('input[name="line_total[]"]')).attr('id', 'itmttl_' + rowNum);
+			newEntry.find($('input[name="remarks[]"]')).attr('id', 'remrk_' + rowNum);
 			newEntry.find($('input[name="vatline_amt[]"]')).attr('id', 'vatlineamt_' + rowNum); //new change
 			newEntry.find($('input[name="othr_cost[]"]')).attr('id', 'othrcst_' + rowNum);
 			newEntry.find($('input[name="net_cost[]"]')).attr('id', 'netcst_' + rowNum);
@@ -674,7 +897,10 @@ $(function() {
 			newEntry.find($('.loc-info')).attr('id', 'loc_' + rowNum);
 			newEntry.find($('.loc-data')).attr('id', 'locData_' + rowNum);
 			newEntry.find($('.locPrntItm')).attr('id', 'locPrntItm_' + rowNum);
-			
+			newEntry.find($('.locin-info')).attr('id', 'locin_' + rowNum);
+			newEntry.find($('.locin-data')).attr('id', 'locinData_' + rowNum);
+			newEntry.find($('.locinPrntItm')).attr('id', 'locinPrntItm_' + rowNum);
+			newEntry.find($('.hidunt')).attr('id', 'hidunit_' + rowNum);
 			newEntry.find('input').val(''); 
 			newEntry.find('select').find('option').remove().end().append('<option value="">Select</option>');//new change
 			if( $('#infodivPrntItm_'+rowNum).is(":visible") ) 
@@ -755,6 +981,7 @@ $(function() {
 					 .append($("<option></option>")
 								.attr("value",value.id)
 								.text(value.unit_name)); 
+					$('#hidunit_'+rowNum).val(value.unit_name);			
 					});
 			});
 			
@@ -870,6 +1097,9 @@ $(function() {
 	   e.preventDefault();
 	   var res = this.id.split('_');
 	   var curNum = res[1];  
+	   if( $('#locinPrntItm_'+curNum).is(":visible") ){
+			$('#locinPrntItm_'+curNum).toggle(); 
+			}
 	   var item_id = $('#itmid_'+curNum).val();
 	   if(item_id!='') {
 		   var locUrl = "{{ url('itemmaster/view_locinfo/') }}/"+item_id+"/"+curNum
@@ -878,6 +1108,26 @@ $(function() {
 		   });
 			
 		   $('#locPrntItm_'+curNum).toggle();
+	   }
+    });
+	$(document).on('click', '.locin-info', function(e) { 
+	   e.preventDefault();
+	   
+	   var res = this.id.split('_');
+	   var curNum = res[1];  
+	   if( $('#locPrntItm_'+curNum).is(":visible") ){
+			$('#locPrntItm_'+curNum).toggle(); 
+			}
+	   var item_id = $('#itmid_'+curNum).val();
+	   if(item_id!='') {
+		   var locUrl = "{{ url('itemmaster/view_intralocinfo/') }}/"+item_id
+		  
+    		   $('#locinData_'+curNum).load(locUrl, function(result) {
+    			  $('#myModal').modal({show:true});
+    		   });
+    		  
+		
+		       $('#locinPrntItm_'+curNum).toggle(); 
 	   }
     });
 	$('#document_type').on('change', function(e){

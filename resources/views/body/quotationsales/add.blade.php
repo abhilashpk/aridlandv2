@@ -98,13 +98,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@can('qs-print')
+								@permission('qs-print')
 								 <a href="{{ url('quotation_sales/print/'.$printid.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endcan
+								@endpermission
 							<?php } ?>
 							</div>
 							
@@ -113,16 +113,34 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmQuotationSales"  id="frmQuotationSales" enctype="multipart/form-data" action="{{ url('quotation_sales/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								
+                                <input type="hidden" name="is_draft" id="is_draft" value="0">
+
+						<div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location </b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                 <div id="locationRadioGroup">
+                                   @foreach($location as $loc)
+                                <label class="radio-inline">
+                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+                                 </label>
+                                 @endforeach
+								 </div>
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id">
+                                  <small class="text-muted" id="locfrom-mand">
+                                             '*' is mandatory fields
+                                    </small>
+                             </div>
+                        </div>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">QS. No.</label>
 									
                                     <div class="col-sm-10">
 										<?php if($voucherno->prefix!='') { ?>
 										<div class="input-group">
-											<span class="input-group-addon">{{$voucherno->prefix}}</span>
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly value="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
-											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
+											<span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
+											<input type="hidden" id="prefx" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
 											<input type="hidden" name="curno" id="curno" value="{{$voucherno->no}}">
@@ -131,7 +149,7 @@
 										</div>
 										<?php } else { ?>
 										<div class="input-group">
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly value="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
 											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
@@ -174,7 +192,7 @@
                                 </div>
 								
 								<div class="form-group">
-                                   <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('customer_name')) echo 'form-error';?>"><b>Customer</b></label></font>
+                                   <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('customer_name')) echo 'form-error';?>"><b>Customer</b><span class="text-danger">*</span></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" name="customer_name" id="customer_name" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" value="{{ old('customer_name') }}" autocomplete="off" data-toggle="modal" data-target="#customer_modal" placeholder="Customer">
 										<input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id') }}">
@@ -290,6 +308,7 @@
 										</div>
 									</div>
                                 </div>
+								<?php if($formdata['document_upload']==1) { ?>
 								<div class="form-group">
 									<label for="input-text" class="col-sm-2 control-label">Document</label>
 									<div class="col-sm-10">
@@ -299,27 +318,12 @@
 										<input type="hidden" name="photo_name[]" id="photo_name">
 									</div>
 								</div>
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-										<option value="" selected>Select Location..</option>
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==old('location_id')) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
 								<?php } ?>
 								
 								
-								@if($formdata['item_import']==1)
-								<br/>
+								
+								<?php if($formdata['item_import']==1) { ?>
+								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Items Import</label>
                                     <div class="col-sm-9">
@@ -327,7 +331,7 @@
                                     </div>
 									 <div class="col-sm-1"><button type="button" class="btn btn-primary" id="importFile" >Load</button></div>
                                 </div>
-                                @endif
+                                <?php } ?>
                                 <br/>
 								<fieldset>
 								<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Item Details</span></h5></legend>
@@ -590,6 +594,7 @@
 													<div class="table-responsive loc-data" id="locData_1"></div>
 												</div>
 											</div>
+											
 										
 										<div class="descdivPrntItm" id="descdivPrntItm_1">
 											<div class="descdivChldItm" >							
@@ -766,11 +771,12 @@
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">
                                         <button type="submit" class="btn btn-primary">Submit</button>
+                                        <button type="button" value="button" name="btn" onclick="submitDraft()"class="btn btn-success">Draft</button>
 										<a href="{{ url('quotation_sales') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('quotation_sales/add') }}" class="btn btn-warning">Clear</a>
-										@can('qs-history')
+										@permission('qs-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endcan
+										@endpermission
                                     </div>
                                 </div>
 								
@@ -1007,6 +1013,29 @@ $(document).ready(function () {
 	$("#currency_id").prop('disabled', true);
 	$("#fc_label").toggle(); $("#c_label").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle();$("#vat_fc").toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $("#subtotal_fc").toggle(); $('.descdivPrntItm').toggle();
+	
+	$(document).on('ifChecked', '.locfrom-radio', function (e) {
+          var val = $(this).val();
+		  
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  let prefix ='QS' //$('input[name="prefix"]').val('QS');   // Example: LT
+             let newPrefix = prefix + locCode;               // LTWH1
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix);
+
+             //  $('.locfrom-radio').prop('disabled', true);
+         // store the value in the hidden field
+              $('#selected_locfrom_id').val(val);
+
+        
+     });
+      });
+	
+
+	
 	var urlcode = "{{ url('quotation_sales/checkrefno/') }}";
 	var urlvchr = "{{ url('quotation_sales/checkvchrno/') }}"; //CHNG
 	
@@ -1084,6 +1113,12 @@ $(document).ready(function () {
 	});
 	
 });
+
+function submitDraft() {
+    $('#is_draft').val(1);
+    document.frmQuotationSales.action="{{ url('quotation_sales/save_draft') }}";
+     document.frmQuotationSales.submit();
+}
 
 	//calculation item net total, tax and discount...
 	function getNetTotal() {
@@ -1284,6 +1319,14 @@ $(function() {
 	   e.preventDefault();
 	   $('.infodivPrnt').toggle();
       });
+
+	  $(document).on('blur', '#voucher_no', function(e) {  
+		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
+			alert('Voucher no is greater than current range!');
+			$('#voucher_no').val('');
+		}
+	});
+
 	
 	//item more info view section
 	$(document).on('click', '.more-info', function(e) { 
@@ -1326,6 +1369,7 @@ $(function() {
 	$(document).on('click', '.btn-add-item', function(e)  { 
         rowNum++; //console.log(rowNum);
 		e.preventDefault();
+		$('.locPrntItm').toggle();
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),
             newEntry = $(currentEntry.clone()).appendTo(controlForm);

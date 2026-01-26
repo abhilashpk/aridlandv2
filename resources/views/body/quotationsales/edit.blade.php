@@ -86,13 +86,13 @@
 							
 							<div class="pull-right">
 							<?php if($isprint) { ?>
-							@can('qs-print')
+							@permission('qs-print')
 							 <a href="{{ url('quotation_sales/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endcan
+							@endpermission
 							<?php } ?>
 							</div>
                         </div>
@@ -101,19 +101,28 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmPurorder" id="frmPurorder" action="{{ url('quotation_sales/update/'.$orderrow->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="quotation_order_id" id="quotation_order_id" value="{{ $orderrow->id }}">
+								 @php $selectedLocId = $orderrow->location_id; @endphp
+
+                                <div class="form-group">
+                              <font color="#16A085">   <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
+
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">QS. No.</label>
                                     <div class="col-sm-10">
-										<?php if($orderrow->prefix!='') { ?>
-										<div class="input-group">
-											<span class="input-group-addon">{{$orderrow->prefix}}</span>
+										
 											<input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
 											<input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
-										</div>
-										<?php } else { ?>
-											<input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
-											<input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
-										<?php } ?>
+										
                                     </div>
                                 </div>
 								
@@ -245,7 +254,7 @@
 										</div>
 									</div>
                                 </div>
-								
+								<?php if($formdata['document_upload']==1) { ?>
 								<div class="form-group">
 									<label for="input-text" class="col-sm-2 control-label">Document</label>
 									<div class="col-sm-9">
@@ -275,7 +284,7 @@
 										<input type="hidden" name="photo_doc"  >
 									</div>
 								</div>
-									
+									<?php } ?>
 
 								
 								
@@ -317,7 +326,7 @@
 									</thead>
 								</table>
 								
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<!-- ROWCHNG -->
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
@@ -434,7 +443,7 @@
 									</div>
 								<?php $i++; } } else { ?>
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 									<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -787,7 +796,7 @@
 								<?php } ?>
 								<br/>
 								
-								@can('qs-aprv')
+								@permission('qs-aprv')
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
@@ -808,7 +817,7 @@
                                     </div>
                                 </div>
 								<?php } ?>
-								@endcan
+								@endpermission
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
@@ -1072,8 +1081,9 @@ $(document).ready(function () {
 	if ( $('.itemdivPrnt').children().length == 1 ) {
 		$('.itemdivPrnt').find('.btn-remove-item').hide();
 	}
-	
-		
+	 if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+		}
 	$("#currency_rate").prop('disabled', true);
 	$("#currency_id").prop('disabled', true);
 	<?php if($orderrow->is_fc==0) { ?>
@@ -1652,7 +1662,7 @@ $(function() {
 		return false;
 	});
 	
-	var custurl = "{{ url('quotation_sales/customer_data/') }}";
+	var custurl = "{{ url('sales_order/customer_data/') }}";
 	$('#customer_name').click(function() {
 		$('#customerData').load(custurl, function(result) {
 			$('#myModal').modal({show:true});

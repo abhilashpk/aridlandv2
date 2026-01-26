@@ -36,7 +36,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		$this->module = DB::table('parameter2')->where('keyname', 'mod_workshop')->where('status',1)->select('is_active')->first();
 		$this->matservice = DB::table('parameter2')->where('keyname', 'mod_material_service')->where('status',1)->select('is_active')->first();
 		$this->modulejomanual = DB::table('parameter2')->where('keyname', 'mod_joborder_manual')->where('status',1)->select('is_active')->first();
-		
+$this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder')->where('status',1)->select('is_active')->first();		
 		$this->width = $config['modules']['joborder']['image_size']['width'];
         $this->height = $config['modules']['joborder']['image_size']['height'];
         $this->thumbWidth = $config['modules']['joborder']['thumb_size']['width'];
@@ -70,7 +70,8 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								'end_date' 	=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'status'		=> 1,
 								'vehicle_id'	=> isset($attributes['vehicle_id'])?$attributes['vehicle_id']:'',
-								'date' 	=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']))
+								'date' 	=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+								'is_subjob'=>isset($attributes['is_revice'])?1:0
 							]);
 							
       }
@@ -85,7 +86,8 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								'end_date' 	=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'status'		=> 1,
 								'vehicle_id'	=> isset($attributes['vehicle_id'])?$attributes['vehicle_id']:'',
-								'date' 	=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']))
+								'date' 	=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+								'is_subjob'=>isset($attributes['is_revice'])?1:0
 							]);
                 $id=$attributes['job_id'];
 					}	
@@ -98,12 +100,17 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 	private function setInputValue($attributes)
 	{
 		//Joborder enter into job master....
-		if($this->module->is_active==1 && $this->modulejomanual->is_active==0)
+		if($this->module->is_active==1 && $this->modulejomanual->is_active==0){
 			$attributes['job_id'] = $this->jobmasterEntry($attributes);  
+		}
+		if($this->mod_work_order->is_active==1){
+			$attributes['job_id'] = $this->jobmasterEntry($attributes);  
+		}
 		   // echo '<pre>';print_r($attributes['job_id']);exit;
 		
 		$this->sales_order->voucher_no    = $attributes['voucher_no'];
 		$this->sales_order->reference_no  = $attributes['reference_no'] ?? '';
+		$this->sales_order->department_id   = env('DEPARTMENT_ID');
 		$this->sales_order->voucher_date  = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->sales_order->lpo_date      = ($attributes['lpo_date']!='')?date('Y-m-d', strtotime($attributes['lpo_date'])):'';
 		$this->sales_order->customer_id   = $attributes['customer_id'];
@@ -112,6 +119,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		$this->sales_order->items_description  = isset($attributes['items_description'])?$attributes['items_description']:'';
 		$this->sales_order->job_id 		  = isset($attributes['job_id'])?$attributes['job_id']:'';
 		$this->sales_order->terms_id 	  = $attributes['terms_id'] ?? 0;
+		$this->sales_order->order_type 	  = isset($attributes['order_type'])?$attributes['order_type']:'';
 		$this->sales_order->footer_id 	  = isset($attributes['footer_id'])?$attributes['footer_id'] ?? 0:'';
 		$this->sales_order->is_fc 		  = isset($attributes['is_fc'])?1:0;
 		$this->sales_order->currency_id   = (isset($attributes['currency_id']))?$attributes['currency_id'] ?? 0:'';
@@ -140,6 +148,21 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		$this->sales_order->foot_description = (isset($attributes['foot_description']))?$attributes['foot_description']:'';
 		$this->sales_order->metre_in = (isset($attributes['metre_in']))?$attributes['metre_in']:'';
 		$this->sales_order->metre_out = (isset($attributes['metre_out']))?$attributes['metre_out']:'';
+		$this->sales_order->is_draft = (isset($attributes['is_draft']))?$attributes['is_draft']:'';
+		$this->sales_order->duedays = (isset($attributes['duedays']))?$attributes['duedays']:'';
+		$this->sales_order->due_date = (isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):'';
+		$this->sales_order->is_intercompany		= isset($attributes['is_intercompany'])?$attributes['is_intercompany']:'';
+		
+		if($this->mod_work_order->is_active==1){
+		$this->sales_order->job_type		= isset($attributes['job_type'])?$attributes['job_type']:(isset($attributes['is_revice'])?$attributes['is_revice']:''); //SUPPLIMENTRY JOB TYPE
+		$this->sales_order->jobnature		= isset($attributes['jobnature'])?$attributes['jobnature']:'';
+		$this->sales_order->fabrication		= isset($attributes['fabrication'])?$attributes['fabrication']:(isset($attributes['parent_id'])?$attributes['parent_id']:''); //SUPPLIMENTRY JOB PARENT id
+		}else{
+		
+		$this->sales_order->job_type		= isset($attributes['job_type'])?$attributes['job_type']:(isset($attributes['jobtype'])?$attributes['jobtype']:''); //SUPPLIMENTRY JOB TYPE
+		$this->sales_order->jobnature		= isset($attributes['jobnature'])?$attributes['jobnature']:'';
+		$this->sales_order->fabrication		= isset($attributes['fabrication'])?$attributes['fabrication']:(isset($attributes['parent_job'])?$attributes['parent_job']:''); //SUPPLIMENTRY JOB PARENT id
+		}
 		
 		$jbno = '';
 		if(isset($attributes['jobtype']) && $attributes['jobtype']==1) {
@@ -155,6 +178,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		$this->sales_order->remarks 	  = isset($attributes['remarks'])?$attributes['remarks']:'';
 		$this->sales_order->signature 	  = isset($attributes['sign'])?($attributes['customer_id'].'_'.date('d-m-Y').'.png') : '';
 		$this->sales_order->fuel_level 	  = isset($attributes['fuel_level'])?$attributes['fuel_level']:'';
+		$this->sales_order->is_editable  = (isset($attributes['quotation_id']) && $attributes['quotation_id']!='')?2:0; //APR25
 		
 		return true;
 	}
@@ -218,50 +242,50 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 	private function setItemInputValue($attributes, $salesOrderItem, $key, $value,$lineTotal) 
 	{
 		if( isset($attributes['is_fc']) ) {
-			$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
-			$item_total = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key] ) * $attributes['currency_rate'];
+			$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$attributes['currency_rate'];
+			$item_total = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * (float)$attributes['currency_rate'];
 			$tax_total  = round($tax * $attributes['quantity'][$key],2);
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 			$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 		} else {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 			
 			$tax_code = (isset($attributes['is_export']))?"ZR":(isset($attributes['tax_code'][$key])?$attributes['tax_code'][$key]:'');
 						
 			if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
 				
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
 				
 			} else if(isset($attributes['tax_include'][$key]) && $attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
-				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
+				$ln_total   = (float)$attributes['cost'][$key] *(float) $attributes['quantity'][$key];
+				$tax_total  = $ln_total *  (float)$attributes['line_vat'][$key] / (100 +  (float)$attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				
 			} else {
 				$tax = $tax_total = 0;
 				if(isset($attributes['line_vat'][$key])){
-					$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
+					$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
 					$tax_total  = round($tax * $attributes['quantity'][$key],2);
 				}
-				$item_total = (int)($attributes['cost'][$key] * (int)$attributes['quantity'][$key]) - (int)(isset($attributes['line_discount'][$key])?$attributes['line_discount'][$key]:'');
+				$item_total = (float)($attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (isset($attributes['line_discount'][$key])?(float)$attributes['line_discount'][$key]:'');
 			}
 		}
 		
 		//********DISCOUNT Calculation.............
-		$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+		$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 		$type = 'tax_exclude';
 			
 		if(isset($attributes['tax_include'][$key]) && $attributes['tax_include'][$key]==1 ) {
-			$vatPlus = 100 + $attributes['line_vat'][$key];
-			$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+			$vatPlus = 100 + (float)$attributes['line_vat'][$key];
+			$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 			$type = 'tax_include';
 		} else {
 			$vatPlus = 100;
-			$total = $attributes['line_total'][$key];
+			$total = (float)$attributes['line_total'][$key];
 			$type = 'tax_exclude';
 		}
 		
@@ -296,7 +320,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		$salesOrderItem->unit_price 	= (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		$salesOrderItem->vat		    = isset($attributes['line_vat'][$key])?$attributes['line_vat'][$key]:'';
 		$salesOrderItem->vat_amount 	= isset($tax_total)?$tax_total:'';
-		$salesOrderItem->discount   	= isset($attributes['line_discount'][$key])?$attributes['line_discount'][$key] ?? 0:'';
+		$salesOrderItem->discount   	= isset($attributes['line_discount'][$key])?(float)$attributes['line_discount'][$key]:'';
 		$salesOrderItem->line_total 	= $line_total;
 		$salesOrderItem->tax_code 		= isset($tax_code)?$tax_code:'';
 		$salesOrderItem->tax_include 	= isset($attributes['tax_include'][$key])?$attributes['tax_include'][$key]:'';
@@ -306,6 +330,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		$salesOrderItem->pay_pcntg 		= $pay_pcntg;
 		$salesOrderItem->pay_amount 	= $pay_amount;
 		$salesOrderItem->pay_pcntg_desc 		= $pay_pcntg_desc;
+		$salesOrderItem->doc_row_id = isset($attributes['quote_sales_item_id'][$key])?$attributes['quote_sales_item_id'][$key]:0; //APR25
 		
 		return array('line_total' => $line_total, 'tax_total' => $tax_total, 'type' => $type, 'item_total' => $item_total);
 	}
@@ -317,8 +342,31 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		$salesOrderInfo->description 	= $attributes['desc'][$key];
 		return true;
 	}
+
+	private function setReviceStatusItem($attributes, $key)
+	{
+		if(isset($attributes['is_revice'])) { //CHECK Revice OR  NOT...
+			//if quantity partially deliverd, update pending quantity.
+			if(isset($attributes['sorevice_sales_item_id'])) {
+				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+					if( isset($attributes['sorevice_sales_item_id'][$key]) ) {
+						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+						//update as partially delivered.
+						DB::table('sales_order_item')
+									->where('id', $attributes['sorevice_sales_item_id'][$key])
+									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+					}
+				} else {
+						//update as completely delivered.
+						DB::table('sales_order_item')
+									->where('id', $attributes['sorevice_sales_item_id'][$key])
+									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+				}
+			}
+		}
+	}
 	
-	private function setTransferStatusItem($attributes, $key)
+	private function setTransferStatusItem($attributes, $key, $mode=null)
 	{
 		if(isset($attributes['po_to_so'])) { //CHECK PO TO SO OR NOT...
 			//if quantity partially deliverd, update pending quantity.
@@ -339,23 +387,27 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 				}
 			}
 		} else {
-			//if quantity partially deliverd, update pending quantity.
-			if(isset($attributes['quote_sales_item_id'])) {
-				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-					if( isset($attributes['quote_sales_item_id'][$key]) ) {
-						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-						//update as partially delivered.
-						DB::table('quotation_sales_item')
-									->where('id', $attributes['quote_sales_item_id'][$key])
-									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
-					}
-				} else {
-						//update as completely delivered.
-						DB::table('quotation_sales_item')
-									->where('id', $attributes['quote_sales_item_id'][$key])
-									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
-				}
-			}
+		    if($mode=='edit') {
+		        
+		    } else {  
+    			//if quantity partially deliverd, update pending quantity.
+    			if(isset($attributes['quote_sales_item_id'])) {
+    				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+    					if( isset($attributes['quote_sales_item_id'][$key]) ) {
+    						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+    						//update as partially delivered.
+    						DB::table('quotation_sales_item')
+    									->where('id', $attributes['quote_sales_item_id'][$key])
+    									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+    					}
+    				} else {
+    						//update as completely delivered.
+    						DB::table('quotation_sales_item')
+    									->where('id', $attributes['quote_sales_item_id'][$key])
+    									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+    				}
+    			}
+		    }
 		}
 	}
 	
@@ -452,7 +504,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		if(isset($attributes['lbitem_id'])) {
 			foreach($attributes['lbitem_id'] as $key => $value){ 
 				
-				$total += $attributes['lbquantity'][$key] * $attributes['lbcost'][$key];
+				$total += (float)$attributes['lbquantity'][$key] * (float)$attributes['lbcost'][$key];
 			}
 		}
 		
@@ -694,16 +746,15 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					: '';
 
 				 //VOUCHER NO LOGIC.....................
-				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+				$dept = env('DEPARTMENT_ID');
 
-				 // 2️⃣ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-				if($dept > 0)	
-					$qry->where('department_id', $dept);
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -733,16 +784,15 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+							$dept = env('DEPARTMENT_ID');
 
-							// 2️⃣ Get the highest numeric part from voucher_master
-							$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-							if($dept > 0)	
-								$qry->where('department_id', $dept);
+							// ⿢ Get the highest numeric part from voucher_master
+							$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no']);
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -767,22 +817,25 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 						$vat = isset($attributes['line_vat'][$key])?$attributes['line_vat'][$key]:'';
 						$arrResult 		= $this->setItemInputValue($attributes, $salesOrderItem, $key, $value,$total);
 						//if($arrResult['line_total']) {
-							$line_total			   += $arrResult['line_total'];
+							$line_total			   += (float)$arrResult['line_total'];
 							$tax_total      	   += $arrResult['tax_total'];
 							$taxtype				  = $arrResult['type'];
-							$item_total				 += $arrResult['item_total'];
+							$item_total				 += (float)$arrResult['item_total'];
 							
 							$salesOrderItem->status = 1;
 							$itemObj = $this->sales_order->salesOrderItem()->save($salesOrderItem);
 							
-						$zero = DB::table('sales_invoice_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
-					    if($zero && $zero->item_id != 0){
+							$zero = DB::table('sales_order_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+							if($zero && $zero->item_id != 0){
 						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
-						     DB::table('sales_invoice_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
-						}
+						     DB::table('sales_order_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						    }
 						
 							
 							$this->setTransferStatusItem($attributes, $key);
+							if(isset($attributes['is_revice'])){
+								$this->setReviceStatusItem($attributes, $key);
+							}
 							
 							//update service item....
 							if($this->matservice->is_active==1) {
@@ -810,9 +863,9 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					if($this->matservice->is_active==1 && isset($attributes['lbitem_id'])) {
 						
 						$arrResult = $this->addService($attributes);
-						$line_total			     += $arrResult['line_total'];
+						$line_total			     += (float)$arrResult['line_total'];
 						$tax_total      	     += $arrResult['tax_total'];
-						$item_total				 += $arrResult['item_total'];
+						$item_total				 += (float)$arrResult['item_total'];
 						$taxtype				  = $arrResult['type'];//SEP25
 						$vat					  = $arrResult['vat'];//SEP25
 					}
@@ -847,8 +900,8 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					}
 					
 					if( isset($attributes['is_fc']) ) {
-						$total_fc 	   = $line_total / $attributes['currency_rate'];
-						$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
+						$total_fc 	   = $line_total /$attributes['currency_rate'];
+						$discount_fc   = (float)$attributes['discount'] / $attributes['currency_rate'];
 						$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
 						$tax_fc 	   = $tax_total / $attributes['currency_rate'];
 						$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
@@ -885,7 +938,10 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 										  'footer_text'	  => (isset($attributes['footer']))?$attributes['footer']:''
 										  ]); //CHNG SEP 17
 				//}
-				
+					#### REVICE QUOTATION COUNT UPDATE #####
+					if(isset($attributes['is_revice'])) {
+						DB::table('sales_order')->where('id',$attributes['parent_id'])->update(['jobnature' => DB::raw('jobnature + 1')]);
+					}				
 				if(isset($attributes['tempid'])) {
 					foreach($attributes['tempid'] as $key => $row) {
 						DB::table('crm_info')->insert(['temp_id' => $row, 'textval' => $attributes['crmtext'][$key], 'doc_id' => $this->sales_order->id, 'textval2' => (isset($attributes['crmtext2'][$key]))?$attributes['crmtext2'][$key]:'']);
@@ -961,6 +1017,15 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		//echo '<pre>';print_r($attributes);exit;
 		DB::beginTransaction();
 		try {
+			//draft
+				if(isset($attributes['is_draft']) && $attributes['is_draft']==0) {
+				    $voucherno = explode('-',$attributes['voucher_no']);
+				    //echo '<pre>';print_r($voucherno[1]);exit;
+				    $attributes['voucher_no']=$voucherno[1];
+				   
+					}
+				
+				//end
 			
 			//check workshop version active...
 			if($this->module->is_active==1 && $this->sales_order->id) {
@@ -1075,10 +1140,11 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 							
 							$salesOrderItem->update($items);
 					      $zero = DB::table('sales_order_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
-						if($zero && $zero->item_id !=0){
+						if($zero && $zero->item_id != 0){
 						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
 						     DB::table('sales_order_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
-						}
+						    }
+							$this->setTransferStatusItem($attributes, $key, 'edit');
 						
 							//description update...
 							/*if(isset($attributes['desc_id'])) {
@@ -1349,6 +1415,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 									  'doc_status' 	  => (isset($attributes['doc_status']))?$attributes['doc_status']:'',
 									   'metre_in'	  => isset($attributes['metre_in'])?$attributes['metre_in']:'',
 									  'metre_out'	  => isset($attributes['metre_out'])?$attributes['metre_out']:'',
+									  'is_draft'	  => isset($attributes['is_draft'])?$attributes['is_draft']:'',
 									  'comment'		  => (isset($attributes['comment']))?$attributes['comment']:((isset($attributes['comment_hd']))?$attributes['comment_hd']:'')
 									  ]);
 									  
@@ -1375,7 +1442,24 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		
 		//Quotatio unlock....
 		DB::table('quotation_sales')->where('id',$this->sales_order->quotation_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
-			
+		DB::table('sales_order')->where('id', $id)
+									  ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);	
+									  
+		if($this->sales_order->quotation_id > 0) {
+			    $idarr = explode(',',$this->sales_order->quotation_id);
+			    foreach($idarr as $idr) {
+				
+					DB::table('quotation_sales')->where('id', $idr)
+										->update(['is_transfer' => 0]);
+					DB::table('quotation_sales_item')->where('quotation_sales_id', $idr)
+										->update(['is_transfer' => 0]);						
+				}
+				$items = DB::table('sales_order_item')->where('sales_order_id', $id)->select('id','item_id','item_name','quantity','unit_id','unit_price','doc_row_id')->get();
+			foreach($items as $item) {
+			    DB::table('quotation_sales_item')->where('quotation_sales_id',$this->sales_order->quotation_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
+								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 0 ]);
+					}
+		}
 		$this->sales_order->delete();
 	}
 	
@@ -1401,6 +1485,33 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		else
 			return $this->sales_order->where('reference_no',$refno)->count();
 	}
+
+	public function getCustomerWorkOrder($customer_id, $type=null)
+	{
+		 $query = $this->sales_order
+						->leftJoin('vehicle AS V', function($join) {
+							$join->on('V.id','=','sales_order.vehicle_id');
+						} )
+						->leftJoin('jobmaster AS J', function($join) {
+							$join->on('J.id','=','sales_order.job_id');
+						} )
+					 ->where('sales_order.status', 1)
+					 ->where('sales_order.customer_id', $customer_id)
+					 ->where('sales_order.is_transfer', 0)
+					 ->where('sales_order.is_settled',0)
+					 ->where('sales_order.job_type', 1);
+					
+					if($type) {
+						$query->where(function($qry) {
+							$qry->where('sales_order.salesman_id', 0)->where('sales_order.doc_status', 0)
+								->orWhere('sales_order.salesman_id','>',0)->where('sales_order.doc_status', 1);
+						});
+					}
+					 
+		return	$query->select('sales_order.id','sales_order.voucher_no','sales_order.voucher_date','sales_order.net_total','V.reg_no','V.name AS vehicle',
+							   'sales_order.prefix','J.code')->get();
+		
+	}
 		
 	public function getCustomerOrder($customer_id, $type=null)
 	{
@@ -1413,8 +1524,36 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 						} )
 					 ->where('sales_order.status', 1)
 					 ->where('sales_order.customer_id', $customer_id)
+					 ->where('sales_order.is_settled',0)
+					 ->where('sales_order.department_id',env('DEPARTMENT_ID'))
 					 ->where('sales_order.is_transfer', 0);
 					
+					if($type) {
+						$query->where(function($qry) {
+							$qry->where('sales_order.salesman_id', 0)->where('sales_order.doc_status', 0)
+								->orWhere('sales_order.salesman_id','>',0)->where('sales_order.doc_status', 1);
+						});
+					}
+					 
+		return	$query->select('sales_order.id','sales_order.voucher_no','sales_order.voucher_date','sales_order.net_total','V.reg_no','V.name AS vehicle',
+							   'sales_order.prefix','J.code')->get();
+		
+	}
+
+	public function getCustomerJobOrder($customer_id, $type=null)
+	{
+		 $query = $this->sales_order
+						->leftJoin('vehicle AS V', function($join) {
+							$join->on('V.id','=','sales_order.vehicle_id');
+						} )
+						->leftJoin('jobmaster AS J', function($join) {
+							$join->on('J.id','=','sales_order.job_id');
+						} )
+					 ->where('sales_order.status', 1)
+					 ->where('sales_order.customer_id', $customer_id)
+					 ->where('sales_order.is_settled',0)
+					 ->where('sales_order.is_rental',2)
+					->where('sales_order.is_transfer', 0);
 					if($type) {
 						$query->where(function($qry) {
 							$qry->where('sales_order.salesman_id', 0)->where('sales_order.doc_status', 0)
@@ -1430,6 +1569,30 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 	public function findOrderData($id)
 	{
 		$query = $this->sales_order->where('sales_order.id', $id)->where('sales_order.is_transfer', 0);
+		return $query->join('account_master AS am', function($join) {
+							$join->on('am.id','=','sales_order.customer_id');
+						} )
+					->leftJoin('header_footer AS f',function($join) {
+						$join->on('f.id','=','sales_order.footer_id');
+					})
+					->leftJoin('vehicle AS V', function($join) {
+							$join->on('V.id','=','sales_order.vehicle_id');
+						} )
+					->leftjoin('jobmaster AS J', function($join){
+						  $join->on('J.id','=','sales_order.job_id');
+						})	
+					->leftJoin('salesman AS S', function($join) {
+							$join->on('S.id','=','sales_order.salesman_id');
+						} )
+					->select('sales_order.*','am.master_name AS customer','f.title AS footer','V.reg_no','V.name AS vehicle',
+							 'S.name AS salesman','V.issue_plate','V.code_plate','V.make','V.model','V.chasis_no','J.code')
+					->orderBY('sales_order.id', 'ASC')
+					->first();
+	}
+
+	public function findOrderDataPO($id)
+	{
+		$query = $this->sales_order->where('sales_order.id', $id)->where('sales_order.is_transfer_po', 0);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_order.customer_id');
 						} )
@@ -1548,6 +1711,9 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					->leftJoin('vehicle AS V',function($join) {
 						$join->on('V.id','=','sales_order.vehicle_id');
 					})
+					->leftjoin('quotation_sales AS QS', function($join){
+						  $join->on('QS.id','=','sales_order.quotation_id');
+					})
 					->select('sales_order.*','am.master_name AS customer','f.title AS footer','S.name AS salesman','V.name AS vehicle','J.name','J.code',
 							 'V.reg_no','V.model','V.make','V.issue_plate','V.code_plate','V.chasis_no','am.email','V.engine_no','V.color','V.year')
 					->first();
@@ -1586,8 +1752,14 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					  ->leftjoin('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','poi.item_id');
 					  })
+					  ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
 					  ->leftjoin('units AS u', function($join){
 						  $join->on('u.id','=','poi.unit_id');
+					  })
+					  ->leftjoin('quotation_sales_item AS ci', function($join){
+						  $join->on('ci.id','=','poi.doc_row_id');
 					  })
 					  ->where('poi.status',1);
 					  
@@ -1596,14 +1768,80 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 						$query->where('im.class_id',$val);
 					  }
 					  
-		return $query->where('poi.deleted_at','0000-00-00 00:00:00')
-					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
+		return $query->where('poi.deleted_at','0000-00-00 00:00:00')->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','ci.balance_quantity as qs_balance_quantity','isd.packing','isd.pkno')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.id')
 					  ->get();
 	}
+
+	public function getSORItems($id)
+	{
+		
+		$query = $this->sales_order->where('sales_order.id',$id);
+		
+		return $query->join('sales_order_item AS poi', function($join) {
+							$join->on('poi.sales_order_id','=','sales_order.id');
+						} )
+					  ->leftjoin('units AS u', function($join){
+						  $join->on('u.id','=','poi.unit_id');
+					  }) 
+					  ->leftjoin('itemmaster AS im', function($join){
+						  $join->on('im.id','=','poi.item_id');
+					  })
+					  ->leftjoin('item_unit AS iu', function($join){
+						  $join->on('iu.itemmaster_id','=','im.id');
+						  $join->on(DB::raw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)'), DB::raw(''), DB::raw('')); //$join->on('iu.unit_id','=','poi.unit_id');
+					  })
+					  ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
+					  ->where('poi.status',1)->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity')
+					  ->whereIn('poi.is_transfer',[0,2])
+					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->orderBY('poi.id')
+					  ->groupBy('poi.id')
+					  ->get();
+		
+	}
 	
 	public function getSOItems($id)
+	{
+		
+		$query = $this->sales_order->whereIn('sales_order.id',$id);
+		
+		return $query->join('sales_order_item AS poi', function($join) {
+							$join->on('poi.sales_order_id','=','sales_order.id');
+						} )
+						->join('location AS L', function($join){
+						  $join->on('L.id','=','sales_order.location_id');
+					  }) 
+					  ->leftjoin('units AS u', function($join){
+						  $join->on('u.id','=','poi.unit_id');
+					  }) 
+					  ->leftjoin('itemmaster AS im', function($join){
+						  $join->on('im.id','=','poi.item_id');
+					  })
+					  ->leftjoin('item_unit AS iu', function($join){
+						  $join->on('iu.itemmaster_id','=','im.id');
+						  $join->on('iu.unit_id','=','poi.unit_id');
+					  })
+					  ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
+					  ->where('poi.status',1)
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity','isd.packing','isd.pkno','im.batch_req')
+					  ->whereIn('poi.is_transfer',[0,2])
+					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->orderBY('poi.id')
+					  ->groupBy('poi.id')
+					  ->get();
+		
+	}
+
+	public function getSOItemsPO($id)
 	{
 		
 		$query = $this->sales_order->whereIn('sales_order.id',$id);
@@ -1621,10 +1859,14 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 						  $join->on('iu.itemmaster_id','=','im.id');
 						  $join->on('iu.unit_id','=','poi.unit_id');
 					  })
+					   ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
 					  ->where('poi.status',1)
-					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.cur_quantity')
-					  ->whereIn('poi.is_transfer',[0,2])
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity')
+					  ->whereIn('poi.is_transfer_po',[0,2])
 					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					   ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
 					  ->get();
@@ -1689,9 +1931,10 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		
-		switch($attributes['search_type']) {
-			case 'summary':
+			$pending=isset($attributes['pending'])?$attributes['pending']:0;
+	//	switch($attributes['search_type']) {
+		//	case 'summary':
+			if($attributes['search_type']=='summary' && $pending==0){
 				$query = $this->sales_order->where('is_rental',0)
 								->join('sales_order_item AS SOI', function($join) {
 									$join->on('SOI.sales_order_id','=','sales_order.id');
@@ -1708,6 +1951,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
+								->where('sales_order.department_id',env('DEPARTMENT_ID'))
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1727,9 +1971,10 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 									  'SOI.quantity','SOI.balance_quantity','SOI.unit_price','AM.master_name','sales_order.net_total','sales_order.discount',
 									  'V.reg_no','V.issue_plate','V.code_plate','sales_order.voucher_date','J.code AS jobcode','J.name AS jobname','J.code AS jobcode')
 								->groupBy('sales_order.id')->get();
-				break;
-				
-			case 'jobwise':
+			//	break;
+			}
+		//	case 'jobwise':
+			else if($attributes['search_type']=='jobwise'){
 				$query = $this->sales_order->where('is_rental',0)
 								->join('sales_order_item AS SOI', function($join) {
 									$join->on('SOI.sales_order_id','=','sales_order.id');
@@ -1743,6 +1988,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
+								->where('sales_order.department_id',env('DEPARTMENT_ID'))
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1762,9 +2008,10 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 									  'sales_order.voucher_date','J.code AS jobcode','J.name AS jobname','sales_order.less_amount','sales_order.less_amount2','sales_order.less_amount3')
 								->orderBY('jobcode','ASC')
 								->groupBy('sales_order.id')->get();
-				break;
-				
-			case 'customer_wise':
+			//	break;
+			}
+		//	case 'customer_wise':
+		else if($attributes['search_type']=='customer_wise'){
 				$query = $this->sales_order->where('is_rental',0)
 								->join('sales_order_item AS SOI', function($join) {
 									$join->on('SOI.sales_order_id','=','sales_order.id');
@@ -1778,6 +2025,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
+								->where('sales_order.department_id',env('DEPARTMENT_ID'))
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1797,9 +2045,11 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 									  'sales_order.voucher_date','J.code AS jobcode','J.name AS jobname','sales_order.less_amount','sales_order.less_amount2','sales_order.less_amount3')
 								->orderBY('master_name','ASC')
 								->groupBy('sales_order.id')->get();
-				break;
+				//break;
+		}
 				
-			case 'summary_pending':
+			//case 'summary_pending':
+			else if($attributes['search_type']=='summary' && $pending==1){
 				$query = $this->sales_order->where('is_rental',0)->where('SOI.is_transfer','!=',1)
 								->join('sales_order_item AS SOI', function($join) {
 									$join->on('SOI.sales_order_id','=','sales_order.id');
@@ -1816,6 +2066,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
+								->where('sales_order.department_id',env('DEPARTMENT_ID'))
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1836,9 +2087,11 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 									  'V.reg_no','V.issue_plate','V.code_plate')
 								->get();//->groupBy('sales_order.id')
 								
-				break;
+				//break;
+			}
 				
-			case 'detail':
+		//	case 'detail':
+		else if($attributes['search_type']=='detail' && $pending==0){
 				$query = $this->sales_order->where('is_rental',0)
 								->join('sales_order_item AS SOI', function($join) {
 									$join->on('SOI.sales_order_id','=','sales_order.id');
@@ -1857,6 +2110,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								})->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
+								->where('sales_order.department_id',env('DEPARTMENT_ID'))
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1876,9 +2130,11 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 									  'SOI.quantity','SOI.unit_price','SOI.line_total','J.code AS jobcode','J.name AS jobname','AM.master_name','sales_order.net_total','sales_order.discount',
 									  'V.reg_no','V.issue_plate','V.code_plate')
 								->get();
-				break;
+			//	break;
+		}
 				
-			case 'detail_pending'||'qty_report':
+			//case 'detail_pending'||'qty_report':
+				else if($attributes['search_type']=='detail' && $pending==1){
 				$query = $this->sales_order->where('is_rental',0)->where('QSI.is_transfer','!=',1)
 								->join('sales_order_item AS QSI', function($join) {
 									$join->on('QSI.sales_order_id','=','sales_order.id');
@@ -1898,6 +2154,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
+								->where('sales_order.department_id',env('DEPARTMENT_ID'))
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1917,7 +2174,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 									  'QSI.quantity','QSI.balance_quantity','QSI.unit_price','J.code AS jobcode','J.name AS jobname','QSI.line_total','AM.master_name','sales_order.net_total','S.name AS salesman',
 									  'V.reg_no','V.issue_plate','V.code_plate')
 								->get();
-				break;
+			//	break;
 		}
 	}
 	
@@ -2524,7 +2781,7 @@ public function getPendingReportJob($attributes)
 	
 	public function salesOrderListCount()
 	{
-		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0);
+		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_order.customer_id');
 						} )
@@ -2533,7 +2790,7 @@ public function getPendingReportJob($attributes)
 	
 	public function salesOrderList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)
+		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',env('DEPARTMENT_ID'))
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_order.customer_id');
 						} )
@@ -2563,6 +2820,52 @@ public function getPendingReportJob($attributes)
 					return $query->get();
 				else
 					return $query->count();
+	}
+
+	public function salesOrderWorkListCount()
+	{
+		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.job_type',1);
+		return $query->join('account_master AS am', function($join) {
+							$join->on('am.id','=','sales_order.customer_id');
+						} )
+					->count();
+	}
+	
+	public function salesOrderWorkList($type,$start,$limit,$order,$dir,$search)
+	{
+		if($search) {
+		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.job_type',1)
+						->join('account_master AS am', function($join) {
+							$join->on('am.id','=','sales_order.customer_id');
+						} )
+						->leftJoin('vehicle AS V', function($join) {
+							$join->on('V.id','=','sales_order.vehicle_id');
+						} );
+						
+				
+					$query->where('sales_order.voucher_no','LIKE',"%{$search}%")
+					->orWhere('V.reg_no', 'LIKE',"%{$search}%")
+					->orWhere('V.name', 'LIKE',"%{$search}%")
+					->orWhere('sales_order.reference_no', 'LIKE',"%{$search}%")
+                          ->orWhere('am.master_name', 'LIKE',"%{$search}%");
+				
+				
+				$query->select('sales_order.*','am.master_name AS customer','V.reg_no','V.name AS vehicle')
+				       ->where('sales_order.job_type',1)
+								//DB::raw('SUBSTRING_INDEX(sales_order.voucher_no, "/", 1) AS bin_name1'))
+								//DB::raw('SUBSTRING_INDEX(sales_order.voucher_no, "/", -1) AS bin_name2'))
+					->offset($start)
+                    ->limit($limit)
+					->orderBy($order,$dir);
+					//->orderBy('bin_name1','DESC');
+					//->orderBy('bin_name2','ASC');
+					//->sortBy('sales_order.voucher_no');
+					
+				if($type=='get')
+					return $query->get();
+				else
+					return $query->count();
+				}
 	}
 	
 	public function salesOrderPendingList($type,$start,$limit,$order,$dir,$search)

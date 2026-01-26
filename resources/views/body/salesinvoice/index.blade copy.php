@@ -78,13 +78,13 @@
 							@endif
 							
                         <div class="pull-right">
-							@can('si-create')
+							@permission('si-create')
                              <a href="{{ url('sales_invoice/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endcan
+							@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -100,10 +100,10 @@
 									<th>Customer</th>
 									<th>Amount</th>
 									<?php if($settings->doc_approve==1) { ?><th>Status</th><?php } ?>
-									@can('si-edit')<th></th>@endcan
-									@can('si-print')<th></th>@endcan
-									@can('si-delete')<th></th>@endcan
-									@can('do-print')<th></th>@endcan
+									@permission('si-edit')<th></th>@endpermission
+									@permission('si-print')<th></th>@endpermission
+									@permission('si-delete')<th></th>@endpermission
+									@permission('do-print')<th></th>@endpermission
 								</tr>
 								</thead>
 								
@@ -334,10 +334,10 @@ $(function() {
 			{ "data": "customer" },
 			{ "data": "net_total" },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } ?>
-			@can('si-edit'){ "data": "edit","bSortable": false },@endcan
-			@can('si-print'){ "data": "print","bSortable": false },@endcan
-			@can('si-delete'){ "data": "delete","bSortable": false },@endcan
-			@can('do-print'){ "data": "printdo","bSortable": false }@endcan
+			@permission('si-edit'){ "data": "edit","bSortable": false },@endpermission
+			@permission('si-print'){ "data": "print","bSortable": false },@endpermission
+			@permission('si-delete'){ "data": "delete","bSortable": false },@endpermission
+			@permission('do-print'){ "data": "printdo","bSortable": false }@endpermission
 		]	
 		  
 		});

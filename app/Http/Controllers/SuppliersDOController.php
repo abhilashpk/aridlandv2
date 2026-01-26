@@ -105,8 +105,11 @@ class SuppliersDOController extends Controller
 		$location = $this->location->locationList();
 		$res = $this->voucherno->getVoucherNo('SDO');
 		$location = $this->location->locationList();
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
 		$footertxt = DB::table('header_footer')->where('doc','SDO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-		$lastid = DB::table('supplier_do')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('supplier_do')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','SDO')
@@ -116,10 +119,13 @@ class SuppliersDOController extends Controller
 		$bcurrency = DB::table('parameter1')
 							 ->join('currency', 'currency.id', '=', 'parameter1.bcurrency_id')
 							  ->select('currency.code')
-							 ->first();							
+							 ->first();	
+		$cid=$this->acsettings->bcurrency_id;					 
+		$fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
 		$vno = $res->no;
 		if($id) {
 			$ids = explode(',', $id);
+			$docnos='';
 			$ocrow = [];
 			if($doctype == 'SDO'){
 				$itemmaster = $this->itemmaster->activeItemmasterList();
@@ -137,6 +143,10 @@ class SuppliersDOController extends Controller
     			$orderrow = $this->purchase_order->findPOdata($ids[0]);
     			$poitems = $this->purchase_order->getPOitems($ids);
     			$ocrow = $this->purchase_order->getOtherCost($ids[0]);
+				$resdo = DB::table('purchase_order')->whereIn('id',$ids)->select('voucher_no')->get();
+				foreach($resdo as $rw) {
+					$docnos = ($docnos=='')?$rw->voucher_no:$docnos.','.$rw->voucher_no;
+				}
 			}
 			$total = 0; $discount = 0; $nettotal = 0; $vat_total = 0;
 			foreach($poitems as $item) {
@@ -151,9 +161,10 @@ class SuppliersDOController extends Controller
 						->withJobs($jobs)
 						->withCurrency($currency)
 						->withOrderrow($orderrow)
-						->withVoucherno($vno)
+						->withVoucherno($res)
 						->withDocitems($poitems)
 						->withLocation($location)
+						->withDocnos($docnos)
 						->withPordid($id)
 						->withTotal($total)
 						->withDiscount($discount)
@@ -167,7 +178,12 @@ class SuppliersDOController extends Controller
 						->withPrint($print)
 						->withPrintid($lastid)
 						->withLocation($location)
+						->withFooter(isset($footertxt)?$footertxt->description:'')
 						->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
+						->withFcurrency($fcurrency)
+						->withInterid($defaultInter->id)
+                        ->withIntercode($defaultInter->code)
+					     ->withIntername($defaultInter->name)
 						->withData($data);
 		}
 		return view('body.suppliersdo.add')
@@ -176,7 +192,7 @@ class SuppliersDOController extends Controller
 					->withJobs($jobs)
 					->withCurrency($currency)
 					->withLocation($location)
-					->withVoucherno($vno)
+					->withVoucherno($res)
 					->withFormdata($this->formData)
 					->withVatdata($this->vatdata)
 					->withSettings($this->acsettings)
@@ -185,34 +201,36 @@ class SuppliersDOController extends Controller
 					->withPrintid($lastid)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
+					->withFcurrency($fcurrency)
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
-	public function save(Request $request, $id = null)
-	{
-		// ✅ Laravel 10 validation (auto redirect on failure)
-		$this->validate(
-			$request,
-			[
-				'supplier_name' => 'required',
-				'supplier_id'   => 'required',
-				'item_code.*'   => 'required',
-				'item_id.*'     => 'required',
-				'unit_id.*'     => 'required',
-				'quantity.*'    => 'required',
-				'cost.*'        => 'required',
+	public function save(Request $request, $id = null) {
+		
+		if( $this->validate(
+			$request, 
+			[//'reference_no' => 'required',
+			 'supplier_name' => 'required','supplier_id' => 'required',
+			 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			 'unit_id.*' => 'required',
+			 'quantity.*' => 'required',
+			 'cost.*' => 'required'
 			],
-			[
-				'supplier_name.required' => 'Supplier name is required.',
-				'supplier_id.required'   => 'Supplier name is invalid.',
-				'item_code.*.required'   => 'Item code is required.',
-				'item_id.*.required'     => 'Item code is invalid.',
-				'unit_id.*.required'     => 'Item unit is required.',
-				'quantity.*.required'    => 'Item quantity is required.',
-				'cost.*.required'        => 'Item cost is required.',
+			[//'reference_no.required' => 'Reference no. is required.',
+			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			 'unit_id.*' => 'Item unit is required.',
+			 'quantity.*' => 'Item quantity is required.',
+			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
 
+			return redirect('suppliers_do/add')->withInput()->withErrors();
+		}
+		
 		if( $this->supplierdo->create($request->all()) ) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
 			if($this->mod_autocost->is_active==1) {
@@ -222,13 +240,10 @@ class SuppliersDOController extends Controller
 			Session::flash('message', 'Suppliers Delivery Order added successfully.');
 		} else
 			Session::flash('error', 'Something went wrong, Invoice failed to add!');
-
-
 		
 		return redirect('suppliers_do/add');
 	}
-
-		
+	
 	public function destroy($id)
 	{
 		if( $this->supplierdo->check_order($id) ) {
@@ -320,7 +335,7 @@ class SuppliersDOController extends Controller
 							 ->join('currency', 'currency.id', '=', 'parameter1.bcurrency_id')
 							  ->select('currency.code')
 							 ->first();			
-							 
+			
 		//MAY25 BATCH ENTRY.....	
 		$batch_res = $batchs = $batch_items = null;
 		$batch_res = DB::table('batch_log')->whereNull('batch_log.deleted_at')
@@ -346,6 +361,10 @@ class SuppliersDOController extends Controller
     		}
     		$batch_items[$key] = ['ids' => $idArr, 'batches' => $batchArr, 'mfgs' => $mfgArr, 'exps' => $expArr, 'qtys' => $qtyArr];
 	    }
+	    
+	    $cid=$this->acsettings->bcurrency_id;
+	    $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
+	    
 	//	echo '<pre>';print_r($batch_items);exit;
 		return view('body.suppliersdo.edit')
 					->withItems($itemmaster)
@@ -364,6 +383,7 @@ class SuppliersDOController extends Controller
 					->withPrint($print)
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withBatchitems($batch_items) //MAY25
+					->withFcurrency($fcurrency)
 					->withBatchcount(count($batchs));//MAY25
 
 	}
@@ -553,53 +573,7 @@ class SuppliersDOController extends Controller
 	}
 	
 	
-	public function getSearchBkp()
-	{
-		$data = array();
-		$dname = '';
-		$supid = $itemid = '';
-		$voucher_head  = '';
-		//echo '<pre>';print_r($request->get('search_type'));exit;
-		//$report = $this->supplierdo->getReport($request->all());
-		//echo '<pre>';print_r($report);exit;
-	
 		
-		if($request->get('search_type')=="summary")
-		{
-			$voucher_head = 'Goods Receipt Note Summary';
-			$report = $this->supplierdo->getReport($request->all());
-			$reports = $this->makeTreeName($report);
-			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
-			if($request->get('supplier_id')!==null)
-				$supid = implode(',', $request->get('supplier_id'));
-			else
-				$supid = '';
-			}
-		
-		else if($request->get('search_type')=="detail") {
-			$voucher_head = 'Goods Receipt Note Detail';
-			$report = $this->supplierdo->getReport($request->all());
-		    $reports = $this->makeTreeName($report);
-			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
-			
-		} 
-		//echo '<pre>';print_r($reports);exit;
-		return view('body.suppliersdo.preprint')
-					->withReports($reports)
-					->withVoucherhead($voucher_head)
-					->withType($request->get('search_type'))
-					->withFromdate($request->get('date_from'))
-					->withTodate($request->get('date_to'))
-					->withI(0)
-					->withTitles($titles)
-					->withIsimport($request->get('isimport'))
-					->withSettings($this->acsettings)
-					->withSupplier($supid)
-					->withItem($itemid)
-					->withDname($dname)
-					->withData($data);
-	}
-	
 	public function dataExport(Request $request)
 	{
 	    //echo '<pre>';print_r($request->all());exit;
@@ -793,28 +767,26 @@ class SuppliersDOController extends Controller
 		
 	public function update(Request $request, $id)
 	{
-		// ✅ Laravel 10 validation (auto redirect on failure)
-		$this->validate(
-			$request,
-			[
-				'supplier_name' => 'required',
-				'supplier_id'   => 'required',
-				'item_code.*'   => 'required',
-				'item_id.*'     => 'required',
-				'unit_id.*'     => 'required',
-				'quantity.*'    => 'required',
-				'cost.*'        => 'required',
+		if( $this->validate(
+			$request, 
+			[//'reference_no' => 'required',
+			 'supplier_name' => 'required','supplier_id' => 'required',
+			 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			 'unit_id.*' => 'required',
+			 'quantity.*' => 'required',
+			 'cost.*' => 'required'
 			],
-			[
-				'supplier_name.required' => 'Supplier name is required.',
-				'supplier_id.required'   => 'Supplier name is invalid.',
-				'item_code.*.required'   => 'Item code is required.',
-				'item_id.*.required'     => 'Item code is invalid.',
-				'unit_id.*.required'     => 'Item unit is required.',
-				'quantity.*.required'    => 'Item quantity is required.',
-				'cost.*.required'        => 'Item cost is required.',
+			[//'reference_no.required' => 'Reference no. is required.',
+			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			 'unit_id.*' => 'Item unit is required.',
+			 'quantity.*' => 'Item quantity is required.',
+			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
+
+			return redirect('suppliers_do/edit/'.$id)->withInput()->withErrors();
+		}
 		
 		//echo '<pre>';print_r($sup_udate);exit;
 		if($this->supplierdo->update($id, $request->all())) {
@@ -1024,4 +996,3 @@ class SuppliersDOController extends Controller
 	}
 	
 }
-

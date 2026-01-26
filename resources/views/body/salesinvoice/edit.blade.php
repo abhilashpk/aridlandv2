@@ -85,13 +85,13 @@
                             </h3>
 							
 							<div class="pull-right">
-							@can('si-print')
+							@permission('si-print')
 							 <a href="{{ url('sales_invoice/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endcan
+							@endpermission
 							</div>
                         </div>
 						
@@ -102,7 +102,9 @@
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="sales_invoice_id" id="sales_invoice_id" value="{{ $orderrow->id }}">
 								{{--<input type="hidden" name="voucher_id" value="{{ $orderrow->voucher_id }}">--}}
-								<input type="hidden" name="default_location" value="{{ Auth::user()->location_id }}">
+								@php $selectedLocId = $orderrow->location_id; @endphp
+								<input type="hidden" name="default_location" id="default_location" value="{{ $selectedLocId }}">
+								<input type="hidden" name="is_cash" id="is_cash" value="{{$orderrow->is_cash}}">
 								<input type="hidden" name="is_clear" id="is_clear" value="0"><!--AUG24-->
 								@if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
@@ -110,50 +112,42 @@
 								<input type="hidden" name="send_email" value="0">
 								@endif
 								<input type="hidden" name="mq_loc" value="{{($ismqloc)?1:0}}">
-								@if($isdept)
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Department</b></label>
-                                    <div class="col-sm-10">
-                                       <select id="department_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="department_id">
-											@foreach($departments as $drow)
-												<option value="{{ $drow->id }}" {{($orderrow->department_id==$drow->id)?'selected':''}} >{{ $drow->name }}</option>
-											@endforeach
-                                        </select>
-                                    </div>
-                                </div>
 								
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Invoice</b></label>
-                                    <div class="col-sm-10">
-                                    <select id="voucher_id" class="form-control select2" style="width:100%" name="voucher_id">
-											<option value="{{ $vouchers->id }}" {{($orderrow->voucher_id==$vouchers->id)?'selected':''}}>{{ $vouchers->voucher_name }}</option>
-                                        </select>
-                                    </div>
-                                </div>
-								@endif
 
 								<div class="form-group">
 									<label for="input-text" class="col-sm-2 control-label"><b>Sales Invoice</b></label>
 									<div class="col-sm-10">
 									  
 										<select id="voucher_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="voucher_id">
-                                           @foreach($vouchers as $vrow)
-										   @if($orderrow->voucher_id==$vrow['id'])
-											   @php $sel = 'selected'; @endphp
-										   @else
-											   @php $sel = ''; @endphp
-										   @endif
-											<option value="{{ $vrow['id'] }}" {{$sel}} >{{ $vrow['voucher_name'] }}</option>
-											@endforeach
+                                          
+											<option value="{{ $orderrow->voucher_id }}"  >{{ $voucher['voucher_name'] }}</option>
+											
                                         </select>
 									</div>
 								</div>
 
 								<div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+								 </div>
+
+								<div class="form-group">
                                     <font color="#16A085"><label for="input-text" class="col-sm-2 control-label"><b>SI. No.</b></label></font>
                                     <div class="col-sm-10">
+									
+									
                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
-                                    </div>
+                                       <input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
+									
+									</div>
                                 </div>
 								
 								
@@ -219,7 +213,7 @@
 										<input type="hidden" name="dr_account_id_old" value="<?php echo (old('dr_account_id'))?old('dr_account_id'):$orderrow->dr_account_id;?>">
 										<div class="col-xs-10" id="customerInfo">
 											<div class="col-xs-2">
-												<span class="small">Current Balance</span> <input type="text" id="cr_balance" readonly class="form-control line-quantity" value="{{number_format($custdata->cl_balance,2)}}">
+												<span class="small">Current Balance</span> <input type="text" id="cr_balance" readonly class="form-control line-quantty" value="{{number_format($custdata->cl_balance,2)}}">
 											</div>
 											<div class="col-xs-2">
 												<span class="small">PDC</span> <input type="text" id="pdc" readonly class="form-control line-cost" value="{{number_format($custdata->pdc_amount,2)}}">
@@ -241,9 +235,9 @@
 											</div>
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											<div class="col-xs-1"><br/>
-												@can('si-history')
+												@permission('si-history')
 												<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">History</a>
-												@endcan
+												@endpermission
 											</div>
 										</div>
 										
@@ -270,12 +264,12 @@
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											
 											<div class="col-xs-1"><br/>
-												<!--@can('si-history')
+												<!--@permission('si-history')
 												<a href="" class="btn btn-info cust-history" data-toggle="modal" data-target="#custhistory_modal">History</a>
-												@endcan-->
-												@can('siph-history')
+												@endpermission-->
+												@permission('siph-history')
 												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endcan
+												@endpermission
 											</div>
 										</div>
 										
@@ -423,29 +417,6 @@
 								<input type="hidden" name="job_id" id="job_id">
 								<?php } ?>
 								
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$orderrow->location_id) echo 'selected';?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($orderrow->location_id==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
 								
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -527,7 +498,7 @@
 									</thead>
 								</table>
 								<!-- ROWCHNG -->
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -762,7 +733,7 @@
 								<?php $i++; } } else { ?>
 								
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -880,13 +851,7 @@
             								<?php } ?>	
 								            
 								            <!--MAY25-->
-            								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
-            									<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches'] ?? ''}}"></div>
-            									<input type="hidden" id="bthSelIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids'] ?? ''}}"> 
-                                                <input type="hidden" id="bthSelQty_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys'] ?? ''}}">
-                                                <input type="hidden" id="batchRem_{{$i}}" name="batchRem[]">
-            								</div>
+            								
 								
 											@if($isconloc)
 											<div id="cnloc" style="float:left; padding-right:5px;">
@@ -1650,7 +1615,7 @@
 								</div>
 								<br/>
 								
-								@can('qs-aprv')
+								@permission('qs-aprv')
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
@@ -1671,7 +1636,7 @@
                                     </div>
                                 </div>
 								<?php } ?>
-								@endcan
+								@endpermission
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
@@ -2168,6 +2133,10 @@ $(document).ready(function () {
 	
 	$('.locPrntItm').toggle(); $('.cnlocPrntItm').toggle(); $('.sedePrntItm').toggle(); $('#roundoff_fc').toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $('.maildivPrnt').toggle();
+
+	if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+		}
 	var urlcode = "{{ url('sales_invoice/checkrefno/') }}";
     $('#frmSalesInvoice').bootstrapValidator({
         fields: {
@@ -4178,7 +4147,7 @@ newEntry.find($('.dimn-view')).attr('id', 'itmInfo_' + rowNum);
 		fNum = res[1];
 	    fNum++;
 		$.ajax({
-			url: "{{ url('job_order/get_fileform/QS') }}",
+			url: "{{ url('job_order/get_fileform/SI') }}",
 			type: 'post',
 			data: {'no':fNum},
 			success: function(data) {

@@ -227,9 +227,12 @@ class CustomersDOController extends Controller
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
-		$res = $this->voucherno->getVoucherNo('CDO');
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
+		$res = $this->voucherno->getVoucherNo('CDO');//echo '<pre>';print_r($res);exit;
 		$vno = $res->no;
-		$lastid = DB::table('customer_do')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('customer_do')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 		$footertxt = DB::table('header_footer')->where('doc','CDO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -239,6 +242,7 @@ class CustomersDOController extends Controller
 							->first();
 							
 		if($id) {
+			$docnos ='';
 			$ids = explode(',', $id); $getItemLocation = $itemlocedit = [];
 			if($doctype=='QS') {
 				$quoteRow = $this->quotation_sales->findQuoteData($ids[0]);
@@ -249,9 +253,13 @@ class CustomersDOController extends Controller
 			} 
 			else if($doctype=='SO') {
 				$quoteRow = $this->sales_order->findOrderData($ids[0]);
-				$quoteItems = $this->sales_order->getSOItems($ids);//echo '<pre>';print_r($quoteItems);exit;
+				$quoteItems = $this->sales_order->getSOItems($ids);//
 				$getItemLocation = $this->itemmaster->getItemLocation($id,'CDO');
 				$itemlocedit = $this->makeTreeArrLoc( $this->itemmaster->getItemLocEdit($id,'CDO') );
+				$resdo = DB::table('sales_order')->whereIn('id',$ids)->select('voucher_no')->get();
+				foreach($resdo as $rw) {
+					$docnos = ($docnos=='')?$rw->voucher_no:$docnos.','.$rw->voucher_no;
+				}
 			}
 			
 			$total = 0; $vat_amount = 0; $nettotal = 0;
@@ -271,9 +279,10 @@ class CustomersDOController extends Controller
 						->withJobs($jobs)
 						->withCurrency($currency)
 						->withQuoterow($quoteRow)
-						->withVoucherno($vno)
+						->withVoucherno($res)
 						->withQuoteitems($quoteItems)
 						->withDocid($id)
+						->withDocnos($docnos)
 						->withTotal($total)
 						->withVatamount($vat_amount)
 						->withLocation($location)
@@ -289,6 +298,9 @@ class CustomersDOController extends Controller
 						->withItemloc($getItemLocation)
 						->withItemlocedit($itemlocedit)
 						->withIsconloc(($this->mod_con_loc->is_active==1)?true:false)
+						->withInterid($defaultInter->id)
+                        ->withIntercode($defaultInter->code)
+					     ->withIntername($defaultInter->name)
 						->withData($data);
 		}
 		//echo '<pre>';print_r($this->formData);exit;
@@ -298,7 +310,7 @@ class CustomersDOController extends Controller
 					->withJobs($jobs)
 					->withCurrency($currency)
 					->withLocation($location)
-					->withVoucherno($vno)
+					->withVoucherno($res)
 					->withVatdata($this->vatdata)
 					->withSettings($this->acsettings)
 					->withPrintid($lastid)
@@ -306,6 +318,9 @@ class CustomersDOController extends Controller
 					->withPrint($print)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withIsconloc(($this->mod_con_loc->is_active==1)?true:false)
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
@@ -313,21 +328,27 @@ class CustomersDOController extends Controller
 		
 		//echo '<pre>';print_r($request->all());exit;
 		
-		$this->validate(
+		if( $this->validate(
 			$request, 
-			['customer_name' => 'required','customer_id' => 'required',
-			 /* 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			[  'location_id' =>'required','location_id' => 'required',
+			    'customer_name' => 'required','customer_id' => 'required',
+			  'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
 			 'quantity.*' => 'required',
-			 'cost.*' => 'required' */
+			 'cost.*' => 'required' 
 			],
-			['customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 /* 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			[   'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
+			    'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+			  'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.' */
+			 'cost.*' => 'Item cost is required.' 
 			]
-		);
+		)) {
+
+			return redirect('customers_do/add')->withInput()->withErrors();
+		}
+		
 		$id = $this->customerdo->create($request->all());
 		if($id) {
 			Session::flash('message', $this->title.' added successfully.');
@@ -513,23 +534,28 @@ class CustomersDOController extends Controller
 	public function update(Request $request)
 	{	//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('customer_do_id');
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			[//'reference_no' => 'required',
+			 'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
-			 /* 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			  'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
 			 'quantity.*' => 'required',
-			 'cost.*' => 'required' */
+			 'cost.*' => 'required' 
 			],
 			[//'reference_no.required' => 'Reference no. is required.',
+				'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 /* 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			  'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.' */
+			 'cost.*' => 'Item cost is required.' 
 			]
-		);
+		)) {
+			//echo '<pre>';print_r($request->flash());exit;
+			return redirect('customers_do/edit/'.$id)->withInput()->withErrors();
+		}
 		
 		$this->customerdo->update($id, $request->all());
 		
@@ -776,10 +802,10 @@ class CustomersDOController extends Controller
 	
 	public function setSessionVal()
 	{
-		Session::put('voucher_no', $request->get('vchr_no'));
-		Session::put('reference_no', $request->get('ref_no'));
-		Session::put('voucher_date', $request->get('vchr_dt'));
-		Session::put('lpo_date', $request->get('lpo_dt'));
+		Session::set('voucher_no', $request->get('vchr_no'));
+		Session::set('reference_no', $request->get('ref_no'));
+		Session::set('voucher_date', $request->get('vchr_dt'));
+		Session::set('lpo_date', $request->get('lpo_dt'));
 	}
 	
 	protected function makeTree($result)
@@ -1174,6 +1200,4 @@ class CustomersDOController extends Controller
 	
 	
 }
-
-
 

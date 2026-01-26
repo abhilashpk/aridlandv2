@@ -944,10 +944,10 @@ $(document).ready(function () {
         theme: "bootstrap",
         placeholder: "Select Multiple Technicians"
     });
-	
+	 $('#opn_qty_1').attr('readonly', true);
 	//$('.locPrntItm').toggle();
-	if( $('.locPrntItm').is(":visible") ) 
-		$('.locPrntItm').toggle();
+	//if( $('.locPrntItm').is(":visible") ) 
+		//$('.locPrntItm').toggle();
 	
 	$('#rMat').hide();
 	
@@ -957,10 +957,9 @@ $(document).ready(function () {
 	$('#inlineradio2').change(function(){
 		alert('Radio Box has been changed!');
 	});
-	
 	var urlcode = "{{ url('itemmaster/checkcode/') }}";
 	var urldesc = "{{ url('itemmaster/checkdesc/') }}";
-    $('#frmItem').bootstrapValidator({
+	 $('#frmItem').bootstrapValidator({
         fields: {
             item_code: { validators: { 
 					notEmpty: { message: 'The item code is required and cannot be empty!' },
@@ -1000,7 +999,8 @@ $(document).ready(function () {
     }).on('reset', function (event) {
         $('#frmItem').data('bootstrapValidator').resetForm();
     });
-});
+});	
+
 
 $(function() {	
 	
@@ -1241,7 +1241,7 @@ $(function() {
 			  $('#myModal').modal({show:true});
 		   });
 			
-		   $('.locPrntItm').toggle();
+		   //$('.locPrntItm').toggle();
     });
 	 
 	 $('input,select').keydown( function(e) {
@@ -1373,11 +1373,25 @@ $(document).on('keyup blur', '.line-cost', function(e) {
 });
 
 $(document).on('keyup', '.locqty', function(e) {
+    var res = this.id.split('_');
+	var curNum = res[1];
 	var itQty = 0;
+	if($('#batch_req').val()== 1 && $('#opn_qty_1').val() =='' ){
+	    alert('Batch Qty is required');
+	    $('#locqty_'+curNum).val('');
+	}else{
 	$('.locqty').each(function() { 
 		itQty += parseFloat( (this.value=='')?0:this.value );
 	});
-	$('#opn_qty_1').val(itQty);
+	}
+	if($('#batch_req').val()!=1){
+	   $('#opn_qty_1').val(itQty);
+	   }
+	   
+	if ($('#batch_req').val()== 1 && itQty > parseFloat( $('#opn_qty_1').val()) ){
+	     alert('Location Qty exceeds the Batch Qty');
+	      $('#locqty_'+curNum).val('');
+	}
 });
 
 $(document).on('keyup', '#opn_qty_1', function(e) {

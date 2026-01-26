@@ -54,6 +54,17 @@
             </ol>
         </section>
         <!--section ends-->
+        	@if(Session::has('message'))
+		<div class="alert alert-success">
+			<p>{{ Session::get('message') }}</p>
+		</div>
+		@endif
+		@if(Session::has('error'))
+		<div class="alert alert-danger">
+			<p>{{ Session::get('error') }}</p>
+		</div>
+		@endif
+		
 		@if (count($errors) > 0)
 			<div class="alert alert-danger">
 				<ul>
@@ -87,19 +98,29 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmPurorder" id="frmPurorder" action="{{ url('purchase_order/update/'.$orderrow->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="purchase_order_id" id="purchase_order_id" value="{{ $orderrow->id }}">
+
+								@php $selectedLocId = $orderrow->location_id; @endphp
+                                <div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">PO. No.</label>
                                     <div class="col-sm-10">
-										<?php if($orderrow->prefix!='') { ?>
 										<div class="input-group">
 											<span class="input-group-addon">{{$orderrow->prefix}}</span>
 											<input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
 											<input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
 										</div>
-										<?php } else { ?>
-											<input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
-											<input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
-										<?php } ?>
+										
                                     </div>
                                 </div>								
 								<?php if($formdata['reference_no']==1) { ?>
@@ -171,7 +192,7 @@
 								<?php } ?>
 								
 								<div class="form-group">
-                                   <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b></label></font>
+                                   <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b><span class="text-danger">*</span></label></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" name="supplier_name" id="supplier_name" value="<?php echo (old('supplier_name'))?old('supplier_name'):$orderrow->supplier; ?>" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#supplier_modal" placeholder="Supplier">
 										<input type="hidden" name="supplier_id" id="supplier_id" value="<?php echo (old('supplier_id'))?old('supplier_id'):$orderrow->supplier_id; ?>">
@@ -216,20 +237,6 @@
 									</div>
                                 </div>
 								
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-										<option value="">Select Location..</option>
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$orderrow->location_id) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								
 								<br/>
 								<fieldset>
 								<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Item Details</span></h5></legend>
@@ -268,7 +275,7 @@
 									</thead>
 								</table>
 								
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -619,7 +626,11 @@
 
 								<fieldset>
 									<legend>
+									     <?php if($formdata['other_cost']==1) { ?>
 										<div id="oc_showmenu"><button type="button" id="ocadd" class="btn btn-primary btn-xs">Other Cost</button></div>
+											<?php } else { ?>
+								<input type="hidden" name="other_cost" id="other_cost">
+								<?php } ?>
 									</legend>
 									<input type="hidden" id="remoc" name="remove_oc">
 									<div class="OCdivPrnt">
@@ -648,9 +659,10 @@
 													<td width="8%">
 														<span class="small">Currency</span>
 														<select id="occrncy_{{$i}}" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-															@foreach($currency as $curr)
-															<option value="{{$curr['id']}}" <?php if($row->currency_id==$curr['id']) echo 'selected';?>>{{$curr['code']}}</option>
-															@endforeach
+														<option value="{{$settings->bcurrency_id}}">Select</option>
+													    @foreach($fcurrency as $curr)
+														<option value="{{$curr->id}}" <?php if($row->currency_id==$curr->id) echo 'selected';?> >{{$curr->code}}</option>
+														@endforeach
 														</select>
 													</td>
 													<td width="8%">
@@ -663,7 +675,7 @@
 													</td>
 													<td width="10%">
 														<div class="oc-amount-fc">
-															<span class="small">Convrt Amt</span>
+															<span class="small">FC Amt</span>
 															<input type="number" name="oc_fc_amount[]" id="ocfcamt_{{$i}}" step="any" value="{{($row->is_fc==1)?$row->oc_amount:$row->oc_amount}}" autocomplete="off" class="form-control oc-line-fc" placeholder="FC Amount">
 														</div>
 													</td>
@@ -730,8 +742,9 @@
 														<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_1" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+															 <option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 														</td>
@@ -852,6 +865,10 @@
 										</div>
 									</div>
                                 </div>
+                                
+                                <input type="hidden" step="any" id="other_cost" name="other_cost" readonly class="form-control" placeholder="0">
+								<input type="hidden" step="any" id="other_cost_fc" name="other_cost_fc" readonly class="form-control spl" placeholder="0">
+								
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Net Amount</label>
@@ -1183,6 +1200,10 @@ $(document).ready(function () {
 			$('.OCdivPrnt').toggle(); 
 	<?php } else { ?> $('.OCdivPrnt').toggle();<?php } ?>
 
+	if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+		}
+
 	var urlcode = "{{ url('purchase_order/checkrefno/') }}";
     $('#frmPurorder').bootstrapValidator({
         fields: {
@@ -1190,7 +1211,7 @@ $(document).ready(function () {
                 validators: {
                     /* notEmpty: {
                         message: 'The Reference No. is required and cannot be empty!'
-                    }, */
+                    }, 
 					remote: {
                         url: urlcode,
                         data: function(validator) {
@@ -1200,7 +1221,7 @@ $(document).ready(function () {
                             };
                         },
                         message: 'This Reference No. is already exist!'
-                    }
+                    }*/
                 }
             },
 			//voucher_date: { validators: { notEmpty: { message: 'The voucher date is required and cannot be empty!' } }},
@@ -1597,6 +1618,7 @@ $(function() {
 	$(document).on('click', '.btn-add-item', function(e)  { 
         rowNum++; //console.log(rowNum);
 		e.preventDefault();
+		$('.locPrntItm').toggle();
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),
             newEntry = $(currentEntry.clone()).appendTo(controlForm);

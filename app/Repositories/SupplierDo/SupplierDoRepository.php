@@ -47,7 +47,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 	{
 		
 		$this->supplier_do->voucher_no = $attributes['voucher_no']; 
-		$this->supplier_do->reference_no = $attributes['reference_no'];
+		$this->supplier_do->reference_no = isset($attributes['reference_no'])?$attributes['reference_no']:'';
 		$this->supplier_do->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->supplier_do->lpo_date = ($attributes['lpo_date']!='')?date('Y-m-d', strtotime($attributes['lpo_date'])):'';
 		$this->supplier_do->document_type = ($attributes['document_type']=='')?'PI':$attributes['document_type'];//Purchase Invoice type
@@ -62,6 +62,11 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 		$this->supplier_do->foot_description = (isset($attributes['foot_description']))?$attributes['foot_description'] ?? null:'';
 		
 		$this->supplier_do->is_editable  = (isset($attributes['document_id']) && $attributes['document_id']!='')?2:0; //APR25
+		$this->supplier_do->prefix = isset($attributes['prefix'])?$attributes['prefix']:'';
+		$this->supplier_do->is_intercompany = isset($attributes['is_intercompany'])?$attributes['is_intercompany']:'';
+		$this->supplier_do->doc_nos = isset($attributes['document'])?$attributes['document']:'';
+		$this->supplier_do->department_id = env('DEPARTMENT_ID');
+
 		
 		return true;
 	}
@@ -71,69 +76,69 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 		$othercost_unit = $netcost_unit = 0;
 		if( isset($attributes['is_fc']) ) {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 			$tax_code = (isset($attributes['is_import']))?"RC":$attributes['tax_code'][$key];
 			
 			if($tax_code=="EX" || $tax_code=="ZR") {
 				
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key] * $attributes['currency_rate']) - $attributes['line_discount'][$key];
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key] * (float)$attributes['currency_rate']) - (float)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key] * $attributes['currency_rate'],2);
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key] * $attributes['currency_rate'];
-				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
-				$item_total = ($ln_total - $tax_total) * $attributes['currency_rate'];
+				$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key] * (float)$attributes['currency_rate'];
+				$tax_total  = $ln_total *  (float)$attributes['line_vat'][$key] / (100 +  (float)$attributes['line_vat'][$key]);
+				$item_total = ($ln_total - $tax_total) * (float)$attributes['currency_rate'];
 				
 				if( isset($attributes['other_cost'])) { //MY27
-					$othercost_unit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
-					$netcost_unit = $othercost_unit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+					$othercost_unit = (((float)$other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total_fc']) * (float)$attributes['currency_rate'];
+					$netcost_unit = (float)$othercost_unit + ((float)$attributes['cost'][$key] * (float)$attributes['currency_rate']);
 				}
 				
 			} else {
 				
-				$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-				$item_total = (($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key]) * $attributes['currency_rate'];
+				$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+				$item_total = (((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key]) * (float)$attributes['currency_rate'];
 				$tax_total  = round($tax * $attributes['quantity'][$key] * $attributes['currency_rate'], 2);
 				
 				if( isset($attributes['other_cost']) && $other_cost > 0 ) { //MY27
-					$othercost_unit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
-					$netcost_unit = $othercost_unit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+					$othercost_unit = (((float)$other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total_fc']) * (float)$attributes['currency_rate'];
+					$netcost_unit = (float)$othercost_unit + ((float)$attributes['cost'][$key] * (float)$attributes['currency_rate']);
 				}
 			}
 			
 		} else {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 			$tax_code = (isset($attributes['is_import']))?"RC":$attributes['tax_code'][$key];
 			
 			if($tax_code=="EX" || $tax_code=="ZR") {
 				
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
-				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
+				$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
+				$tax_total  = (float)$ln_total *  (float)$attributes['line_vat'][$key] / (100 +  (float)$attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				
 				if( isset($attributes['other_cost'])) {
-					$othercost_unit = ($other_cost * $attributes['cost'][$key]) / $attributes['total'];
-					$netcost_unit = $othercost_unit + $attributes['cost'][$key];
+					$othercost_unit = ((float)$other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total'];
+					$netcost_unit = (float)$othercost_unit + (float)$attributes['cost'][$key];
 				}
 				
 			} else {
 				
-				$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+				$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
 				
 				if( isset($attributes['other_cost']) && $other_cost > 0 ) {
-					$othercost_unit = ($other_cost * $attributes['cost'][$key]) / $attributes['total'];
-					$netcost_unit = $othercost_unit + $attributes['cost'][$key];
+					$othercost_unit = ((float)$other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total'];
+					$netcost_unit = (float)$othercost_unit + (float)$attributes['cost'][$key];
 				}
 			}
 			
@@ -144,17 +149,17 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 		if( isset($attributes['is_fc']) )
 			$discount = (isset($attributes['discount']))?($attributes['discount'] * $attributes['currency_rate']):0;
 		else   */
-			$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+			$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 		
 		$type = 'tax_exclude';
 			
 		if($attributes['tax_include'][$key]==1 ) {
-			$vatPlus = 100 + $attributes['line_vat'][$key];
-			$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+			$vatPlus = 100 + (float)$attributes['line_vat'][$key];
+			$total = (float)$attributes['cost'][$key] *(float) $attributes['quantity'][$key];
 			$type = 'tax_include';
 		} else {
 			$vatPlus = 100;
-			$total = $attributes['line_total'][$key];
+			$total = (float)$attributes['line_total'][$key];
 			$type = 'tax_exclude';
 		}
 		
@@ -163,7 +168,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 			$amountTotal = $total - $discountAmt;
 			$vatLine = round( (($amountTotal * $attributes['line_vat'][$key]) / $vatPlus),2 );
 			//$line_total = $amountTotal;
-			$tax_total = (isset($attributes['is_fc']))?($vatLine * $attributes['currency_rate']):$vatLine; //M14
+			$tax_total = (isset($attributes['is_fc']))?((float)$vatLine * (float)$attributes['currency_rate']):$vatLine; //M14
 		} 
 				
 		$supplierDOItem->supplier_do_id = $this->supplier_do->id;
@@ -173,16 +178,16 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 		$supplierDOItem->quantity = $attributes['quantity'][$key];
 		$supplierDOItem->unit_price = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		$supplierDOItem->vat = $attributes['line_vat'][$key];
-		$supplierDOItem->vat_amount = $tax_total;
-		$supplierDOItem->discount = $attributes['line_discount'][$key] ?? 0;
-		$supplierDOItem->total_price = $line_total;
-		$supplierDOItem->othercost_unit = $othercost_unit;
-		$supplierDOItem->netcost_unit = $netcost_unit;
+		$supplierDOItem->vat_amount = (float)$tax_total;
+		$supplierDOItem->discount = (float)$attributes['line_discount'][$key];
+		$supplierDOItem->total_price =(float) $line_total;
+		$supplierDOItem->othercost_unit =(float) $othercost_unit;
+		$supplierDOItem->netcost_unit =(float) $netcost_unit;
 		$supplierDOItem->tax_code 	= $tax_code;
-		$supplierDOItem->tax_include = $attributes['tax_include'][$key] ?? 0;
-		$supplierDOItem->item_total = $item_total;
+		$supplierDOItem->tax_include = $attributes['tax_include'][$key];
+		$supplierDOItem->item_total = (float)$item_total;
 		
-		$supplierDOItem->unit_price_fc = $attributes['cost'][$key];
+		$supplierDOItem->unit_price_fc = (float)$attributes['cost'][$key];
 		$supplierDOItem->vat_amount_fc = (isset($attributes['is_fc']))?round(($tax_total /  $attributes['currency_rate']),2):$tax_total;
 		$supplierDOItem->total_price_fc = (isset($attributes['is_fc']))?round(($line_total /  $attributes['currency_rate']),2):$line_total;
 		$supplierDOItem->item_total_fc = (isset($attributes['is_fc']))?round(($item_total /  $attributes['currency_rate']),2):$item_total;
@@ -362,6 +367,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','supplier_do.job_id');
 								})
+								->where('supplier_do.department_id', env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -402,6 +408,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','supplier_do.job_id');
 								})
+								->where('supplier_do.department_id', env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -443,6 +450,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','supplier_do.job_id');
 								})
+								->where('supplier_do.department_id', env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -663,16 +671,15 @@ public function getReportExcel($attributes)
 		 try {
 
 			//VOUCHER NO LOGIC.....................
-				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+				$dept = env('DEPARTMENT_ID');
 
-				 // 2️⃣ Get the highest numeric part from voucher_master
-				$qry = DB::table('supplier_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-				if($dept > 0)	
-					$qry->where('department_id', $dept);
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SDO', $maxNumeric, $dept, $attributes['voucher_no']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -694,16 +701,15 @@ public function getReportExcel($attributes)
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+							$dept = env('DEPARTMENT_ID');
 
-							// 2️⃣ Get the highest numeric part from voucher_master
-							$qry = DB::table('supplier_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-							if($dept > 0)	
-								$qry->where('department_id', $dept);
+							// ⿢ Get the highest numeric part from voucher_master
+							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SDO', $maxNumeric, $dept, $attributes['voucher_no']);
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -746,11 +752,17 @@ public function getReportExcel($attributes)
 						
 						$supplierDOItem->status = 1;
 						$inv_item = $this->supplier_do->doItem()->save($supplierDOItem);
+						$zero = DB::table('supplier_do_item')->where('id', $inv_item->id)->where('unit_id',0)->first();
+					    if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('supplier_do_item')->where('id', $inv_item->id)->update(['unit_id' => $uid->unit_id]);
+						}
 						
 						//update item transfer status...
 						$this->setTransferStatusItem($attributes, $key, $attributes['document_type']);
 						
 						//CHECK WHEATHER Update Quantity by SDO
+						$logid = '';
 						if($this->mod_sdo_qty->is_active==1) {
 							
 							//update last purchase cost and cost average....
@@ -780,14 +792,15 @@ public function getReportExcel($attributes)
                         		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                         		}
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $locid[$key][$lk])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $locid[$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 								} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $locid[$key][$lk];
+									$itemLocation->department_id =env('DEPARTMENT_ID');
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty;
@@ -797,6 +810,7 @@ public function getReportExcel($attributes)
 								
 								$itemLocationPI = new ItemLocationPI();
 								$itemLocationPI->location_id = $locid[$key][$lk];
+								$itemLocationPI->department_id =env('DEPARTMENT_ID');
 								$itemLocationPI->item_id = $value;
 								$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 								$itemLocationPI->quantity = $lcqty; //MAY25 $lq; 
@@ -813,7 +827,7 @@ public function getReportExcel($attributes)
 					//Item default location add...
 					if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 							
-						$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+						$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 														  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 														  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 														  
@@ -827,10 +841,11 @@ public function getReportExcel($attributes)
                 		}
 						
 						if($qtys) {
-							DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+							DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 						} else {
 								$itemLocation = new ItemLocation();
 								$itemLocation->location_id = $attributes['default_location'];
+								$itemLocation->department_id =env('DEPARTMENT_ID');
 								$itemLocation->item_id = $value;
 								$itemLocation->unit_id = $attributes['unit_id'][$key];
 								$itemLocation->quantity = $lcqty;
@@ -840,6 +855,7 @@ public function getReportExcel($attributes)
 							
 						$itemLocationPI = new ItemLocationPI();
 						$itemLocationPI->location_id = $attributes['default_location'];
+						$itemLocationPI->department_id =env('DEPARTMENT_ID');
 						$itemLocationPI->item_id = $value;
 						$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 						$itemLocationPI->quantity = $lcqty; //MAY25  $attributes['quantity'][$key];
@@ -1145,6 +1161,12 @@ public function getReportExcel($attributes)
 						$itemsobj = (object)['item_id' => $exi_item_id, 'unit_id' => $exi_unit_id];
 						
 						$supplierDoItem->update($items);
+
+						$zero = DB::table('supplier_do_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+						if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('supplier_do_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+						}
 						
 						$this->setTransferStatusItem($attributes, $key, $attributes['document_type'], 'edit');
 						
@@ -1186,8 +1208,8 @@ public function getReportExcel($attributes)
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
                         		
-									$edit = DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',1)->first();
-									$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+									$edit = DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',1)->first();
+									$idloc = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																 
@@ -1195,19 +1217,20 @@ public function getReportExcel($attributes)
 										
 										if($edit->quantity < $lcqty) {
 											$balqty = $lcqty - $edit->quantity;
-											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$balqty)]);
 										} else {
 											$balqty = $edit->quantity - $lcqty;
-											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$balqty)]);
 										}
 										
 									} else {
 										//NOV24
-										DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
-										$sdolog = DB::table('item_location_pi')->where('item_id',$value)->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_sdo',1)->first();
+										DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+										$sdolog = DB::table('item_location_pi')->where('item_id',$value)->where('department_id',env('DEPARTMENT_ID'))->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_sdo',1)->first();
 
 										$itemLocationPI = new ItemLocationPI();
 										$itemLocationPI->location_id = $attributes['locid'][$key][$lk];
+										$itemLocationPI->department_id =env('DEPARTMENT_ID');
 										$itemLocationPI->item_id = $value;
 										$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 										$itemLocationPI->quantity =  $lcqty;//$lq;
@@ -1220,10 +1243,10 @@ public function getReportExcel($attributes)
 
 									}
 									
-									DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => '0000-00-00 00:00:00','qty_entry' => $lq]);
+									DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => '0000-00-00 00:00:00','qty_entry' => $lq]);
 
 								} else { //NOV24
-									DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 0, 'deleted_at' => date('Y-m-d h:i:s'), 'qty_entry' => $lq]);
+									//DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 0, 'deleted_at' => date('Y-m-d h:i:s'), 'qty_entry' => $lq]);
 								}
 							}
 
@@ -1233,7 +1256,7 @@ public function getReportExcel($attributes)
 						//Item default location add...
 						if(($attributes['location_id']!='') && ($updated == false)) {
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['location_id'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
 																  
@@ -1249,9 +1272,10 @@ public function getReportExcel($attributes)
                         		}
                         		
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 									DB::table('item_location_pi')->where('invoice_id', $attributes['order_item_id'][$key] )
 																 ->where('location_id', $qtys->location_id)
+																 ->where('department_id',env('DEPARTMENT_ID'))
 																 ->where('item_id', $qtys->item_id)
 																 ->where('unit_id', $qtys->unit_id)
 																 ->update(['quantity' => DB::raw('quantity + '.$lcqty), 'qty_entry' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
@@ -1259,6 +1283,7 @@ public function getReportExcel($attributes)
 								
 								$itemLocationPI = new ItemLocationPI();
 								$itemLocationPI->location_id = $attributes['location_id'];
+								$itemLocationPI->department_id=env('DEPARTMENT_ID');
 								$itemLocationPI->item_id = $value;
 								$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 								$itemLocationPI->quantity = $lcqty; //$attributes['quantity'][$key] * $attributes['packing'][$key];
@@ -1272,7 +1297,7 @@ public function getReportExcel($attributes)
 						
 						
 					//BATCH NO ENTRY............
-    				if($attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
+    				if(isset($attributes['batchNos'][$key]) && $attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
     				    
     				    $batchArr = explode(',', $attributes['batchNos'][$key]);
     				    $mfgArr = explode(',', $attributes['mfgDates'][$key]);
@@ -1375,6 +1400,11 @@ public function getReportExcel($attributes)
 														
 							$supplierDoItem->status = 1;
 							$inv_item = $this->supplier_do->doItem()->save($supplierDoItem);
+							$zero = DB::table('supplier_do_item')->where('id', $inv_item->id)->where('unit_id',0)->first();
+					        if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('supplier_do_item')->where('id', $inv_item->id)->update(['unit_id' => $uid->unit_id]);
+						    }
 							
 							//NOV24
 							$logid='';
@@ -1410,14 +1440,15 @@ public function getReportExcel($attributes)
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
                             		
-									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+									$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 									if($qtys) {
-										DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+										DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 									} else {
 										$itemLocation = new ItemLocation();
 										$itemLocation->location_id = $attributes['locid'][$key][$lk];
+										$itemLocation->department_id =env('DEPARTMENT_ID');
 										$itemLocation->item_id = $value;
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
 										$itemLocation->quantity = $lcqty;
@@ -1427,6 +1458,7 @@ public function getReportExcel($attributes)
 									
 									$itemLocationPI = new ItemLocationPI();
 									$itemLocationPI->location_id = $attributes['locid'][$key][$lk];
+									$itemLocationPI->department_id =env('DEPARTMENT_ID');
 									$itemLocationPI->item_id = $value;
 									$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 									$itemLocationPI->quantity =  $lcqty; //$lq * $attributes['packing'][$key];
@@ -1443,7 +1475,7 @@ public function getReportExcel($attributes)
 						//Item default location add...
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 								
-							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+							$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 															  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 															  
@@ -1459,10 +1491,11 @@ public function getReportExcel($attributes)
                     		}
                     		
 							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+								DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 							} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $attributes['default_location'];
+									$itemLocation->department_id =env('DEPARTMENT_ID');
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty;
@@ -1472,6 +1505,7 @@ public function getReportExcel($attributes)
 								
 							$itemLocationPI = new ItemLocationPI();
 							$itemLocationPI->location_id = $attributes['default_location'];
+							$itemLocationPI->department_id =env('DEPARTMENT_ID');
 							$itemLocationPI->item_id = $value;
 							$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 							$itemLocationPI->quantity =  $lcqty; //$attributes['quantity'][$key] * $attributes['packing'][$key];
@@ -1487,7 +1521,7 @@ public function getReportExcel($attributes)
 						
 						
 						//BATCH NO ENTRY............
-        				if($attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
+        				if(isset($attributes['batchNos'][$key]) && $attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
         				    
         				    $batchArr = explode(',', $attributes['batchNos'][$key]);
         				    $mfgArr = explode(',', $attributes['mfgDates'][$key]);
@@ -1544,11 +1578,11 @@ public function getReportExcel($attributes)
 					DB::table('supplier_do_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					//$itm = DB::table('supplier_do_item')->where('id', $row)->first();
 					
-					$pirow = DB::table('item_location_pi')->where('invoice_id',$row)->where('is_sdo',1)->get();
+					$pirow = DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('invoice_id',$row)->where('is_sdo',1)->get();
 					foreach($pirow as $prow) {
-						DB::table('item_location_pi')->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+						DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 						
-						DB::table('item_location')->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+						DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 									->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 					}
 					
@@ -1565,7 +1599,7 @@ public function getReportExcel($attributes)
 				
 				//if($this->supplier_do->voucher_date != date('Y-m-d', strtotime($attributes['voucher_date']))) {
 					//VOUCHER DATE UPDATE IN LOG...
-					DB::table('item_log')->where('document_type','SDO')->where('document_id',$this->supplier_do->id)
+					DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id',$this->supplier_do->id)
 										 ->update(['voucher_date' => date('Y-m-d', strtotime($attributes['voucher_date'])) ]);
 				//}
 				
@@ -1713,7 +1747,7 @@ public function getReportExcel($attributes)
 					DB::table('material_requisition')->where('id', $this->supplier_do->document_id)
 										->update(['is_transfer' => 0, 'is_editable' => 0]);
 										
-					DB::table('material_requisition_item')->where('material_requisition_item_id', $this->supplier_do->document_id)
+					DB::table('material_requisition_item')->where('material_requisition_id', $this->supplier_do->document_id)
 										->update(['is_transfer' => 0]);
 										
 				} else if($this->supplier_do->document_type=='PO') {
@@ -1737,12 +1771,12 @@ public function getReportExcel($attributes)
 			    DB::table('purchase_order_item')->where('purchase_order_id',$this->supplier_do->document_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
 								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 0 ]);
 			    
-				$pirow = DB::table('item_location_pi')->where('invoice_id',$item->id)->where('is_sdo',1)->get();
+				$pirow = DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('invoice_id',$item->id)->where('is_sdo',1)->get();
 				
 				foreach($pirow as $prow) {
-					DB::table('item_location_pi')->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+					DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 					
-					DB::table('item_location')->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+					DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 								->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 				}
 			}
@@ -1769,7 +1803,7 @@ public function getReportExcel($attributes)
 	
 	public function suppliersDOList()
 	{
-		$query = $this->supplier_do->where('supplier_do.status',1);
+		$query = $this->supplier_do->where('supplier_do.status',1)->where('supplier_do.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','supplier_do.supplier_id');
 						} )
@@ -1795,9 +1829,12 @@ public function getReportExcel($attributes)
 	
 	public function findSDOdata($id)
 	{
-		$query = $this->supplier_do->where('supplier_do.id', $id);
+		$query = $this->supplier_do->where('supplier_do.id', $id)->where('supplier_do.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','supplier_do.supplier_id');
+						} )
+						->join('location AS l', function($join) {
+							$join->on('l.id','=','supplier_do.location_id');
 						} )
 					->leftJoin('jobmaster AS J',function($join) {
 						$join->on('J.id','=','supplier_do.job_id');
@@ -1822,7 +1859,7 @@ public function getReportExcel($attributes)
 		
 	public function getSDOitems($id)
 	{
-		$query = $this->supplier_do->whereIn('supplier_do.id',$id);
+		$query = $this->supplier_do->whereIn('supplier_do.id',$id)->where('supplier_do.department_id',env('DEPARTMENT_ID'));
 		
 		return $query->join('supplier_do_item AS poi', function($join) {
 							$join->on('poi.supplier_do_id','=','supplier_do.id');
@@ -1835,8 +1872,12 @@ public function getReportExcel($attributes)
 					  })
 					  ->join('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on('iu.unit_id','=','poi.unit_id');
+						  //$join->on('iu.unit_id','=','poi.unit_id');
 					  })
+					   ->join('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					->where('poi.status',1)
 					->whereIn('poi.is_transfer',[0,2])
 					->where('poi.deleted_at', '0000-00-00 00:00:00')
@@ -1865,7 +1906,7 @@ public function getReportExcel($attributes)
 	
 	public function getItems($id)
 	{
-		$query = $this->supplier_do->where('supplier_do.id',$id);
+		$query = $this->supplier_do->where('supplier_do.id',$id)->where('supplier_do.department_id',env('DEPARTMENT_ID'));;
 		
 		return $query->join('supplier_do_item AS poi', function($join) {
 							$join->on('poi.supplier_do_id','=','supplier_do.id');
@@ -1875,17 +1916,21 @@ public function getReportExcel($attributes)
 					  })
 					  ->join('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on('iu.unit_id','=','poi.unit_id');//JUN25
+						 // $join->on('iu.unit_id','=','poi.unit_id');//JUN25
 					    })
+						 ->join('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
 					  ->join('units AS u', function($join){
 						  $join->on('u.id','=','poi.unit_id');
 					  }) 
 					  ->leftjoin('purchase_order_item AS ci', function($join){
 						  $join->on('ci.id','=','poi.doc_row_id');
 					  })
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.status',1)
 					  ->where('poi.deleted_at','0000-00-00 00:00:00')
-					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.packing','ci.balance_quantity as po_balance_quantity','iu.pkno')
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.packing','ci.balance_quantity as po_balance_quantity','isd.pkno')
 					  ->orderBY('poi.id')
 					  ->groupBY('poi.id')
 					  ->get();
@@ -1911,7 +1956,7 @@ public function getReportExcel($attributes)
 	
 	public function findPOdata($id)
 	{
-		$query = $this->supplier_do->where('supplier_do.id', $id);
+		$query = $this->supplier_do->where('supplier_do.id', $id)->where('supplier_do.department_id', env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','supplier_do.supplier_id');
 						} )
@@ -1925,7 +1970,7 @@ public function getReportExcel($attributes)
 	
 	private function setPurchaseLog($attributes, $key, $document_id, $cost_avg, $action, $other_cost, $item=null)
 	{
-		$irow = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
+		$irow = DB::table('itemstock_department') ->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
 		
 		//JUN25
 		$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']):($attributes['cost'][$key]);
@@ -1952,6 +1997,7 @@ public function getReportExcel($attributes)
 			$logid = DB::table('item_log')->insertGetId([
 							 'document_type' => 'SDO',
 							 'document_id'   => $document_id,
+							 'department_id'  =>env('DEPARTMENT_ID'),
 							 'item_id' 	  => $attributes['item_id'][$key],
 							 'unit_id'    => $attributes['unit_id'][$key],
 							 'quantity'   => $quantity, //$attributes['quantity'][$key] * $attributes['packing'][$key],
@@ -1973,13 +2019,14 @@ public function getReportExcel($attributes)
 		} else if($action=='update') {
 		    
 		    //MAY25
-		    $slog = DB::table('item_log')->where('document_type','SDO')->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
+		    $slog = DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
 		                ->select('id')->first();
 			$logid = $slog->id;
 			
 			//-----------ITEM LOG----------------							
 			DB::table('item_log')->where('document_type','SDO')
 							->where('document_id', $document_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('item_id', $item->item_id)
 							->where('unit_id', $item->unit_id)
 							->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
@@ -2002,6 +2049,7 @@ public function getReportExcel($attributes)
 	{
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
+										->where('department_id',env('DEPARTMENT_ID'))
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
 										->where('deleted_at','0000-00-00 00:00:00')
@@ -2025,6 +2073,13 @@ public function getReportExcel($attributes)
 						  'pur_count' 		   => DB::raw('pur_count + 1')
 						  //'cost_avg'		   => $cost_avg
 						]);
+			DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->where('unit_id', $attributes['unit_id'][$key])
+				->update([//'last_purchase_cost' => $cost + $other_cost,
+						  'pur_count' 		   => DB::raw('pur_count + 1')
+						  //'cost_avg'		   => $cost_avg
+						]);	
 						
 		//UPDATING ROWMATERIAL COST...
 		/* $itemlog = DB::table('mfg_items')->where('subitem_id', $attributes['item_id'][$key])->where('unit_price', 0)->select('id','quantity')->first();
@@ -2050,6 +2105,19 @@ public function getReportExcel($attributes)
 				->where('id', $item->id)
 				->update([ 'cur_quantity' => $item->cur_quantity + $baseqty,
 						   'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
+			
+			$items = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
+									  ->where('is_baseqty', 1)->first();
+									  
+			if($items) {
+				$qty = $attributes['quantity'][$key];
+				$baseqty = ($qty * $attributes['packing'][$key]);
+				DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+					->where('id', $items->id)
+					->update([ 'cur_quantity' => $items->cur_quantity + $baseqty,
+							'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
+								
+			}
 							
 		}
 									  
@@ -2061,6 +2129,7 @@ public function getReportExcel($attributes)
 		$pid = $attributes['purchase_invoice_id'];
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
+										->where('department_id',env('DEPARTMENT_ID'))
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
 										->where('deleted_at','0000-00-00 00:00:00')
@@ -2099,9 +2168,9 @@ public function getReportExcel($attributes)
 										  ->where('is_baseqty', 1)->first();
 										  
 			if($item) {
-				$qty = $attributes['quantity'][$key];
+				$qty = (float)$attributes['quantity'][$key];
 				$baseqty = ($qty * $attributes['packing'][$key]);
-				$diffqty = ($attributes['actual_quantity'][$key] * $attributes['packing'][$key]) - ($qty * $attributes['packing'][$key]);
+				$diffqty = ((float)$attributes['actual_quantity'][$key] * (float)$attributes['packing'][$key]) - ($qty * (float)$attributes['packing'][$key]);
 				$received_qty = $diffqty * -1;
 				
 				if($attributes['actual_quantity'][$key] < $qty) {
@@ -2118,13 +2187,36 @@ public function getReportExcel($attributes)
 					
 			}
 
+			$items = DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
+										  ->where('is_baseqty', 1)->first();
+										  
+			if($items) {
+				$qty = (float)$attributes['quantity'][$key];
+				$baseqty = ($qty * $attributes['packing'][$key]);
+				$diffqty = ((float)$attributes['actual_quantity'][$key] * (float)$attributes['packing'][$key]) - ($qty * (float)$attributes['packing'][$key]);
+				$received_qty = $diffqty * -1;
+				
+				if($attributes['actual_quantity'][$key] < $qty) {
+					$cur_quantity = $items->cur_quantity + $received_qty;
+				} else { 
+					$cur_quantity = $items->cur_quantity - $diffqty;
+				}
+				
+				DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))
+					->where('itemmaster_id',  $attributes['item_id'][$key])
+					->where('is_baseqty',1)
+					->update([ 'cur_quantity' => $cur_quantity,
+								'received_qty' => DB::raw('received_qty + '.$received_qty) ]);
+					
+			}
+
 			return true;
 		}
 	}
 	
 	public function getPOitems($id)
 	{
-		$query = $this->supplier_do->whereIn('supplier_do.id',$id);
+		$query = $this->supplier_do->whereIn('supplier_do.id',$id)->where('supplier_do.department_id', env('DEPARTMENT_ID'));
 		
 		return $query->join('supplier_do_item AS poi', function($join) {
 							$join->on('poi.supplier_do_id','=','supplier_do.id');
@@ -2138,6 +2230,10 @@ public function getReportExcel($attributes)
 					   ->join('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
 					  })
+					  ->join('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
+					  ->where('isd.department_id', env('DEPARTMENT_ID'))
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
 					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
@@ -2152,13 +2248,14 @@ public function getReportExcel($attributes)
 		foreach($items as $item) {
 									
 			//COST AVG Updating on DELETE section....
-			DB::table('item_log')->where('document_id', $id)->where('document_type','SDO')
+			DB::table('item_log')->where('document_id', $id)->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
 								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);
-									  
+			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id',env('DEPARTMENT_ID'))->where('unit_id',$item->unit_id)
+								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);						  
 		}
 	}
 	

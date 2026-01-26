@@ -68,13 +68,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> @php echo (Session::get('trip_entry')==1)?'Daily Entry':'Delivery Order'; @endphp
                         </h3>
                         <div class="pull-right">
-                             @can('do-create')
+                             @permission('do-create')
 							 <a href="{{ url('customers_do/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endcan
+							@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -105,17 +105,17 @@
 											<td>{{ date('d-m-Y', strtotime($order->voucher_date)) }}</td>
 											<td>{{$order->net_total}}</td>
 											<td>
-												@can('do-edit')<p><button class="btn btn-primary btn-xs" onClick="location.href='{{ url('customers_do/edit/'.$order->id)}}'"><span class="glyphicon glyphicon-pencil"></span></button></p>@endcan
+												@permission('do-edit')<p><button class="btn btn-primary btn-xs" onClick="location.href='{{ url('customers_do/edit/'.$order->id)}}'"><span class="glyphicon glyphicon-pencil"></span></button></p>@endpermission
 											</td>
 											<td>
-												@can('do-print')<p><a href="{{url('customers_do/print/'.$order->id)}}" target="_blank" class="btn btn-primary btn-xs"><span class="fa fa-fw fa-print"></span></a></p>@endcan
+												@permission('do-print')<p><a href="{{url('customers_do/print/'.$order->id)}}" target="_blank" class="btn btn-primary btn-xs"><span class="fa fa-fw fa-print"></span></a></p>@endpermission
 											</td>
 											<?php if($order->is_fc==1) { ?><td>
-												@can('do-print')<p><a href="{{url('customers_do/print/'.$order->id.'/FC')}}" target="_blank" class="btn btn-primary btn-xs"><span class="fa fa-fw fa-print"></span> FC</a></p>@endcan
+												@permission('do-print')<p><a href="{{url('customers_do/print/'.$order->id.'/FC')}}" target="_blank" class="btn btn-primary btn-xs"><span class="fa fa-fw fa-print"></span> FC</a></p>@endpermission
 											</td><?php } ?>
 											
 											<td>
-												@can('do-delete')<p><button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $order->id }}')"><span class="glyphicon glyphicon-trash"></span></button></p>@endcan
+												@permission('do-delete')<p><button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $order->id }}')"><span class="glyphicon glyphicon-trash"></span></button></p>@endpermission
 											</td>
 										</tr>
 										@endforeach
@@ -270,10 +270,10 @@ $(function() {
 			{ "data": "voucher_date" },
 			{ "data": "net_total" },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } ?>
-			@can('do-edit'){ "data": "edit","bSortable": false },@endcan
-			@can('do-view'){ "data": "viewonly","bSortable": false },@endcan
-			@can('do-print'){ "data": "print","bSortable": false },@endcan
-			@can('do-delete'){ "data": "delete","bSortable": false },@endcan
+			@permission('do-edit'){ "data": "edit","bSortable": false },@endpermission
+			@permission('do-view'){ "data": "viewonly","bSortable": false },@endpermission
+			@permission('do-print'){ "data": "print","bSortable": false },@endpermission
+			@permission('do-delete'){ "data": "delete","bSortable": false },@endpermission
 		]	
 		  
 		});

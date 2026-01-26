@@ -260,7 +260,7 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; @endphp
+								{{--*/ $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -546,8 +546,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_{{$l}}" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+																<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -610,8 +611,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_1" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+																<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -624,7 +626,7 @@
 														<input type="number" name="oc_rate[]" id="ocrate_1" step="any" value="1" class="form-control oc-rate" placeholder="Rate">
 													</td>
 													<td width="10%">
-														<span class="small">Convrt Amt</span>
+														<span class="small">FC Amt</span>
 														<input type="number" name="oc_fc_amount[]" id="ocfcamt_1" step="any" readonly class="form-control oc-line-fc" placeholder="Convrt Amt">
 													</td>
 													<td width="5%">

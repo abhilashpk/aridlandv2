@@ -170,7 +170,9 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 
 		
 		$this->sales_invoice->is_editable  = (isset($attributes['document_id']) && $attributes['document_id']!='')?2:0; //APR25
-		
+		$this->sales_invoice->prefix  = (isset($attributes['prefix']))?$attributes['prefix']:'';
+		$this->sales_invoice->is_intercompany = isset($attributes['is_intercompany'])?$attributes['is_intercompany']:'';
+
 			
 		return true;
 	}
@@ -236,12 +238,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		/*CHG*/
 		$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 		if( isset($attributes['is_fc']) ) {
-			$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100);// MR19 * $attributes['currency_rate'];
+			$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100);// MR19 * $attributes['currency_rate'];
 			//VAT CHNG every quantity field should multiply with packing...
-			$item_total = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * $attributes['currency_rate']; 
-			$tax_total  = round($tax * $attributes['quantity'][$key],2);
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
-			$rate = $attributes['cost'][$key]*$attributes['currency_rate']; //29MY
+			$item_total = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * $attributes['currency_rate']; 
+			$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
+			$rate = (float)$attributes['cost'][$key]*(float)$attributes['currency_rate']; //29MY
 			
 		} else {
 			
@@ -251,50 +253,50 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
 				
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
-				$tax_total  = round($tax * $attributes['quantity'][$key],2);
-				$rate = $attributes['cost'][$key];//29MY
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
+				$rate = (float)$attributes['cost'][$key];//29MY
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
 				$ln_total   = round($attributes['cost'][$key] * $attributes['quantity'][$key],2);
-				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
+				$tax_total  = $ln_total *  (float)$attributes['line_vat'][$key] / (100 +  (float)$attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				//$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
 				//echo 'rd '.round(50.015,2).'  '.$ln_total;exit;
 				
 				///31MY
 				if((float)$attributes['line_discount'][$key] > 0) {
-					$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
-					$row_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);//14JN24
+					$rate = (float)$attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
+					$row_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);//14JN24
 				} else {
 					$vatPlus = 100 + $attributes['line_vat'][$key];
 					$vatLine = round( (($attributes['cost'][$key] * $attributes['line_vat'][$key]) / $vatPlus),2 );
-					$rate = $attributes['cost'][$key] - $vatLine;
-					$row_total = ($rate * $attributes['quantity'][$key]);//14JN24
+					$rate = (float)$attributes['cost'][$key] - $vatLine;
+					$row_total = ($rate *(float) $attributes['quantity'][$key]);//14JN24
 				}
 				
 			} else {
 				
-				$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
-				$tax_total  = round($tax * $attributes['quantity'][$key],2);
-				$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];//31MY
-				$row_total = ($rate * $attributes['quantity'][$key]);//31MY
+				$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
+				$rate = (float)$attributes['cost'][$key] - (float)$attributes['line_discount'][$key];//31MY
+				$row_total = ($rate * (float)$attributes['quantity'][$key]);//31MY
 			}
 		}
 		
 		//********DISCOUNT Calculation.............
-		$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+		$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 		$type = 'tax_exclude';
 			
 		if($attributes['tax_include'][$key]==1 ) {
 			$vatPlus = 100 + $attributes['line_vat'][$key];
-			$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+			$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 			$type = 'tax_include';
 		} else {
 			$vatPlus = 100;
-			$total = $attributes['line_total'][$key];
+			$total = (float)$attributes['line_total'][$key];
 			$type = 'tax_exclude';
 		}
 		
@@ -306,20 +308,20 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			$tax_total = (isset($attributes['is_fc']))?($vatLine * $attributes['currency_rate']):$vatLine; //MR19
 			
 			//14JN24
-			$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];//31MY
+			$vat_exc = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];//31MY
 			/*if($attributes['tax_include'][$key]==1 ) {
 				$itmtotl = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $tax_total;
 			} else {
 				$itmtotl = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];//31MY
 			}*/
-			$rate = $vat_exc / $attributes['quantity'][$key];
+			$rate = $vat_exc / (float)$attributes['quantity'][$key];
 		} else { //31MY
 			if($attributes['tax_include'][$key]==1 ) {
-				$vatLine = round( (($total * $attributes['line_vat'][$key]) / $vatPlus),2 );
+				$vatLine = round( (($total * (float)$attributes['line_vat'][$key]) / $vatPlus),2 );
 				$vat_exc = $total - $vatLine;
 				//$row_total = $vat_exc + $tax_total;
 			} else {
-				$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				$vat_exc = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				 
 			}
 		}
@@ -431,7 +433,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 
 		$cost_value = 0;
 		//if(Session::get('cost_accounting')==1) {
-			$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
+			$item = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
 										  ->where('unit_id', $attributes['unit_id'][$key])
 										  ->first();
 			if($item)	{						  
@@ -664,10 +666,10 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 	private function setSaleLog($attributes, $key, $document_id, $cost_avg, $sale_cost, $action, $item=null) //DEC 23 UPDATE..
 	{
 		//CHECK ITEM UNIT QUANTITY AS 0
-		$irow = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
+		$irow = DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
 		if($irow->cur_quantity == 0) {
 			$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])
-								   ->where('trtype', 1)
+								   ->where('trtype', 1)->where('department_id', env('DEPARTMENT_ID'))
 								   ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 								   ->select('pur_cost','cur_quantity','unit_cost')
 								   ->orderBy('id','DESC')->first();
@@ -682,13 +684,13 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			
 		//}
 		
-		$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']):($attributes['cost'][$key]);
+		$unit_cost = (isset($attributes['is_fc']))?((float)$attributes['cost'][$key]*(float)$attributes['currency_rate']):(float)($attributes['cost'][$key]);
 
 		if($attributes['packing'][$key]=="1") 
-		    $quantity = $attributes['quantity'][$key];
+		    $quantity = (float)$attributes['quantity'][$key];
 		else {
 		   $pkgar = explode('-', $attributes['packing'][$key]);
-		   $quantity = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+		   $quantity = ((float)$attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
 		   
 		   //COST...
 		   /*if($pkgar[0] > 1)
@@ -702,6 +704,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			$logid = DB::table('item_log')->insertGetId([
 							 'document_type' => 'SI',
 							 'document_id'   => $document_id,
+							 'department_id' =>env('DEPARTMENT_ID'),
 							 'item_id' 	  => $attributes['item_id'][$key],
 							 'unit_id'    => $attributes['unit_id'][$key],
 							 'quantity'   => $quantity, //($attributes['quantity'][$key] * $attributes['packing'][$key]), //14JN24  ($attributes['unit_id'][$key]==1||$attributes['unit_id'][$key]==2)?($attributes['quantity'][$key]/$attributes['packing'][$key]): 
@@ -722,7 +725,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		} else if($action=='update') { 
 		    
 		    //MAY25
-		    $slog = DB::table('item_log')->where('document_type','SI')->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
+		    $slog = DB::table('item_log')->where('document_type','SI')->where('department_id', env('DEPARTMENT_ID'))->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
 		                ->select('id')->first();
 			$logid = $slog->id;
 			
@@ -730,6 +733,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			//if($item_id!=$attributes['item_id'][$key]) {
 				DB::table('item_log')->where('document_type','SI')
 								->where('document_id', $document_id)
+								->where('department_id', env('DEPARTMENT_ID'))
 								->where('item_id', $item->item_id)
 								->where('unit_id', $item->unit_id)
 								->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
@@ -767,9 +771,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		
 	private function updateItemQuantity($attributes, $key, $bquantity=null)
 	{
-		$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
+		$items = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 									  ->where('unit_id', $attributes['unit_id'][$key])
 									  ->first(); //echo '<pre>';print_r($item);
+		$item = DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
+									  ->where('unit_id', $attributes['unit_id'][$key])
+									  ->first();
 		if($item) {
 			
 			$qty = ($bquantity!=null)?$bquantity:$attributes['quantity'][$key];
@@ -779,12 +786,23 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				->where('is_baseqty',1)
 				->update([ 'cur_quantity' => DB::raw('cur_quantity - '.$baseqty),
 							'issued_qty' => DB::raw('issued_qty + '.$baseqty) ]);
+
+			DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))
+				->where('itemmaster_id',  $attributes['item_id'][$key])
+				->where('is_baseqty',1)
+				->update([ 'cur_quantity' => DB::raw('cur_quantity - '.$baseqty),
+							'issued_qty' => DB::raw('issued_qty + '.$baseqty) ]);				
 							
 			if($item->is_baseqty==0){ 
 				DB::table('item_unit')
+						->where('id', $items->id)
+						->update([ 'cur_quantity' => $items->cur_quantity - $qty,
+									'issued_qty' => DB::raw('issued_qty + '.$qty) ]);
+
+				DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))
 						->where('id', $item->id)
 						->update([ 'cur_quantity' => $item->cur_quantity - $qty,
-									'issued_qty' => DB::raw('issued_qty + '.$qty) ]);
+									'issued_qty' => DB::raw('issued_qty + '.$qty) ]);					
 			}
 			return true;		
 		}
@@ -804,11 +822,11 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				$cr_acnt_id = $vatrow->payment_account;
 			}
 		} else if($amount_type == 'LNTOTAL') {
-			$cr_acnt_id = isset($attributes['cr_account_id'])?$attributes['cr_account_id']:'';
-			$amount = (isset($attributes['roundoff']))?($amount - $attributes['roundoff']):$amount;
+			$cr_acnt_id = isset($attributes['cr_account_id'])?(float)$attributes['cr_account_id']:'';
+			$amount = (isset($attributes['roundoff']))?($amount - (float)$attributes['roundoff']):$amount;
 		} else if($amount_type == 'NTAMT') {
-			$dr_acnt_id = $attributes['dr_account_id'];
-			$amount = (isset($attributes['roundoff']))?($amount - $attributes['roundoff']):$amount;
+			$dr_acnt_id = (float)$attributes['dr_account_id'];
+			$amount = (isset($attributes['roundoff']))?($amount - (float)$attributes['roundoff']):$amount;
 		} else if($amount_type == 'STOCK') {
 			$cr_acnt_id = Session::get('stock');
 		} else if($amount_type == 'COSTOFSALE') {
@@ -855,7 +873,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								'tr_for'			=> $trfor,
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'salesman_id'		=> (isset($attributes['salesman_id']))?$attributes['salesman_id']:'',
 								'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):'',
 								'version_no'		=> $attributes['version_no']
@@ -907,7 +925,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 	{
 		
 		//$discount = ($attributes['discount']=='')?0:$attributes['discount'];
-		$discount = ($attributes['discount']=='')?((isset($attributes['roundoff']))?$attributes['roundoff']:0):$attributes['discount'];
+		$discount = ($attributes['discount']=='')?((isset($attributes['roundoff']))?(float)$attributes['roundoff']:0):(float)$attributes['discount'];
 		
 		if($taxtype=='tax_include' && $discount > 0) {
 			$temp = $net_amount;
@@ -948,7 +966,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 	private function PurchaseAndSalesMethodUpdate($attributes, $line_total, $tax_total, $net_amount, $sales_invoice_id, $taxtype)
 	{
 		//$discount = ($attributes['discount']=='')?0:$attributes['discount'];
-		$discount = ($attributes['discount']=='')?((isset($attributes['roundoff']))?$attributes['roundoff']:0):$attributes['discount'];
+		$discount = ($attributes['discount']=='')?((isset($attributes['roundoff']))?(float)$attributes['roundoff']:0):(float)$attributes['discount'];
 		
 		if($taxtype=='tax_include' && $discount > 0) {
 			/*$temp = $net_amount;
@@ -1481,15 +1499,13 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				Session::put('SI_cracid', isset($attributes['cr_account_id'])?$attributes['cr_account_id']:null);
 
 				//VOUCHER NO LOGIC.....................
-				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-				 // 2️⃣ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_invoice')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
-				if($dept > 0)	
-					$qry->where('department_id', $dept);
+				$dept = env('DEPARTMENT_ID');
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('sales_invoice')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id',env('DEPARTMENT_ID'));
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -1518,15 +1534,13 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
 								strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-								$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-								// 2️⃣ Get the highest numeric part from voucher_master
-								$qry = DB::table('sales_invoice')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
-								if($dept > 0)	
-									$qry->where('department_id', $dept);
+								$dept = env('DEPARTMENT_ID');
+								// ⿢ Get the highest numeric part from voucher_master
+								$qry = DB::table('sales_invoice')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
 
 								$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 								
-								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
+								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 								$retryCount++;
 							} else {
@@ -1540,7 +1554,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				if( isset($attributes['is_fc']) ) 
 					$discount = (isset($attributes['discount']))?((float)$attributes['discount']* (float)$attributes['currency_rate']):0;
 				else
-					$discount = (isset($attributes['discount']))?(($attributes['discount']!='')?$attributes['discount']:0):0;
+					$discount = (isset($attributes['discount']))?(($attributes['discount']!='')?(float)$attributes['discount']:0):0;
 				
 				//$discount = (isset($attributes['discount']))?(($attributes['discount']!='')?$attributes['discount']:0):0;
 				//order items insert
@@ -1567,7 +1581,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							//echo '<pre>';print_r($itemObj);exit;
 							//UPDATE ITEM COST LOGS....
 							//$this->objUtility->reEvaluateItemCostQuantity($value); 
-							
+							$zero = DB::table('sales_invoice_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+					         if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('sales_invoice_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						     }
+
 							//item description section....
 							/*if(isset($attributes['itemdesc'][$key])) {
 								foreach($attributes['itemdesc'][$key] as $descrow) {
@@ -1637,12 +1656,17 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
                             		   if($pkgar[0] > 0)
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
-									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+									$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
-									if($qtys) {
-										DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
-										
+									
+									if($qtys && $attributes['document_type']=='CDO') {
+										$lcqtyy=0;
+										DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqtyy) ]);
+									}
+									elseif($qtys) {
+										DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
+																				
 										//$loctext .= ($loctext!='')?'<br/>'.$attributes['locnm'][$key][$lk].': '.$lq:$attributes['locnm'][$key][$lk].': '.$lcqty;
     									//$bintext .= ($bintext!='')?'<br/>'.$attributes['locbn'][$key][$lk]:$attributes['locbn'][$key][$lk];
     									$locdata = true;
@@ -1654,6 +1678,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
 										$itemLocation->quantity = $lcqty;
 										$itemLocation->status = 1;
+										$itemLocation->department_id = env('DEPARTMENT_ID');
 										$itemLocation->save();
 									}
 									
@@ -1667,6 +1692,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 									$itemLocationSI->invoice_id = $itemObj->id;
 									$itemLocationSI->logid = $logid;
 									$itemLocationSI->qty_entry = $lq;
+									$itemLocationSI->department_id = env('DEPARTMENT_ID');
 									$itemLocationSI->save();
 								}
 							}
@@ -1686,7 +1712,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							$qtys = DB::table('item_location')
 							              ->leftJoin('bin_location','bin_location.id','=','item_location.bin_id')
 							              ->leftJoin('location','location.id','=','item_location.location_id')
-		                                  ->where('item_location.status',1)->where('item_location.location_id', $sales_loc)
+		                                   ->where('item_location.status',1)->where('department_id',env('DEPARTMENT_ID'))->where('item_location.location_id', $sales_loc)
 										  ->where('item_location.item_id', $value)//->where('item_location.unit_id', $attributes['unit_id'][$key])
 										  ->where('item_location.deleted_at', '0000-00-00 00:00:00')->select('item_location.id','location.code','bin_location.code AS bin')->first();
 										  
@@ -1706,6 +1732,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty;
 									$itemLocation->status = 1;
+									$itemLocation->department_id = env('DEPARTMENT_ID');
 									$itemLocation->save();
 								}
 							
@@ -1718,6 +1745,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							$itemLocationSI->quantity = $lcqty;
 							$itemLocationSI->status = 1;
 							$itemLocationSI->invoice_id = $itemObj->id;
+							$itemLocationSI->department_id = env('DEPARTMENT_ID');
 							$itemLocationSI->logid = $logid;
 							$itemLocationSI->qty_entry = $attributes['quantity'][$key];
 							$itemLocationSI->save();
@@ -1733,7 +1761,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						//Item user's default location add...
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																  
@@ -1748,7 +1776,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
                         		}
                         		
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 								} else {
 										$itemLocation = new ItemLocation();
 										$itemLocation->location_id = $attributes['default_location'];
@@ -1756,6 +1784,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
 										$itemLocation->quantity = $lcqty;
 										$itemLocation->status = 1;
+										$itemLocation->department_id = env('DEPARTMENT_ID');
 										$itemLocation->save();
 									}
 									
@@ -1767,6 +1796,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								$itemLocationSI->status = 1;
 								$itemLocationSI->invoice_id = $itemObj->id;
 								$itemLocationSI->logid = $logid;
+								$itemLocationSI->department_id = env('DEPARTMENT_ID');
 								$itemLocationSI->qty_entry = $attributes['quantity'][$key];
 								$itemLocationSI->save();
 								
@@ -1836,7 +1866,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							
 							//PURCHASE STOCK ENTRY...
 							if(isset($attributes['sales_type']) && $attributes['sales_type']=='ltol') {
-								DB::table('item_location')->where('location_id', $attributes['sales_location'])
+								DB::table('item_location')->where('location_id', $attributes['sales_location'])->where('department_id',env('DEPARTMENT_ID'))
 														  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
 														  ->update(['quantity' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
 							}
@@ -2156,7 +2186,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				$this->setJobdetailsUpdate($attributes);
 			}
 			
-			$discount = (isset($attributes['discount']))?(($attributes['discount']!='')?$attributes['discount']:0):0; $taxtype = '';
+			$discount = (isset($attributes['discount']))?(($attributes['discount']!='')?(float)$attributes['discount']:0):0; $taxtype = '';
 			$lineTotal = $this->calculateTotalAmount($attributes);//CHG
 			if($this->sales_invoice->id && !empty( array_filter($attributes['item_id']))) {
 				foreach($attributes['item_id'] as $key => $value) { 
@@ -2167,11 +2197,11 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];//CHG
 						
 						if( isset($attributes['is_fc']) ) {
-							$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
-							$itemtotal = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * $attributes['currency_rate'];
+							$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$attributes['currency_rate'];
+							$itemtotal = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * $attributes['currency_rate'];
 							$taxtotal  = round($tax * $attributes['quantity'][$key], 2);
-							$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
-							$rate = $attributes['cost'][$key]*$attributes['currency_rate']; //29MY
+							$linetotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
+							$rate = (float)$attributes['cost'][$key]*(float)$attributes['currency_rate']; //29MY
 							
 						} else {
 							
@@ -2180,35 +2210,35 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
 								
 								$tax        = 0;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
-								$taxtotal  = round($tax * $attributes['quantity'][$key], 2);
-								$rate = $attributes['cost'][$key];//29MY
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+								$taxtotal  = round($tax * (float)$attributes['quantity'][$key], 2);
+								$rate = (float)$attributes['cost'][$key];//29MY
 								
 							} else if($attributes['tax_include'][$key]==1){
 								
 								$ln_total   = round($attributes['cost'][$key] * $attributes['quantity'][$key],2);
 								$taxtotal  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
 								$itemtotal = $ln_total - $taxtotal;
-								$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
+								$rate = (float)$attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
 								
 								//31MY
 								if((float)$attributes['line_discount'][$key] > 0) {
-									$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
+									$rate = (float)$attributes['cost'][$key] - (float)$attributes['line_discount'][$key];
 								} else {
-									$vatPlus = 100 + $attributes['line_vat'][$key];
+									$vatPlus = 100 + (float)$attributes['line_vat'][$key];
 									$vatLine = round( (($attributes['cost'][$key] * $attributes['line_vat'][$key]) / $vatPlus),2 );
-									$rate = $attributes['cost'][$key] - $vatLine;
+									$rate = (float)$attributes['cost'][$key] - $vatLine;
 								}
 								$row_total = ($rate * $attributes['quantity'][$key]);//31MY
 								
 							} else {
 								
-								$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+								$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 								$taxtotal  = round($tax * $attributes['quantity'][$key], 2);
 								
-								$rate = $attributes['cost'][$key] - (float)$attributes['line_discount'][$key];//31MY
-								$row_total = ($rate * $attributes['quantity'][$key]);//31MY
+								$rate = (float)$attributes['cost'][$key] - (float)$attributes['line_discount'][$key];//31MY
+								$row_total = ($rate * (float)$attributes['quantity'][$key]);//31MY
 							}
 						}
 						
@@ -2218,7 +2248,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							
 						if($attributes['tax_include'][$key]==1 ) {
 							$vatPlus = 100 + $attributes['line_vat'][$key];
-							$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+							$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 							$taxtype = 'tax_include';
 						} else {
 							$vatPlus = 100;
@@ -2232,13 +2262,13 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							$vatLine = round( (($amountTotal * $attributes['line_vat'][$key]) / $vatPlus),2 );
 							$taxtotal = $vatLine; 
 							
-							$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];//31MY
+							$vat_exc = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];//31MY
 						} else { //31MY
 							if($attributes['tax_include'][$key]==1 ) {
 								$vatLine = round( (($total * $attributes['line_vat'][$key]) / $vatPlus),2 );
 								$vat_exc = $total - $vatLine;
 							} else {
-								$vat_exc = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+								$vat_exc = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 							}
 						}
 						
@@ -2312,7 +2342,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							if($attributes['assembly_items'][$key]!=$attributes['assembly_items_old'][$key]) {
 								//SET ALL ITEMS ARE DELETED...
 								$oldidarr = explode(',',$attributes['assembly_items_old'][$key]);
-								DB::table('item_log')->where('document_type','SI')->whereIn('item_id',$oldidarr)
+								DB::table('item_log')->where('document_type','SI')->where('department_id', env('DEPARTMENT_ID'))->whereIn('item_id',$oldidarr)
 													 ->where('document_id',$this->sales_invoice->id)
 													 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 								
@@ -2333,7 +2363,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							if($attributes['assembly_items'][$key]!=$attributes['assembly_items_old'][$key]) {
 								//SET ALL ITEMS ARE DELETED...
 								$oldidarr = explode(',',$attributes['assembly_items_old'][$key]);
-								DB::table('item_log')->where('document_type','SI')->whereIn('item_id',$oldidarr)
+								DB::table('item_log')->where('document_type','SI')->where('department_id', env('DEPARTMENT_ID'))->whereIn('item_id',$oldidarr)
 													 ->where('document_id',$this->sales_invoice->id)
 													 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 								
@@ -2351,9 +2381,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						
 						//if(Session::get('cost_accounting')==1) {
 							if($oldqty!=$attributes['quantity'][$key]) {
-								$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
+								/*$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 															  ->where('unit_id', $attributes['unit_id'][$key])
-															  ->first();
+															  ->first();*/
+								$item = DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
+															  ->where('unit_id', $attributes['unit_id'][$key])
+															  ->first();							  
 								$cost_avg = ($item->cost_avg==0)?$item->last_purchase_cost:$item->cost_avg;
 								$item_cost = $cost_avg * $attributes['quantity'][$key] * $attributes['packing'][$key];
 							}
@@ -2362,6 +2395,11 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						$items['item_cost'] = $item_cost;
 						
 						$salesInvoiceItem->update($items);
+						$zero = DB::table('sales_invoice_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+						if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('sales_invoice_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+						}
 						
 						//update item transfer status... MY22
 						$this->setTransferStatusItem($attributes, $key, $attributes['document_type'],'edit');
@@ -2373,8 +2411,9 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						//Item Location specific add....
 						//NOV24
 						$updated = false;
-						if(isset($attributes['locqty'][$key])) {
+						if(isset($attributes['locqty'][$key]) && $attributes['locqty'][$key] !='' ) {
 							foreach($attributes['locqty'][$key] as $lk => $lq) {
+								//echo '<pre>';print_r($attributes['locqty'][$key]);exit;
 								if($lq!='') {
 									$updated = true;
 									//$lcqty = $lq * $attributes['packing'][$key]; //MAY25
@@ -2388,8 +2427,8 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
 									
-									$edit = DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->where('is_do',0)->first();
-									$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+									$edit = DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->where('department_id',env('DEPARTMENT_ID'))->where('is_do',0)->first();
+									$idloc = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																  //echo '<pre>';print_r($edit);exit;
@@ -2397,18 +2436,18 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 										
 										if($edit->quantity < $lcqty) {
 											$balqty = $lcqty - $edit->quantity;
-											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$balqty)]);
 										} else {
 											$balqty = $edit->quantity - $lcqty;
-											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$balqty)]);
 										}
 										
 									} else {
 										//NOV24
 										if($attributes['document_type']!='CDO')
-											DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+											DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 
-										$dolog = DB::table('item_location_si')->where('item_id',$value)->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_do',0)->first();
+										$dolog = DB::table('item_location_si')->where('department_id',env('DEPARTMENT_ID'))->where('item_id',$value)->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_do',0)->first();
 //print_r($dolog);exit;
 										$itemLocationSI = new ItemLocationSI();
 										$itemLocationSI->location_id = $attributes['locid'][$key][$lk];
@@ -2416,16 +2455,17 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 										$itemLocationSI->unit_id = $attributes['unit_id'][$key];
 										$itemLocationSI->quantity = $lcqty;
 										$itemLocationSI->status = 1;
+										$itemLocationSI->department_id = env('DEPARTMENT_ID');
 										$itemLocationSI->invoice_id = $attributes['order_item_id'][$key];
 										$itemLocationSI->logid = ($dolog)?$dolog->logid:0;
 										$itemLocationSI->qty_entry = $lq;
 										$itemLocationSI->save();
 									}
 									
-									DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => '0000-00-00 00:00:00', 'qty_entry' => $lq]);
+									DB::table('item_location_si')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => '0000-00-00 00:00:00', 'qty_entry' => $lq]);
 
 								} else { //NOV24
-									DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 0, 'deleted_at' => date('Y-m-d h:i:s'), 'qty_entry' => $lq]);
+									DB::table('item_location_si')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->update(['status' => 0, 'deleted_at' => date('Y-m-d h:i:s'), 'qty_entry' => $lq]);
 								}
 							}
 						}
@@ -2433,7 +2473,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						//Item default location add...
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 								
-							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+							$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 																->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
 																
@@ -2448,8 +2488,8 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
                     		}
 							
 							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
-								DB::table('item_location_si')->where('invoice_id', $attributes['order_item_id'][$key] )
+								DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
+								DB::table('item_location_si')->where('invoice_id', $attributes['order_item_id'][$key] )->where('department_id',env('DEPARTMENT_ID'))
 																->where('location_id', $qtys->location_id)
 																->where('item_id', $qtys->item_id)
 																//->where('unit_id', $qtys->unit_id)
@@ -2462,6 +2502,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							$itemLocationSI->unit_id = $attributes['unit_id'][$key];
 							$itemLocationSI->quantity = $lcqty;
 							$itemLocationSI->status = 1;
+							$itemLocationSI->department_id =env('DEPARTMENT_ID');
 							$itemLocationSI->invoice_id = $attributes['order_item_id'][$key];
 							$itemLocationSI->qty_entry = $attributes['quantity'][$key];
 							$itemLocationSI->save();
@@ -2550,7 +2591,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							  $sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key, $bquantity);//exit;
 							  $CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, 0);
 							  $logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'update', $itemsobj); 
-							  $cost_value += ($sale_cost* $attributes['quantity'][$key]);//$sale_cost;
+							  $cost_value += ($sale_cost* (float)$attributes['quantity'][$key]);//$sale_cost;
 							}
 						//} 
 						/* else if() { 
@@ -2727,6 +2768,11 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							
 							$salesInvoiceItem->status = 1;
 							$itemObj = $this->sales_invoice->salesInvoiceItemAdd()->save($salesInvoiceItem);
+							$zero = DB::table('sales_invoice_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+					         if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('sales_invoice_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						     }
 							
 							$this->setTransferStatusItem($attributes, $key, $attributes['document_type'],'add');
 							
@@ -2751,7 +2797,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								$sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);//exit;
 									$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
 										$logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add' );
-								$cost_value += ($sale_cost* $attributes['quantity'][$key]);//$sale_cost;
+								$cost_value += ($sale_cost* (float)$attributes['quantity'][$key]);//$sale_cost;
 								
 							//}
 							
@@ -2775,7 +2821,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
                             		
-									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+									$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 									if($qtys) {
@@ -2790,6 +2836,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
 										$itemLocation->quantity = $lcqty;
 										$itemLocation->status = 1;
+										$itemLocation->department_id = env('DEPARTMENT_ID');
 										$itemLocation->save();
 									}
 									
@@ -2803,6 +2850,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 									$itemLocationSI->invoice_id = $itemObj->id;
 									$itemLocationSI->logid = $logid;
 									$itemLocationSI->qty_entry = $lq;
+									$itemLocationSI->department_id = env('DEPARTMENT_ID');
 									$itemLocationSI->save();
 								}
 							}
@@ -2811,7 +2859,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						//Item user's default location add...
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																  
@@ -2826,7 +2874,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
                         		}
                         		
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 								} else {
 										$itemLocation = new ItemLocation();
 										$itemLocation->location_id = $attributes['default_location'];
@@ -2834,6 +2882,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
 										$itemLocation->quantity = $lcqty;
 										$itemLocation->status = 1;
+										$itemLocation->department_id = env('DEPARTMENT_ID');
 										$itemLocation->save();
 									}
 									
@@ -2843,6 +2892,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								$itemLocationSI->unit_id = $attributes['unit_id'][$key];
 								$itemLocationSI->quantity = $lcqty;
 								$itemLocationSI->status = 1;
+								$itemLocationSI->department_id = env('DEPARTMENT_ID');
 								$itemLocationSI->invoice_id = $itemObj->id;
 								$itemLocationSI->logid = $logid;
 								$itemLocationSI->qty_entry = $attributes['quantity'][$key];
@@ -2926,14 +2976,17 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 					DB::table('item_unit')->where('itemmaster_id', $res->item_id)->where('unit_id',$res->unit_id)
 										  ->update(['cur_quantity' => DB::raw('cur_quantity - '.($res->quantity*-1)),
 											        'issued_qty' => DB::raw('cur_quantity - '.($res->quantity*-1) )]);
+					DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))->where('itemmaster_id', $res->item_id)->where('unit_id',$res->unit_id)
+										  ->update(['cur_quantity' => DB::raw('cur_quantity - '.($res->quantity*-1)),
+											        'issued_qty' => DB::raw('cur_quantity - '.($res->quantity*-1) )]);
 					
-					$sirow = DB::table('item_location_si')->where('invoice_id',$row)->where('is_do',0)->get();
+					$sirow = DB::table('item_location_si')->where('department_id', env('DEPARTMENT_ID'))->where('invoice_id',$row)->where('is_do',0)->get();
 					//echo '<pre>';print_r($sirow);exit;
 					DB::table('con_location')->where('invoice_id',$row)->where('is_do',0)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 					foreach($sirow as $srow) {
-						DB::table('item_location_si')->where('id',$srow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+						DB::table('item_location_si')->where('department_id', env('DEPARTMENT_ID'))->where('id',$srow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 						
-						DB::table('item_location')->where('location_id', $srow->location_id)->where('item_id',$srow->item_id)->where('unit_id',$srow->unit_id)
+						DB::table('item_location')->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $srow->location_id)->where('item_id',$srow->item_id)->where('unit_id',$srow->unit_id)
 									->update(['quantity' => DB::raw('quantity + '.$srow->quantity) ]);
 									
 						//REMOVE FROM CONSIGNMENT LOCATION
@@ -3197,7 +3250,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				foreach($arrids as $row) {
 					DB::table('si_selling_exp')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					
-					DB::table('account_transaction')->where('voucher_type', 'SI')->where('voucher_type_id', $this->sales_invoice->id)
+					DB::table('account_transaction')->where('voucher_type', 'SI')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id', $this->sales_invoice->id)
 								->where('tr_for', $row)->where('other_type','OC')
 								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					
@@ -3261,10 +3314,10 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 					    
 					    foreach($ids as $idd) {
 					        $dorow = DB::table('item_log')->join('customer_do_item','customer_do_item.id','=','item_log.item_row_id')
-					                    ->where('item_log.document_type','CDO')->where('item_log.document_id',$idd)
+					                    ->where('item_log.document_type','CDO')->where('item_log.document_id',$idd)->where('department_id', env('DEPARTMENT_ID'))
 					                    ->select('customer_do_item.quantity','customer_do_item.balance_quantity')->first();
 					        if($dorow)
-					            DB::table('item_log')->where('document_type','CDO')->where('document_id',$idd)->update(['quantity' => $dorow->quantity, 'status' => 1,'deleted_at' => '0000-00-00 00:00:00']); //($dorow->balance_quantity > 0)?$dorow->balance_quantity:
+					            DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$idd)->update(['quantity' => $dorow->quantity, 'status' => 1,'deleted_at' => '0000-00-00 00:00:00']); //($dorow->balance_quantity > 0)?$dorow->balance_quantity:
 					    }
 				    //}
 				    
@@ -3284,9 +3337,9 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			
 			//Transaction update....
 			if($this->sales_invoice->is_rental == 1) {         
-				DB::table('account_transaction')->where('voucher_type', 'SRL')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+				DB::table('account_transaction')->where('voucher_type', 'SRL')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			}else{
-			    DB::table('account_transaction')->where('voucher_type', 'SI')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+			    DB::table('account_transaction')->where('voucher_type', 'SI')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			}
 			
 			//DB::table('account_master')->where('id', $this->sales_invoice->dr_account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$this->sales_invoice->net_total)]);
@@ -3314,12 +3367,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				DB::table('jobmaster')->where('id',$this->sales_invoice->job_id)->update(['is_close' => 0]);
 			
 			foreach($items as $item) {
-				$sirow = DB::table('item_location_si')->where('invoice_id',$item->id)->where('is_do',0)->get();
+				$sirow = DB::table('item_location_si')->where('department_id', env('DEPARTMENT_ID'))->where('invoice_id',$item->id)->where('is_do',0)->get();
 				
 				foreach($sirow as $prow) {
-					DB::table('item_location_si')->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+					DB::table('item_location_si')->where('department_id', env('DEPARTMENT_ID'))->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 					
-					DB::table('item_location')->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+					DB::table('item_location')->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 								->update(['quantity' => DB::raw('quantity + '.$prow->quantity) ]);
 								
 				}
@@ -3401,7 +3454,23 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		//CHECK DEPARTMENT.......
 		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
 		
-		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_rental',0);
+		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_rental',0)->where('sales_invoice.department_id', env('DEPARTMENT_ID'));
+			if($deptid!=0)
+				$query->where('sales_invoice.department_id', $deptid);
+			
+		return $query->join('account_master AS am', function($join) {
+							$join->on('am.id','=','sales_invoice.customer_id');
+						} )
+					->count();
+	}
+
+	 public function salesInvoiceCashListCount()
+	{
+		//CHECK DEPARTMENT.......
+		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		
+		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_rental',0)
+		->where('sales_invoice.department_id', env('DEPARTMENT_ID'))->where('sales_invoice.is_cash',1);
 			if($deptid!=0)
 				$query->where('sales_invoice.department_id', $deptid);
 			
@@ -3418,7 +3487,8 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		//CHECK DEPARTMENT.......
 		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
 		
-		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_rental',0) //->where('sales_invoice.department_id','!=',4)
+		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_rental',0)
+		->where('sales_invoice.department_id', env('DEPARTMENT_ID'))->where('sales_invoice.is_cash',0) //->where('sales_invoice.department_id','!=',4)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_invoice.customer_id');
 						} )
@@ -3464,6 +3534,61 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				else
 					return $query->count();
 	}
+
+	public function salesInvoiceCashList($type,$start,$limit,$order,$dir,$search,$dept=null)
+	{
+		//CHECK DEPARTMENT.......
+		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		
+		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_rental',0)
+		->where('sales_invoice.department_id', env('DEPARTMENT_ID'))->where('sales_invoice.is_cash',1) //->where('sales_invoice.department_id','!=',4)
+						->join('account_master AS am', function($join) {
+							$join->on('am.id','=','sales_invoice.customer_id');
+						} )
+						->leftJoin('sales_order AS SO', function($join) {
+							$join->on('SO.id','=','sales_invoice.document_id');
+						} )
+				->leftJoin('jobmaster AS JM', function($join) {
+							$join->on('JM.id','=','sales_invoice.job_id');
+						})
+						->leftJoin('vehicle AS V', function($join) {
+							$join->on('V.id','=','sales_invoice.vehicle_id');
+						} );
+				
+				if($deptid!=0) //dept chk
+					$query->where('sales_invoice.department_id', $deptid);
+				else {
+					if($dept!='' && $dept!=0) {
+						$query->where('sales_invoice.department_id', $dept);
+					}
+				}
+			
+				if($search) {
+					
+					$query->where(function($qry) use($search) {
+						$date = date('Y-m-d', strtotime($search));
+						$qry->where('sales_invoice.voucher_no','LIKE',"%{$search}%")
+							->orWhere('am.master_name', 'LIKE',"%{$search}%")
+							->orWhere('sales_invoice.voucher_date','LIKE',"%{$search}%")
+							->orWhere('sales_invoice.reference_no','LIKE',"%{$search}%")
+							->orWhere('JM.name', 'LIKE',"%{$search}%")
+							->orWhere('sales_invoice.customer_name','LIKE',"%{$search}%")
+							->orWhere('sales_invoice.customer_phone','LIKE',"%{$search}%")
+							->orWhere('sales_invoice.vehicle_no','LIKE',"%{$search}%");
+					});
+				}
+				
+				$query->select('sales_invoice.*','am.master_name AS customer','V.reg_no','JM.name AS job','sales_invoice.vehicle_no AS vehicle','SO.voucher_no AS jo_no')
+					->offset($start)
+                    ->limit($limit)
+                    ->orderBy($order,$dir);
+					
+				if($type=='get')
+					return $query->get();
+				else
+					return $query->count();
+	}
+
 	
 	public function jobInvoiceListCount()
 	{
@@ -3536,7 +3661,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 	
 	public function getLastId() {
 		
-		return $this->sales_invoice->where('sales_invoice.status',1)
+		return $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
 					->join('account_setting', function($join){
 						$join->on('account_setting.id','=','sales_invoice.voucher_id');
 					})
@@ -3890,7 +4015,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
 		$invoice_from =(isset($attributes['invoice_from']))?$attributes['invoice_from']:'';	
 		$invoice_to = (isset($attributes['invoice_to']))?$attributes['invoice_to']:'';	
-		$department_id = (isset($attributes['department_id']))?$attributes['department_id']:'';	
+		$department_id =env('DEPARTMENT_ID'); 
 		$cos = DB::table('other_account_setting')->where('account_setting_name', 'Cost of Sales')->select('account_id')->first();
 		$query = $this->sales_invoice->where('sales_invoice.status',1)
 								   ->join('account_master AS AM', function($join) {
@@ -3910,7 +4035,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								   ->join('item_log AS IS', function($join) {
 									   $join->on('IS.item_id','=', 'SI.item_id');
 									   $join->on('IS.document_id','=', 'sales_invoice.id');
-									   $join->on('IS.doc_row_id','=', 'SI.id');
+									   $join->on('IS.item_row_id','=', 'SI.id');
 								   })
 								   ->join('itemmaster AS IM', function($join) {
 									   $join->on('IM.id','=','SI.item_id');
@@ -3930,6 +4055,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								 ->where('SI.status',1)
 								 ->where('SI.deleted_at','0000-00-00 00:00:00')
 								 ->where('IS.document_type','=', 'SI')
+								 ->where('IS.department_id',env('DEPARTMENT_ID'))
 								 ->where('IS.status',1)
 								 ->where('IS.deleted_at','0000-00-00 00:00:00');
 												   
@@ -4566,7 +4692,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 	public function InvoiceLogProcess()
 	{
 		//API ...
-		$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$location = DB::table('location')->where('is_default',1)->where('department_id', env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 		$response = Curl::to($this->api_url.'pilog-process.php')
 					->withData( array('id' => $location->id))
 					->get();
@@ -4656,17 +4782,41 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						
 				}
 				//UPDATE ITEM QUANTITY END....
+				//UPDATE STOCK ITEM QUANTITY....
+				$items = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $row['item_id'])
+									  ->where('unit_id', $row['unit_id'])
+									  ->first();
+									  
+				if($items) {
+					$qty = $row['quantity'];
+						$packing = ($items->is_baseqty==1)?1:$items->packing;
+						$baseqty = ($qty * $packing);
+						DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+							->where('itemmaster_id',  $row['item_id'])
+							->where('is_baseqty',1)
+							->update([ 'cur_quantity' => $items->cur_quantity - $baseqty,
+										'issued_qty' => DB::raw('issued_qty + '.$baseqty) ]);
+										
+					if($items->is_baseqty==0){ 
+						DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+								->where('id', $items->id)
+								->update([ 'cur_quantity' => $item->cur_quantity - $qty,
+											'issued_qty' => DB::raw('issued_qty + '.$qty) ]);
+					}
+						
+				}
+				//UPDATE ITEM QUANTITY END....
 				
 				//################ Location Stock Entry ####################
 					$updated = false;
 					//Item default location add...
 					if(($location_id!='') && ($updated == false)) {
 							
-							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $location_id)
+							$qtys = DB::table('item_location')->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $location_id)
 															  ->where('item_id', $row['item_id'])->where('unit_id', $row['unit_id'])
 													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$row['quantity']) ]);
+								DB::table('item_location')->where('id', $qtys->id)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$row['quantity']) ]);
 							} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $location_id;
@@ -4674,6 +4824,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 									$itemLocation->unit_id = $row['unit_id'];
 									$itemLocation->quantity = $row['quantity'];
 									$itemLocation->status = 1;
+									$itemLocation->department_id = env('DEPARTMENT_ID');
 									$itemLocation->save();
 								}
 								
@@ -4683,6 +4834,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							$itemLocationSI->unit_id = $row['unit_id'];
 							$itemLocationSI->quantity = $row['quantity'];
 							$itemLocationSI->status = 1;
+							$itemLocationSI->department_id = env('DEPARTMENT_ID');
 							$itemLocationSI->invoice_id = $sales_invoice_id;
 							$itemLocationSI->save();
 							
@@ -4824,6 +4976,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> (isset($attributes['description']))?$attributes['description']:'',
+								'department_id'     =>env('DEPARTMENT_ID'),
 								'reference'			=> $attributes['rv_voucherno'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $referencefrm
@@ -4857,6 +5010,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								'modify_by' 		=> Auth::User()->id,
 								'description' 		=> (isset($attributes['description']))?$attributes['description']:'',
 								'reference'			=> $attributes['rv_voucher_no'],
+								'department_id'     =>env('DEPARTMENT_ID'),
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $referencefrm
 							]);
@@ -4881,6 +5035,8 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			
 			DB::table('account_transaction')
 					->where('voucher_type', 'RV')
+					->where('department_id',env('DEPARTMENT_ID'))
+					
 					->where('voucher_type_id', $voucher_id)
 					->where('account_master_id', $account_master_id)
 					->where('transaction_type', $type)
@@ -5176,6 +5332,114 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 						->where('POI.deleted_at','0000-00-00 00:00-00')
 						->where('sales_invoice.status',1)
 						->where('sales_invoice.is_rental',0)
+						->where('sales_invoice.is_cash',0)
+						->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
+						->where('sales_invoice.deleted_at','0000-00-00 00:00-00');
+						
+				if(isset($attributes['group_id']))
+					$query->whereIn('IM.group_id', $attributes['group_id']);
+				
+				if(isset($attributes['subgroup_id']))
+					$query->whereIn('IM.subgroup_id', $attributes['subgroup_id']);
+				
+				if(isset($attributes['category_id']))
+					$query->whereIn('IM.category_id', $attributes['category_id']);
+				
+				if(isset($attributes['subcategory_id']))
+					$query->whereIn('IM.subcategory_id', $attributes['subcategory_id']);
+						
+				if( $date_from!='' && $date_to!='' ) { 
+					$query->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to));
+				}
+				
+				if( $attributes['search_type']=='daily' ) { 
+					$query->whereBetween( 'sales_invoice.voucher_date', array(date('Y-m-d'), date('Y-m-d')) );
+				}
+				
+				if(isset($attributes['dept_id']) && $attributes['dept_id']!='') { 
+					$query->whereIn('sales_invoice.department_id', $attributes['dept_id']);
+				}
+				if($attributes['salesman']!='') { 
+					$query->where('sales_invoice.salesman_id', $attributes['salesman']);
+				}
+				
+				if( $attributes['search_type']=='department') { 
+					$query->where('sales_invoice.department_id','!=',0);
+				}
+		if(isset($attributes['customer_id']) && $attributes['customer_id']!='')
+				$query->whereIn('sales_invoice.customer_id', $attributes['customer_id']);
+				
+		if(isset($attributes['job_id']) && $attributes['job_id']!='')
+				$query->whereIn('sales_invoice.job_id', $attributes['job_id']);	
+
+		if(isset($attributes['item_id']) && $attributes['item_id']!='')
+					$query->whereIn('POI.item_id', $attributes['item_id']);	
+
+					$query->select('sales_invoice.voucher_no','AM.master_name AS customer','sales_invoice.reference_no','sales_invoice.customer_id','sales_invoice.total','sales_invoice.vat_amount AS vat_total','sales_invoice.subtotal',
+					'sales_invoice.amount_transfer','S.name AS salesman','sales_invoice.discount AS disc','AST.is_cash_voucher',
+					'POI.line_total','POI.item_total','POI.vat_amount','POI.item_name','POI.unit_price','POI.vat_amount','POI.discount','IM.description','sales_invoice.voucher_date','POI.item_id',
+					'POI.quantity','POI.balance_quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no',
+					'sales_invoice.net_total','POI.tax_code','D.name','sales_invoice.department_id','sales_invoice.document_id',
+					'POI.tax_include','IM.item_code','GP.group_name AS group','SGP.group_name AS subgroup','AST.voucher_name',
+					'CAT.category_name AS category','SCAT.category_name AS subcategory','sales_invoice.voucher_id');			
+
+	if(isset($attributes['type']))
+		return $query->groupBy('sales_invoice.id')->orderBy('sales_invoice.voucher_no', 'ASC')->get()->toArray();
+	elseif(isset($attributes['search_type']) && $attributes['search_type']=='detail')
+		return $query->orderBy('sales_invoice.voucher_no', 'ASC')->get();
+		else
+		return $query->groupBy('sales_invoice.id')->orderBy('sales_invoice.voucher_no', 'ASC')->get();
+}
+							
+
+
+public function getReportsalesinvocash($attributes)
+	{
+
+		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
+		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
+		
+		$query = DB::table('sales_invoice')//$this->sales_invoice deleted_at
+						->join('sales_invoice_item AS POI', function($join) {
+							$join->on('POI.sales_invoice_id','=','sales_invoice.id');
+						})
+						->join('itemmaster AS IM', function($join) {
+							$join->on('IM.id','=','POI.item_id');
+						})
+						->join('account_master AS AM', function($join) {
+							$join->on('AM.id','=','sales_invoice.customer_id');
+						})
+						->join('account_setting AS AST', function($join) {
+							$join->on('AST.id','=','sales_invoice.voucher_id');
+						})
+						->leftJoin('salesman AS S', function($join) {
+							$join->on('S.id','=','sales_invoice.salesman_id');
+						})
+						->leftJoin('department AS D', function($join) {
+							$join->on('D.id','=','sales_invoice.department_id');
+								 //->where('sales_invoice.department_id','>',0);
+						})
+						->leftJoin('groupcat AS GP', function($join) {
+							$join->on('GP.id','=','IM.group_id');
+						})
+						->leftJoin('groupcat AS SGP', function($join) {
+							$join->on('GP.id','=','IM.subgroup_id');
+						})
+						->leftJoin('category AS CAT', function($join) {
+							$join->on('CAT.id','=','IM.category_id');
+						})
+						->leftJoin('category AS SCAT', function($join) {
+							$join->on('CAT.id','=','IM.subcategory_id');
+						})
+						->leftJoin('vehicle AS V', function($join) {
+							$join->on('V.id','=','sales_invoice.vehicle_id');
+						})
+						->where('POI.status',1)
+						->where('POI.deleted_at','0000-00-00 00:00-00')
+						->where('sales_invoice.status',1)
+						->where('sales_invoice.is_rental',0)
+						->where('sales_invoice.is_cash',1)
+						->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
 						->where('sales_invoice.deleted_at','0000-00-00 00:00-00');
 						
 				if(isset($attributes['group_id']))
@@ -5658,7 +5922,7 @@ if($attributes['vehicle_no']!='') {
 		
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		$query = $this->sales_invoice->where('sales_invoice.customer_id',$id);
+		$query = $this->sales_invoice->where('sales_invoice.customer_id',$id)->where('sales_invoice.department_id',env('DEPARTMENT_ID'));
 		
 		$query->join('account_master AS AM', function($join) {
 							$join->on('AM.id','=','sales_invoice.customer_id');
@@ -5670,19 +5934,23 @@ if($attributes['vehicle_no']!='') {
 						  $join->on('u.id','=','poi.unit_id');
 					  }) 
 					   ->join('item_unit AS iu', function($join){
-						  $join->on('iu.unit_id','=','poi.unit_id')
+						  $join//->on('iu.unit_id','=','poi.unit_id')
 							   ->on('iu.itemmaster_id','=','poi.item_id');
+					  })
+					   ->join('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','poi.item_id');
 					  })
 					  ->join('itemmaster AS im', function($join){
 						  $join->on('im.id','=','poi.item_id');
 					  })
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.status',1);
 					  
 				if($date_from!='' && $date_to!='')
 					$query->whereBetween('sales_invoice.voucher_date', [$date_from, $date_to]);
 					  
 						
-		return $query->select('poi.*','u.unit_name','im.item_code','iu.packing','iu.is_baseqty',
+		return $query->select('poi.*','u.unit_name','im.item_code','isd.packing','isd.is_baseqty',
 							 'sales_invoice.voucher_no','sales_invoice.voucher_date','AM.master_name')
 					 ->groupBy('poi.id')
 					 ->orderBY('poi.id')
@@ -5732,7 +6000,7 @@ if($attributes['vehicle_no']!='') {
 	
 	public function salesInvoiceSRListCount($dept=null)
 	{
-		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_transfer',0);
+		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.department_id',env('DEPARTMENT_ID'))->where('sales_invoice.is_transfer',0);
 		if($dept)
 			$query->where('sales_invoice.department_id', $dept);
 				
@@ -5744,7 +6012,7 @@ if($attributes['vehicle_no']!='') {
 	
 	public function salesInvoiceSRList($type,$start,$limit,$order,$dir,$search, $dept=null)
 	{
-		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.is_transfer',0)
+		$query = $this->sales_invoice->where('sales_invoice.status',1)->where('sales_invoice.department_id',env('DEPARTMENT_ID'))->where('sales_invoice.is_transfer',0)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_invoice.customer_id');
 						} )
@@ -5795,15 +6063,15 @@ if($attributes['vehicle_no']!='') {
 		if(Session::get('cost_accounting')==1 && Session::get('department')==1) { 
 			$result = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('stock_acid','cost_acid')->first();
 			if($result){
-				Session::put('stock', $result->stock_acid);
-				Session::put('cost_of_sale', $result->cost_acid);
+				Session::set('stock', $result->stock_acid);
+				Session::set('cost_of_sale', $result->cost_acid);
 			} else {
 				$result = DB::table('voucher_account')->whereIn('account_field', ['stock','cost_of_sale'])->select('account_id','account_field')->get();
 				foreach($result as $res) {
 					if($res->account_field=='stock')
-						Session::put('stock', $res->stock_acid);
+						Session::set('stock', $res->stock_acid);
 					else
-						Session::put('cost_of_sale', $res->cost_acid);
+						Session::set('cost_of_sale', $res->cost_acid);
 						
 				}
 			}
@@ -5815,7 +6083,8 @@ if($attributes['vehicle_no']!='') {
 		$arritms = explode(',', $items);
 		$arritmsqty = explode(',', $qty);
 		foreach($arritms as $key => $item) {
-			$itmattr = DB::table('item_unit')->where('itemmaster_id',$item)->select('unit_id','sell_price','cost_avg')->first();
+			//$itmattr = DB::table('item_unit')->where('itemmaster_id',$item)->select('unit_id','sell_price','cost_avg')->first();
+		     $itmattr = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id',$item)->select('unit_id','sell_price','cost_avg')->first();
 			$sale_cost = $this->objUtility->updateItemQuantitySalesAssembly($item, $arritmsqty[$key]);
 				$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvgAssembly($item, $arritmsqty[$key], $itmattr, $attributes);
 					$this->setSaleLogAssembly($item, $arritmsqty[$key], $itmattr, $CostAvg_log, $sale_cost, $this->sales_invoice->id, $act, $attributes);
@@ -5825,11 +6094,13 @@ if($attributes['vehicle_no']!='') {
 	
 	private function setSaleLogAssembly($itemid, $itmqty, $itmattr, $cost_avg, $sale_cost, $document_id, $action, $attributes) 
 	{
-		//CHECK ITEM UNIT QUANTITY AS 0
-		$irow = DB::table('item_unit')->where('itemmaster_id', $itemid)->select('cur_quantity')->first();
+		//CHECK ITEM UNIT QUANTITY AS 0 
+		//$irow = DB::table('item_unit')->where('itemmaster_id', $itemid)->select('cur_quantity')->first();
+		$irow = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $itemid)->select('cur_quantity')->first();
+
 		if($irow->cur_quantity == 0) {
 			$stocks = DB::table('item_log')->where('item_id', $itemid)
-								   ->where('trtype', 1)
+								   ->where('trtype', 1)->where('department_id', env('DEPARTMENT_ID'))
 								   ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 								   ->select('pur_cost','cur_quantity')
 								   ->orderBy('id','DESC')->first();
@@ -5842,6 +6113,7 @@ if($attributes['vehicle_no']!='') {
 			DB::table('item_log')->insert([
 							 'document_type' => 'SI',
 							 'document_id'   => $document_id,
+							 'department_id'=>env('DEPARTMENT_ID'),
 							 'item_id' 	  => $itemid,
 							 'unit_id'    => $itmattr->unit_id,
 							 'quantity'   => $itmqty,
@@ -5861,6 +6133,7 @@ if($attributes['vehicle_no']!='') {
 		} else if($action=='update') {
 				DB::table('item_log')->where('document_type','SI')
 								->where('document_id', $document_id)
+								->where('department_id', env('DEPARTMENT_ID'))
 								->where('item_id', $itemid)
 								->where('unit_id', $itmattr->unit_id)
 								->update(['item_id' => $itemid,
@@ -5886,6 +6159,7 @@ if($attributes['vehicle_no']!='') {
 		$ids = explode(',', $attributes['document_id']);
 		$row = DB::table('item_log')->where('document_type','CDO')
 						->whereIn('document_id', $ids)
+						->where('department_id', env('DEPARTMENT_ID'))
 						->where('item_id',$attributes['item_id'][$key])
 						->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 						->select('id', DB::raw('SUM(quantity) AS quantity'))
@@ -5902,6 +6176,7 @@ if($attributes['vehicle_no']!='') {
 		$ids = explode(',', $attributes['document_id']);
 		$row = DB::table('item_log')->where('document_type','CDO')
 						->whereIn('document_id', $ids)
+						->where('department_id', env('DEPARTMENT_ID'))
 						->where('item_id',$attributes['item_id'][$key])
 						->select('id', DB::raw('SUM(quantity) AS quantity'))
 						->groupBY('item_id')
@@ -5920,18 +6195,18 @@ if($attributes['vehicle_no']!='') {
 		
 		if($DOlogs->quantity==$attributes['quantity'][$key]) {
 		    //DISABLE SDO TRANSACTION LOG.... 50,25,25   90
-	    	DB::table('item_log')->where('document_type','CDO')->whereIn('document_id',$pids)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+	    	DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->whereIn('document_id',$pids)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		} else {
 		    //PARTIAL TRANSFER OF DO TO SI HANDLING LOG PARIAL QUANTITY.....
 		    $siquantity = $attributes['quantity'][$key];
 		    foreach($pids as $pid) {
-		       $drow = DB::table('item_log')->where('document_type','CDO')->where('document_id',$pid)->select('quantity')->first();//25 < 15
+		       $drow = DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$pid)->select('quantity')->first();//25 < 15
 		       if($drow && $drow->quantity <= $siquantity) {
-		           DB::table('item_log')->where('document_type','CDO')->where('document_id',$pid)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+		           DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$pid)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		           $siquantity = $siquantity - $drow->quantity;//15
 		       } else {
 		           $finalqty = $drow->quantity - $siquantity;
-		           DB::table('item_log')->where('document_type','CDO')->where('document_id',$pid)->update(['quantity'=> $finalqty]);
+		           DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$pid)->update(['quantity'=> $finalqty]);
 		       }
 		    }
 		        
@@ -5942,6 +6217,7 @@ if($attributes['vehicle_no']!='') {
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
 										->where('trtype', 0)
+										->where('department_id', env('DEPARTMENT_ID'))
 										->where('cur_quantity', '>', 0)
 										->where('deleted_at','0000-00-00 00:00:00')
 										->where(function ($query) use($pids) {
@@ -5967,7 +6243,7 @@ if($attributes['vehicle_no']!='') {
 			$cost_avg = round( (($itmcost / $itmqty) + $other_cost), 3);
 			$cost = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		} else {
-			$row = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cost_avg')->orderBy('id', 'DESC')->first();
+			$row = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->select('cost_avg')->orderBy('id', 'DESC')->first();
 			if($row)
 				$cost_avg = $cost = $row->cost_avg;
 			else
@@ -5980,6 +6256,12 @@ if($attributes['vehicle_no']!='') {
 						  //'pur_count' 		   => DB::raw('pur_count + 1'),
 						  'cost_avg'		   => $cost_avg
 						]);
+		DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->update([//'last_purchase_cost' => $cost,
+						  //'pur_count' 		   => DB::raw('pur_count + 1'),
+						  'cost_avg'		   => $cost_avg
+						]);				
 							
 		return $cost_avg;
 		
@@ -5994,23 +6276,23 @@ if($attributes['vehicle_no']!='') {
 		//echo '<pre>';print_r($DOlogs);
 		if($DOlogs->quantity==$attributes['quantity'][$key]) {
 		    //DISABLE SDO TRANSACTION LOG.... 
-	    	DB::table('item_log')->where('document_type','CDO')->whereIn('document_id',$pids)->update(['quantity' => 0, 'status'=> 0, 'deleted_at'=>date('Y-m-d H:i:s')]);
+	    	DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->whereIn('document_id',$pids)->update(['quantity' => 0, 'status'=> 0, 'deleted_at'=>date('Y-m-d H:i:s')]);
 		} else {
 		    //PARTIAL TRANSFER OF DO TO SI HANDLING LOG PARIAL QUANTITY.....
 		    $siquantity = $attributes['quantity'][$key];
 		    $siquantity_act = $attributes['quantity_old'][$key]+$DOlogs->quantity;
 		    foreach($pids as $pid) {
-		       $drow = DB::table('item_log')->where('document_type','CDO')->where('document_id',$pid)->select('quantity')->first();//echo '<pre>';print_r($drow); //quantity_old
+		       $drow = DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$pid)->select('quantity')->first();//echo '<pre>';print_r($drow); //quantity_old
 		       if($drow && $drow->quantity < $siquantity) {
 		           $finalqty = $siquantity_act - $attributes['quantity'][$key];  //echo $finalqty.' a';
 		           if($finalqty==0)
-		                DB::table('item_log')->where('document_type','CDO')->where('document_id',$pid)->update(['quantity' => 0, 'status'=> 0, 'deleted_at'=>date('Y-m-d H:i:s')]);
+		                DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$pid)->update(['quantity' => 0, 'status'=> 0, 'deleted_at'=>date('Y-m-d H:i:s')]);
 		           else
-		                DB::table('item_log')->where('document_type','CDO')->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>'0000-00-00 00:0:00']);
+		                DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>'0000-00-00 00:0:00']);
 		           $siquantity = $siquantity - $drow->quantity;
 		       } else {
 		           $finalqty = $siquantity_act - $siquantity;  //echo $finalqty.' b';
-		           DB::table('item_log')->where('document_type','CDO')->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>'0000-00-00 00:0:00']);
+		           DB::table('item_log')->where('document_type','CDO')->where('department_id', env('DEPARTMENT_ID'))->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>'0000-00-00 00:0:00']);
 		       }
 		    }
 		        
@@ -6021,6 +6303,7 @@ if($attributes['vehicle_no']!='') {
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
 										->where('trtype', 0)
+										->where('department_id', env('DEPARTMENT_ID'))
 										->where('cur_quantity', '>', 0)
 										->where('deleted_at','0000-00-00 00:00:00')
 										->where(function ($query) use($pids) {
@@ -6033,8 +6316,8 @@ if($attributes['vehicle_no']!='') {
 		if($type==0) {								
 			$itmcost = $itmqty = 0;
 		} else {
-			$itmcost = $attributes['quantity'][$key] * $attributes['cost'][$key];
-			$itmqty = $attributes['quantity'][$key];
+			$itmcost = (float)$attributes['quantity'][$key] * (float)$attributes['cost'][$key];
+			$itmqty = (float)$attributes['quantity'][$key];
 		}
 		
 		foreach($itmlogs as $log) {
@@ -6046,7 +6329,7 @@ if($attributes['vehicle_no']!='') {
 			$cost_avg = round( (($itmcost / $itmqty) + $other_cost), 3);
 			$cost = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		} else {
-			$row = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cost_avg')->orderBy('id', 'DESC')->first();
+			$row = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->select('cost_avg')->orderBy('id', 'DESC')->first();
 			if($row)
 				$cost_avg = $cost = $row->cost_avg;
 			else
@@ -6059,6 +6342,12 @@ if($attributes['vehicle_no']!='') {
 						  //'pur_count' 		   => DB::raw('pur_count + 1'),
 						  'cost_avg'		   => $cost_avg
 						]);
+		DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->update([//'last_purchase_cost' => $cost,
+						  //'pur_count' 		   => DB::raw('pur_count + 1'),
+						  'cost_avg'		   => $cost_avg
+						]);				
 							
 		return $cost_avg;
 		

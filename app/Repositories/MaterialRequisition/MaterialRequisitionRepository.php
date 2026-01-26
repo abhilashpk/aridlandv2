@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\MaterialRequisition;
+<?php namespace App\Repositories\MaterialRequisition;
 
 use App\Models\MaterialRequisition;
 use App\Models\MaterialRequisitionItem;
@@ -10,8 +8,8 @@ use App\Repositories\AbstractValidator;
 use App\Exceptions\Validation\ValidationException;
 use App\Repositories\UpdateUtility;
 use Config;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
+use DB;
+use Session;
 use Auth;
 
 class MaterialRequisitionRepository extends AbstractValidator implements MaterialRequisitionInterface {
@@ -42,11 +40,13 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	{
 		$this->material_requisition->voucher_no = $attributes['voucher_no']; 
 		$this->material_requisition->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
-		$this->material_requisition->job_id = $attributes['job_id'];
-		$this->material_requisition->description = $attributes['description'];
-		$this->material_requisition->salesman_id = $attributes['salesman_id'];
-		$this->material_requisition->location_id = isset($attributes['location_id'])?$attributes['location_id']:$attributes['location_id'];
-		
+		$this->material_requisition->job_id = isset($attributes['job_id'])?$attributes['job_id']:'';
+		$this->material_requisition->department_id = env('DEPARTMENT_ID');
+		$this->material_requisition->locfrom_id = isset($attributes['locfrom_id'])?$attributes['locfrom_id']:'';
+		$this->material_requisition->description = isset($attributes['description'])?$attributes['description']:'';
+		$this->material_requisition->salesman_id = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
+		$this->material_requisition->location_id = isset($attributes['location_id'])?$attributes['location_id']:'';
+		$this->material_requisition->prefix = isset($attributes['prefix'])?$attributes['prefix']:'';
 		return true;
 	}
 	
@@ -56,14 +56,15 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 		
 		//echo '<pre>';print_r($attributes);exit;								 
 		//$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (isset($attributes['line_discount']))?$attributes['line_discount']:''[$key];
-		$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);		
+		$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);		
 		$objMaterialReqItem->material_requisition_id = $this->material_requisition->id;
 		$objMaterialReqItem->item_id = $attributes['item_id'][$key];
 		$objMaterialReqItem->unit_id = $attributes['unit_id'][$key];
 		$objMaterialReqItem->item_name = $attributes['item_name'][$key];
-		$objMaterialReqItem->quantity = $attributes['quantity'][$key];
-		$objMaterialReqItem->unit_price = $attributes['cost'][$key];
-		$objMaterialReqItem->total_price = $attributes['line_total'][$key];
+		$objMaterialReqItem->quantity = isset($attributes['quantity'][$key])?$attributes['quantity'][$key]:0;
+		$objMaterialReqItem->unit_price = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
+		$objMaterialReqItem->total_price = isset($attributes['line_total'][$key])?$attributes['line_total'][$key]:0;
+		$objMaterialReqItem->remarks = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
 		
 		return array('line_total' => $line_total);
 		
@@ -77,34 +78,61 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 			DB::beginTransaction();
 			try {
 
-				//VOUCHER NO INCREMENT LOGIC//
-				if( $attributes['curno'] == $attributes['voucher_no'] ) {
-					$cnt = 0;
-					do {
-						
-						$jvset = DB::table('voucher_no')->where('voucher_type', 'MR')->where('status',1)->select('no AS voucher_no','prefix')->first();
-						if($jvset) {
-							if($jvset->prefix==0) {
-								$attributes['voucher_no'] = $jvset->voucher_no + $cnt;
-								$attributes['vno'] = $jvset->voucher_no + $cnt;
-							} else {
-								$attributes['voucher_no'] = $jvset->prefix.($jvset->voucher_no + $cnt);
-								$attributes['vno'] = $jvset->voucher_no + $cnt;
-							}
-							$attributes['curno'] = $attributes['voucher_no'];
+				//VOUCHER NO LOGIC.....................
+				$dept = env('DEPARTMENT_ID');
+
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('material_requisition')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				
+
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('MR', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+				//VOUCHER NO LOGIC.....................
+				
+				//exit;
+				$maxRetries = 5; // prevent infinite loop
+				$retryCount = 0;
+				$saved = false;
+
+				while (!$saved && $retryCount < $maxRetries) {
+				try {
+						if($this->setInputValue($attributes)) {
+							$this->material_requisition->status = 1;
+							$this->material_requisition->created_at = date('Y-m-d H:i:s');
+							$this->material_requisition->created_by =  Auth::User()->id;
+							$this->material_requisition->fill($attributes)->save();
+							$saved = true;
 						}
-						$inv = DB::table('material_requisition')->where('voucher_no',$attributes['voucher_no'])->where('status',1)->whereNull('deleted_at')->count();
-						
-						$cnt++;
-					} while ($inv!=0);
-				} 
-				//VOUCHER NO INCREMENT LOGIC//
-				if($this->setInputValue($attributes)) {
+					} catch (\Illuminate\Database\QueryException $ex) {
+
+						// Check if it's a duplicate voucher number error
+						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+							$dept = env('DEPARTMENT_ID');
+
+							// ⿢ Get the highest numeric part from voucher_master
+							$qry = DB::table('material_requisition')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							
+
+							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('MR', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+
+							$retryCount++;
+						} else {
+							throw $ex; // rethrow if different DB error
+						}
+					}
+				}
+
+
+				/*if($this->setInputValue($attributes)) {
 					$this->material_requisition->status = 1;
-					$this->material_requisition->created_at = now();
+					$this->material_requisition->created_at = date('Y-m-d H:i:s');
 					$this->material_requisition->created_by =  Auth::User()->id;
 					$this->material_requisition->fill($attributes)->save();
-				}
+				}*/
 				
 				//invoice items insert
 				if($this->material_requisition->id && !empty( array_filter($attributes['item_id']))) {
@@ -119,7 +147,12 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 					//	if($arrResult['line_total']) {
 						    $line_total += $arrResult['line_total'];
 							$objMaterialReqItem->status = 1;
-							$this->material_requisition->doItem()->save($objMaterialReqItem);
+								$itemObj =$this->material_requisition->doItem()->save($objMaterialReqItem);
+								$zero = DB::table('material_requisition_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+					           if($zero && $zero->item_id != 0){
+						         $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						         DB::table('material_requisition_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						       }
 							
 					//	}
 					}
@@ -133,11 +166,12 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 										  'net_amount'	  => $net_amount ]
 										 );
 										 
-					if($this->material_requisition->id) {
+					/*if($this->material_requisition->id) {
 						 DB::table('voucher_no')
 							->where('voucher_type', 'MR')
+							->where('department_id', env('DEPARTMENT_ID'))
 							->update(['no' => $attributes['voucher_no'] + 1]);
-					}
+					}*/
 					
 				}
 				
@@ -162,7 +196,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 				
 				if($attributes['order_item_id'][$key]!='') {
 					
-					$lntotal = $attributes['cost'][$key] * $attributes['quantity'][$key];
+					$lntotal = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 					$line_total += $lntotal;
 					
 					$objMaterialReqItem = MaterialRequisitionItem::find($attributes['order_item_id'][$key]);//print_r($objMaterialReqItem);exit;//$attributes['order_item_id'][$key]);echo $attributes['order_item_id'][$key].'<pre>';
@@ -170,11 +204,16 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 					$items['item_name'] = $attributes['item_name'][$key];
 					$items['item_id'] = $value;
 					$items['unit_id'] = $attributes['unit_id'][$key];
-					$items['quantity'] = $attributes['quantity'][$key];
-					$items['unit_price'] = $attributes['cost'][$key];
+					$items['quantity'] = isset($attributes['quantity'][$key])?$attributes['quantity'][$key]:0;
+					$items['unit_price'] = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
+					$items['remarks'] = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
 					$items['total_price'] = $lntotal;
 					$objMaterialReqItem->update($items);
-					
+						$zero = DB::table('material_requisition_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+						    if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('material_requisition_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+						     }
 										
 				} else { //new entry...
 					$objMaterialReqItem = new MaterialRequisitionItem();
@@ -182,8 +221,12 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 					//if($arrResult['line_total']) {
 						$line_total			     += $arrResult['line_total'];
 						$objMaterialReqItem->status = 1;
-						$this->material_requisition->doItem()->save($objMaterialReqItem);
-						
+						$itemObj =$this->material_requisition->doItem()->save($objMaterialReqItem);
+							$zero = DB::table('material_requisition_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+					           if($zero && $zero->item_id != 0){
+						         $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						         DB::table('material_requisition_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						       }
 					//}
 				}
 				
@@ -191,7 +234,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 		}
 		
 		if($this->setInputValue($attributes)) {
-			$this->material_requisition->modify_at = now();
+			$this->material_requisition->modify_at = date('Y-m-d H:i:s');
 			$this->material_requisition->modify_by = Auth::User()->id;
 			$this->material_requisition->fill($attributes)->save();
 		}
@@ -205,13 +248,13 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 			foreach($arrids as $row) {
 				
 				$res = DB::table('material_requisition_item')->where('id',$row)->first();
-				DB::table('material_requisition_item')->where('id', $row)->update(['status' => 0,'deleted_at' => now()]);
+				DB::table('material_requisition_item')->where('id', $row)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s')]);
 					
 			}
 		}
 		$this->material_requisition->fill($attributes)->save();
 		
-		$net_amount = $line_total - (int)$attributes['discount'];
+		$net_amount = $line_total - (float)$attributes['discount'];
 		
 		
 		//update discount, total amount
@@ -233,7 +276,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 		$items = DB::table('material_requisition_item')->where('material_requisition_id', $id)->select('item_id','unit_id','quantity')->get();
 		
 		DB::table('material_requisition_item')->where('material_requisition_id', $id)
-								->update(['status' => 0, 'deleted_at' => now()]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 		
 		$this->material_requisition->delete();
 	}
@@ -416,14 +459,14 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	public function getMRdata()
 	{
 	    
-	    $doc=DB::table('parameter1')->select('doc_approve')->first();
+	    //$doc=DB::table('parameter1')->select('doc_approve')->first();
 	    //echo '<pre>';print_r($doc);exit;
-	    if($doc->doc_approve==0){
+	    $mod_purchase_enquiry= DB::table('parameter2')->where('keyname', 'mod_purchase_enquiry')->where('status',1)->select('is_active')->first();
+	    //echo '<pre>';print_r($mod_purchase_enquiry);exit;
+	    //if($doc->doc_approve==0){
+	   
 		$query = $this->material_requisition->where('material_requisition.status',1)->where('material_requisition.is_transfer',0);
-	    }
-	    else{
-	    $query = $this->material_requisition->where('material_requisition.status',1)->where('material_requisition.is_transfer',0)->where('material_requisition.approval_status',1);
-	    }
+	   
 		return $query->select('material_requisition.*')
 					->orderBY('material_requisition.id', 'ASC')
 					->get();
@@ -457,6 +500,8 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							 ->get();
 		
 	}
+
+
 
 	public function getMRitems($id)
 	{
@@ -507,6 +552,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
+							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
 							->where('POI.status',1);
 							
 					if( $date_from!='' && $date_to!='' ) { 
@@ -552,6 +598,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
+							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
 							->where('POI.is_transfer','!=',1)
 							->where('POI.status',1);
 							
@@ -593,6 +640,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
+							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
 							->where('POI.status',1);
 							
 					if( $date_from!='' && $date_to!='' ) { 
@@ -633,6 +681,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
+							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
 							->where('POI.is_transfer','!=',1)
 							->where('POI.status',1);
 							
@@ -670,12 +719,18 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	
 	public function materialReqList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->material_requisition->where('material_requisition.status',1);
-		$query->join('jobmaster AS J', function($join) {
+		$query = $this->material_requisition->where('material_requisition.status',1)->where('material_requisition.department_id',env('DEPARTMENT_ID'));
+		$query->leftjoin('jobmaster AS J', function($join) {
 							$join->on('J.id','=','material_requisition.job_id');
 						} )
 						->leftjoin('account_master AS am', function($join) {
 							$join->on('am.id','=','material_requisition.supplier_id');
+						} )
+						->join('location AS LF', function($join) {
+							$join->on('LF.id','=','material_requisition.locfrom_id');
+						} )
+						->join('location AS LT', function($join) {
+							$join->on('LT.id','=','material_requisition.location_id');
 						} )
 						->leftjoin('users AS AU', function($join) {
 							$join->on('AU.id','=','material_requisition.approved_by');
@@ -686,12 +741,13 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 			$query->where(function($qry) use($search) {
 				$qry->where('material_requisition.voucher_no','LIKE',"%{$search}%")
 				->orWhere('am.master_name', 'LIKE',"%{$search}%")
-				
+				->orWhere('LF.name', 'LIKE',"%{$search}%")
+				  ->orWhere('LT.name', 'LIKE',"%{$search}%")
 					->orWhere('J.name', 'LIKE',"%{$search}%");
 			});
 		}
 			
-		$query->select('material_requisition.*','J.name AS jobname','am.master_name AS supplier','J.code','AU.name AS approved_user')
+		$query->select('material_requisition.*','J.name AS jobname','am.master_name AS supplier','J.code','AU.name AS approved_user','LF.name AS location_from','LT.name AS location_to')
 					->offset($start)
                     ->limit($limit)
                     ->orderBy($order,$dir);
@@ -703,4 +759,3 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	}
 	
 }
-

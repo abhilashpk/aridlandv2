@@ -33,7 +33,7 @@
         <section class="content-header">
             <!--section starts-->
             <h1>
-                Location Transfer
+                Material Transfer
             </h1>
             <ol class="breadcrumb">
                 <li>
@@ -42,7 +42,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#">Location Transfer</a>
+                    <a href="#">Material Transfer</a>
                 </li>
                 <li class="active">
                     Edit
@@ -59,17 +59,17 @@
                     <div class="panel panel-primary">
                         <div class="panel-heading clearfix">
                             <h3 class="panel-title pull-left m-t-6">
-                                <i class="fa fa-fw fa-crosshairs"></i> Edit Location Transfer
+                                <i class="fa fa-fw fa-crosshairs"></i> Edit Material Transfer
                             </h3>
 							
 							<div class="pull-right">
-							@can('loc-tran-print')
+							@permission('loc-tran-print')
 							 <a href="{{ url('location_transfer/print/'.$orderrow->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endcan
+							@endpermission
 							</div>
                         </div>
                         <div class="panel-body">
@@ -77,11 +77,29 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmLocTransfer" id="frmLocTransfer" action="{{ url('location_transfer/update/'.$orderrow->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="transfer_id" id="transfer_id" value="{{ $orderrow->id }}">
+                               
+							   @php $selectedLocId = $orderrow->locfrom_id; @endphp
+                                <div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location From</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
+
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">LT. No.</label>
                                     <div class="col-sm-10">
+									
                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
-                                    </div>
+                                        <input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
+									
+									</div>
                                 </div>
 								
 								<div class="form-group">
@@ -98,19 +116,6 @@
                                     </div>
                                 </div>
 								
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location From</label>
-                                    <div class="col-sm-10">
-                                        <select id="locfrom_id" class="form-control select2" style="width:100%" name="locfrom_id">
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$orderrow->locfrom_id) echo 'selected'; ?> >{{ $loc['name'] }}</option>
-											<?php } ?>
-											<option value="">Select Location..</option>
-                                        </select>
-                                    </div>
-                                </div>
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Location To</label>
@@ -180,11 +185,20 @@
 													</td>
 													<td width="1%">
 													@if($num==$i)
-														 <button type="button" class="btn btn-success btn-add-item" >
-															<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+														 
+														<button type="button" class="btn-success btn-add-item" >
+															<i class="fa fa-fw fa-plus-square"></i>
+														 </button>
+														  <button type="button" class="btn-danger btn-remove-item" data-id="rem_{{$i}}">
+															<i class="fa fa-fw fa-minus-square"></i>
 														 </button>
 													@else
-														<button type="button" class="btn btn-success btn-danger btn-remove-item" data-id="rem_{{$i}}"><span class="glyphicon glyphicon-minus" aria-hidden="true"></span> </button>
+														<button type="button" class="btn-success btn-add-item" >
+															<i class="fa fa-fw fa-plus-square"></i>
+														 </button>
+														<button type="button" class="btn-danger btn-remove-item" data-id="rem_{{$i}}">
+															<i class="fa fa-fw fa-minus-square"></i>
+														 </button>
 													@endif
 													</td>
 												</tr>
@@ -299,6 +313,26 @@ $('#voucher_date').datepicker( { autoClose:true ,dateFormat: 'dd-mm-yyyy' } );
 $(document).ready(function () { 
 	
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle();
+    
+	$('.itemdivPrnt').find('.btn-add-item:not(:last)').hide();
+	if ( $('.itemdivPrnt').children().length == 1 ) {
+		$('.itemdivPrnt').find('.btn-remove-item').hide();
+	}
+
+	 if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+         // update message
+           $('#locfrom-hint').text('Default location selected and locked.');
+		    // If editing, get pre-selected "Location From"
+                 let selectedFrom = $('#selected_locfrom_id').val();
+
+                 if (selectedFrom) {
+                // Remove selected "From" option from "To" list
+        $('#locto_id option[value="' + selectedFrom + '"]').hide();
+         // Refresh select2
+        $('#locto_id').trigger('change.select2');
+        }
+        }
 	var urlcode = "{{ url('location_transfer/checkrefno/') }}";
     $('#frmLocTransfer').bootstrapValidator({
         fields: {
@@ -359,16 +393,17 @@ $(function() {
 			newEntry.find($('input[name="quantity[]"]')).attr('id', 'itmqty_' + rowNum);
 			newEntry.find($('.infodivPrntItm')).attr('id', 'infodivPrntItm_' + rowNum);
 			newEntry.find($('.item-data')).attr('id', 'itemData_' + rowNum);
+			newEntry.find($('.loc-info')).attr('id', 'loc_' + rowNum);
+			newEntry.find($('.loc-data')).attr('id', 'locData_' + rowNum);
+			newEntry.find($('.locPrntItm')).attr('id', 'locPrntItm_' + rowNum);
 			//newEntry.find($('button[type="button"]')).attr('data-id', 'rem_' + rowNum); //NEW CHNG
 			newEntry.find('input').val(''); 
 			newEntry.find('.line-unit').find('option').remove().end().append('<option value="">Unit</option>');//new change
 			
 			if( $('#infodivPrntItm_'+rowNum).is(":visible") ) 
 				$('#infodivPrntItm_'+rowNum).toggle();
-			controlForm.find('.btn-add-item:not(:last)')
-            .removeClass('btn-default').addClass('btn-danger')
-            .removeClass('btn-add-item').addClass('btn-remove-item')
-            .html('<span class="glyphicon glyphicon-minus" aria-hidden="true"></span> ');
+			controlForm.find('.btn-add-item:not(:last)').hide();
+			controlForm.find('.btn-remove-item').show();
     }).on('click', '.btn-remove-item', function(e)
     { 
 		//new change..
@@ -383,7 +418,10 @@ $(function() {
 		$(this).parents('.itemdivChld:first').remove();
 		
 		getTotal();
-		
+		$('.itemdivPrnt').find('.itemdivChld:last').find('.btn-add-item').show();
+		if ( $('.itemdivPrnt').children().length == 1 ) {
+			$('.itemdivPrnt').find('.btn-remove-item').hide();
+		}
 		e.preventDefault();
 		return false;
 	});

@@ -69,13 +69,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Sales Order
                         </h3>
                         <div class="pull-right">
-						@can('so-create')
+						@permission('so-create')
                              <a href="{{ url('sales_order/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-						@endcan
+						@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -257,10 +257,10 @@ $(function() {
 			{ "data": "voucher_date" },
 			{ "data": "net_total" },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } else { ?>{ "data": "reference_no" }, <?php } ?>
-			@can('so-edit'){ "data": "edit","bSortable": false },@endcan
-			@can('so-view'){ "data": "viewonly","bSortable": false },@endcan
-			@can('so-print'){ "data": "print","bSortable": false },@endcan
-			@can('so-delete'){ "data": "delete","bSortable": false },@endcan
+			@permission('so-edit'){ "data": "edit","bSortable": false },@endpermission
+			@permission('so-view'){ "data": "viewonly","bSortable": false },@endpermission
+			@permission('so-print'){ "data": "print","bSortable": false },@endpermission
+			@permission('so-delete'){ "data": "delete","bSortable": false },@endpermission
 		]	
 		  
 		});

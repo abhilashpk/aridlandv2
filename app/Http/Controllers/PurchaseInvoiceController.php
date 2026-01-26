@@ -33,6 +33,8 @@ use Auth;
 use Mail;
 use PDF;
 
+
+
 class PurchaseInvoiceController extends Controller
 {
 
@@ -91,7 +93,7 @@ class PurchaseInvoiceController extends Controller
 	
     public function index() {
 		
-		//Session::put('cost_accounting', 0);
+		//Session::set('cost_accounting', 0);
 		$data = array();
 		//$this->purchase_invoice->InvoiceLogProcess();
 		$orders = [];//$this->purchase_invoice->purchaseInvoiceList();
@@ -255,6 +257,9 @@ class PurchaseInvoiceController extends Controller
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1);//'Purchase Stock' voucher from account settings...
 		if($this->mod_location->is_active==1) {
 			$lcrow = DB::table('default_loc')->select('pur_loc AS id')->first();
@@ -272,7 +277,7 @@ class PurchaseInvoiceController extends Controller
 							  ->select('currency.code')
 							 ->first();					 
 					 
-		$lastid = DB::table('purchase_invoice')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('purchase_invoice')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 	    $footertxt = DB::table('header_footer')->where('doc','PI')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -288,7 +293,7 @@ class PurchaseInvoiceController extends Controller
 			
 		if(Session::get('department') == 1) { //if active...
 	
-			$deptid = Auth::users()->department_id;
+			$deptid = Auth::user()->department_id;
 				
 			if($deptid!=0)
 				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
@@ -303,13 +308,15 @@ class PurchaseInvoiceController extends Controller
 			$departments = [];
 			$deptid = '';
 		}
+		$is_dept = true;
+		$deptid =env('DEPARTMENT_ID');
 		
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1,$is_dept,$deptid); //'Purchase Stock' voucher from account settings...
 		
 		$cid=$this->acsettings->bcurrency_id;
 	    $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
 	
-	//echo '<pre>';print_r($fcurrency);exit;
+	//echo '<pre>';print_r($vouchers);exit;
 		if($id) {
 		    $batch_items = null;
 			$ids = explode(',', $id); //
@@ -341,6 +348,10 @@ class PurchaseInvoiceController extends Controller
 				//echo '<pre>';print_r($ocrow);exit;
 				$getItemLocation = $this->itemmaster->getItemLocation($id,'SDO');
 				$itemlocedit = $this->makeTreeArr( $this->itemmaster->getItemLocEdit($id,'SDO') ); //echo '<pre>'; print_r($itemlocedit); exit;
+				$resdo = DB::table('supplier_do')->whereIn('id',$ids)->select('voucher_no')->get();
+				foreach($resdo as $rw) {
+					$docnos = ($docnos=='')?$rw->voucher_no:$docnos.','.$rw->voucher_no;
+				}
 				
 				
         		//MAY25 BATCH ENTRY.....	
@@ -407,7 +418,8 @@ class PurchaseInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount + $vat_total;
 				//echo '<pre>';print_r($batch_items);exit;
-			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1,$is_dept,Session::get('dpt_id')); 
+				
+			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1,$is_dept,$deptid); 
 		
 			return view('body.purchaseinvoice.addsdo')
 						->withItems($itemmaster)
@@ -422,6 +434,7 @@ class PurchaseInvoiceController extends Controller
 						->withDiscount($discount)
 						->withVattotal($vat_total)
 						->withVouchers($vouchers)
+						->withPivchrid($pivchrid)
 						->withDoctype($doctype)
 						->withVoucherid(Session::get('voucher_id'))
 						->withVoucherno(Session::get('voucher_no'))
@@ -446,7 +459,10 @@ class PurchaseInvoiceController extends Controller
 					     ->withBanks($banks)
 					     ->withFcurrency($fcurrency)
 					     ->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
-						->withBatchitems($batch_items);
+						->withBatchitems($batch_items)
+						->withInterid($defaultInter->id)
+                         ->withIntercode($defaultInter->code)
+						 ->withIntername($defaultInter->name);
 		}
 		return view('body.purchaseinvoice.add')
 					->withItems($itemmaster)
@@ -477,6 +493,9 @@ class PurchaseInvoiceController extends Controller
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withBanks($banks)
 					->withFcurrency($fcurrency)
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
@@ -547,9 +566,10 @@ class PurchaseInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($request->input());exit;
 		
-		$this->validate(
+		if( $this->validate(
 			$request, 
-			['reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
+			[//'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
+			'location_id' =>'required','location_id' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
@@ -557,7 +577,8 @@ class PurchaseInvoiceController extends Controller
 			 'cost.*' => 'required',
 			 'dr_acnt' => 'sometimes|required'
 			],
-			['reference_no.required' => 'Reference no. is required.',
+			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
@@ -565,7 +586,10 @@ class PurchaseInvoiceController extends Controller
 			 'cost.*' => 'Item cost is required.',
 			 'dr_acnt.required' => 'Debit a/c. is required.',
 			]
-		);
+		)) {
+
+			return redirect('purchase_invoice/add')->withInput()->withErrors();
+		  }
 		
 		if(Session::has('dpt_id')) 
 			Session::forget('dpt_id');
@@ -634,7 +658,7 @@ class PurchaseInvoiceController extends Controller
 						$text= sprintf($body,$no);						
 						   try{
 								   Mail::send(['html'=>'body.purchaseinvoice.emailadd'], $data,function($message) use ($email,$text) {
-								   $message->from(env('MAIL_usersNAME'));	
+								   $message->from(env('MAIL_USERNAME'));	
 								   $message->to($email);
 								   $message->subject($text);
 								   });
@@ -646,6 +670,7 @@ class PurchaseInvoiceController extends Controller
 						   }
 					   
 				}
+
 
 	   #### End 
 			Session::flash('message', 'Purchase Invoice added successfully.');
@@ -661,7 +686,8 @@ class PurchaseInvoiceController extends Controller
 		$ispdc = false; 
 		$ar = [1,2]; $rv_amount = 0; $voucherno = '';
 		$remrv = (isset($attributes['remove_rv']))?$attributes['remove_rv']:'';
-		$vt = DB::table('account_setting')->where('id',$attributes['voucher_id'])->select('voucher_name')->first();
+		$vt = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id',env('DEPARTMENT_ID'))
+		                                  ->select('voucher_name')->first();
 		foreach($ar as $val) {
 			if($val==1) {
 				foreach($attributes['voucher_type'] as $rkey => $rval) {
@@ -739,7 +765,7 @@ class PurchaseInvoiceController extends Controller
 		$request->merge(['credit' => $rv_amount]);
 		$request->merge(['currency_id' => $pmode]);
 		
-		DB::table('purchase_invoice')->where('id',$id)->update(['advance' => $rv_amount,
+		DB::table('purchase_invoice')->where('id',$id)->where('department_id',env('DEPARTMENT_ID'))->update(['advance' => $rv_amount,
 								'balance_amount' => DB::raw('net_amount - '.$rv_amount) ]);
 		/* DB::table('sales_invoice')->where('id',$id)->update(['advance' => DB::raw('advance + '.$rv_amount),
 							'balance' => (DB::raw('balance' > 0)?DB::raw('balance - '.$rv_amount):DB::raw('net_total - '.$rv_amount) ]); */
@@ -803,7 +829,7 @@ class PurchaseInvoiceController extends Controller
 		$ocrow = $this->purchase_invoice->getOtherCost($id);
 		$location = $this->location->locationList();
 		$getItemLocation = $this->itemmaster->getItemLocation($id,'PI');
-		$itemlocedit = $this->makeTreeArr( $this->itemmaster->getItemLocEdit($id,'PI') ); 
+		$itemlocedit = $this->makeTreeArr( $this->itemmaster->getItemLocEdit($id,'PI') ); //echo '<pre>'; print_r($itemlocedit);
 		$voucher = $this->accountsetting->find($orderrow->voucher_id); //echo '<pre>';print_r($orditems);exit;//print_r($itemlocedit);exit;
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1);
 		
@@ -832,10 +858,12 @@ class PurchaseInvoiceController extends Controller
 							->where('report_view_detail.is_default',1)
 							->select('report_view_detail.id')
 							->first();
-		
+			$cid=$this->acsettings->bcurrency_id;				
+		 $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
+		//echo '<pre>';print_r($fcurrency);exit;
 		//CHECK DEPARTMENT.......
 		if(Session::get('department')==1) { //if active...
-			$deptid = Auth::users()->department_id;
+			$deptid = Auth::user()->department_id;
 			if($deptid!=0) {
 				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
 			} else {
@@ -902,7 +930,9 @@ class PurchaseInvoiceController extends Controller
 					->withPvid($pvid=10)
 					->withRventry($rventry)
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
+					->withFcurrency($fcurrency)
 					->withBatchitems($batch_items);
+
 
 	}
 	
@@ -928,23 +958,28 @@ class PurchaseInvoiceController extends Controller
 	public function update(Request $request)
 	{ 	//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('purchase_invoice_id');
-		$this->validate(
+		if( $this->validate(
 			$request, 
-			['reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
+			[//'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
+			'location_id' =>'required','location_id' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
 			 'quantity.*' => 'required',
 			 'cost.*' => 'required'
 			],
-			['reference_no.required' => 'Reference no. is required.',
+			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		); 
+		)) {
+
+			return redirect('purchase_invoice/edit/'.$id)->withInput()->withErrors();
+		}
 		
 		if( $this->purchase_invoice->update($id, $request->all()) ) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
@@ -1000,7 +1035,7 @@ class PurchaseInvoiceController extends Controller
 						$text= sprintf($body,$no);						
 						   try{
 								   Mail::send(['html'=>'body.purchaseinvoice.emailupdate'], $data,function($message) use ($email,$text) {
-								   $message->from(env('MAIL_usersNAME'));	
+								   $message->from(env('MAIL_USERNAME'));	
 								   $message->to($email);
 								   $message->subject($text);
 								   });
@@ -1012,6 +1047,7 @@ class PurchaseInvoiceController extends Controller
 						   }
 					   
 }
+
 
 	   #### End 
 			
@@ -1082,7 +1118,7 @@ class PurchaseInvoiceController extends Controller
 		
 		//CHECK DEPARTMENT.......
 		if(Session::get('department')==1) { //if active...
-			$deptid = Auth::users()->department_id;
+			$deptid = Auth::user()->department_id;
 			if($deptid!=0) {
 				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
 			} else {
@@ -1150,6 +1186,7 @@ class PurchaseInvoiceController extends Controller
 					->withRventry($rventry)
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withBatchitems($batch_items);
+
 
 	}
 	
@@ -1303,14 +1340,14 @@ class PurchaseInvoiceController extends Controller
 	public function setSessionVal()
 	{
 		//print_r($request->all());
-		Session::put('voucher_id', $request->get('vchr_id'));
-		Session::put('voucher_no', $request->get('vchr_no'));
-		Session::put('reference_no', $request->get('ref_no'));
-		Session::put('voucher_date', $request->get('vchr_dt'));
-		Session::put('lpo_date', $request->get('lpo_dt'));
-		Session::put('purchase_acnt', $request->get('pur_ac'));
-		Session::put('acnt_master', $request->get('ac_mstr'));
-		Session::put('dpt_id', $request->get('dpt_id'));
+		Session::set('voucher_id', $request->get('vchr_id'));
+		Session::set('voucher_no', $request->get('vchr_no'));
+		Session::set('reference_no', $request->get('ref_no'));
+		Session::set('voucher_date', $request->get('vchr_dt'));
+		Session::set('lpo_date', $request->get('lpo_dt'));
+		Session::set('purchase_acnt', $request->get('pur_ac'));
+		Session::set('acnt_master', $request->get('ac_mstr'));
+		Session::set('dpt_id', $request->get('dpt_id'));
 
 	}
 	
@@ -1524,7 +1561,7 @@ class PurchaseInvoiceController extends Controller
 					->withData($data);
 	}
 	
-	public function getSearch2()
+	public function getSearch2(Request $request)
 	{
 		$data = array();
 		$dname = '';
@@ -1695,103 +1732,7 @@ class PurchaseInvoiceController extends Controller
 	}
 	
 	
-public function dataExportBkp()
-	{
-		$data = array();
-		$datareport[] = [strtoupper(Session::get('company')),'','',''];
-		$datareport[] = ['','','','','','',''];
-		
-		$request->merge(['type' => 'export']);
-	//	$reports = $this->purchase_invoice->getReportExcel($request->all());
-		
-		if($request->get('search_type')=="summary")
-		{
-			$voucher_head = 'Purchase Invoice Summary';
-			$reports = $this->purchase_invoice->getReportExcel($request->all());
-		
-				$datareport[] = ['','','','',strtoupper($voucher_head), '','',''];
-		     $datareport[] = ['','','','','','',''];
-		
-			$datareport[] = [ 'Supplier','Gross Amt.','VAT Amt.','Net Total'];
-			$i=0;
-			foreach ($reports as $row) {
-					$i++;
-					$datareport[] = [ 
-									 'supplier' => $row['master_name'],
-									 
-									  'gross' => $row['total'],
-									  'ref' => $row['reference_no'],
-									  'total' => $row['net_amount']
-									];
-			}
-		}
-		elseif($request->get('search_type')=="detail") {
-			$voucher_head = 'Purchase Invoice Detail';
-			$reports = $this->purchase_invoice->getReportExcel($request->all());
-				$datareport[] = ['','','','',strtoupper($voucher_head), '','',''];
-		     $datareport[] = ['','','','','','',''];
-		
-			$datareport[] = ['SI.No.','PI#','Vchr.Date','PI.Ref#', 'Supplier','Gross Amt.','VAT Amt.','Net Total'];
-			$i=0;
-			foreach ($reports as $row) {
-					$i++;
-					$datareport[] = [ 'si' => $i,
-									  'po' => $row['voucher_no'],
-									  'vdate' => date('d-m-Y',strtotime($row['voucher_date'])),
-									  'ref' => $row['reference_no'],
-									  'supplier' => $row['master_name'],
-									 
-									  'gross' => $row['unit_price'],
-									 'vat' => $row['vat_amount'],
-									  'total' => $row['total_price']
-									];
-			}
-			//$reports = $this->makeTree($reports);
-		}
-		
-	
-		//echo '<pre>';print_r($reports);exit;
-		/* if($request->get('search_type')=='purchase_register') {
-			
-			$datareport[] = ['SI.No.','PI#','Vchr.Date','PI.Ref#', 'Supplier','TRN No','PI.Qty','Rate','Total Amt.'];
-			$i=0;
-			foreach ($reports as $row) {
-				$i++;
-				$datareport[] = [ 'si' => $i,
-								  'po' => $row['voucher_no'],
-								  'vdate' => date('d-m-Y',strtotime($row['voucher_date'])),
-								  'ref' => $row['reference_no'],
-								  'supplier' => $row['master_name'],
-								  'vat_no' => $row['vat_no'],
-								  'item_code' => $row['item_code'],
-								  'description' => $row['description'],
-								  'quantity' => $row['quantity'],
-								  'unit_price' => $row['unit_price'],
-								  'net_amount' => $row['net_amount']
-								];
-			}
-		} else { */
-			
-		
-			
-		//}
-		 //echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('NumakPro ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
-
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
-
-		})->download('xlsx');
-		
-	}
-	
 	
 	
 	private function createItem($row) {
@@ -2259,7 +2200,7 @@ public function dataExportBkp()
 			//  "\r"           13           New Line in Mac
 			//  " "            32           Space
 		   
-			$what   = "\x00-\x20";    //all white-spaces and control chars
+			$what   = "\\x00-\\x20";    //all white-spaces and control chars
 		}
 	   
 		return trim( preg_replace( "/[".$what."]+/" , $with , $str ) , $what );
@@ -2361,4 +2302,3 @@ public function dataExportBkp()
 }
 
 //SELECT itemmaster.weight,itemmaster.serial_no,itemmaster.other_info,sales_invoice.created_at,itemmaster.item_code,groupcat.group_name AS brand,itemmaster.weight ,sales_invoice.voucher_no,reference_no,sales_invoice.voucher_date,sales_invoice.lpo_no,sales_invoice.total,sales_invoice.discount,sales_invoice.vat_amount,sales_invoice.net_total,sales_invoice.total_fc,sales_invoice.discount_fc,sales_invoice.vat_amount_fc,sales_invoice.net_total_fc,sales_invoice.customer_name,sales_invoice.customer_phone,sales_invoice.subtotal,account_master.account_id,account_master.master_name,account_master.address,account_master.phone,account_master.area_id AS area_code,account_master.vat_no,terms.description AS terms,salesman.name AS salesman,sales_invoice_item.item_name,sales_invoice_item.quantity,sales_invoice_item.unit_price,sales_invoice_item.vat,sales_invoice_item.vat,sales_invoice_item.vat_amount AS line_vat,sales_invoice_item.line_total,sales_invoice_item.tax_include,sales_invoice_item.item_total,itemmaster.other_info AS cod,units.unit_name,sales_invoice_item.id AS sii_id FROM sales_invoice JOIN account_master ON(account_master.id=sales_invoice.customer_id) LEFT JOIN terms ON(terms.id=sales_invoice.terms_id) LEFT JOIN salesman ON(salesman.id=sales_invoice.salesman_id) JOIN sales_invoice_item ON(sales_invoice_item.sales_invoice_id=sales_invoice.id) JOIN itemmaster ON(itemmaster.id=sales_invoice_item.item_id) JOIN units ON(units.id=sales_invoice_item.unit_id) LEFT JOIN groupcat ON(groupcat.id=itemmaster.group_id) WHERE sales_invoice_item.status=1 AND sales_invoice_item.deleted_at='0000-00-00 00:00:00' AND sales_invoice.id={id}   ORDER BY sales_invoice_item.id ASC
-

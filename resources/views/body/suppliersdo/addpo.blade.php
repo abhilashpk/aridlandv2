@@ -107,18 +107,53 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmPurchaseInvoice" id="frmPurchaseInvoice" action="{{ url('suppliers_do/save/'.$orderrow->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
+								@php $selectedLocId = $orderrow->location_id; @endphp
+								<input type="hidden" name="default_location" id="default_location" value="{{$selectedLocId}}">
+                                 
+								 <div class="form-group">
+						            <label for="input-text" class="col-sm-2 control-label"></label>
+							    <div class="col-sm-10">
+                                  <label class="radio-inline">
+ 								    <font color="#16A085"><input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
+							       </label>
+								   
+                                   <label class="radio-inline">
+								     <font color="#16A085"> <input type="radio" class="locinter-radio" name="is_intercompy"  value="{{$orderrow->is_intercompany}}"><b>Inter Company</b></font>
+									  <input type="hidden"  name="is_intercompany"  value="{{$orderrow->is_intercompany}}">
+									  
+                                    </label>
+                                   
+							    </div>
+						        </div>
 								
+								<div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
+
 								<div class="form-group">
                                    <font color="#16A085">  <label for="input-text" class="col-sm-2 control-label"><b>GR. No.</b></label></font>
                                     <div class="col-sm-10">
 										<div class="input-group">
-                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="{{$voucherno}}">
+										<span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="{{$voucherno->no}}">
+										<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
+											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
+											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
 										<span class="input-group-addon inputvn"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
 										</div>
                                     </div>
                                 </div>
-								<input type="hidden" name="curno" id="curno" value="{{$voucherno}}">
-								<input type="hidden" value="1" name="autoincrement">
+								<input type="hidden" name="curno" id="curno" value="{{$voucherno->no}}">
+								
 								
 								<?php if($formdata['reference_no']==1) { ?>
 								<div class="form-group">
@@ -200,7 +235,7 @@
                                     <div class="col-sm-10">
                                        <select id="document_type" class="form-control select2" style="width:100%" name="document_type">
                                            <option value="PO" <?php if($doctype=='PO') echo 'selected';?>>Purchase Order</option>
-										   <option value="MR" <?php if($doctype=='MR') echo 'selected';?>>MaterialRequisition</option>
+										   <!--<option value="MR" <?php if($doctype=='MR') echo 'selected';?>>MaterialRequisition</option>-->
                                        </select>
                                     </div>
                                 </div>
@@ -212,7 +247,8 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Document#</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="document_id" readonly value="{{$pordid}}" name="document_id" placeholder="Document ID" autocomplete="off" onclick="getDocument()">
+										<input type="text" class="form-control" id="document" readonly name="document" value="{{$docnos}}" autocomplete="off" onclick="getDocument()">
+						               <input type="hidden" class="form-control" id="document_id" readonly value="{{$pordid}}" name="document_id" placeholder="Document ID" autocomplete="off" onclick="getDocument()">
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -269,29 +305,7 @@
 								<input type="hidden" name="job_id" id="job_id">
 								<?php } ?>
 								
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==old('location_id')) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($is_default==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+								
 								
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -377,7 +391,7 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; @endphp
+								{{--*/ $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -601,35 +615,31 @@
 											</tr>
 										</table>
 												
+											<?php if($formdata['more_info']==1) { ?>
 										
 											<div id="moreinfo" style="float:left;padding-right:5px;">
 												<button type="button" id="moreinfoItm_{{$i}}" class="btn btn-primary btn-xs more-info">More Info</button>
 											</div>
-											
+											<?php } else { ?>
+								              <input type="hidden" name="more_info" id="more_info">
+								            <?php } ?>
 											<div id="loc" style="float:left; padding-right:5px;">
 												<button type="button" id="loc_{{$i}}" class="btn btn-primary btn-xs loc-info">Location</button>
 												<div class="form-group"><input type="text" name="iloc[]" id="iloc_{{$i}}" style="border:none;color:#FFF;"></div><!-- NOV24 -->
 											</div>
 											
-											<!--MAY25-->
-											@if($poitem->batch_req==1)
-											<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
-												<button type="button" id="btnBth_1" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-												<div class="form-group"><input type="text" name="batchNos[]" id="batchNos_1" style="border:none;color:#FFF;"></div>
-												<input type="hidden" id="mfgDates_1" name="mfgDates[]">
-                                                <input type="hidden" id="expDates_1" name="expDates[]">
-                                                <input type="hidden" id="qtyBatchs_1" name="qtyBatchs[]">
-											</div>
-											@endif
-										
+											
+										<?php if($formdata['purchase']==1) { ?>
 											<div style="float:left; padding-right:5px;">
 												<button type="button" id="purhisItm_{{$i}}" data-toggle="modal" data-target="#purchase_modal" class="btn btn-primary btn-xs pur-his">Purchse</button>
 											</div>
-											
+											<?php }  ?>
+
+											<?php if($formdata['sales']==1) { ?>
 											<div style="float:left; padding-right:5px;">
 												<button type="button" id="saleshisItm_{{$i}}" data-toggle="modal" data-target="#sales_modal" class="btn btn-primary btn-xs sales-his">Sales</button>
 											</div>
-											
+											<?php } ?>
 											<div class="infodivPrntItm" id="infodivPrntItm_{{$i}}">
 												<div class="infodivChldItm">							
 													<div class="table-responsive item-data" id="itemData_{{$i}}"></div>
@@ -652,7 +662,9 @@
 								
 								<fieldset>
 									<legend>
+									<?php if($formdata['other_cost']==1) { ?>
 										<div id="oc_showmenu" style="padding-left:5px;"><button type="button" id="ocadd" class="btn btn-primary btn-xs">Other Cost</button></div>
+									<?php } ?>
 									</legend>
 									<div class="OCdivPrnt">
 										<?php 
@@ -661,7 +673,7 @@
 										<div class="OCdivChld">
 											<table border="0" class="table-dy-row">
 												<tr>
-													<td width="20%">
+													<td width="15%">
 														<input type="hidden" name="oc_id[]" id="ocid_{{$i}}" value="{{$row->id}}">
 														<input type="hidden" name="dr_acnt_id[]" id="dracntid_{{$i}}" value="{{$row->dr_id}}">
 														<span class="small">Debit Account</span>
@@ -671,22 +683,27 @@
 														<span class="small">Reference</span>
 														<input type="text" name="oc_reference[]" id="ocref_{{$i}}" value="{{$row->oc_reference}}" autocomplete="off" class="form-control" placeholder="Reference">
 													</td>
-													<td width="20%">
+													<td width="15%">
 														<span class="small">Description</span>
 														<input type="text" name="oc_description[]" id="ocdesc_{{$i}}" value="{{$row->oc_description}}" autocomplete="off" class="form-control" placeholder="Description">
 													</td>
-													<td width="10%">
+													<td width="8%">
+														<span class="small">Currency</span>
+														<select id="occrncy_{{$i}}" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
+														   	<option value="{{$settings->bcurrency_id}}">Select</option>
+													    @foreach($fcurrency as $curr)
+														<option value="{{$curr->id}}" <?php if($row->currency_id==$curr->id) echo 'selected';?> >{{$curr->code}}</option>
+														@endforeach
+														
+														</select>
+													</td>
+													<td width="8%">
 														<span class="small">Amount</span>
 														<input type="number" name="oc_amount[]" step="any" id="ocamt_{{$i}}" value="{{intval($row->oc_amount*100)/100}}" autocomplete="off" class="form-control oc-line" placeholder="Amount">
 													</td>
-													<td width="5%">
-														<span class="small">VAT</span>
-														<input type="number" name="vat_oc[]" step="any" id="vatocamt_{{$i}}" value="{{$row->oc_vat}}" autocomplete="off" class="form-control oc-line-vat" placeholder="VAT">
-													</td>
-													<td width="18%">
-														<span class="small">Credit Account</span>
-														<input type="hidden" name="cr_acnt_id[]" id="cracntid_{{$i}}" value="{{$row->cr_id}}">
-														<input type="text" id="cracnt_{{$i}}" name="cr_acnt[]" value="{{$row->cr_name}}" class="form-control" autocomplete="off" data-toggle="modal" data-target="#paccount_modal" placeholder="Credit Account">
+														<td width="7%">
+														<span class="small">Rate</span>
+														<input type="number" name="oc_rate[]" id="ocrate_{{$i}}" step="any" value="{{($row->currency_rate==0)?1:$row->currency_rate}}"  class="form-control oc-rate" placeholder="Rate">
 													</td>
 													<td width="10%">
 														<div class="oc-amount-fc">
@@ -694,6 +711,24 @@
 															<input type="number" name="oc_fc_amount[]" id="ocfcamt_{{$i}}" step="any" value="{{intval($row->oc_fc_amount*100)/100}}" autocomplete="off" class="form-control oc-line-fc" placeholder="FC Amount">
 														</div>
 													</td>
+													
+													<td width="5%">
+														<span class="small">VAT%</span>
+														<input type="number" name="vat_oc[]" step="any" id="vatocamt_{{$i}}" value="{{$row->oc_vat}}" autocomplete="off" class="form-control oc-line-vat" placeholder="VAT">
+													</td>
+													<td width="5%">
+														<span class="small">Tx.Code</span>
+														<select class="form-control select2" style="width:100%" name="tax_sr[]">
+														<option value="SR" <?php if($row->tax_code=="SR") echo 'selected';?>>SR</option><option value="RC" <?php if($row->tax_code=="RC") echo 'selected';?>>RC</option><option value="ZR" <?php if($row->tax_code=="ZR") echo 'selected';?>>ZR</option><option value="EX" <?php if($row->tax_code=="EX") echo 'selected';?>>EX</option>
+														</select>
+														<input type="hidden" name="tax_sr_old[]" value="{{$row->tax_code}}">
+													</td>
+													<td width="18%">
+														<span class="small">Credit Account</span>
+														<input type="hidden" name="cr_acnt_id[]" id="cracntid_{{$i}}" value="{{$row->cr_id}}">
+														<input type="text" id="cracnt_{{$i}}" name="cr_acnt[]" value="{{$row->cr_name}}" class="form-control" autocomplete="off" data-toggle="modal" data-target="#paccount_modal" placeholder="Credit Account">
+													</td>
+													
 													<td width="5%"><br/>
 														<button type="button" class="btn btn-success btn-add-oc" >
 															<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
@@ -726,8 +761,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_1" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+															<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -740,7 +776,7 @@
 														<input type="number" name="oc_rate[]" id="ocrate_1" step="any" value="1" class="form-control oc-rate" placeholder="Rate">
 													</td>
 													<td width="10%">
-														<span class="small">Convrt Amt</span>
+														<span class="small">FC Amt</span>
 														<input type="number" name="oc_fc_amount[]" id="ocfcamt_1" step="any" readonly class="form-control oc-line-fc" placeholder="Convrt Amt">
 													</td>
 													<td width="5%">
@@ -784,7 +820,7 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" class="form-control spl" readonly value="{{($orderrow->is_fc==1)?$orderrow->total_fc:$orderrow->total}}">
+										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" class="form-control spl" readonly value="{{(old('total'))?old('total'):($orderrow->is_fc==1)?$orderrow->total_fc:$orderrow->total}}">
 										</div>
 										<div class="col-xs-2">
 										<span class="small" id="c_label">Currency {{$bcurrency}}</span>	<input type="number" id="total_fc" step="any" name="total_fc" class="form-control spl" value="{{(old('total_fc'))?old('total_fc'):$orderrow->total}}" readonly placeholder="0">
@@ -816,7 +852,7 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly value="{{($orderrow->is_fc==1)?$orderrow->subtotal_fc:$orderrow->subtotal}}">
+											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly value="{{(old('subtotal'))?old('subtotal'):($orderrow->is_fc==1)?$orderrow->subtotal_fc:$orderrow->subtotal}}">
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="subtotal_fc" name="subtotal_fc" class="form-control spl" value="{{(old('subtotal_fc'))?old('subtotal_fc'):$orderrow->subtotal}}" readonly placeholder="0">
@@ -850,7 +886,7 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly value="{{($orderrow->is_fc==1)?$orderrow->net_amount_fc:$orderrow->net_amount}}">
+											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly value="{{(old('net_amount'))?old('net_amount'):($orderrow->is_fc==1)?$orderrow->net_amount_fc:$orderrow->net_amount}}">
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" readonly value="{{(old('net_amount_fc'))?old('net_amount_fc'):$orderrow->net_amount}}">
@@ -875,9 +911,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('suppliers_do') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('suppliers_do/add') }}" class="btn btn-warning">Clear</a>
-										@can('pi-history')
+										@permission('pi-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endcan
+										@endpermission
                                     </div>
                                 </div>
 								<div id="purchase_modal" class="modal fade animated" role="dialog">
@@ -1152,10 +1188,43 @@ $(document).ready(function () {
 	$('#othrcstItm_1').toggle();$('.locPrntItm').toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle();
 	
-	<?php if (empty(old('dr_acnt')[0])) { ?>
-		$('.OCdivPrnt').toggle();
-		$('.oc-amount-fc').toggle();
+	<?php if(!old('dr_acnt')[0]) { ?>
+		$('.OCdivPrnt').toggle();//$('.oc-amount-fc').toggle();
 	<?php } ?>
+
+
+    if( $('#selected_locfrom_id').val() !=''){  
+	    var val = $('#selected_locfrom_id').val();
+
+		$('.locinter-radio').iCheck('disable');
+		$('.loccom-radio').iCheck('disable');
+
+	    if($('input[name="is_intercompy"]').val()==1){
+
+		$('.locinter-radio').iCheck('check');
+		$('.loccom-radio').iCheck('uncheck');
+		var prefix ='IGRN';
+		}
+          else{
+		  $('.locinter-radio').iCheck('uncheck');
+		$('.loccom-radio').iCheck('check');
+		var prefix ='GRN';
+		  
+		  }   
+	    $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  //$('input[name="prefix"]').val('');   
+             let newPrefix = prefix + locCode;               
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix); 
+				$('#default_location').val(val);
+              $('.locfrom-radio').prop('disabled', true);
+			  
+			 });  
+		}
+
 
 	var urlvchr = "{{ url('suppliers_do/checkvchrno/') }}";
 	var urlcode = "{{ url('suppliers_do/checkrefno/') }}"; //CHNG
@@ -1164,7 +1233,7 @@ $(document).ready(function () {
 	<?php if($formdata['item_import']==0) { ?>
     $('#frmPurchaseInvoice').bootstrapValidator({
         fields: {
-			voucher_id: { validators: { notEmpty: { message: 'The voucher type is required and cannot be empty!' } }},
+			//voucher_id: { validators: { notEmpty: { message: 'The voucher type is required and cannot be empty!' } }},
 			voucher_no: {
                 validators: {
                    
@@ -1181,8 +1250,8 @@ $(document).ready(function () {
             },
 			reference_no: {
                 validators: {
-                   notEmpty: {  message: 'The reference no is required and cannot be empty!' },
-					remote: {
+                   //notEmpty: {  message: 'The reference no is required and cannot be empty!' },
+					/*remote: {
                         url: urlcode,
                         data: function(validator) {
                             return {
@@ -1190,11 +1259,11 @@ $(document).ready(function () {
                             };
                         },
                         message: 'This Reference No. is already exist!'
-                    }
+                    }*/
                 }
             },
-            'batchNos[]': { validators: { notEmpty: { message: 'Batch No. is required and cannot be empty!' } }}
-            @if($formdata['location_item']==1) ,'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }}  @endif //NOV24
+           // 'batchNos[]': { validators: { notEmpty: { message: 'Batch No. is required and cannot be empty!' } }}
+           // @if($formdata['location_item']==1) ,'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }}  @endif //NOV24
 			
         }
         
@@ -1207,7 +1276,7 @@ $(document).ready(function () {
 	$('.custom_icheck').on('ifChecked', function(event){ 
 		$("#currency_id").prop('disabled', false);
 		$("#currency_rate").prop('disabled', false);
-		$("#fc_label").toggle(); $("#c_label").toggle(); $("#other_cost_fc").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();$("#subtotal_fc").toggle();//$('.oc-amount-fc').toggle();
+		$("#fc_label").toggle(); $("#c_label").toggle(); $("#other_cost_fc").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();$("#subtotal_fc").toggle();// $('.oc-amount-fc').toggle();
 	});
 	$('.custom_icheck').on('ifUnchecked', function(event){ 
 		$("#currency_id").prop('disabled', true);

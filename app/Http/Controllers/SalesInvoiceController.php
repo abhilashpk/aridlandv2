@@ -93,8 +93,8 @@ class SalesInvoiceController extends Controller
 		
 		if(Session::get('cost_accounting')==1) {
 			$this->cost_accounts = $this->accountsetting->getCostAccounts(); //print_r($this->cost_accounts);
-			Session::put('stock', $this->cost_accounts['stock']);
-			Session::put('cost_of_sale', $this->cost_accounts['cost_of_sale']);
+			Session::set('stock', $this->cost_accounts['stock']);
+			Session::set('cost_of_sale', $this->cost_accounts['cost_of_sale']);
 		}
 		
 		$this->mod_autocost = DB::table('parameter2')->where('keyname', 'mod_autocost_refresh')->where('status',1)->select('is_active')->first();
@@ -109,7 +109,7 @@ class SalesInvoiceController extends Controller
 	
     public function index() {
 		
-		//Session::put('cost_accounting', 0);
+		//Session::set('cost_accounting', 0);
 		$data = array();
 		//$this->sales_invoice->InvoiceLogProcess();
 		$invoices = [];
@@ -302,6 +302,202 @@ class SalesInvoiceController extends Controller
             
         echo json_encode($json_data);
 	}
+
+	 public function indexc() {
+		
+		//Session::set('cost_accounting', 0);
+		$data = array();
+		//$this->sales_invoice->InvoiceLogProcess();
+		$invoices = [];
+		$salesmans = $this->salesman->getSalesmanList();
+		
+		$customer = $this->accountmaster->getCustomerList();
+		$jobs = $this->jobmaster->activeJobmasterList();
+	
+        $item = DB::table('itemmaster')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		
+		$category = DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		
+		//DEPT CHECK...
+		if(Session::get('department')==1) {
+			$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			$is_dept = true;
+		} else {
+			$departments = []; $is_dept = false;
+		}
+		return view('body.salesinvoice.indexcash')
+					->withInvoices($invoices)
+					->withCategory($category)
+		            ->withSubcategory($subcategory)
+		            ->withGroup($group)
+		            ->withSubgroup($subgroup)
+	                ->withItem($item)
+					->withDepartments($departments)
+					->withCustomer($customer)
+					->withType('')
+					->withSalesman($salesmans)
+					->withDepartments($departments)
+					->withSettings($this->acsettings)
+					->withIsdept($is_dept)
+					->withJobs($jobs)
+					->withData($data);
+	}
+	
+	public function ajaxPagingCash(Request $request)
+	{
+		$columns = array( 
+                            0 =>'sales_invoice.id', 
+                            1 =>'voucher_no',
+                            2=> 'voucher_date',
+							3 => 'job',
+                            4=> 'customer',
+                            5=> 'net_total',
+							6=> 'status',
+							7=>'history'
+                        );
+						
+		$totalData = $this->sales_invoice->salesInvoiceCashListCount();
+            
+        $totalFiltered = $totalData; 
+
+        $limit = $request->input('length');
+        $start = $request->input('start');
+        $order = 'sales_invoice.id'; //$columns[$request->input('order.0.column')]; //'sales_invoice.voucher_no';
+        $dir = $request->input('order.0.dir'); //'desc';
+		$search = (empty($request->input('search.value')))?null:$request->input('search.value');
+		$dept = $request->input('dept');
+        
+
+		$invoices = $this->sales_invoice->salesInvoiceCashList('get', $start, $limit, $order, $dir, $search, $dept);
+		
+		if($search)
+			$totalFiltered =  $this->sales_invoice->salesInvoiceCashList('count', $start, $limit, $order, $dir, $search, $dept);
+		
+		$prints = DB::table('report_view_detail')
+							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
+							->where('report_view.code','SI')
+							->select('report_view_detail.name','report_view_detail.id','report_view_detail.print_name')
+							->get();
+
+	//	echo '<pre>';print_r($prints);exit;
+		
+        $data = array();
+        if(!empty($invoices))
+        {
+           
+			foreach ($invoices as $row)
+            {
+                $edit =  '"'.url('sales_invoice/edit/'.$row->id).'"';
+                //$delete =  'funDelete("'.$row->id.'")';
+                $delete =  'funDelete("'.$row->id.'","'.$row->is_editable.'")';
+				$print = url('sales_invoice/print/'.$row->id);
+			//	$print =	url('sales_invoice/print/'.$row->id.'/'.$prints[0]->id);
+				//$printfc = url('sales_invoice/printfc/'.$row->id);
+				$printdo = url('sales_invoice/printdo/'.$row->id);
+					$viewonly =  url('sales_invoice/viewonly/'.$row->id);
+				
+                $nestedData['id'] = $row->id;
+                $nestedData['voucher_no'] = $row->voucher_no;
+				$nestedData['voucher_date'] = date('d-m-Y', strtotime($row->voucher_date));
+				$nestedData['job'] = $row->job;
+				$nestedData['customer'] = ($row->customer=='CASH CUSTOMERS') ? (($row->customer_name!='')?$row->customer.'('.$row->customer_name.')':$row->customer) : $row->customer;
+				$nestedData['net_total'] = number_format($row->net_total - $row->roundoff,2);
+				$nestedData['history']  =  "<button class='btn btn-primary btn-xs order-history' data-toggle='modal' data-target='#history_modal' data-id='{$row->id}'>Item History</button>";
+                $nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$edit}'>
+												<span class='glyphicon glyphicon-pencil'></span></button></p>";
+				$nestedData['viewonly'] = "<p><a href='{$viewonly}' class='btn btn-info btn-xs' target='_blank'><i class='glyphicon glyphicon-eye-open'></i></a></p>";
+								
+												
+				$nestedData['delete'] = "<button class='btn btn-danger btn-xs delete' onClick='{$delete}'>
+												<span class='glyphicon glyphicon-trash'></span>";
+				
+				$apr = ($this->acsettings->doc_approve==1)?[1]:[0,1,2];
+				
+				##RV BALANCE VIEW,.......
+				//$nestedData['amtview']  =  "<button class='btn btn-primary btn-xs getBill' data-toggle='modal' data-target='#amtview_modal' data-id='{$row->id}'><i class='fa fa-fw fa-eye'></i></button>";
+				
+				##INVOICE PHOTOS VIEW......
+				$view =  url('sales_invoice/photo-view/'.$row->id);
+				$nestedData['amtview'] = "<p><a href='{$view}' target='_blank' class='btn btn-primary btn-xs'><i class='fa fa-fw fa-eye'></i></a></p>";
+				
+				$opts = '';					
+				foreach($prints as $doc) {
+				//	echo '<pre>';print_r($doc);exit;
+					$opts .= "<li role='presentation'><a href='{$print}/".$doc->id."' target='_blank' role='menuitem'>".$doc->name."</a></li>";
+				}
+				//$print=48;
+
+				//$printfc = url('sales_invoice/printfc/'.$row->id.'/'.$prints[1]->id); //MAR18
+
+				$printfc = url('sales_invoice/printfc/'.$row->id.'/'.$prints[0]->id); //MAR18
+				if(in_array($row->doc_status, $apr))	 {							
+					if($row->is_fc==1) {
+						$nestedData['print'] = "<div class='btn-group drop_btn' role='group'>
+											<button type='button' class='btn btn-primary btn-xs dropdown-toggle m-r-50'
+													id='exampleIconDropdown1' data-toggle='dropdown' aria-expanded='false'>
+												<i class='fa fa-fw fa-print' aria-hidden='true'></i><span class='caret'></span>
+											</button>
+											<ul style='min-width:100px !important;' class='dropdown-menu' aria-labelledby='exampleIconDropdown1' role='menu'>
+												".$opts."
+											</ul>
+										</div><a href='{$print}' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span>FC</a>";
+										
+						/* $nestedData['print'] = "<p><a href='{$print}' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span></a>
+												<a href='{$printfc}' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span>FC</a></p>"; */
+					} else {
+						$nestedData['print'] = "<div class='btn-group drop_btn' role='group'>
+											<button type='button' class='btn btn-primary btn-xs dropdown-toggle m-r-50'
+													id='exampleIconDropdown1' data-toggle='dropdown' aria-expanded='false'>
+												<i class='fa fa-fw fa-print' aria-hidden='true'></i><span class='caret'></span>
+											</button>
+											<ul style='min-width:100px !important;' class='dropdown-menu' aria-labelledby='exampleIconDropdown1' role='menu'>
+												".$opts."
+											</ul>
+										</div>";
+						//$nestedData['print'] = "<p><a href='{$print}' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span></a></p>";
+					}
+					
+				} else {
+					$nestedData['print'] = '';
+				}
+				
+				if($this->acsettings->doc_approve==1) {
+					if($row->doc_status==1)
+						$status = '<span class="label label-sm label-success">Approved</span>';
+					else if($row->doc_status==0)
+						$status = '<span class="label label-sm label-warning">Pending</span>';
+					else if($row->doc_status==2)
+						$status = '<span class="label label-sm label-danger">Rejected</span>';
+					
+					$nestedData['status'] = $status;
+				} else 
+					$nestedData['status'] = '';
+				
+				/* if($row->is_fc==1) {								
+					$nestedData['print'] = "<p><a href='{$print}' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span></a>
+											<a href='{$print}/FC' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span>FC</a></p>";
+				} else {
+					$nestedData['print'] = "<p><a href='{$print}' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span></a></p>";
+				} */
+				// $nestedData['printdo'] = "<p><a href='{$printdo}' target='_blank' class='btn btn-primary btn-xs'><span class='fa fa-fw fa-print'></span>DO</a></p>";
+				$nestedData['printdo']='';							
+                $data[] = $nestedData;
+
+            }
+        }
+          
+        $json_data = array(
+                    "draw"            => intval($request->input('draw')),  
+                    "recordsTotal"    => intval($totalData),  
+                    "recordsFiltered" => intval($totalFiltered), 
+                    "data"            => $data   
+                    );
+            
+        echo json_encode($json_data);
+	}
 	public function getCustomerMultiselect()
 	{
 		$data = array();
@@ -318,16 +514,12 @@ class SalesInvoiceController extends Controller
 
 	public function add($id = null, $doctype = null) {
 		//$this->objUtility->reEvalItemCostQuantity([200],$this->acsettings);
-
 		$acarr = ['Discount in Sales', 'Stock Account', 'Stock Excess', 'Cost Difference', 'Cost of Sales'];
-		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)
+		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', env('DEPARTMENT_ID'))
 							->leftJoin('account_master AS am', function($join) {
 								$join->on('am.id','=','other_account_setting.account_id');
 								$join->where('am.status','=',1);
-								$join->where(function ($q) {
-									$q->whereNull('am.deleted_at')
-									->orWhere('am.deleted_at', '0000-00-00 00:00:00');
-								});
+								$join->where('am.deleted_at','=','0000-00-00 00:00:00');
 							} )
 							->select('other_account_setting.*','am.master_name','am.account_id as code')
 							->orderBy('other_account_setting.id','ASC')->get();
@@ -339,13 +531,15 @@ class SalesInvoiceController extends Controller
 					$status_acc = false;
 			}
 		}
-		//echo $status_acc;exit;
 		$data = array();//echo $inv); print_r($inv);exit;
 		$itemmaster = $this->itemmaster->activeItemmasterList();
 		$terms = $this->terms->activeTermsList();
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
 		
 		$sideptid = (Session::has('SI_deptid'))?Session::get('SI_deptid'):'';
 		$sivchrid = (Session::has('SI_vchrid'))?Session::get('SI_vchrid'):'';
@@ -356,7 +550,7 @@ class SalesInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($vouchers);exit;
 		$lastid = $this->sales_invoice->getLastId();
-		$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$locdefault = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 		$sales_location = DB::table('parameter3')
 							 ->join('location', 'location.id', '=', 'parameter3.location_id')
 							 ->join('account_master', 'account_master.id', '=', 'parameter3.account_id')
@@ -390,7 +584,8 @@ class SalesInvoiceController extends Controller
 			$departments = [];
 			$deptid = '';
 		}
-		
+         $is_dept = true;
+		 $deptid =env('DEPARTMENT_ID');
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -487,9 +682,9 @@ class SalesInvoiceController extends Controller
 				$discount += $item->discount;
 			}
 			$nettotal = $total - $discount;
-			
-			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,Session::get('dpt_id'));
-
+			$is_dept = true;
+		    $deptid =env('DEPARTMENT_ID');
+			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
 			//echo '<pre>';print_r($docItems);exit;
 			return view('body.salesinvoice.addpi') //addpi  addpisp
 						->withItems($itemmaster)
@@ -528,21 +723,22 @@ class SalesInvoiceController extends Controller
 						->withCrm($crmtem)
 						->withDocnos($docnos) //AUG24
 						->withRoundoff($round_off)
-						->withAccstatus($status_acc)
+						->withInterid($defaultInter->id)
+                         ->withIntercode($defaultInter->code)
+						 ->withIntername($defaultInter->name)
+						 ->withAccstatus($status_acc)
 						->withBatchitems($batch_items); //MAY25
 		}
-		//echo $vouchers[0]->is_prefix;exit;
-		//echo '<pre>';print_r($vouchers[0]);exit;
-
+		//echo '<pre>';print_r($vouchers);exit;
 		if($vouchers) { 
 			$prefix = $vouchers[0]->prefix;
 			$isprefix = $vouchers[0]->is_prefix;
-			$dept = Session::get('dpt_id');
+			$dept = env('DEPARTMENT_ID');//Session::get('dpt_id');
 			$vtype = $vouchers[0]->voucher_type_id;
 
 			$usedNos = DB::table('sales_invoice')
                 //->where('voucher_type', $voucherType)
-                //->where('department_id', $departmentId)
+                ->where('department_id', env('DEPARTMENT_ID'))
                 ->where('deleted_at', '0000-00-00 00:00:00')
                 ->pluck('voucher_no');
 
@@ -550,7 +746,6 @@ class SalesInvoiceController extends Controller
 
 			//echo $voucherNo = $this->objUtility->generateVoucherNo($vtype, $usedNos, $isprefix, $prefix, $dept);exit;
 		}
-		//echo '<pre>';print_r($vouchers);exit;
 		return view('body.salesinvoice.add')
 					->withItems($itemmaster)
 					->withTerms($terms)
@@ -590,11 +785,295 @@ class SalesInvoiceController extends Controller
 					->withCrm($crmtem)
 					->withIsmpqty($this->mod_mpqty->is_active)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withAccstatus($status_acc)
 					->withData($data);
 					
 	}
 	
+	public function addc($id = null, $doctype = null) {
+		//$this->objUtility->reEvalItemCostQuantity([200],$this->acsettings);
+			$acarr = ['Discount in Sales', 'Stock Account', 'Stock Excess', 'Cost Difference', 'Cost of Sales'];
+		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', env('DEPARTMENT_ID'))
+							->leftJoin('account_master AS am', function($join) {
+								$join->on('am.id','=','other_account_setting.account_id');
+								$join->where('am.status','=',1);
+								$join->where('am.deleted_at','=','0000-00-00 00:00:00');
+							} )
+							->select('other_account_setting.*','am.master_name','am.account_id as code')
+							->orderBy('other_account_setting.id','ASC')->get();
+		//echo '<pre>';print_r($acounts);exit;
+		$status_acc = true;
+		foreach($acounts as $acc) {
+			if(in_array($acc->account_setting_name, $acarr)) {
+				if($acc->master_name=='')
+					$status_acc = false;
+			}
+		}
+		
+		$data = array();//echo $inv); print_r($inv);exit;
+		$itemmaster = $this->itemmaster->activeItemmasterList();
+		$terms = $this->terms->activeTermsList();
+		$jobs = $this->jobmaster->activeJobmasterList();
+		$currency = $this->currency->activeCurrencyList();
+		$location = $this->location->locationList();
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
+		
+		$sideptid = (Session::has('SI_deptid'))?Session::get('SI_deptid'):'';
+		$sivchrid = (Session::has('SI_vchrid'))?Session::get('SI_vchrid'):'';
+		/* $sivchrno = (Session::has('SI_vchrno'))?Session::get('SI_vchrno'):'';
+		$sicurno = (Session::has('SI_curno'))?Session::get('SI_curno'):''; */
+		$sisalesac = (Session::has('SI_salesac'))?Session::get('SI_salesac'):'';
+		$sicracid = (Session::has('SI_cracid'))?Session::get('SI_cracid'):'';
+		
+		//echo '<pre>';print_r($vouchers);exit;
+		$lastid = $this->sales_invoice->getLastId();
+		$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$sales_location = DB::table('parameter3')
+							 ->join('location', 'location.id', '=', 'parameter3.location_id')
+							 ->join('account_master', 'account_master.id', '=', 'parameter3.account_id')
+							 ->select('location.name','location.id','account_master.master_name','account_master.id AS account_id')
+							 ->get();
+		
+		//RV FORM ENTRY............
+		$banks = $this->bank->activeBankList();
+		$vchrdata = $this->getVoucherRV(9,'CASH');
+		$footertxt = DB::table('header_footer')->where('doc','SI')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+		$print = DB::table('report_view_detail')
+							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
+							->where('report_view.code','SI')
+							->where('report_view_detail.is_default',1)
+							->select('report_view_detail.id')
+							->first();
+
+		//CHECK DEPARTMENT.......
+		if(Session::get('department')==1) { //if active...
+			$deptid = Auth::user()->department_id;
+			if($deptid!=0)
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			else {
+				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$deptid = $departments[0]->id;
+			}
+			$deptid = ($sideptid!='')?$sideptid:$deptid;
+			$is_dept = true;
+		} else {
+			$is_dept = false;
+			$departments = [];
+			$deptid = '';
+		}
+         $is_dept = true;
+		 $deptid =env('DEPARTMENT_ID');
+		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
+		
+		if($this->mod_si_roundoff->is_active==1)
+			$round_off = true;
+		else
+			$round_off = false;
+		
+		//echo '<pre>';print_r($departments);exit;
+		
+		$crmtem = DB::table('crm_template')->where('doc_type','SOB')->where('deleted_at',null)->get();
+		//echo '<pre>';print_r($crmtem);exit;
+		
+		if($id) {
+		    $docnos = ''; $batch_items = null;
+			$ids = explode(',', $id); $getItemLocation = $itemlocedit = $cnitemlocedit = [];
+			if($doctype=='QS') {
+				$docRow = $this->quotation_sales->findQuoteData($ids[0]);
+				$docItems = $this->quotation_sales->getQSItems($ids);
+				$itemdesc = $this->makeTreeArr($this->quotation_sales->getItemDesc($ids));
+				
+				//AUG24
+				$resdo = DB::table('quotation_sales')->whereIn('id',$ids)->select('voucher_no')->get();
+				foreach($resdo as $rw) {
+					$docnos = ($docnos=='')?$rw->voucher_no:$docnos.','.$rw->voucher_no;
+				}
+			} else if($doctype=='SI') {
+				$docRow = $this->sales_invoice->findPOdata($ids[0]);
+				$docItems = $this->sales_invoice->getItems($ids);
+				$itemdesc = $this->makeTreeArr($this->sales_invoice->getItemDesc($ids));
+			}
+			else if($doctype=='SO') {
+				$docRow = $this->sales_order->findOrderData($ids[0]);
+				$docItems = $this->sales_order->getSOItems($ids);
+				$itemdesc = $this->makeTreeArr($this->sales_order->getItemDesc($ids));
+				$sid = $ids[0];
+				$crmtem = DB::table('crm_template')
+					->leftJoin('crm_info', function($join) use($sid){
+							$join->on('crm_info.temp_id','=','crm_template.id');
+							$join->where('crm_info.doc_id','=',$sid);
+					})
+					->where('crm_template.doc_type','SOB')
+					->where('crm_template.deleted_at',null)->get();
+					
+				//AUG24
+				$resdo = DB::table('sales_order')->whereIn('id',$ids)->select('voucher_no')->get();
+				foreach($resdo as $rw) {
+					$docnos = ($docnos=='')?$rw->voucher_no:$docnos.','.$rw->voucher_no;
+				}
+					
+			} else if($doctype=='CDO') {
+				$docRow = $this->customerdo->findOrderData($ids[0]);
+				if($this->mod_consolidate_item->is_active==1)
+					$docItems = $this->consolidateItems( $this->customerdo->getDOItems($ids) ); //echo '<pre>';print_r($docItems);exit;
+				else
+					$docItems = $this->customerdo->getDOItems($ids);
+				$itemdesc = $this->makeTreeArr($this->customerdo->getItemDesc($ids));
+				$getItemLocation = $this->itemmaster->getItemLocation($id,'CDO'); //SI
+				$itemlocedit = $this->makeTreeItmLoc( $this->itemmaster->getItemLocEdit($id,'CDO') ); //SI
+				
+				//AUG24
+				$resdo = DB::table('customer_do')->whereIn('id',$ids)->select('voucher_no')->get();
+				foreach($resdo as $rw) {
+					$docnos = ($docnos=='')?$rw->voucher_no:$docnos.','.$rw->voucher_no;
+				}
+				
+				//MAY25 BATCH ENTRY.....	
+        		$batch_res = $batchs = $batch_items = null;
+        		$batch_res = DB::table('batch_log')->whereNull('batch_log.deleted_at')
+        		                    ->Join('item_batch AS IB', function($join) {
+                                		$join->on('IB.id','=','batch_log.batch_id');
+                                	})
+                                	->where('batch_log.document_type', 'CDO')
+                                	->where('batch_log.document_id', $ids[0])
+                                	->whereNull('IB.deleted_at')
+                                	->select('IB.*','batch_log.doc_row_id','batch_log.log_id','batch_log.id AS batch_log_id','batch_log.quantity AS log_qty')
+                                	->orderBy('batch_log.doc_row_id','ASC')->get();
+                                	
+                $batchs = $this->batchGrouping($batch_res);
+        			
+        		foreach($batchs as $key => $batchrow) {
+        		    $batchArr = $qtyArr = $idArr = '';
+            		foreach($batchrow as $ky => $batch) {
+            		    $idArr = ($idArr=='')?$batch->id:$idArr.','.$batch->id;
+            		    $batchArr = ($batchArr=='')?$batch->batch_no:$batchArr.','.$batch->batch_no;
+            		    $qtyArr = ($qtyArr=='')?$batch->log_qty:$qtyArr.','.$batch->log_qty;
+            		}
+            		$batch_items[$key] = ['ids' => $idArr, 'batches' => $batchArr, 'qtys' => $qtyArr];
+        	    }
+			}
+			//echo '<pre>';print_r($itemlocedit);exit;
+			$total = 0; $discount = 0; $nettotal = 0;
+			foreach($docItems as $item) {
+				$total += $item->line_total;
+				$discount += $item->discount;
+			}
+			$nettotal = $total - $discount;
+			$is_dept = true;
+		    $deptid =env('DEPARTMENT_ID');
+			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
+			//echo '<pre>';print_r($docItems);exit;
+			return view('body.salesinvoice.addcpi') //addpi  addpisp
+						->withItems($itemmaster)
+						->withTerms($terms)
+						->withJobs($jobs)
+						->withCurrency($currency)
+						->withDocrow($docRow)
+						->withDocitems($docItems)
+						->withDocid($id)
+						->withTotal($total)
+						->withDiscount($discount)
+						->withNettotal($nettotal)
+						->withDoctype($doctype)
+						->withVouchers($vouchers)
+						->withVoucherid(Session::get('voucher_id'))
+						->withVoucherno(Session::get('voucher_no'))
+						->withReferenceno(Session::get('reference_no'))
+						->withVoucherdt(Session::get('voucher_date'))
+						->withLpodt(Session::get('lpo_date'))
+						->withAccountmstr(Session::get('acnt_master'))
+						->withSalesac(Session::get('sales_acnt'))
+						->withDptid(Session::get('dpt_id'))
+						->withItemdesc($itemdesc)
+						->withVatdata($this->vatdata)
+						->withSettings($this->acsettings)
+						->withLocation($location)
+						->withFormdata($this->formData)
+						->withIsdept($is_dept)
+						->withDepartments($departments)
+						//->withDeptid($deptid)
+						->withIsconloc(($this->mod_con_loc->is_active==1)?true:false)
+						->withIsmqloc(($this->mod_mnsqty_location->is_active==1)?true:false)
+						->withItemloc($getItemLocation)
+						->withItemlocedit($itemlocedit)
+						->withCnitemlocedit($cnitemlocedit)
+						->withCrm($crmtem)
+						->withDocnos($docnos) //AUG24
+						->withRoundoff($round_off)
+						->withInterid($defaultInter->id)
+                         ->withIntercode($defaultInter->code)
+						 ->withIntername($defaultInter->name)
+						 ->withAccstatus($status_acc)
+						->withBatchitems($batch_items); //MAY25
+		}
+		//echo '<pre>';print_r($vouchers);exit;
+			if($vouchers) { 
+			$prefix = $vouchers[0]->prefix;
+			$isprefix = $vouchers[0]->is_prefix;
+			$dept = env('DEPARTMENT_ID');//Session::get('dpt_id');
+			$vtype = $vouchers[0]->voucher_type_id;
+
+			$usedNos = DB::table('sales_invoice')
+                //->where('voucher_type', $voucherType)
+                ->where('department_id', env('DEPARTMENT_ID'))
+                ->where('deleted_at', '0000-00-00 00:00:00')
+                ->pluck('voucher_no');
+
+			$voucherNo = $this->objUtility->previewVoucherNo($vtype, $isprefix, $prefix, $dept);
+
+			//echo $voucherNo = $this->objUtility->generateVoucherNo($vtype, $usedNos, $isprefix, $prefix, $dept);exit;
+		}
+		return view('body.salesinvoice.addc')
+					->withItems($itemmaster)
+					->withTerms($terms)
+					->withJobs($jobs)
+					->withCurrency($currency)
+					->withVouchers($vouchers)
+					->withVatdata($this->vatdata)
+					->withSettings($this->acsettings)
+					->withLocation($location)
+					->withLocdefault($locdefault)
+					->withPrintid($lastid)
+					->withSaleslocation($sales_location)
+					->withFormdata($this->formData)
+					->withBanks($banks)
+					->withRvvoucher($vchrdata)
+					->withRvid($rvid=9)
+					->withPrint($print)
+					->withSvchrid(Session::get('voucher_id'))
+					->withSslsacnt(Session::get('sales_account'))
+					->withScrid(Session::get('cr_account_id'))
+					->withScstname(Session::get('customer_name'))
+					->withScstid(Session::get('customer_id'))
+					->withSdrid(Session::get('dr_account_id'))
+					->withSiscsh(Session::get('is_cash'))
+					->withIsdept($is_dept)
+					->withDepartments($departments)
+					->withDeptid($deptid)
+					->withRoundoff($round_off) 
+					->withIsconloc(($this->mod_con_loc->is_active==1)?true:false)
+					->withIsmqloc(($this->mod_mnsqty_location->is_active==1)?true:false)
+					->withSideptid($sideptid)
+					->withSivchrid($sivchrid)
+					//->withSivchrno($sivchrno)
+					//->withSicurno($sicurno)
+					->withSisalesac($sisalesac)
+					->withSicracid($sicracid)
+					->withCrm($crmtem)
+					->withIsmpqty($this->mod_mpqty->is_active)
+					->withFooter(isset($footertxt)?$footertxt->description:'')
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
+					->withAccstatus($status_acc)
+					->withData($data);
+					
+	}
 	
 	//NOV24
 	protected function makeTreeItmLoc($result)
@@ -619,30 +1098,36 @@ class SalesInvoiceController extends Controller
 		return $combined;
 	}
 
+
 	public function save(Request $request) {// echo '<pre>';print_r($request->all());exit;
 		
 		if(Session::get('department')==1) {
-			$this->validate(
+			if( $this->validate(
 				$request, 
-				[ 'customer_name' => 'required','customer_id' => 'required',
+				[    'location_id' =>'required','location_id' => 'required',
+				    'customer_name' => 'required','customer_id' => 'required',
 				 'item_code.*'  => 'required', 'item_id.*' => 'required',
 				 'unit_id.*' => 'required',
 				 'quantity.*' => 'required',
 				 'cost.*' => 'required'
 				],
-				['customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+				[   'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
+				    'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 				 'unit_id.*' => 'Item unit is required.',
 				 'quantity.*' => 'Item quantity is required.',
 				 'cost.*' => 'Item cost is required.'
 				]
-			);
+			)) {
+				return redirect('sales_invoice/add')->withInput()->withErrors();
+			}
 			
 		} else {
-			$this->validate(
+			if( $this->validate(
 				$request, 
 				[ //'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
 				 //'voucher_no' => 'required|unique:sales_invoice,voucher_no,NULL,id,deleted_at,NULL',
+				 'location_id' =>'required','location_id' => 'required',
 				 'customer_name' => 'required','customer_id' => 'required',
 				  'item_code.*'  => 'required', 'item_id.*' => 'required',
 				 'unit_id.*' => 'required',
@@ -652,13 +1137,16 @@ class SalesInvoiceController extends Controller
 				[
 				//'reference_no' => 'Reference no. is required.',
 				 //'voucher_no' => 'Voucher no should be unique.',
+				 'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 				 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 				 'unit_id.*' => 'Item unit is required.',
 				 'quantity.*' => 'Item quantity is required.',
 				 'cost.*' => 'Item cost is required.' 
 				]
-				);
+			)) {
+				return redirect('sales_invoice/add')->withInput()->withErrors();
+			}
 		}
 		
 		//if dept active... set department cost and stock account...
@@ -666,11 +1154,11 @@ class SalesInvoiceController extends Controller
 			
 			$dept_accounts = $this->accountsetting->getCostAccountsDept($request->get('department_id'));
 			if($dept_accounts) {
-				Session::put('stock', $dept_accounts->stock_acid);
-				Session::put('cost_of_sale', $dept_accounts->cost_acid);
+				Session::set('stock', $dept_accounts->stock_acid);
+				Session::set('cost_of_sale', $dept_accounts->cost_acid);
 			} else {
-				Session::put('stock', $this->cost_accounts['stock']);
-				Session::put('cost_of_sale', $this->cost_accounts['cost_of_sale']);
+				Session::set('stock', $this->cost_accounts['stock']);
+				Session::set('cost_of_sale', $this->cost_accounts['cost_of_sale']);
 			}
 			
 		}
@@ -705,7 +1193,7 @@ class SalesInvoiceController extends Controller
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
 			if($this->mod_autocost->is_active==1) {
 				$this->objUtility->reEvalItemCostQuantity($request->get('item_id'),$this->acsettings);
-				app('App\Http\Controllers\UtilityController')->updateItemsCurrentQty($request->get('item_id')); //OCT24
+				app('App\Http\Controllers\UtilityController')->updateItemCurrentQty($request->get('item_id')); //OCT24
 			}
 			
 			if( isset($attributes['is_rv']) && $attributes['is_rv']==1 ) { 
@@ -757,13 +1245,18 @@ class SalesInvoiceController extends Controller
 					}
 							
 
+
 			}
 			#### End 
 
 			Session::flash('message', 'Sales Invoice added successfully.');
 		} else
 			Session::flash('error', 'Something went wrong, Invoice failed to add!');
-		return redirect('sales_invoice/add');
+			if($attributes['is_cash']==1) {
+		return redirect('sales_invoice/addc');
+			}else{
+			return redirect('sales_invoice/add');	
+			}
 	}
 	
 	private function RVformSet($attributes,$id) {
@@ -932,7 +1425,7 @@ class SalesInvoiceController extends Controller
 		$getItemLocation = $this->itemmaster->getItemLocation($id,'SI');
 		$itemlocedit = $this->makeTreeArrLoc( $this->itemmaster->getItemLocEdit($id,'SI') );
 		$voucher = $this->accountsetting->find($orderrow->voucher_id); 
-		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,false,Session::get('dpt_id')); //echo '<pre>';print_r($vouchers);exit;
+		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,false,Session::get('dpt_id')); //echo '<pre>';print_r($voucher);exit;
 		
 		$cngetItemLocation = $this->itemmaster->getcnItemLocations();
 		$cnitemlocedit = $this->makeTreeArrLoc( $this->itemmaster->getcnItemLocEdit($id,'SI') );
@@ -1090,9 +1583,10 @@ class SalesInvoiceController extends Controller
 	public function update(Request $request)
 	{ //echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('sales_invoice_id');
-		$this->validate(
+				if( $this->validate(
 			$request, 
 			[//'reference_no' => 'required',
+			'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
@@ -1100,13 +1594,17 @@ class SalesInvoiceController extends Controller
 			 'cost.*' => 'required'
 			],
 			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-			);
+		)) {
+			//echo '<pre>';print_r($request->flash());exit;
+			return redirect('sales_invoice/edit/'.$id)->withInput()->withErrors();
+		}
 		
 		if( $this->sales_invoice->update($id, $request->all()) ) {
 			
@@ -1250,7 +1748,7 @@ class SalesInvoiceController extends Controller
 							//$pdfnew = PDF::loadView('body.salesinvoice.pdfupdateprintnw',$data);
 							//return view('body.salesinvoice.pdfupdateprintnw')->withSalesitems($data['salesitems'])->withWords($data['words']);
 
-							$email='veenababu1990@gmail.com';
+							$email='trading@numaktech.com';
 							$no=$data['salesitems'][0]->voucher_no;
 		                    $body='Sales Invoice modified with voucher no: %s';
 		                     $text= sprintf($body,$no);						
@@ -1278,8 +1776,12 @@ class SalesInvoiceController extends Controller
 			Session::flash('message', 'Sales invoice updated successfully');
 		} else
 			Session::flash('error', 'Something went wrong, Invoice failed to update!');
-		
-		return redirect('sales_invoice');
+		if($attributes['is_cash']==1) {
+		return redirect('sales_invoice/cash');
+		}
+		else{
+			return redirect('sales_invoice');
+		}
 	}
 	
 	public function viewonly($id) { 
@@ -1766,15 +2268,15 @@ class SalesInvoiceController extends Controller
 	public function setSessionVal()
 	{
 		//print_r($request->all());
-		Session::put('voucher_id', $request->get('vchr_id'));
-		Session::put('voucher_no', $request->get('vchr_no'));
-		Session::put('reference_no', $request->get('ref_no'));
-		Session::put('voucher_date', $request->get('vchr_dt'));
-		Session::put('lpo_date', $request->get('lpo_dt'));
-		Session::put('sales_acnt', $request->get('sales_ac'));
-		Session::put('acnt_master', $request->get('ac_mstr'));
-		Session::put('lpo_no', $request->get('ref_no'));
-		Session::put('dpt_id', $request->get('dpt_id'));
+		Session::set('voucher_id', $request->get('vchr_id'));
+		Session::set('voucher_no', $request->get('vchr_no'));
+		Session::set('reference_no', $request->get('ref_no'));
+		Session::set('voucher_date', $request->get('vchr_dt'));
+		Session::set('lpo_date', $request->get('lpo_dt'));
+		Session::set('sales_acnt', $request->get('sales_ac'));
+		Session::set('acnt_master', $request->get('ac_mstr'));
+		Session::set('lpo_no', $request->get('ref_no'));
+		Session::set('dpt_id', $request->get('dpt_id'));
 
 	}
 	
@@ -2137,7 +2639,86 @@ class SalesInvoiceController extends Controller
 					->withDname($dname)
 					->withData($data);
 	}
-	
+	public function getCashSearch(Request $request)
+	{
+		//echo '<pre>';print_r($request->all());exit;
+		$data = array();
+		$dname = '';
+		
+		$cusid = $itemid = '';
+		$voucher_head  = '';
+		
+		//echo '<pre>';print_r($report);exit;
+		if(Session::get('department')==1) {
+			if($request->get('department_id')!='') {
+				$rec = DB::table('department')->where('id', $request->get('department_id'))->select('name')->first();
+				$dname = $rec->name;
+			}
+		}
+		//echo '<pre>';print_r($reports);exit;
+		if($request->get('search_type')=="summary")
+		{
+			$voucher_head = 'Sales Invoice Summary';
+			$reports = $this->sales_invoice->getReportsalesinvocash($request->all()); //echo '<pre>';print_r($reports);exit;
+			//$reports = $this->makeTreeSup($report); 
+			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
+			if($request->get('supplier_id')!==null)
+				$supid = implode(',', $request->get('supplier_id'));
+			else
+				$supid = '';
+			}
+		
+		else if($request->get('search_type')=="detail") {
+			$voucher_head = 'Sales Invoice Detail';
+			$report = $this->sales_invoice->getReportsalesinvocash($request->all());
+		    $reports = $this->makeTreeSup($report);
+			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
+			//echo '<pre>';print_r($reports);exit;
+		} else if($request->get('search_type')=="item") {
+			$voucher_head = 'Sales Invoice by Itemwise';
+			$report = $this->sales_invoice->getReportsales($request->all());
+			$reports = $this->groupbyItemwise($report);
+			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
+			//echo '<pre>';print_r($reports);exit;
+			if($request->get('item_id')!==null)
+				$itemid = implode(',', $request->get('item_id'));
+			else
+				$itemid = '';
+		
+		
+		} else if($request->get('search_type')=='customer') {
+	//	
+			$voucher_head = 'Sales Invoice by customerwise';
+			$report = $this->sales_invoice->getReportsales($request->all());
+		    $reports = $this->makeTreeSup($report);
+			$titles = ['main_head' => 'Account Enquiry','subhead' => $voucher_head ];
+			if($request->get('supplier_id')!==null)
+				$cusid = implode(',', $request->get('supplier_id'));
+			else
+				$cusid = '';
+		} else if($request->get('search_type')=='summary_pmode') {
+			$voucher_head = 'Summary with Payment Mode';
+			$titles = ['main_head' => 'Sales Summary','subhead' => $voucher_head ];
+			$reports = $this->sortByVoucher( $this->sales_invoice->getReportPmode($request->all()) ); 
+		}
+		
+				
+	//	echo '<pre>';print_r($report);exit;
+		return view('body.salesinvoice.preprint')
+					->withReports($reports)
+					->withVoucherhead($voucher_head)
+					->withType($request->get('search_type'))
+					->withFromdate($request->get('date_from'))
+					->withTodate($request->get('date_to'))
+					->withI(0)
+					->withCustomer($cusid)
+					->withItem($itemid)
+					->withTitles($titles)
+					->withSalesman($request->get('salesman'))
+					->withSettings($this->acsettings)
+					->withDname($dname)
+					->withData($data);
+	}
 public function dataExport(Request $request)
 	{ //echo '<pre>';print_r($request->all());exit; type
 		$data = array();
@@ -2390,7 +2971,7 @@ public function dataExport(Request $request)
 			//  "\r"           13           New Line in Mac
 			//  " "            32           Space
 		   
-			$what   = "\x00-\x20";    //all white-spaces and control chars
+			$what   = "\\x00-\\x20";    //all white-spaces and control chars
 		}
 	   
 		return trim( preg_replace( "/[".$what."]+/" , $with , $str ) , $what );
@@ -2495,7 +3076,7 @@ public function dataExport(Request $request)
 					->withData($data);
 	}
 	
-	public function dataExportPo(Request $request)
+	public function dataExportPo()
 	{
 		$data = array();
 		
@@ -2916,6 +3497,4 @@ public function dataExport(Request $request)
 
 	
 }
-
-
 

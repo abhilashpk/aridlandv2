@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use Session;
 use Response;
+use Input;
 use Excel;
 use Auth;
 use App;
@@ -72,7 +73,7 @@ class PurchaseReturnController extends Controller
 	
     public function index() {
 		
-		//Session::put('cost_accounting', 0);
+		//Session::set('cost_accounting', 0);
 		$data = array();
 		$orders = [];//$this->purchase_return->purchaseReturnList();
 		$suppliers =[];
@@ -217,9 +218,13 @@ class PurchaseReturnController extends Controller
 		$itemmaster = $this->itemmaster->activeItemmasterList();
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
-		$vouchers = $this->accountsetting->getAccountSettingsPR($vid=2);//echo '<pre>';print_r($vouchers);exit;
+		$dept=env('DEPARTMENT_ID');
+		$vouchers = $this->accountsetting->getAccountSettingsPR($vid=2,$dept);//echo '<pre>';print_r($vouchers);exit;
 		$location = $this->location->locationList();
-		$lastid = DB::table('purchase_return')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
+		$lastid = DB::table('purchase_return')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 		$footertxt = DB::table('header_footer')->where('doc','PR')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -317,6 +322,9 @@ class PurchaseReturnController extends Controller
 						->withDepartments($departments)
 						->withDeptid($deptid)
 						->withIsmpqty($this->mod_mpqty->is_active)
+						->withInterid($defaultInter->id)
+                         ->withIntercode($defaultInter->code)
+						 ->withIntername($defaultInter->name)
 						->withBatchitems($batch_items);
 		}
 		return view('body.purchasereturn.add')
@@ -335,6 +343,9 @@ class PurchaseReturnController extends Controller
 					->withDeptid($deptid)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withIsmpqty($this->mod_mpqty->is_active)
+					->withInterid($defaultInter->id)
+                     ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
@@ -360,10 +371,11 @@ class PurchaseReturnController extends Controller
 	public function save(Request $request) {
 		
 		//echo '<pre>';print_r($request->all());exit;
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			['purchase_invoice_id' => 'required',
 			 'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
+			 'location_id' =>'required','location_id' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
@@ -372,13 +384,18 @@ class PurchaseReturnController extends Controller
 			],
 			['purchase_invoice_id' => 'Purchase Invoice no. is required.',
 			 'reference_no' => 'Reference no. is required.',
+			 	'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
+
+			return redirect('purchase_return/add')->withInput()->withErrors();
+		}
+		
 		
 		if($this->purchase_return->create($request->all())) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
@@ -515,7 +532,7 @@ class PurchaseReturnController extends Controller
 	public function update(Request $request)
 	{
 		$id = $request->input('purchase_return_id');
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			['purchase_invoice_id' => 'required',
 			 'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
@@ -533,7 +550,10 @@ class PurchaseReturnController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
+
+			return redirect('purchase_return/edit/'.$id)->withInput()->withErrors();
+		}
 		
 		if( $this->purchase_return->update($id, $request->all()) ) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
@@ -686,10 +706,10 @@ class PurchaseReturnController extends Controller
 	
 	public function setSessionVal()
 	{
-		Session::put('pr_voucher_id', $request->get('vchr_id'));
-		Session::put('pr_voucher_no', $request->get('vchr_no'));
-		Session::put('pr_stock_ac', $request->get('acnt'));
-		Session::put('pr_ac_master', $request->get('ac_mstr'));
+		Session::set('pr_voucher_id', $request->get('vchr_id'));
+		Session::set('pr_voucher_no', $request->get('vchr_no'));
+		Session::set('pr_stock_ac', $request->get('acnt'));
+		Session::set('pr_ac_master', $request->get('ac_mstr'));
 	}
 	
 	public function getPrint($id,$rid=null)
@@ -1150,7 +1170,7 @@ class PurchaseReturnController extends Controller
 			//  "\r"           13           New Line in Mac
 			//  " "            32           Space
 		   
-			$what   = "\x00-\x20";    //all white-spaces and control chars
+			$what   = "\\x00-\\x20";    //all white-spaces and control chars
 		}
 	   
 		return trim( preg_replace( "/[".$what."]+/" , $with , $str ) , $what );
@@ -1194,5 +1214,3 @@ class PurchaseReturnController extends Controller
 		return $result;
 	}
 }
-
-

@@ -67,13 +67,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Quotation Sales
                         </h3>
                         <div class="pull-right">
-							@can('qs-create')
+							@permission('qs-create')
                              <a href="{{ url('quotation_sales/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endcan
+							@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -88,9 +88,9 @@
 										<th>Customer</th>
 										<th>QS. Date</th>
 										<th>Amount</th>
-										<th>Approval Status</th>
+										<!--<th>Approval Status</th>-->
 										<?php if($settings->doc_approve==1) { ?><th>Status</th><?php } ?>
-										<th>Action</th><th></th><th></th><th></th><th></th>
+										<th>Action</th><th></th><th></th><th></th>
                                     </tr>
                                     </thead>
                                     
@@ -244,15 +244,15 @@ $(function() {
 			{ "data": "customer" },
 			{ "data": "voucher_date" },
 			{ "data": "net_total" },
-			{ "data": "approval" },
+			//{ "data": "approval" },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } ?>
-			@can('qs-edit'){ "data": "edit","bSortable": false },@endcan
-				@can('qs-view'){ "data": "viewonly","bSortable": false },@endcan
-			@can('qs-print'){ "data": "print","bSortable": false },@endcan
-			{ "data": "view","bSortable": false },
-			@can('qs-delete'){ "data": "delete","bSortable": false },@endcan
+			@permission('qs-edit'){ "data": "edit","bSortable": false },@endpermission
+				@permission('qs-view'){ "data": "viewonly","bSortable": false },@endpermission
+			@permission('qs-print'){ "data": "print","bSortable": false },@endpermission
+			//{ "data": "view","bSortable": false },
+			@permission('qs-delete'){ "data": "delete","bSortable": false },@endpermission
 		],
-			"createdRow": function( row, data, dataIndex){
+			/*"createdRow": function( row, data, dataIndex){
                             if( data["approval_status"] == 1  ){
                                 $('td:eq(4)',row).css('background-color', '#00FF00');
                             }
@@ -261,7 +261,7 @@ $(function() {
                             }
                             
 
-                        },
+                        },*/
 		  
 		});
 		

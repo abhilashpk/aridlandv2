@@ -86,13 +86,13 @@
 							
 							<div class="pull-right">
 							<?php if($isprint) { ?>
-							@can('qs-print')
+							@permission('qs-print')
 							 <a href="{{ url('quotation_sales/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endcan
+							@endpermission
 							<?php } ?>
 							</div>
                         </div>
@@ -290,14 +290,14 @@
 									</thead>
 								</table>
 								
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<!-- ROWCHNG -->
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
 								
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 									<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -541,7 +541,7 @@
 								<?php } ?>
 								<br/>
 								
-								@can('qs-aprv')
+								@permission('qs-aprv')
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
@@ -562,7 +562,7 @@
                                     </div>
                                 </div>
 								<?php } ?>
-								@endcan
+								@endpermission
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">

@@ -62,6 +62,12 @@
 			<p>{{ Session::get('message') }}</p>
 		</div>
 		@endif
+		
+		@if(Session::has('error'))
+		<div class="alert alert-danger">
+			<p>{{ Session::get('error') }}</p>
+		</div>
+		@endif
         
 		<section class="content">
             <div class="row">
@@ -87,10 +93,10 @@
                                     <tr>
 										<th>MR. No</th>
 										<th>MR. Date</th>
-										<th>Supplier</th>
-										<th>Job No</th>
+										<th>Location From</th>
+										<th>Location To</th>
 										<th>Amount</th>
-									@if($mod_purchase_enquiry==0)	<th>Approved User</th>@endif
+									@if($mod_purchase_enquiry==1)	<th>Approved User</th>@endif
 										<th></th><th></th><th></th><th></th>
                                     </tr>
                                     </thead>
@@ -265,13 +271,15 @@ $(function() {
 			"columns": [
 			{ "data": "voucher_no" },
 			{ "data": "voucher_date" },
-			{ "data": "supplier" },
-			{ "data": "jobname" },
+			//{ "data": "supplier" },
+			//{ "data": "jobname" },
+			{ "data": "locfrom" },
+			{ "data": "locto" },
 			{ "data": "net_amount" },
-		@if($modpurenq==0)	{ "data": "approved_user" },@endif
+		@if($modpurenq==1)	{ "data": "approved_user" },@endif
 			{ "data": "edit","bSortable": false },
 			{ "data": "print","bSortable": false },
-		@if($modpurenq==0)	{ "data": "view","bSortable": false },@endif
+		@if($modpurenq==1)	{ "data": "view","bSortable": false },@endif
 			{ "data": "delete","bSortable": false }
 		]	
 		  

@@ -15,6 +15,7 @@ use App\Repositories\Forms\FormsInterface;
 
 use App\Repositories\Location\LocationInterface;
 
+
 use App\Http\Requests;
 use Session;
 use Response;
@@ -92,7 +93,9 @@ class MaterialRequisitionController extends Controller
 							2 => 'supplier',
                             3 => 'jobname',
                             4 => 'net_amount',
-                            5=>'approved_user'
+                            5=>'approved_user',
+							6=>'locfrom',
+							7=>'locto'
                         );
 						
 		$totalData = $this->material_requisition->materialReqListCount();
@@ -135,6 +138,8 @@ class MaterialRequisitionController extends Controller
 				$nestedData['voucher_date'] = date('d-m-Y', strtotime($row->voucher_date));
 				$nestedData['supplier'] = $row->supplier;
 				$nestedData['jobname'] = $row->code;
+				$nestedData['locfrom'] = $row->location_from;
+				$nestedData['locto'] = $row->location_to;
 				$nestedData['net_amount'] = number_format($row->net_amount,2);
 				$nestedData['approved_user'] = ($row->approval_status==1)?$row->approved_user:'';
 				$nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$edit}'>
@@ -179,10 +184,10 @@ class MaterialRequisitionController extends Controller
 		$jobs = $this->jobmaster->activeJobmasterList();
 		
 		$location = $this->location->locationList();
-		$res = $this->voucherno->getVoucherNo('MR'); //echo '<pre>';print_r($res);exit;
+		$res = $this->voucherno->getVoucherNo('MR'); //echo '<pre>';print_r($location);exit;
 		$settings = $this->accountsetting->getAccountPeriod();//
 		$mod_purchase_enquiry= $this->mod_purchase_enquiry = DB::table('parameter2')->where('keyname', 'mod_purchase_enquiry')->where('status',1)->select('is_active')->first();
-		$location = $this->location->locationList();
+		//$location = $this->location->locationList();
 		if($id) {
 		    
 			$ids = explode(',', $id); //
@@ -242,9 +247,38 @@ class MaterialRequisitionController extends Controller
 					->withData($data);
 	}
 	
-	public function save(Request $request, $id = null) {
+	public function save(Request $request,$id = null) {
+	    
+	    
 		//echo '<pre>';print_r($request->all());exit;
 		//echo '<pre>';print_r($this->material_requisition->create($request->all()));exit;
+		if( $this->validate(
+				$request, 
+				[ 
+				// 'supplier_name' => 'required','supplier_id' => 'required',
+				// 'jobname' => 'required','job_id' => 'required',
+				'locfrom_id' =>'required','locfrom_id' => 'required',
+				 'location_id' =>'required','location_id' => 'required',
+				  'item_code.*'  => 'required', 'item_id.*' => 'required',
+				// 'unit_id.*' => 'required',
+				 'quantity.*' => 'required',
+				 //'cost.*' => 'required' 
+				],
+				[
+				
+				// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
+				// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
+				'locfrom_id.required' => 'From Location is required.','locfrom_id.required' => 'Location From is invalid.',
+				'location_id.required' => 'TO Location is required.','location_id.required' => 'Location To is invalid.',
+				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+				 //'unit_id.*' => 'Item unit is required.',
+				 'quantity.*' => 'Item quantity is required.',
+				 //'cost.*' => 'Item cost is required.' 
+				]
+			)) {
+			    
+				return redirect('material_requisition/add')->withInput()->withErrors();
+			}
 		$this->material_requisition->create($request->all());
 		Session::flash('message', 'Material requisition added successfully.');
 		return redirect('material_requisition');
@@ -268,11 +302,40 @@ class MaterialRequisitionController extends Controller
 					->withLocation($location)
 					->withData($data);
 
+
 	}
 	
 	
-	public function update($id, Request $request)
+	public function update(Request $request,$id)
 	{
+	    if( $this->validate(
+				$request, 
+				[ 
+				 //'supplier_name' => 'required','supplier_id' => 'required',
+				 //'jobname' => 'required','job_id' => 'required',
+				 'locfrom_id' =>'required','locfrom_id' => 'required',
+				 'location_id' =>'required','location_id' => 'required',
+				  'item_code.*'  => 'required', 'item_id.*' => 'required',
+				// 'unit_id.*' => 'required',
+				 'quantity.*' => 'required',
+				 //'cost.*' => 'required' 
+				],
+				[
+				
+				// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
+				// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
+				'locfrom_id.required' => 'From Location is required.','locfrom_id.required' => 'Location From is invalid.',
+				'location_id.required' => 'TO Location is required.','location_id.required' => 'Location To is invalid.',
+				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+				 //'unit_id.*' => 'Item unit is required.',
+				 'quantity.*' => 'Item quantity is required.',
+				 //'cost.*' => 'Item cost is required.' 
+				]
+			)) {
+			    
+				return redirect('material_requisition/edit/'.$id)->withInput()->withErrors();
+			}
+	    
 		$this->material_requisition->update($id, $request->all());
 		Session::flash('message', 'Material Requisition updated successfully');
 		return redirect('material_requisition');
@@ -294,6 +357,7 @@ class MaterialRequisitionController extends Controller
 					->withFormdata($this->formData)
 					->withLocation($location)
 					->withData($data);
+
 
 	}
 		public function getApproval($id)
@@ -324,20 +388,6 @@ class MaterialRequisitionController extends Controller
 		Session::flash('message', 'Material Requisition deleted successfully.');
 		return redirect('material_requisition');
 	}
-	// public function setSessionVal()
-	// {
-	// 	print_r($request->all());exit;
-	// 	Session::put('voucher_id', $request->get('vchr_id'));
-	// 	Session::put('voucher_no', $request->get('vchr_no'));
-	// 	Session::put('reference_no', $request->get('ref_no'));
-	// 	Session::put('voucher_date', $request->get('vchr_dt'));
-	// 	Session::put('lpo_date', $request->get('lpo_dt'));
-	// 	Session::put('sales_acnt', $request->get('sales_ac'));
-	// 	Session::put('acnt_master', $request->get('ac_mstr'));
-	// 	Session::put('lpo_no', $request->get('ref_no'));
-	// 	Session::put('dpt_id', $request->get('dpt_id'));
-
-	// }
 	
 	public function getPrint($id,$rid=null)
 	{
@@ -447,42 +497,7 @@ class MaterialRequisitionController extends Controller
 					->withData($data);
 	}
 	
-	public function getSearchBkp()
-	{
-		$data = array();
-		
-		$reports = $this->material_requisition->getReport($request->all());
-		
-		if($request->get('search_type')=="summary") {
-			$voucher_head = 'Material Requisition Summary';
-		}
-		elseif($request->get('search_type')=="summary_pending") {
-
-			$voucher_head = 'Material Requisition Pending Summary';
-			$reports = $this->makeArrGroup($reports,$curcode);
-			//$reports = $this->makeArrGroup($reports);
-
-		} elseif($request->get('search_type')=="detail") {
-			$voucher_head = 'Material Requisition Detail';
-			//$reports = $this->makeTree($reports);
-		} elseif($request->get('search_type')=="detail_pending") {
-			$voucher_head = 'Material Requisition Pending Detail';
-			//$reports = $this->makeTree($reports);
-		}
-		
-		echo '<pre>';print_r($reports);exit;
-		return view('body.materialrequisition.preprint')
-					->withReports($reports)
-					->withVoucherhead($voucher_head)
-					->withType($request->get('search_type'))
-					->withFromdate($request->get('date_from'))
-					->withTodate($request->get('date_to'))
-					->withSalesman($request->get('salesman'))
-					->withJobname($request->get('jobaname'))
-					->withI(0)
-					->withSettings($this->acsettings)
-					->withData($data);
-	}
+	
 	protected function makeTree($reports)
 	{
 		$childs = array();
@@ -659,5 +674,3 @@ class MaterialRequisitionController extends Controller
 	}
 	
 }
-
-

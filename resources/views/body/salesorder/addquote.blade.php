@@ -89,13 +89,26 @@
                                 @if(isset($poso))
 								<input type="hidden" name="po_to_so" value="{{$poso}}">
 								@endif
+								@php $selectedLocId = $quoterow->location_id; @endphp
+                                <div class="form-group">
+                                <font color="#16A085"> <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">SO. No.</label>
                                     <div class="col-sm-10">
 									<?php if($voucherno->prefix!='') { ?>
 										<div class="input-group">
-											<span class="input-group-addon">{{$voucherno->prefix}}</span>
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> placeholder="{{old('voucher_no')}}" <?php } ?>>
+											<span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly value="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
 											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
@@ -103,22 +116,22 @@
 										</div>
 										<?php } else { ?>
 										<div class="input-group">
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> placeholder="{{old('voucher_no')}}" <?php } ?>>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly value="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
 											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
 											<span class="input-group-addon inputvn"><i class="fa fa-fw fa-edit"></i></span>
 										</div>
 									<?php } ?>
-										<input type="hidden" name="curno" id="curno" value="{{$voucherno->no ?? ''}}">
+										<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$voucherno->no}}">
 									</div>
                                 </div>
 								
 								<?php if($formdata['reference_no']==1) { ?>
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Reference No.</label>
+                                    <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>">Reference No.</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="reference_no" name="reference_no" value="<?php echo (old('reference_no'))?old('reference_no'):$quoterow->reference_no ?? ''; ?>">
+                                        <input type="text" class="form-control <?php if($errors->has('reference_no')) echo 'form-error';?>" id="reference_no" name="reference_no" value="<?php echo (old('reference_no'))?old('reference_no'):$quoterow->reference_no; ?>">
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -146,8 +159,8 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('customer_name')) echo 'form-error';?>">Customer</label>
                                     <div class="col-sm-10">
-                                        <input type="text" name="customer_name" id="customer_name" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#customer_modal" value="<?php echo (old('customer_name'))?old('customer_name'):$quoterow->customer ?? ''; ?>">
-										<input type="hidden" name="customer_id" id="customer_id" value="<?php echo (old('customer_id'))?old('customer_id'):$quoterow->customer_id ?? ''; ?>">
+                                        <input type="text" name="customer_name" id="customer_name" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#customer_modal" value="<?php echo (old('customer_name'))?old('customer_name'):$quoterow->customer; ?>">
+										<input type="hidden" name="customer_id" id="customer_id" value="<?php echo (old('customer_id'))?old('customer_id'):$quoterow->customer_id; ?>">
 									</div>
                                 </div>
 								
@@ -155,7 +168,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Quotation#</label>
                                     <div class="col-sm-10">
-                                         <input type="text" class="form-control" id="quotation" readonly name="quotation" value="{{(old('quotation'))?:$quoterow->voucher_no ?? ''}}" autocomplete="off" onclick="getQuotation()">
+                                         <input type="text" class="form-control" id="quotation" readonly name="quotation" value="{{(old('quotation'))?:$quoterow->voucher_no}}" autocomplete="off" onclick="getQuotation()">
 										 <input type="hidden" id="quotation_id" name="quotation_id" value="{{$quoteid}}">
                                     </div>
                                 </div>
@@ -168,8 +181,8 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Salesman</label>
                                     <div class="col-sm-10">
-                                        <input type="text" name="salesman" id="salesman" value="<?php echo (old('salesman'))?old('salesman'):$quoterow->salesman ?? ''; ?>" class="form-control" autocomplete="off" data-toggle="modal" data-target="#salesman_modal" placeholder="Salesman">
-										<input type="hidden" name="salesman_id" id="salesman_id" value="<?php echo (old('salesman_id'))?old('salesman_id'):$quoterow->salesman_id ?? ''; ?>">
+                                        <input type="text" name="salesman" id="salesman" value="<?php echo (old('salesman'))?old('salesman'):$quoterow->salesman; ?>" class="form-control" autocomplete="off" data-toggle="modal" data-target="#salesman_modal" placeholder="Salesman">
+										<input type="hidden" name="salesman_id" id="salesman_id" value="<?php echo (old('salesman_id'))?old('salesman_id'):$quoterow->salesman_id; ?>">
 									</div>
                                 </div>
 								<?php } else { ?>
@@ -181,7 +194,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Description</label>
                                     <div class="col-sm-10">
-										<input type="text" class="form-control" id="description" name="description" value="<?php echo (old('description'))?old('description'):$quoterow->description ?? ''; ?>">
+										<input type="text" class="form-control" id="description" name="description" value="<?php echo (old('description'))?old('description'):$quoterow->description; ?>">
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -208,8 +221,8 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Job</label>
                                     <div class="col-sm-10">
-										<input type="text" name="jobname" id="jobname" class="form-control" autocomplete="off" data-toggle="modal" data-target="#job_modal" value="{{$quoterow->code ?? ''}}">
-										<input type="hidden" name="job_id" id="job_id" value="{{$quoterow->job_id ?? ''}}">
+										<input type="text" name="jobname" id="jobname" class="form-control" autocomplete="off" data-toggle="modal" data-target="#job_modal" value="{{$quoterow->code}}">
+										<input type="hidden" name="job_id" id="job_id" value="{{$quoterow->job_id}}">
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -221,10 +234,13 @@
                                     <label for="input-text" class="col-sm-2 control-label"> Foreign Currency</label>
 									<div class="col-xs-10">
 										<div class="col-xs-1">
-										@php
-											$chk = (($quoterow?->is_fc ?? 0) == 1) ? 'checked' : '';
-										@endphp
-
+										@if($quoterow->is_fc==1)
+										{{--*/ $chk = "checked";
+										/*--}}
+										@else
+										{{--*/ $chk = "";
+										/*--}}
+										@endif
 											<label class="radio-inline iradio">
 											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}>
 										</label>
@@ -234,16 +250,16 @@
 												<option value="">Select Foreign Currency...</option>
 												@foreach($currency as $curr)
 												@if($quoterow->currency_id==$curr['id'])
-												@php $sel = "selected" @endphp
+												{{--*/ $sel = "selected" /*--}}
 												@else
-												@php $sel = "" @endphp	
+												{{--*/ $sel = "" /*--}}	
 												@endif
 												<option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option>
 												@endforeach
 											</select>
 										</div>
 										<div class="col-xs-5">
-											<input type="text" name="currency_rate" id="currency_rate" class="form-control" value="{{ $quoterow->currency_rate ?? '' }}">
+											<input type="text" name="currency_rate" id="currency_rate" class="form-control" value="{{ $quoterow->currency_rate }}">
 										</div>
 									</div>
                                 </div>
@@ -262,19 +278,7 @@
 									</div>
                                 </div>
 								
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-										<option value="">Select Location..</option>
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$quoterow->location_id) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
+								
 								
 								<br/>
 								<fieldset>
@@ -313,7 +317,7 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; @endphp
+								{{--*/ $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -411,7 +415,7 @@
 										
 								<?php $i++; } } else { ?>
 									@foreach($quoteitems as $item)
-									@php $i++; @endphp
+									{{--*/ $i++; /*--}}
 										<div class="itemdivChld">	
 											<?php
 												if($item->balance_quantity==0) {
@@ -639,19 +643,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
 											<input type="hidden" id="net_amount_hid" name="net_amount_hid" class="form-control spl" readonly>
-											<input type="number" step="any" id="net_amount" name="net_amount"  value="{{
-    ($quoterow->is_fc == 1)
-        ? (isset($poso)
-            ? $quoterow->net_amount_fc
-            : $quoterow->net_total_fc)
-        : (isset($poso)
-            ? $nettotal
-            : $quoterow->net_total)
-}}"
-  class="form-control spl" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount" name="net_amount" value="{{(old('net_amount'))?old('net_amount'):(($quoterow->is_fc==1)?(isset($poso))?$quoterow->net_amount_fc:$quoterow->net_total_fc:(isset($poso))?$nettotal:$quoterow->net_total)}}" class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="{{(isset($poso))?$quoterow->net_amount:$quoterow->net_total}}" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="<?php echo (old('net_amount_fc'))?old('net_amount_fc'):(isset($poso))?$quoterow->net_amount:$quoterow->net_total; ?>" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>
@@ -886,7 +881,21 @@ $(document).ready(function () {
 	if ( $('.itemdivPrnt').children().length == 1 ) {
 		$('.itemdivPrnt').find('.btn-remove-item').hide();
 	}
-	
+	if( $('#selected_locfrom_id').val() !=''){  
+
+	      var val = $('#selected_locfrom_id').val();
+		  
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  let prefix ='SO' //$('input[name="prefix"]').val('');   // Example: LT
+             let newPrefix = prefix + locCode;               // LTWH1
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix); 
+              $('.locfrom-radio').prop('disabled', true);
+			 });  
+		}
 	$("#currency_rate").prop('disabled', true);
 	$("#currency_id").prop('disabled', true);
 	<?php if($quoterow->is_fc==0) { ?>

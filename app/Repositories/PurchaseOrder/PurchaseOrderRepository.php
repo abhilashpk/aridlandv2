@@ -57,6 +57,10 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		$this->purchase_order->document_type = (isset($attributes['document_type']))?$attributes['document_type']:'PO';
 		$this->purchase_order->document_id = ($attributes['document_id']!='')?$attributes['document_id'] ?? 0:'';
 		$this->purchase_order->is_draft = (isset($attributes['is_draft']))?$attributes['is_draft'] ?? 0:'';
+		$this->purchase_order->prefix = (isset($attributes['prefix']))?$attributes['prefix']:'';
+		$this->purchase_order->is_intercompany = (isset($attributes['is_intercompany']))?$attributes['is_intercompany']:'';
+		$this->purchase_order->department_id =env('DEPARTMENT_ID');
+		$this->purchase_order->doc_nos =(isset($attributes['po_no']))?$attributes['po_no']:'';
 		
 		return true;
 	}
@@ -67,35 +71,35 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		if( isset($attributes['is_fc']) ) {
 			$currencyrate=isset($attributes['currency_rate'])?$attributes['currency_rate']:'';
 			$tax        = (float)( ($attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$currencyrate;
-			$item_total = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key] ) * (float)$currencyrate;
-			$tax_total  = round($tax * $attributes['quantity'][$key],2);
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * (float)$currencyrate;
+			$item_total = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * (float)$currencyrate;
+			$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$currencyrate;
 			
 			if( isset($attributes['other_cost'])) {
-				$othercost_unit = ($other_cost * $attributes['cost'][$key]) / $attributes['total']; //$attributes['other_cost']
-				$netcost_unit = ($othercost_unit + $attributes['cost'][$key]) * $attributes['currency_rate'];
+				$othercost_unit = ($other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total']; //$attributes['other_cost']
+				$netcost_unit = ($othercost_unit + (float)$attributes['cost'][$key]) * (float)$attributes['currency_rate'];
 			}
 			$tax_code = (isset($attributes['is_import']))?"RC":$attributes['tax_code'][$key];
 		} else {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 			$tax_code = (isset($attributes['is_import']))?"RC":$attributes['tax_code'][$key];
 			
 			if($tax_code=="EX" || $tax_code=="ZR") {
 				
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key];
-				$tax_total  = round($tax * $attributes['quantity'][$key],2);
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
-				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
+				$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
+				$tax_total  = $ln_total *  (float)$attributes['line_vat'][$key] / (100 +  (float)$attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 
 				if( isset($attributes['other_cost'])) { //MY27
-					$othercost_unit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
-					$netcost_unit = $othercost_unit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+					$othercost_unit = (($other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total_fc']) * (float)$attributes['currency_rate'];
+					$netcost_unit = $othercost_unit + ((float)$attributes['cost'][$key] * (float)$attributes['currency_rate']);
 				}
 				
 				/*if( isset($attributes['other_cost'])) {
@@ -105,17 +109,17 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 				
 			} else {
 				
-				$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key];
-				$tax_total  = round($tax * $attributes['quantity'][$key],2);
+				$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
 				
 				/*if( isset($attributes['other_cost']) && $other_cost > 0 ) {
 					$othercost_unit = ($other_cost * $attributes['cost'][$key]) / $attributes['total'];
 					$netcost_unit = $othercost_unit + $attributes['cost'][$key];
 				}*/
 				if( is_numeric (isset($attributes['other_cost']) )&& is_numeric ($other_cost > 0) ) { //MY27
-					$othercost_unit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
-					$netcost_unit = $othercost_unit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+					$othercost_unit = (($other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total_fc']) * (float)$attributes['currency_rate'];
+					$netcost_unit = $othercost_unit + ((float)$attributes['cost'][$key] * (float)$attributes['currency_rate']);
 				}
 			}
 			
@@ -127,18 +131,18 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 			
 		if($attributes['tax_include'][$key]==1 ) {
 			$vatPlus = 100 + $attributes['line_vat'][$key];
-			$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+			$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 			$type = 'tax_include';
 		} else {
 			$vatPlus = 100;
-			$total = $attributes['line_total'][$key];
+			$total = (float)$attributes['line_total'][$key];
 			$type = 'tax_exclude';
 		}
 		
 		if($discount > 0) {
 			$discountAmt = round( (($total / $lineTotal) * $discount),2 );
 			$amountTotal = $total - $discountAmt;
-			$vatLine = round( (($amountTotal * $attributes['line_vat'][$key]) / $vatPlus),2 );
+			$vatLine = round( (($amountTotal * (float)$attributes['line_vat'][$key]) / $vatPlus),2 );
 			//$line_total = $amountTotal;
 			$tax_total = $vatLine; 
 		} 
@@ -147,19 +151,19 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		$purchaseOrderItem->item_id = $attributes['item_id'][$key];
 		$purchaseOrderItem->unit_id = $attributes['unit_id'][$key];
 		$purchaseOrderItem->item_name = $attributes['item_name'][$key];
-		$purchaseOrderItem->quantity = $attributes['quantity'][$key] ?? 0;
+		$purchaseOrderItem->quantity = (float)$attributes['quantity'][$key] ?? 0;
 		$purchaseOrderItem->unit_price = (isset($attributes['is_fc']))?(float)$attributes['cost'][$key]*(float)$currencyrate:(float)$attributes['cost'][$key];
 		$purchaseOrderItem->vat = $attributes['line_vat'][$key] ?? 0;
 		$purchaseOrderItem->vat_amount = $tax_total;
-		$purchaseOrderItem->discount = (int)$attributes['line_discount'][$key] ?? 0;
-		$purchaseOrderItem->total_price = $line_total;
-		$purchaseOrderItem->othercost_unit = $othercost_unit;
-		$purchaseOrderItem->netcost_unit = $netcost_unit;
+		$purchaseOrderItem->discount = (float)$attributes['line_discount'][$key] ?? 0;
+		$purchaseOrderItem->total_price = (float)$line_total;
+		$purchaseOrderItem->othercost_unit =(float) $othercost_unit;
+		$purchaseOrderItem->netcost_unit = (float)$netcost_unit;
 		$purchaseOrderItem->tax_code 	= $tax_code;
 		$purchaseOrderItem->tax_include = $attributes['tax_include'][$key] ?? 0;
-		$purchaseOrderItem->item_total 		= $item_total;
+		$purchaseOrderItem->item_total 		= (float)$item_total;
 
-		$purchaseOrderItem->unit_price_fc = $attributes['cost'][$key];
+		$purchaseOrderItem->unit_price_fc = (float)$attributes['cost'][$key];
 		$purchaseOrderItem->vat_amount_fc = (isset($attributes['is_fc']))?round(((float)$tax_total /$currencyrate),2):(float)$tax_total;
 		$purchaseOrderItem->total_price_fc = (isset($attributes['is_fc']))?round(($line_total /  $currencyrate),2):$line_total;
 		$purchaseOrderItem->item_total_fc = (isset($attributes['is_fc']))?round(($item_total /  $currencyrate),2):$item_total;
@@ -192,7 +196,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
     		}
 
     		
-		} else {
+		} else if(isset($attributes['document_type']) && $attributes['document_type']=='MR') {
 		
     		if(isset($attributes['purchase_order_item_id'])) {
     			if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
@@ -211,6 +215,25 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
     			}
     		}
 		}
+		else if(isset($attributes['document_type']) && $attributes['document_type']=='PE') {
+		
+    		if(isset($attributes['purchase_order_item_id'])) {
+    			if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+    				if( isset($attributes['purchase_order_item_id'][$key]) ) {
+    					$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+    					//update as partially delivered.
+    					DB::table('purchase_enquiry_item')
+    								->where('id', $attributes['purchase_order_item_id'][$key])
+    								->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+    				}
+    			} else { 
+    					//update as completely delivered.
+    					DB::table('purchase_enquiry_item')
+    								->where('id', $attributes['purchase_order_item_id'][$key])
+    								->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+    			}
+    		}
+		}
 	}
 	
 	
@@ -224,12 +247,20 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
     			if($count1 == $count2)
     				DB::table('sales_order')->where('id', $id)->update(['is_transfer_po' => 1]);
     		}
-		} else {
+		} else if(isset($attributes['document_type']) && $attributes['document_type']=='MR') {
     		foreach($ids as $id) {
     			$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
     			$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
     			if($count1 == $count2)
     				DB::table('material_requisition')->where('id', $id)->update(['is_transfer' => 1]);
+    		} 
+		} 
+		else if(isset($attributes['document_type']) && $attributes['document_type']=='PE') {
+    		foreach($ids as $id) {
+    			$count1 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			$count2 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			if($count1 == $count2)
+    				DB::table('purchase_enquiry')->where('id', $id)->update(['is_transfer' => 1]);
     		} 
 		}
 	}
@@ -287,9 +318,9 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		$is_fc = ($bcurr->bcurrency_id == $attributes['oc_currency'][$key])?0:1;
 		
 		$purchaseInvoiceOC->purchase_order_id = $this->purchase_order->id;
-		$purchaseInvoiceOC->dr_account_id = $attributes['dr_acnt_id'][$key];
-		$purchaseInvoiceOC->oc_reference = $attributes['oc_reference'][$key];
-		$purchaseInvoiceOC->oc_description = $attributes['oc_description'][$key];
+		$purchaseInvoiceOC->dr_account_id = isset($attributes['dr_acnt_id'][$key])?$attributes['dr_acnt_id'][$key]:'';
+		$purchaseInvoiceOC->oc_reference = isset($attributes['oc_reference'][$key])?$attributes['oc_reference'][$key]:'';
+		$purchaseInvoiceOC->oc_description = isset($attributes['oc_description'][$key])?$attributes['oc_description'][$key]:'';
 		$purchaseInvoiceOC->cr_account_id = $attributes['cr_acnt_id'][$key];
 		$purchaseInvoiceOC->oc_amount = ($is_fc==1)?($attributes['oc_amount'][$key]*$attributes['oc_rate'][$key]):$attributes['oc_amount'][$key];
 		$purchaseInvoiceOC->oc_fc_amount = $attributes['oc_amount'][$key];
@@ -298,8 +329,8 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		if($attributes['tax_sr'][$key]=="EX" || $attributes['tax_sr'][$key]=="ZR") {
 			$oc_vatamt = $ocvatamount = 0;
 		} else {
-			$ocvatamount = ($attributes['oc_amount'][$key] * $attributes['vat_oc'][$key])/100;
-			$oc_vatamt = ($is_fc==1)?($attributes['oc_amount'][$key]*$attributes['oc_rate'][$key]*$attributes['vat_oc'][$key]/100):($attributes['oc_amount'][$key] * $attributes['vat_oc'][$key])/100;
+			$ocvatamount = ((float)$attributes['oc_amount'][$key] * (float)$attributes['vat_oc'][$key])/100;
+			$oc_vatamt = ($is_fc==1)?((float)$attributes['oc_amount'][$key]*(float)$attributes['oc_rate'][$key]*(float)$attributes['vat_oc'][$key]/100):(float)($attributes['oc_amount'][$key] * (float)$attributes['vat_oc'][$key])/100;
 		}
 		
 		$purchaseInvoiceOC->oc_vatamt = $oc_vatamt;
@@ -319,16 +350,15 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		  try {
 				
 				//VOUCHER NO LOGIC.....................
-				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+				$dept = env('DEPARTMENT_ID');
 
-				 // 2️⃣ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-				if($dept > 0)	
-					$qry->where('department_id', $dept);
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -351,16 +381,15 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+							$dept = env('DEPARTMENT_ID');
 
-							// 2️⃣ Get the highest numeric part from voucher_master
-							$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-							if($dept > 0)	
-								$qry->where('department_id', $dept);
+							// ⿢ Get the highest numeric part from voucher_master
+							$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no']);
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -380,7 +409,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					}
 					
 					//calculate total amount....
-					$discount = (isset($attributes['discount']))?(($attributes['discount']!='')?$attributes['discount']:0):0;
+					$discount = (isset($attributes['discount']))?(($attributes['discount']!='')?(float)$attributes['discount']:0):0;
 					if($discount > 0) 
 						$total = $this->calculateTotalAmount($attributes);
 					
@@ -397,6 +426,11 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						
 							$purchaseOrderItem->status = 1;
 							$itemObj = $this->purchase_order->orderItem()->save($purchaseOrderItem);
+							$zero = DB::table('purchase_order_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+					           if($zero && $zero->item_id != 0){
+						         $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						         DB::table('purchase_order_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						       }
 							
 							//update item transfer status...
 							$this->setTransferStatusItem($attributes, $key);
@@ -426,7 +460,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								$objOC=$this->purchase_order->doOtherCost()->save($purchaseInvoiceOC);
 								if($objOC) {
 								$oc_vat_amt = $arrOC['oc_vat_amt'];
-							$oc_net_aount = ($attributes['tax_sr'][$key]=='RC')?$arrOC['oc_amount']:($oc_vat_amt + $arrOC['oc_amount']);
+							$oc_net_aount = ($attributes['tax_sr'][$key]=='RC')?(float)$arrOC['oc_amount']:($oc_vat_amt +(float)$arrOC['oc_amount']);
 								//$oc_vat_amt = ($attributes['oc_amount'][$key] * $attributes['vat_oc'][$key]) / 100;
 								//$oc_net_aount = $oc_vat_amt + $attributes['oc_amount'][$key];
 								}
@@ -440,39 +474,39 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					}
 				
 					$subtotal = $line_total - $discount;
-					if($taxtype=='tax_include' && $attributes['discount'] == 0) {
+					if(isset($taxtype) && $taxtype=='tax_include' && $attributes['discount'] == 0) {
 					  
-					  $net_amount = $subtotal;
-					  $tax_total = ($subtotal * $vat) / (100 + $vat);
-					  $subtotal = $subtotal - $tax_total;
+					  $net_amount = (float)$subtotal;
+					  $tax_total = ((float)$subtotal *(float) $vat) / (100 + (float)$vat);
+					  $subtotal = (float)$subtotal - (float)$tax_total;
 					  
-					} elseif($taxtype=='tax_include' && $attributes['discount'] > 0) { 
+					} elseif(isset($taxtype)&& $taxtype=='tax_include' && $attributes['discount'] > 0) { 
 					
-					   $tax_total = ($subtotal * $vat) / (100 + $vat);
-					   $net_amount = $subtotal - $tax_total;
+					   $tax_total = ((float)$subtotal * (float)$vat) / (100 + (float)$vat);
+					   $net_amount = (float)$subtotal - (float)$tax_total;
 					} else 
-						$net_amount = $subtotal + $tax_total;
+						$net_amount = (float)$subtotal + (float)$tax_total;
 					
 					if( isset($attributes['is_fc']) ) {
 						
-						$total_fc 	   = $line_total / $attributes['currency_rate'];
-						$discount_fc   = $attributes['discount'] ;
-						$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
+						$total_fc 	   = (float)$line_total / (float)$attributes['currency_rate'];
+						$discount_fc   = (float)$attributes['discount'] ;
+						$vat_fc 	   = (float)$attributes['vat_fc'] / (float)$attributes['currency_rate'];
 						$tax_fc 	   = round($tax_total / $attributes['currency_rate'],2);
-						$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
-						$other_cost_fc = $other_cost / $attributes['currency_rate'];
-						$subtotal_fc   = $subtotal / $attributes['currency_rate'];
-						$discount      = $attributes['discount'] * $attributes['currency_rate'];
+						$net_amount_fc = (float)$total_fc - (float)$discount_fc + (float)$tax_fc;
+						$other_cost_fc = (float)$other_cost / (float)$attributes['currency_rate'];
+						$subtotal_fc   = (float)$subtotal / (float)$attributes['currency_rate'];
+						$discount      = (float)$attributes['discount'] * (float)$attributes['currency_rate'];
 					} else {
 						$total_fc = 0; $discount_fc = 0; $tax_fc = 0; $net_amount_fc = 0; $vat_fc = 0; $other_cost_fc = $subtotal_fc = 0;
-						$discount      = (isset($attributes['discount']))?$attributes['discount']:0;
+						$discount      = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 					}
 					  
 										
 					//update discount, total amount
                      DB::table('purchase_order')
 								->where('id', $this->purchase_order->id)
-								->update([//'voucher_no' => (isset($attributes['is_draft']) && $attributes['is_draft']==1 )?'Draft-'.$attributes['voucher_no']:$attributes['voucher_no'],
+								->update(['voucher_no' => (isset($attributes['is_draft']) && $attributes['is_draft']==1 )?'Draft-'.$attributes['voucher_no']:$attributes['voucher_no'],
 									    'total'    	  => $line_total,
 										  'discount' 	  => (isset($attributes['discount']))?$attributes['discount']:0,
 										  'vat_amount'	  => $tax_total,
@@ -549,7 +583,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 				}
 				
 				//calculate total amount....
-				$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+				$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 				if($discount > 0) 
 					$total = $this->calculateTotalAmount($attributes);
 				
@@ -561,42 +595,42 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						$tax_code = (isset($attributes['is_import']))?"RC":$attributes['tax_code'][$key];
 							
 						if( isset($attributes['is_fc']) ) {
-							$lndiscount = ((int)$attributes['line_discount'][$key]!='')?(int)$attributes['line_discount'][$key]:0;
-							$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
-							$itemtotal = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $lndiscount ) * $attributes['currency_rate'];
+							$lndiscount = ((float)$attributes['line_discount'][$key]!='')?(float)$attributes['line_discount'][$key]:0;
+							$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$attributes['currency_rate'];
+							$itemtotal = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$lndiscount ) * (float)$attributes['currency_rate'];
 							$taxtotal  = round($tax * $attributes['quantity'][$key],2);
-							$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+							$linetotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 							
 							if(isset($attributes['other_cost']) && $attributes['other_cost'] != 0 ) {
-								$othercostunit = ($attributes['other_cost'] * $attributes['cost'][$key]) / $attributes['total'];
-								$netcostunit = ($othercost_unit + $attributes['cost'][$key]) * $attributes['currency_rate'];
+								$othercostunit = ((float)$attributes['other_cost'] * (float)$attributes['cost'][$key]) / (float)$attributes['total'];
+								$netcostunit = ((float)$othercost_unit + (float)$attributes['cost'][$key]) * (float)$attributes['currency_rate'];
 							}
 
 						} else {
 							
-							$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+							$linetotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 							
 							if($tax_code=="EX" || $tax_code=="ZR") {
-								$lndiscount = ((int)$attributes['line_discount'][$key]!='')?(int)$attributes['line_discount'][$key]:0;
+								$lndiscount = ($attributes['line_discount'][$key]!='')?(float)$attributes['line_discount'][$key]:0;
 								$tax        = 0;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $lndiscount;
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$lndiscount;
 								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
 								
 								if(isset($attributes['other_cost']) && $attributes['other_cost'] != 0 ) {
-									$othercostunit = ($attributes['other_cost'] * $attributes['cost'][$key]) / $attributes['total'];
-									$netcostunit = $othercost_unit + $attributes['cost'][$key];
+									$othercostunit = ((float)$attributes['other_cost'] * (float)$attributes['cost'][$key]) / (float)$attributes['total'];
+									$netcostunit = (float)$othercost_unit + (float)$attributes['cost'][$key];
 								}
 								
 							} else if($attributes['tax_include'][$key]==1){
 				                   
-								$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
-								$taxtotal  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
-								$itemtotal = $ln_total - $tax_total;
+								$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
+								$taxtotal  = (float)$ln_total *  (float)$attributes['line_vat'][$key] / (100 + (float) $attributes['line_vat'][$key]);
+								$itemtotal = (float)$ln_total - (float)$tax_total;
 
 								$othercostunit = 0;
 								if( isset($attributes['other_cost'])) { //MY27
-									$othercostunit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
-									$netcostunit = $othercostunit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+									$othercostunit = (((float)$other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total_fc']) * (float)$attributes['currency_rate'];
+									$netcostunit = (float)$othercostunit + ((float)$attributes['cost'][$key] * (float)$attributes['currency_rate']);
 								}
 								
 								/*if( isset($attributes['other_cost'])) {
@@ -606,15 +640,15 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								
 							} else {
 							    
-								$lndiscount = ((int)$attributes['line_discount'][$key]!='')?(int)$attributes['line_discount'][$key]:0;
-								$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $lndiscount;
+								$lndiscount = ($attributes['line_discount'][$key]!='')?(float)$attributes['line_discount'][$key]:0;
+								$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$lndiscount;
 								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
 								
 								$othercostunit = 0;
 								if( isset($attributes['other_cost']) && $other_cost > 0 ) { //MY27
-									$othercostunit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
-									$netcostunit = $othercostunit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+									$othercostunit = (((float)$other_cost * (float)$attributes['cost'][$key]) / (float)$attributes['total_fc']) * (float)$attributes['currency_rate'];
+									$netcostunit = (float)$othercostunit + ((float)$attributes['cost'][$key] * (float)$attributes['currency_rate']);
 								}
 								/*if( isset($attributes['other_cost'])) {
 									$othercostunit = ($other_cost * $attributes['cost'][$key]) / $attributes['total'];
@@ -624,25 +658,25 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						}
 						
 						//********DISCOUNT Calculation.............
-						$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+						$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 						$taxtype = 'tax_exclude';
 							
 						if($attributes['tax_include'][$key]==1 ) {
-							$vatPlus = 100 + $attributes['line_vat'][$key];
-							$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+							$vatPlus = 100 + (float)$attributes['line_vat'][$key];
+							$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 							$taxtype = 'tax_include';
 						} else {
 							$vatPlus = 100;
-							$total = $attributes['line_total'][$key];
+							$total = (float)$attributes['line_total'][$key];
 							$taxtype = 'tax_exclude';
 						}
 						
 						if($discount > 0) {
 							$discountAmt = round( (($total / $lineTotal) * $discount),2 );
-							$amountTotal = $total - $discountAmt;
+							$amountTotal = (float)$total - (float)$discountAmt;
 							$vatLine = round( (($amountTotal * $attributes['line_vat'][$key]) / $vatPlus),2 );
 							//$line_total = $amountTotal;
-							$taxtotal = $vatLine; 
+							$taxtotal = (float)$vatLine; 
 						} 
 						
 						$tax_total += $taxtotal;
@@ -659,25 +693,30 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						$items['item_name'] = $attributes['item_name'][$key];
 						$items['item_id'] = $value;
 						$items['unit_id'] = $attributes['unit_id'][$key];
-						$items['quantity'] = $attributes['quantity'][$key];
-						$items['unit_price'] = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key]; //$attributes['cost'][$key];
-						$items['vat']		 = $attributes['line_vat'][$key];
-						$items['vat_amount'] = $taxtotal;
+						$items['quantity'] = (float)$attributes['quantity'][$key];
+						$items['unit_price'] = (isset($attributes['is_fc']))?(float)$attributes['cost'][$key]*(float)$attributes['currency_rate']:(float)$attributes['cost'][$key]; //$attributes['cost'][$key];
+						$items['vat']		 = (float)$attributes['line_vat'][$key];
+						$items['vat_amount'] = (float)$taxtotal;
 						$items['discount'] = (float)$attributes['line_discount'][$key];
-						$items['total_price'] = $linetotal;
-						$items['tax_code'] 	= $tax_code; 
+						$items['total_price'] = (float)$linetotal;
+						$items['tax_code'] 	= (float)$tax_code; 
 						
-						$items['tax_include'] = $attributes['tax_include'][$key];
-						$items['item_total'] = $itemtotal;
-						$items['othercost_unit'] = $othercostunit;
-						$items['netcost_unit'] = ($netcostunit==0)?$attributes['cost'][$key]:$netcostunit;
+						$items['tax_include'] = (float)$attributes['tax_include'][$key];
+						$items['item_total'] = (float)$itemtotal;
+						$items['othercost_unit'] = (float)$othercostunit;
+						$items['netcost_unit'] = ($netcostunit==0)?(float)$attributes['cost'][$key]:(float)$netcostunit;
 
-						$items['unit_price_fc'] = $attributes['cost'][$key];
+						$items['unit_price_fc'] = (float)$attributes['cost'][$key];
 						$items['vat_amount_fc'] = (isset($attributes['is_fc']))?round(($taxtotal / $attributes['currency_rate']),2):$taxtotal;
 						$items['total_price_fc'] = (isset($attributes['is_fc']))?round(($linetotal / $attributes['currency_rate']),2):$linetotal;
 						$items['item_total_fc'] = (isset($attributes['is_fc']))?round(($itemtotal / $attributes['currency_rate']),2):$itemtotal;
 						//echo '<pre>';print_r($items['tax_code']);exit;
 						$purchaseOrderItem->update($items);
+						$zero = DB::table('purchase_order_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+						    if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('purchase_order_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+						     }
 						
 						//description update...
 							if(isset($attributes['desc_id'])) {
@@ -739,6 +778,11 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 							$othercost_unit      	= $arrResult['othercost_unit'];
 							$purchaseOrderItem->status = 1;
 							$itemObj = $this->purchase_order->orderItem()->save($purchaseOrderItem);
+							$zero = DB::table('purchase_order_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+					           if($zero && $zero->item_id != 0){
+						         $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						         DB::table('purchase_order_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						       }
 							
 							//new entry description.........
 								if(isset($attributes['itemdesc'][$key])) {
@@ -780,8 +824,8 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					$bcurr = DB::table('parameter1')->where('id',1)->select('bcurrency_id')->first();
 					$is_fc = ($bcurr->bcurrency_id == $attributes['oc_currency'][$key])?0:1;
 					$cost['dr_account_id'] = $attributes['dr_acnt_id'][$key];
-					$cost['oc_reference'] = $attributes['oc_reference'][$key];
-					$cost['oc_description'] = $attributes['oc_description'][$key];
+					$cost['oc_reference'] = isset($attributes['oc_reference'][$key])?$attributes['oc_reference'][$key]:'';
+					$cost['oc_description'] = isset($attributes['oc_description'][$key])?$attributes['oc_description'][$key]:'';
 					$cost['cr_account_id'] = $attributes['cr_acnt_id'][$key];
 					$cost['oc_amount']		 = $attributes['oc_amount'][$key];
 					$cost['oc_fc_amount'] = $attributes['oc_fc_amount'][$key];
@@ -790,21 +834,21 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					if($attributes['tax_sr'][$key]=="EX" || $attributes['tax_sr'][$key]=="ZR") {
 						$oc_vatamt = $oc_vat_amt = 0;
 					} else {
-						$oc_vat_amt = ($attributes['oc_amount'][$key] * $attributes['vat_oc'][$key])/100;
-						$oc_vatamt = ($is_fc==1)?($attributes['oc_amount'][$key]*$attributes['oc_rate'][$key]*$attributes['vat_oc'][$key]/100):($attributes['oc_amount'][$key] * $attributes['vat_oc'][$key])/100;
+						$oc_vat_amt = ((float)$attributes['oc_amount'][$key] * (float)$attributes['vat_oc'][$key])/100;
+						$oc_vatamt = ($is_fc==1)?((float)$attributes['oc_amount'][$key]*(float)$attributes['oc_rate'][$key]*(float)$attributes['vat_oc'][$key]/100):((float)$attributes['oc_amount'][$key] * (float)$attributes['vat_oc'][$key])/100;
 					}
 					
 					$cost['oc_vatamt'] = $oc_vatamt;
 					$cost['is_fc'] = $is_fc;
 					$cost['currency_id'] = $attributes['oc_currency'][$key];
-					$cost['currency_rate'] = $attributes['oc_rate'][$key];
+					$cost['currency_rate'] = (float)$attributes['oc_rate'][$key];
 					$cost['tax_code'] = $attributes['tax_sr'][$key];
 					$purchaseInvoiceOC->update($cost);
 						
 					//$oc_vat_amt = ($attributes['oc_amount'][$key] * $attributes['vat_oc'][$key]) / 100;
 					//$oc_net_aount = $oc_vat_amt + $attributes['oc_amount'][$key];
-					$oc_net_aount = $oc_vat_amt + $attributes['oc_amount'][$key];
-					$oc_net_aount = ($attributes['tax_sr'][$key]=='RC')?$attributes['oc_amount'][$key]:($oc_vat_amt + $attributes['oc_amount'][$key]);
+					$oc_net_aount = (float)$oc_vat_amt + (float)$attributes['oc_amount'][$key];
+					$oc_net_aount = ($attributes['tax_sr'][$key]=='RC')?(float)$attributes['oc_amount'][$key]:((float)$oc_vat_amt + (float)$attributes['oc_amount'][$key]);
 
 					
 					//set account Cr/Dr amount transaction....
@@ -818,8 +862,8 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								$purchaseInvoiceOC->status = 1;
 								$objOC=$this->purchase_order->doOtherCost()->save($purchaseInvoiceOC);
 								if($objOC) {
-								$oc_vat_amt = $arrOC['oc_vat_amt'];
-							$oc_net_aount = ($attributes['tax_sr'][$key]=='RC')?$arrOC['oc_amount']:($oc_vat_amt + $arrOC['oc_amount']);
+								$oc_vat_amt =(float)$arrOC['oc_vat_amt'];
+							$oc_net_aount = ($attributes['tax_sr'][$key]=='RC')?(float)$arrOC['oc_amount']:((float)$oc_vat_amt + (float)$arrOC['oc_amount']);
 								}
 				}
 
@@ -829,26 +873,26 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 			$subtotal = (float)$line_total - (float)$discount;
 			if($taxtype=='tax_include' && $attributes['discount'] == 0) {
 			  
-			  $net_amount = $subtotal;
-			  $tax_total = ($subtotal * $vat) / (100 + $vat);
-			  $subtotal = $subtotal - $tax_total;
+			  $net_amount = (float)$subtotal;
+			  $tax_total = ((float)$subtotal * (float)$vat) / (100 + (float)$vat);
+			  $subtotal = (float)$subtotal - (float)$tax_total;
 			  
 			} elseif($taxtype=='tax_include' && $attributes['discount'] > 0) { 
 			
-			   $tax_total = ($subtotal * $vat) / (100 + $vat);
-			   $net_amount = $subtotal - $tax_total;
+			  $tax_total = ((float)$subtotal * (float)$vat) / (100 + (float)$vat);
+			   $net_amount = (float)$subtotal - (float)$tax_total;
 			} else 
-				$net_amount = $subtotal + $tax_total;
+				$net_amount = (float)$subtotal + (float)$tax_total;
 			
 			
 			if( isset($attributes['is_fc']) ) {
-				$total_fc 	   = $line_total / $attributes['currency_rate'];
-				$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
-				$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
+				$total_fc 	   = (float)$line_total / (float)$attributes['currency_rate'];
+				$discount_fc   = (float)$attributes['discount'] / (float)$attributes['currency_rate'];
+				$vat_fc 	   = (float)$attributes['vat_fc'] / (float)$attributes['currency_rate'];
 				$tax_fc 	   = round($tax_total / $attributes['currency_rate'],2);
-				$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
-				$subtotal_fc	   = $subtotal / $attributes['currency_rate']; 
-				$other_cost_fc = $other_cost / $attributes['currency_rate'];
+				$net_amount_fc = (float)$total_fc - (float)$discount_fc + (float)$tax_fc;
+				$subtotal_fc	   = (float)$subtotal /(float) $attributes['currency_rate']; 
+				$other_cost_fc = (float)$other_cost / (float)$attributes['currency_rate'];
 				
 			} else {
 				$total_fc = 0; $discount_fc = 0; $tax_fc = 0; $net_amount_fc = 0; $vat_fc = $other_cost_fc = $subtotal_fc = 0;
@@ -861,18 +905,18 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 							      'voucher_date'  => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),//sachu
 							      'lpo_date'      =>($attributes['lpo_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['lpo_date'])),
 							       'foot_description' =>  (isset($attributes['foot_description']))?$attributes['foot_description']:'',
-								  'discount' 	  => $attributes['discount'],
-								  'vat_amount'	  => $tax_total,
-								  'net_amount'	  => $net_amount,
+								  'discount' 	  => (float)$attributes['discount'],
+								  'vat_amount'	  => (float)$tax_total,
+								  'net_amount'	  => (float)$net_amount,
 								   'is_import'    =>isset($attributes['is_import'])?1:0,
-								  'total_fc' 	  => $total_fc,
-								  'discount_fc'   => $discount_fc,
-								  'other_cost'	  => $other_cost,
-								  'other_cost_fc' => $other_cost_fc,
+								  'total_fc' 	  => (float)$total_fc,
+								  'discount_fc'   => (float)$discount_fc,
+								  'other_cost'	  => (float)$other_cost,
+								  'other_cost_fc' => (float)$other_cost_fc,
 								  'vat_amount_fc' => $tax_fc,
-								  'net_amount_fc'  => $net_amount_fc,
-								  'subtotal'	  => $subtotal, //CHG
-								  'subtotal_fc'	  => $subtotal_fc,//CHG
+								  'net_amount_fc'  =>(float)$net_amount_fc,
+								  'subtotal'	  => (float)$subtotal, //CHG
+								  'subtotal_fc'	  => (float)$subtotal_fc,//CHG
 								  'is_draft'	  => isset($attributes['is_draft'])?$attributes['is_draft']:''
 								  
 								  ]); 
@@ -890,12 +934,21 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function delete($id)
 	{
 		$this->purchase_order = $this->purchase_order->find($id);
-			if($this->purchase_order->document_id > 0) {
+			if($this->purchase_order->document_id > 0 && $this->purchase_order->document_type=='MR')  {
 			    $ids = explode(',', $this->purchase_order->document_id);
 					DB::table('material_requisition')->whereIn('id', $ids)
 										->update(['is_transfer' => 0]);
 										
 					DB::table('material_requisition_item')->whereIn('material_requisition_id', $ids)
+										->update(['is_transfer' => 0,'is_editable' => 0]);
+					
+			}
+			if($this->purchase_order->document_id > 0 && $this->purchase_order->document_type=='PE')  {
+			    $ids = explode(',', $this->purchase_order->document_id);
+					DB::table('purchase_enquiry')->whereIn('id', $ids)
+										->update(['is_transfer' => 0]);
+										
+					DB::table('purchase_enquiry_item')->whereIn('material_requisition_id', $ids)
 										->update(['is_transfer' => 0,'is_editable' => 0]);
 					
 			}
@@ -940,12 +993,15 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function getPOdata($supplier_id = null)
 	{
 		if($supplier_id)
-			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0)->where('purchase_order.supplier_id',$supplier_id);
+			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0)->where('purchase_order.supplier_id',$supplier_id);
 		else
-			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0);
+			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0);
 		
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
+						} )
+						->join('location AS l', function($join) {
+							$join->on('l.id','=','purchase_order.location_id');
 						} )
 					->select('purchase_order.*','am.master_name AS supplier')
 					->orderBY('purchase_order.id', 'ASC')
@@ -955,7 +1011,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function findPOdata($id)
 	{
 		//echo '<pre>';print_r($id);exit;
-		$query = $this->purchase_order->where('purchase_order.id', $id);
+		$query = $this->purchase_order->where('purchase_order.id', $id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
 						} )
@@ -1011,7 +1067,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					  ->get();*/
 					  
 					  
-		$query = $this->purchase_order->where('purchase_order.id',$id);
+		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
 		
 		return $query->join('purchase_order_item AS poi', function($join) {
 							$join->on('poi.purchase_order_id','=','purchase_order.id');
@@ -1132,7 +1188,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function getItems($id)
 	{
 		
-		$query = $this->purchase_order->where('purchase_order.id',$id);
+		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
 		
 		return $query->join('purchase_order_item AS poi', function($join) {
 							$join->on('poi.purchase_order_id','=','purchase_order.id');
@@ -1211,6 +1267,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
+								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1259,6 +1316,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
+								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1302,6 +1360,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
+								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1345,6 +1404,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
+								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1390,7 +1450,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	
 	public function purchaseOrderListCount()
 	{
-		$query = $this->purchase_order->where('purchase_order.status',1);
+		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
 						} )
@@ -1399,7 +1459,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	
 	public function purchaseOrderList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->purchase_order->where('purchase_order.status',1)
+		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
 						} );

@@ -117,13 +117,13 @@
                                     <div class="col-sm-10">
                                         <select id="item_class" class="form-control select2" style="width:100%" name="item_class">
 											@if($itemrow->class_id==1)
-											@php $sel1 = "selected";
+											{{--*/ $sel1 = "selected";
 													$sel2="";
-											@endphp
+											/*--}}
 											@else
-											@php $sel2 = "selected";
+											{{--*/ $sel2 = "selected";
 												$sel1="";
-											@endphp	
+											/*--}}	
 											@endif
 											<option value="1" {{ $sel1 }}>Stock</option>
 											<option value="2" {{ $sel2 }}>Service</option>
@@ -196,9 +196,9 @@
 											<option value="">Select Group...</option>
 											@foreach ($groups as $group)
 											@if($itemrow->group_id==$group['id'])
-											@php $sel = "selected" @endphp
+											{{--*/ $sel = "selected" /*--}}
 											@else
-											@php $sel = "" @endphp	
+											{{--*/ $sel = "" /*--}}	
 											@endif
 											<option value="{{ $group['id'] }}" {{ $sel }}>{{ $group['name'] }}</option>
 											@endforeach
@@ -217,9 +217,9 @@
                                             <option value="">Select Sub Group...</option>
 											@foreach ($subgroups as $subgroup)
 											@if($itemrow->subgroup_id==$subgroup['id'])
-											@php $sel = "selected" @endphp
+											{{--*/ $sel = "selected" /*--}}
 											@else
-											@php $sel = "" @endphp	
+											{{--*/ $sel = "" /*--}}	
 											@endif
 											<option value="{{ $subgroup['id'] }}" {{ $sel }}>{{ $subgroup['name'] }}</option>
 											@endforeach
@@ -238,9 +238,9 @@
                                             <option value="">Select Category...</option>
 											@foreach ($category as $cat)
 											@if($itemrow->category_id==$cat['id'])
-											@php $sel = "selected" @endphp
+											{{--*/ $sel = "selected" /*--}}
 											@else
-											@php $sel = "" @endphp	
+											{{--*/ $sel = "" /*--}}	
 											@endif
 											<option value="{{ $cat['id'] }}" {{ $sel }}>{{ $cat['name'] }}</option>
 											@endforeach
@@ -259,9 +259,9 @@
                                             <option value="">Select Sub Category...</option>
 											@foreach ($subcategory as $subcat)
 											@if($itemrow->subcategory_id==$subcat['id'])
-											@php $sel = "selected" @endphp
+											{{--*/ $sel = "selected" /*--}}
 											@else
-											@php $sel = "" @endphp	
+											{{--*/ $sel = "" /*--}}	
 											@endif
 											<option value="{{ $subcat['id'] }}" {{ $sel }}>{{ $subcat['name'] }}</option>
 											@endforeach
@@ -291,7 +291,12 @@
                                         </select>
                                     </div>
                                 </div>
-
+                                <?php
+									$readonly = 'readonly'; 
+									if(auth()->user()->can('item-qty-cost-edit')) {
+										$readonly = '';
+									}
+								?>
 								<hr/>
 								<?php if($formdata['simple_entry']==1) { ?>
 								<div id="sEntry">
@@ -312,7 +317,7 @@
 													<option value="{{ $unit['id'] }}" <?php if($itemunits[0]->unit_id==$unit['id']) echo 'selected';?>>{{ $unit['unit_name'] }}</option>
 													@endforeach
 												</select>
-												<input type="hidden" name="item_unit_id[]" id="item_unit_id" class="form-control" value="{{ $itemunits[0]->id }}">
+												<input type="hidden" name="item_unit_id[]" id="item_unit_id" class="form-control" value="{{ $itemunits[0]->iuid }}">
 											</td>
 											
 											<td>
@@ -320,7 +325,7 @@
 												<input type="number" name="opn_quantity[]" step="any" id="opn_qty_1" class="form-control" value="{{ $itemunits[0]->opn_quantity }}" placeholder="Open Qty.">
 											</td>
 											<td>
-												<input type="number" step="any" name="opn_cost[]" id="opn_cost_1" class="form-control" value="{{ $itemunits[0]->opn_cost }}" placeholder="Open Cost">
+												<input type="number" step="any" name="opn_cost[]" {{$readonly}} id="opn_cost_1" class="form-control" value="{{ $itemunits[0]->opn_cost }}" placeholder="Open Cost">
 											</td>
 											
 											<td>
@@ -367,7 +372,7 @@
 													<option value="{{ $unit['id'] }}" <?php if($itemunits[0]->unit_id==$unit['id']) echo 'selected';?>>{{ $unit['unit_name'] }}</option>
 													@endforeach
 												</select>
-												<input type="hidden" name="item_unit_id[]" id="item_unit_id_1" class="form-control" value="{{ $itemunits[0]->id }}">
+												<input type="hidden" name="item_unit_id[]" id="item_unit_id_1" class="form-control" value="{{ $itemunits[0]->iuid }}">
 											</td>
 											<td><input type="hidden" name="pkno[]" id="pkno_1" value="1">
 												<input type="text" name="packing[]" id="packing_1" class="form-control" value="{{ $itemunits[0]->packing }}" readonly placeholder="Packing">
@@ -377,7 +382,7 @@
 												<input type="number" name="opn_quantity[]" step="any" id="opn_qty_1" class="form-control" value="{{ $itemunits[0]->opn_quantity }}" placeholder="Open Qty.">
 											</td>
 											<td>
-												<input type="number" step="any" name="opn_cost[]" id="opn_cost_1" class="form-control" value="{{ $itemunits[0]->opn_cost }}" placeholder="Open Cost">
+												<input type="number" step="any" name="opn_cost[]" {{$readonly}} id="opn_cost_1" class="form-control" value="{{ $itemunits[0]->opn_cost }}" placeholder="Open Cost">
 											</td>
 											<td>
 												<input type="number" step="any" name="sell_price[]" id="sell_price_1" class="form-control" value="{{ $itemunits[0]->sell_price }}" placeholder="S.Price(Retail)">
@@ -415,7 +420,7 @@
 												
 											</td>
 											<td>@if(sizeof($itemunits) > 1 && isset($itemunits[1]))
-													@php $packing = $itemunits[1]->packing;
+													{{--*/ $packing = $itemunits[1]->packing;
 														   $opn_qty = $itemunits[1]->opn_quantity;
 														   $opn_qty_cur = $itemunits[1]->opn_quantity;
 														   $opn_cost = $itemunits[1]->opn_cost;
@@ -424,13 +429,13 @@
 														   $min_quantity = $itemunits[1]->min_quantity;
 														   $reorder_level = $itemunits[1]->reorder_level;
 														   $vat = $itemunits[1]->vat;
-														   $item_unit_id = $itemunits[1]->id;
+														   $item_unit_id = $itemunits[1]->iuid;
 														   $base = $itemunits[0]->packing;
 														   $sub = ' '.$sub.' =';
 														   $pkno = $itemunits[1]->pkno;
-													@endphp
+													/*--}}
 												@else
-													@php $pkno = $packing = $opn_cost = $opn_qty_cur = $opn_qty = $sell_price = $wsale_price = $min_quantity = $reorder_level = $vat = $item_unit_id = $base = $sub = ''; @endphp
+													{{--*/ $pkno = $packing = $opn_cost = $opn_qty_cur = $opn_qty = $sell_price = $wsale_price = $min_quantity = $reorder_level = $vat = $item_unit_id = $base = $sub = ''; /*--}}
 												@endif
 												<input type="hidden" name="item_unit_id[]" id="item_unit_id_2" class="form-control" value="{{ $item_unit_id }}">
 												<div><input type="text" name="pkno[]" id="pkno_22" {{($readonly)?'readonly':''}} value="{{$pkno}}" style="width:15%;float:left;" class="form-control"> <span id="title_1" style="float:left;">{{$sub}}</span><input type="text" name="packing[]" id="packing_22" {{($readonly)?'readonly':''}} value="{{ $packing }}" style="width:40%;float:left;" class="form-control" > <span id="title_12">{{$base}}</span>
@@ -438,10 +443,10 @@
 											</td>
 											<td>
 												<input type="hidden" name="opn_quantity_cur[]" id="opn_qty_cur_2" value="{{ $opn_qty_cur }}">
-												<input type="number" name="opn_quantity[]" step="any" id="opn_qty_2" readonly class="form-control" value="{{$opn_qty}}" placeholder="Open Qty.">
+												<input type="number" name="opn_quantity[]" {{$readonly}} step="any" id="opn_qty_2" readonly class="form-control" value="{{$opn_qty}}" placeholder="Open Qty.">
 											</td>
 											<td>
-												<input type="number" step="any" name="opn_cost[]" id="opn_cost_2" readonly class="form-control" value="{{ $opn_cost }}" placeholder="Open Cost">
+												<input type="number" step="any" name="opn_cost[]" {{$readonly}} id="opn_cost_2" readonly class="form-control" value="{{ $opn_cost }}" placeholder="Open Cost">
 											</td>
 											<td>
 												<input type="number" step="any" name="sell_price[]" id="sell_price_2" readonly class="form-control" value="{{$sell_price}}" placeholder="S.Price(Retail)">
@@ -475,7 +480,7 @@
 												</select>
 											</td>
 											<td>@if(sizeof($itemunits) > 2)
-													@php $packing = $itemunits[2]->packing;
+													{{--*/ $packing = $itemunits[2]->packing;
 														   $opn_qty = $itemunits[2]->opn_quantity;
 														   $opn_qty_cur = $itemunits[2]->opn_quantity;
 														   $opn_cost = $itemunits[2]->opn_cost;
@@ -484,23 +489,23 @@
 														   $min_quantity = $itemunits[2]->min_quantity;
 														   $reorder_level = $itemunits[2]->reorder_level;
 														   $vat = $itemunits[2]->vat;
-														   $item_unit_id = $itemunits[2]->id;
+														   $item_unit_id = $itemunits[2]->iuid;
 														   $base = $itemunits[0]->packing;
 														   $pkno = $itemunits[2]->pkno;
 														   //$sub = '1 '.$sub.' =';
-													@endphp
+													/*--}}
 												@else
-													@php $packing = $opn_cost = $opn_qty_cur = $opn_qty = $sell_price = $wsale_price = $min_quantity = $reorder_level = $vat = $item_unit_id = $base = $sub = ''; @endphp
+													{{--*/ $packing = $opn_cost = $opn_qty_cur = $opn_qty = $sell_price = $wsale_price = $min_quantity = $reorder_level = $vat = $item_unit_id = $base = $sub = ''; /*--}}
 												@endif
 												<input type="hidden" name="item_unit_id[]" id="item_unit_id_3" class="form-control" value="{{ $item_unit_id }}"> 
 												<div><input type="text" name="pkno[]" id="pkno_23" {{($readonly)?'readonly':''}} value="{{$pkno}}" style="width:15%;float:left;" class="form-control"> <span id="title_2" style="float:left;"> {{$sub}}=</span><input type="text" name="packing[]" id="packing_23" {{($readonly)?'readonly':''}} value="{{ $packing }}" style="width:40%;float:left;" class="form-control" > <span id="title_13">{{$base}}</span></div>
 											</td>
 											<td>
 												<input type="hidden" name="opn_quantity_cur[]" id="opn_qty_cur_3" value="{{ $opn_qty_cur }}">
-												<input type="number" name="opn_quantity[]" step="any" id="opn_qty_3" readonly class="form-control" value="{{$opn_qty}}" placeholder="Open Qty.">
+												<input type="number" name="opn_quantity[]" {{$readonly}} step="any" id="opn_qty_3" readonly class="form-control" value="{{$opn_qty}}" placeholder="Open Qty.">
 											</td>
 											<td>
-												<input type="number" step="any" name="opn_cost[]" id="opn_cost_3" readonly class="form-control" value="{{ $opn_cost }}" placeholder="Open Cost">
+												<input type="number" step="any" name="opn_cost[]" {{$readonly}} id="opn_cost_3" readonly class="form-control" value="{{ $opn_cost }}" placeholder="Open Cost">
 											</td>
 											<td>
 												<input type="number" step="any" name="sell_price[]" id="sell_price_3" readonly class="form-control" value="{{$sell_price}}" placeholder="S.Price(Retail)">
@@ -629,7 +634,7 @@
 														<th>Location</th>
 														<th>Opn.Quantity</th>
 														<th>Quantity</th>
-														<th>Bin</th>
+														<!--<th>Bin</th> -->
 													</tr>
 													</thead>
 													<tbody>
@@ -643,11 +648,11 @@
 													?>
 													<tr>
 														<td>{{ $row->name }}<input type="hidden" name="locid[]" value="{{$row->id}}"></td>
-														<td><input type="number" value="{{$opnqty}}" name="locqty[]" class="locqty" @if(auth()->user()->can('item-qty-cost-edit')) console.log('') @else readonly @endif>
+														<td><input type="number" value="{{$opnqty}}" name="locqty[]" class="locqty" @if(auth()->user()->can('item-qty-cost-edit')) console.log('') @else readonly @endif > 
 															<input type="hidden" name="itlocid[]" value="{{$id}}">
 														</td>
-														<td>{{ $qty }}</td>
-														<td><input type="text" name="bin[]" class="bin" id="bin_{{$i}}" value="{{isset($stockloc[$row->id])?$stockloc[$row->id][0]->code:''}}" autocomplete="off" data-toggle="modal" data-target="#bin_modal">
+														<td>{{ $qty }}
+														<input type="hidden" name="bin[]" class="bin" id="bin_{{$i}}" value="{{isset($stockloc[$row->id])?$stockloc[$row->id][0]->code:''}}" autocomplete="off" data-toggle="modal" data-target="#bin_modal">
 															<input type="hidden" name="binid[]" id="binid_{{$i}}" value="{{isset($stockloc[$row->id])?$stockloc[$row->id][0]->bin_id:''}}">
 														</td>
 													</tr>
@@ -665,11 +670,11 @@
 								<div class="form-group batch-entry">
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">
-                                        <input type="hidden" id="batchIds" name="batchIds" value="{{ $batchitems['ids'] ?? '' }}">
-                                        <input type="hidden" id="batchNos" name="batchNos" value="{{$batchitems['batches'] ?? ''}}">
-                                        <input type="hidden" id="mfgDates" name="mfgDates" value="{{$batchitems['mfgs'] ?? ''}}">
-                                        <input type="hidden" id="expDates" name="expDates" value="{{$batchitems['exps'] ?? ''}}">
-                                        <input type="hidden" id="qtyBatchs" name="qtyBatchs" value="{{$batchitems['qtys'] ?? ''}}">
+                                        <input type="hidden" id="batchIds" name="batchIds" value="{{$batchitems['ids']}}">
+                                        <input type="hidden" id="batchNos" name="batchNos" value="{{$batchitems['batches']}}">
+                                        <input type="hidden" id="mfgDates" name="mfgDates" value="{{$batchitems['mfgs']}}">
+                                        <input type="hidden" id="expDates" name="expDates" value="{{$batchitems['exps']}}">
+                                        <input type="hidden" id="qtyBatchs" name="qtyBatchs" value="{{$batchitems['qtys']}}">
                                         <input type="hidden" id="batchRem" name="batchRem">
                                     <button type="button" id="bth_add" class="btn btn-primary btn-xs batch-add"  data-toggle="modal" data-target="#batch_modal">Add Batch</button>
                                     <input type="text" id="batches" name="batches" style="border:none;color:#FFF;">
@@ -702,13 +707,13 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Assembly</label>
 											@if($itemrow->assembly==0)
-											@php $chk1 = "checked";
+											{{--*/ $chk1 = "checked";
 													$chk2 = "";
-											@endphp
+											/*--}}
 											@else
-											@php $chk2 = "checked";
+											{{--*/ $chk2 = "checked";
 													$chk1 = "";
-											@endphp	
+											/*--}}	
 											@endif
 									<div class="col-sm-10">
                                         <label class="radio-inline iradio">
@@ -1038,8 +1043,14 @@
 $('.mfg-date').datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
 $('.exp-date').datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
 $(document).ready(function () {
+
+  
     
-	
+     $('#opn_qty_1').attr('readonly', true);
+
+    if($('#opn_cost_1').val()>0 ){ 
+     $('#opn_cost_1').attr('readonly', true);
+	}
 	@if($itemrow->dimension==1)
 		$('#norEntry').hide()
 		$('#dimEntry').show();
@@ -1051,6 +1062,7 @@ $(document).ready(function () {
 	
 	@if($itemrow->batch_req==1)
 		$('.batch-entry').show()
+		$('#opn_qty_1').attr('readonly', true);
 	@else
 		$('.batch-entry').hide()
 	@endif
@@ -1061,7 +1073,6 @@ $(document).ready(function () {
 		$('#rMat').hide();
 		@endif
     
-   
 	$('#selectize-tags2').selectize({
         plugins: ['remove_button'],
         delimiter: ',',

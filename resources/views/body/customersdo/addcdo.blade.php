@@ -86,16 +86,52 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmCustomerDO" id="frmCustomerDO" action="{{ url('customers_do/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$voucherno}}">
-								<input type="hidden" name="default_location" value="{{ Auth::user()->location_id }}">
+								@php $selectedLocId = $quoterow->location_id; @endphp
+								<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$voucherno->no}}">
+								<input type="hidden" name="default_location" id="default_location" value="{{$selectedLocId}}">
+                                 
+								<div class="form-group">
+						            <label for="input-text" class="col-sm-2 control-label"></label>
+							    <div class="col-sm-10">
+                                  <label class="radio-inline">
+ 								    <font color="#16A085"><input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
+							       </label>
+								   
+                                   <label class="radio-inline">
+								     <font color="#16A085"> <input type="radio" class="locinter-radio" name="is_intercompy"  value="{{$quoterow->is_intercompany}}"><b>Inter Company</b></font>
+									  <input type="hidden"  name="is_intercompany"  value="{{$quoterow->is_intercompany}}">
+									  
+                                    </label>
+                                   
+							    </div>
+						        </div>
+								
+								<div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">DO. No.</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="{{$voucherno}}">
+									<div class="input-group">
+                                        <span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> placeholder="{{old('voucher_no')}}" <?php } ?>>
+											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
+											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
+											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
+											<span class="input-group-addon inputvn"><i class="fa fa-fw fa-edit"></i></span>
                                     </div>
                                 </div>
-								
+								</div>
 								<?php if($formdata['reference_no']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>">Reference No.</label>
@@ -151,7 +187,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> <?php if($doctype=='QS') echo 'Quotation'; else echo 'Sales Order';?> No</label>
                                     <div class="col-sm-10">
-										<input type="text" class="form-control" id="document" readonly name="document" value="{{$quoterow->voucher_no}}" autocomplete="off" onclick="getDocument()">
+										<input type="text" class="form-control" id="document" readonly name="document" value="{{$docnos}}" autocomplete="off" onclick="getDocument()">
 										<input type="hidden" name="document_id" id="document_id" value="{{$docid}}"/>
                                     </div>
                                 </div>
@@ -215,9 +251,13 @@
                                     <label for="input-text" class="col-sm-2 control-label"> Foreign Currency</label>
 									<div class="col-xs-10">
 										<div class="col-xs-1">
-										@php
-											$chk = (($quoterow?->is_fc ?? 0) == 1) ? 'checked' : '';
-										@endphp
+										@if($quoterow->is_fc==1)
+										{{--*/ $chk = "checked";
+										/*--}}
+										@else
+										{{--*/ $chk = "";
+										/*--}}
+										@endif
 											<label class="radio-inline iradio">
 											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}>
 										</label>
@@ -227,9 +267,9 @@
 												<option value="">Select Foreign Currency...</option>
 												@foreach($currency as $curr)
 												@if($quoterow->currency_id==$curr['id'])
-												@php $sel = "selected" @endphp
+												{{--*/ $sel = "selected" /*--}}
 												@else
-												@php $sel = "" @endphp	
+												{{--*/ $sel = "" /*--}}	
 												@endif
 												<option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option>
 												@endforeach
@@ -255,19 +295,7 @@
 									</div>
                                 </div>
 								
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-										<option value="">Select Location..</option>
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$quoterow->location_id) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
+								
 								
 								<br/>
 								<fieldset>
@@ -306,7 +334,7 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0;@endphp
+								{{--*/ $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0;/*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -448,7 +476,7 @@
 									</div>
 								<?php $i++; } } else { $vat_amount = $subtotal = 0;?>
 								@foreach($quoteitems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 									
 									<div class="itemdivChld">
 										<?php
@@ -570,33 +598,28 @@
 											</tr>
 										</table>
 										
-										
+										    <?php if($formdata['more_info']==1) { ?>
 											<div id="moreinfo" style="float:left; padding-right:5px;">
 												<button type="button" id="moreinfoItm_{{$i}}" class="btn btn-primary btn-xs more-info">More Info</button>
 											</div>
-											
+											<?php }  ?>
+											<?php if($formdata['purchase_item']==1) { ?>
 											<div style="float:left; padding-right:5px;">
 												<button type="button" id="purhisItm_{{$i}}" data-toggle="modal" data-target="#purchase_modal" class="btn btn-primary btn-xs pur-his">Purchse</button>
 											</div>
-											
-											
+											<?php }  ?>
+											<?php if($formdata['sales_item']==1) { ?>
 											<div style="float:left;padding-right:5px;"><!--NOV24-->
 												<button type="button" id="saleshisItm_{{$i}}" data-toggle="modal" data-target="#sales_modal" class="btn btn-primary btn-xs sales-his">Sales</button>
 											</div>
-											
+											<?php }  ?>
 											<div id="loc" style="float:left; padding-right:5px;">
 												<button type="button" id="loc_{{$i}}" class="btn btn-primary btn-xs loc-info">Location</button>
 												<div class="form-group"><input type="text" name="iloc[]" id="iloc_{{$i}}" style="border:none;color:#FFF;"></div><!-- NOV24 -->
 											</div>
 											
 											<!--MAY25-->
-											@if($item->batch_req==1)
-            								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
-            									<button type="button" id="btnBth_1" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelIds_1" style="border:none;color:#FFF;"></div>
-                                                <input type="hidden" id="bthSelQty_1" name="qtyBatchs[]">
-            								</div>
-								            @endif
+											
 								            
 											<div class="infodivPrntItm" id="infodivPrntItm_{{$i}}">
 												<div class="infodivChldItm">							
@@ -701,7 +724,7 @@
 									</div>
                                 </div>
 								<hr/>
-								
+								<?php if($formdata['footer']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Footer</label>
                                     <div class="col-sm-10">
@@ -709,7 +732,7 @@
                                         <input type="text" class="form-control" id="footermsg" name="footer" placeholder="Footer" autocomplete="off" data-toggle="modal" data-target="#footer_modal">
                                     </div>
                                 </div>
-                                
+                                <?php } ?>
                                 	<?php if($formdata['footer_edit']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"></label>
@@ -719,9 +742,9 @@
                                 </div>
 								<?php } ?>
 								
-								<div id="showmenu">
+								<!--<div id="showmenu">
 									<button type="button" id="infoadd" class="btn btn-primary btn-xs">Add Info..</button>
-								</div>
+								</div>-->
 								<div class="infodivPrnt">
 									<div class="infodivChld">							
 										<div class="form-group">
@@ -960,6 +983,39 @@ $(document).ready(function () {
 		$("#currency_id").prop('disabled', false);
 	<?php } ?>
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); 
+
+    if( $('#selected_locfrom_id').val() !=''){  
+	    var val = $('#selected_locfrom_id').val();
+
+		$('.locinter-radio').iCheck('disable');
+		$('.loccom-radio').iCheck('disable');
+
+	    if($('input[name="is_intercompy"]').val()==1){
+
+		$('.locinter-radio').iCheck('check');
+		$('.loccom-radio').iCheck('uncheck');
+		var prefix ='IDO';
+		}
+          else{
+		  $('.locinter-radio').iCheck('uncheck');
+		$('.loccom-radio').iCheck('check');
+		var prefix ='DO';
+		  
+		  }   
+	    $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  //$('input[name="prefix"]').val('');   
+             let newPrefix = prefix + locCode;               
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix); 
+				$('#default_location').val(val);
+              $('.locfrom-radio').prop('disabled', true);
+			  
+			 });  
+		}
+
 	var urlcode = "{{ url('customers_do/checkrefno/') }}";
     $('#frmCustomerDO').bootstrapValidator({
         fields: {
@@ -985,8 +1041,8 @@ $(document).ready(function () {
 			//'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }},
 			//'item_name[]': { validators: { notEmpty: { message: 'The item description is required and cannot be empty!' } }}
 			customer_name: { validators: { notEmpty: { message: 'The customer name is required and cannot be empty!' } }},
-			'batchNos[]': { validators: { notEmpty: { message: 'Batch No. is required and cannot be empty!' } }}
-			@if($formdata['location_item']==1) ,'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }} @endif
+			//'batchNos[]': { validators: { notEmpty: { message: 'Batch No. is required and cannot be empty!' } }}
+			//'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }} 
         }
         
     }).on('reset', function (event) {
@@ -1408,7 +1464,12 @@ $(function() {
 		e.preventDefault();
 		return false;
 	});
-	
+	$(document).on('blur', '#voucher_no', function(e) {  
+		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
+			alert('Voucher no is greater than current range!');
+			$('#voucher_no').val('');
+		}
+	});
 	$(document).on('click', '.btn-add-info', function(e) 
     { 
         e.preventDefault();
@@ -1544,6 +1605,8 @@ $(function() {
 		$('#footer_id').val($(this).attr("data-id"));
 		e.preventDefault();
 	});
+	
+	
 	
 	$(document).on('blur', '.line-quantity', function(e) {
 		var res = this.id.split('_');

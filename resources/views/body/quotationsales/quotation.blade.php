@@ -110,7 +110,7 @@ function setTransfer() {
 	$("input[name='quotaion[]']:checked").each(function(){items.push($(this).val());});
 	var curl = $('#url').val();
 	if(curl=='so')
-		url = "{{ url('sales_order/add/') }}/"+items+"/QS";
+		url = "{{ url('sales_order/add/') }}/"+items+"/SO";
 	else if(curl=='cdo')
 		url = "{{ url('customers_do/add/') }}/"+items+"/CDO";
 	else if(curl=='QS')

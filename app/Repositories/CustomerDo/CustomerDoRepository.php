@@ -50,6 +50,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		$this->customer_do->customer_id   = $attributes['customer_id'];
 		$this->customer_do->document_type = $attributes['document_type'] ?? null;
 		$this->customer_do->document_id   = $attributes['document_id'] ?? 0;
+		$this->customer_do->department_id = env('DEPARTMENT_ID');
 		$this->customer_do->description   = $attributes['description'] ?? null;
 		$this->customer_do->job_id 		  = $attributes['job_id'] ?? 0;
 		$this->customer_do->terms_id 	  = $attributes['terms_id'] ?? 0;
@@ -60,8 +61,14 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		$this->customer_do->salesman_id  = (isset($attributes['salesman_id']))?$attributes['salesman_id'] ?? 0:'';
 		$this->customer_do->is_export		= isset($attributes['is_export'])?1:0;
 		$this->customer_do->foot_description = (isset($attributes['foot_description']))?$attributes['foot_description'] ?? null:'';
+		$this->customer_do->prefix = (isset($attributes['prefix']))?$attributes['prefix']:'';
+		$this->customer_do->location_id = (isset($attributes['location_id']))?$attributes['location_id']:'';
+		$this->customer_do->is_intercompany = (isset($attributes['is_intercompany']))?$attributes['is_intercompany']:'';
+		$this->customer_do->doc_nos = isset($attributes['document'])?$attributes['document']:'';
+		$this->customer_do->is_editable  = (isset($attributes['document_id']) && $attributes['document_id']!='')?2:0; //APR25
 		
 		return true;
+		
 	}
 	
 	private function setItemInputValue($attributes, $customerDoItem, $key, $value,$lineTotal) 
@@ -69,48 +76,48 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		$attributes['currency_rate'] = (isset($attributes['currency_rate']))?$attributes['currency_rate']:1;//EDT
 		$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 		if( isset($attributes['is_fc']) ) {
-			$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
-			$item_total = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key] ) * $attributes['currency_rate'];
+			$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$attributes['currency_rate'];
+			$item_total = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) *(float)$attributes['currency_rate'];
 			$tax_total  = round($tax * $attributes['quantity'][$key],2);
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 			
 		} else {
 			
-			$line_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+			$line_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 			
 			//$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 						
 			if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
 				
 				$tax        = 0;
-				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key],2);
 				
 			} else if($attributes['tax_include'][$key]==1){
 				
-				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
+				$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 				$tax_total  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
 				$item_total = $ln_total - $tax_total;
 				
 			} else {
 				
-				$tax        = (int)($attributes['cost'][$key] * (int)$attributes['line_vat'][$key]) / 100;
-				$item_total = (int)($attributes['cost'][$key] * (int)$attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key];
-				$tax_total  = round($tax * (int)$attributes['quantity'][$key],2);
+				$tax        =((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+				$tax_total  = round($tax * (float)$attributes['quantity'][$key],2);
 			}
 		}
 		
 		//********DISCOUNT Calculation.............
-		$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+		$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 		$type = 'tax_exclude';
 			
 		if($attributes['tax_include'][$key]==1 ) {
 			$vatPlus = 100 + $attributes['line_vat'][$key];
-			$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+			$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 			$type = 'tax_include';
 		} else {
 			$vatPlus = 100;
-			$total = $attributes['line_total'][$key];
+			$total = (float)$attributes['line_total'][$key];
 			$type = 'tax_exclude';
 		}
 		
@@ -141,7 +148,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			$customerDoItem->conloc_id = $attributes['conloc_id'][$key];
 			$customerDoItem->conloc_qty = $attributes['conloc_qty'][$key];
 		}
-		
+		$customerDoItem->doc_row_id = isset($attributes['sales_order_item_id'][$key])?$attributes['sales_order_item_id'][$key]:0; //APR25		
 		return array('line_total' => $line_total, 'tax_total' => $tax_total, 'type' => $type, 'item_total' => $item_total);
 	}
 	
@@ -166,22 +173,54 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				}
 			}
 		} else if($doctype=='SO') {
-			if(isset($attributes['sales_order_item_id'])) {
-				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-					if( isset($attributes['sales_order_item_id'][$key]) ) {
-						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+			if($mode=='edit') {
+		        
+		        if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+					if($attributes['doc_row_id'][$key] > 0 && ($attributes['actual_quantity'][$key] != $attributes['quantity'][$key]) ) {
+						$quantity 	 = ($attributes['actual_quantity'][$key] > $attributes['quantity'][$key])?($attributes['actual_quantity'][$key] - $attributes['quantity'][$key]):($attributes['quantity'][$key] > $attributes['actual_quantity'][$key]);
+						
+						$DOqtyarr = DB::table('customer_do_item')->where('doc_row_id', $attributes['doc_row_id'][$key])->where('id','!=', $attributes['order_item_id'][$key])
+						                            ->select('id', DB::raw('SUM(quantity) AS quantity'))->groupBY('item_id')->get();
+						$DOqty = ((isset($DOqtyarr[0]))?$DOqtyarr[0]->quantity:0) + $attributes['quantity'][$key];          
 						//update as partially delivered.
-						DB::table('sales_order_item')
-									->where('id', $attributes['sales_order_item_id'][$key])
-									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
-					}
-				} else {
-						//update as completely delivered.
-						DB::table('sales_order_item')
-									->where('id', $attributes['sales_order_item_id'][$key])
-									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
-				}
-			}
+						
+						$DOrow = DB::table('sales_order_item')->where('id', $attributes['doc_row_id'][$key])->select('quantity')->first();
+						if($DOrow->quantity==$DOqty) {
+						    DB::table('sales_order_item')
+									->where('id', $attributes['doc_row_id'][$key])
+									->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 1]); 
+						} else {
+						    DB::table('sales_order_item')
+									->where('id', $attributes['doc_row_id'][$key])
+									->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 2]);
+						}
+									
+    				} elseif($attributes['doc_row_id'][$key] > 0 && ($attributes['quantity_old'][$key] == $attributes['quantity'][$key])) {
+    						//update as completely delivered.
+    						DB::table('sales_order_item')
+    									->where('id', $attributes['doc_row_id'][$key])
+    									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+    				}
+		        }
+		        
+		    } else {
+    			if(isset($attributes['sales_order_item_id'])) {
+    				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+    					if( isset($attributes['sales_order_item_id'][$key]) ) {
+    						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+    						//update as partially delivered.
+    						DB::table('sales_order_item')
+    									->where('id', $attributes['sales_order_item_id'][$key])
+    									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+    					}
+    				} else {
+    						//update as completely delivered.
+    						DB::table('sales_order_item')
+    									->where('id', $attributes['sales_order_item_id'][$key])
+    									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+    				}
+    			}
+		    }
 		}
 		/* if($doctype==1) {
 			if(isset($attributes['quote_sales_item_id'])) {
@@ -269,15 +308,27 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	private function setSaleLog($attributes, $key, $document_id, $cost_avg, $sale_cost, $action, $item=null) 
 	{
 		//CHECK ITEM UNIT QUANTITY AS 0
-		$irow = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
+		$irow = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])->where('department_id',env('DEPARTMENT_ID'))->select('cur_quantity')->first();
 		if($irow->cur_quantity == 0) {
 			$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])
-								   ->where('trtype', 1)
+								   ->where('trtype', 1) ->where('department_id',env('DEPARTMENT_ID'))
 								   ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 								   ->select('pur_cost','cur_quantity','unit_cost')
 								   ->orderBy('id','DESC')->first();
 								   
 			$cost_avg = ($stocks->pur_cost==0)?$stocks->unit_cost:$stocks->pur_cost;
+		}
+
+		$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']):($attributes['cost'][$key]);
+
+		if($attributes['packing'][$key]=="1") 
+		    $quantity = $attributes['quantity'][$key];
+		else {
+		   $pkgar = explode('-', $attributes['packing'][$key]);
+		   $quantity = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+		   
+		   //COST...
+		   $unit_cost = ($unit_cost * $pkgar[0]) / $pkgar[1];
 		}
 		
 		if($action=='add') {
@@ -299,22 +350,29 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							 //'sale_cost' => $sale_cost,
 							 'packing' => 1,
 							 'status'     => 1,
+							 'department_id'=>env('DEPARTMENT_ID'),
 							 'created_at' => date('Y-m-d H:i:s'),
 							 'created_by' => Auth::User()->id,
 							 'voucher_date' => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-							 'sale_reference' => $cur_quantity
+							 'sale_reference' => $cur_quantity,
+							 'item_row_id'	=> $attributes['item_row_id'][$key] //OCT24
 							]);
 			
 		} else if($action=='update') {
-				$logid = '';
-				DB::table('item_log')->where('document_type','CDO')
+				//MAY25
+		    $slog = DB::table('item_log')->where('document_type','CDO')->where('document_id', $document_id)->where('department_id',env('DEPARTMENT_ID'))->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
+		                ->select('id')->first();
+			$logid = $slog->id;	
+			DB::table('item_log')->where('document_type','CDO')
 								->where('document_id', $document_id)
+								->where('department_id',env('DEPARTMENT_ID'))
 								->where('item_id', $item->item_id)
 								->where('unit_id', $item->unit_id)
+								->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
 								->update(['item_id' => $attributes['item_id'][$key],
 									 'unit_id' => $attributes['unit_id'][$key],
-									 'quantity'   => $attributes['quantity'][$key] * $attributes['packing'][$key],
-									 'unit_cost'  => (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key],
+									 'quantity'   => $quantity, //$attributes['quantity'][$key] * $attributes['packing'][$key], //$attributes['quantity'][$key] * $attributes['packing'][$key],
+									 'unit_cost'  => $unit_cost, //(isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key],
 									 'cur_quantity' => $attributes['quantity'][$key],
 									 //'cost_avg' => $cost_avg,
 									 //'pur_cost' => $sale_cost,
@@ -337,9 +395,20 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			DB::table('item_unit')
 					->where('id', $item->id)
 					->update([ 'cur_quantity' => $item->cur_quantity - $attributes['quantity'][$key] ]);
+					
+		}
+
+		$items = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])->where('department_id',env('DEPARTMENT_ID'))
+									  ->where('unit_id', $attributes['unit_id'][$key])
+									  ->first();
+		if($items) {
+			DB::table('itemstock_department')
+					->where('id', $item->id)->where('department_id',env('DEPARTMENT_ID'))
+					->update([ 'cur_quantity' => $item->cur_quantity - $attributes['quantity'][$key] ]);
 			return true;		
 		}
 	}
+
 	private function setInfoInputValue($attributes, $customerDoInfo, $key, $value)
 	{
 		$customerDoInfo->customer_do_id = $this->customer_do->id;
@@ -360,21 +429,23 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	public function create($attributes)
 	{
+		$locqty = isset($attributes['locqty'])?array_values($attributes['locqty']):''; 
+	    $locid = isset($attributes['locid'])?array_values($attributes['locid']):'';
+
 		if($this->isValid($attributes)) {
 			DB::beginTransaction();
 			try {
 
 				//VOUCHER NO LOGIC.....................
-				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+				$dept = env('DEPARTMENT_ID');
 
-				 // 2️⃣ Get the highest numeric part from voucher_master
-				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-				if($dept > 0)	
-					$qry->where('department_id', $dept);
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('CDO', $maxNumeric, $dept, $attributes['voucher_no']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('CDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -396,16 +467,15 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+							$dept = env('DEPARTMENT_ID');
 
-							// 2️⃣ Get the highest numeric part from voucher_master
-							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1);
-							if($dept > 0)	
-								$qry->where('department_id', $dept);
+							// ⿢ Get the highest numeric part from voucher_master
+							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('CDO', $maxNumeric, $dept, $attributes['voucher_no']);
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('CDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -420,7 +490,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					$line_total = 0; $tax_total = 0; $total = $item_total = 0;
 					
 					//calculate total amount....
-					$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+					$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 					if($discount > 0) 
 						$total = $this->calculateTotalAmount($attributes);
 					
@@ -429,20 +499,25 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						$vat = $attributes['line_vat'][$key];
 						$arrResult 		= $this->setItemInputValue($attributes, $customerDoItem, $key, $value,$total);
 						//if($arrResult['line_total']) {
-							$line_total			   += $arrResult['line_total'];
+							$line_total			   += (float)$arrResult['line_total'];
 							$tax_total      	   += $arrResult['tax_total'];
 							$taxtype				  = $arrResult['type'];
-							$item_total				 += $arrResult['item_total'];
+							$item_total				 += (float)$arrResult['item_total'];
 							
 							$customerDoItem->status = 1;
 							$inv_item = $this->customer_do->AddCustomerDoItem()->save($customerDoItem);
+							$zero = DB::table('customer_do_item')->where('id', $inv_item->id)->where('unit_id',0)->first();
+					         if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('customer_do_item')->where('id', $inv_item->id)->update(['unit_id' => $uid->unit_id]);
+						    }
 							
 							//update item transfer status...
 							$this->setTransferStatusItem($attributes, $key, $attributes['document_type']);
 							
 							//CHECK WHEATHER Update Quantity by CDO
 							if($this->mod_do_qty->is_active==1) {
-								
+								$attributes['item_row_id'][$key] = $inv_item->id; //OCT24
 								$sale_cost = $this->updateItemQuantitySales($attributes, $key);
 									$CostAvg_log = $this->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
 										$logid = $this->setSaleLog($attributes, $key, $this->customer_do->id, $CostAvg_log, $sale_cost, 'add' );
@@ -468,23 +543,36 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						//################ Location Stock Entry ####################
 						if($this->mod_do_qty->is_active==1) {
 						//Item Location specific add....
+						
 						$updated = false;
-						if(isset($attributes['locqty'][$key])) {
+						if(isset($attributes['locqty'][$key]) && $attributes['locqty'][$key] !='' ) {
 							foreach($attributes['locqty'][$key] as $lk => $lq) {
 								if($lq!='') {
 									$updated = true;
-									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
-																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
+									//$lcqty = $lq * $attributes['packing'][$key]; //MAY25  ($attributes['unit_id'][$key]==1||$attributes['unit_id'][$key]==2)?($lq/$attributes['packing'][$key]): 
+									
+									$lcqty = $lq;
+                            		if($attributes['packing'][$key]=="1") 
+                            		    $lcqty = $lq;
+                            		else {
+                            		   $pkgar = explode('-', $attributes['packing'][$key]);
+                            		   if($pkgar[0] > 0)
+                            		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
+                            		}
+									
+									$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
+																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 									if($qtys) {
-										DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lq) ]);
+										DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]); //MAY25
 									} else {
 										$itemLocation = new ItemLocation();
 										$itemLocation->location_id = $attributes['locid'][$key][$lk];
 										$itemLocation->item_id = $value;
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
-										$itemLocation->quantity = $lq;
+										$itemLocation->quantity = $lcqty;
 										$itemLocation->status = 1;
+										$itemLocation->department_id = env('DEPARTMENT_ID');
 										$itemLocation->save();
 									}
 									
@@ -492,11 +580,13 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 									$itemLocationSI->location_id = $attributes['locid'][$key][$lk];
 									$itemLocationSI->item_id = $value;
 									$itemLocationSI->unit_id = $attributes['unit_id'][$key];
-									$itemLocationSI->quantity = $lq;
+									$itemLocationSI->quantity = $lcqty;
 									$itemLocationSI->status = 1;
 									$itemLocationSI->invoice_id = $inv_item->id;
 									$itemLocationSI->is_do = 1;
 									$itemLocationSI->logid = $logid;
+									$itemLocationSI->qty_entry = $lq;
+									$itemLocationSI->department_id = env('DEPARTMENT_ID');
 									$itemLocationSI->save();
 								}
 							}
@@ -505,18 +595,31 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						//Item default location add...
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 								
-							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
-															  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
+							$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
+															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 															  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+															  
+						//	$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key]; //MAY25
+							
+							$lcqty = $attributes['quantity'][$key];
+                    		if($attributes['packing'][$key]=="1") 
+                    		    $lcqty = $attributes['quantity'][$key];
+                    		else {
+                    		   $pkgar = explode('-', $attributes['packing'][$key]);
+                    		   if($pkgar[0] > 0)
+                    		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+                    		}
+                    		
 							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
+								DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 							} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $attributes['default_location'];
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
-									$itemLocation->quantity = $attributes['quantity'][$key];
+									$itemLocation->quantity = $lcqty;
 									$itemLocation->status = 1;
+									$itemLocation->department_id = env('DEPARTMENT_ID');
 									$itemLocation->save();
 								}
 								
@@ -524,11 +627,13 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							$itemLocationSI->location_id = $attributes['default_location'];
 							$itemLocationSI->item_id = $value;
 							$itemLocationSI->unit_id = $attributes['unit_id'][$key];
-							$itemLocationSI->quantity = $attributes['quantity'][$key];
+							$itemLocationSI->quantity = $lcqty;
 							$itemLocationSI->status = 1;
 							$itemLocationSI->invoice_id = $inv_item->id;
 							$itemLocationSI->is_do = 1;
 							$itemLocationSI->logid = $logid;
+							$itemLocationSI->qty_entry = $attributes['quantity'][$key];
+							$itemLocationSI->department_id = env('DEPARTMENT_ID');
 							$itemLocationSI->save();
 							
 						}
@@ -536,6 +641,42 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					    }
 						//################ Location Stock Entry End ####################
 						
+						
+						
+						//MAY25 BATCH NO ENTRY............
+        				/*if(isset($attributes['batchNos'][$key]) && $attributes['batchNos'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
+        				    
+        				    $batchArr = explode(',', $attributes['batchNos'][$key]);
+        				    $qtyArr = explode(',', $attributes['qtyBatchs'][$key]);
+        				    
+        				    foreach($batchArr as $bkey => $bval) {
+
+                			    DB::table('batch_log')
+            				                ->insert([
+            				                    'batch_id' => $bval,
+            				                    'item_id' => $value,
+            				                    'document_type' => 'CDO',
+            				                    'document_id' => $this->customer_do->id,
+            				                    'doc_row_id' => $inv_item->id,
+            				                    'quantity' => $qtyArr[$bkey],
+            				                    'trtype' => 0,
+            				                    'invoice_date' => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+            				                    'log_id' => $logid,
+            				                    'created_at' => date('Y-m-d h:i:s'),
+            				                    'created_by' => Auth::User()->id
+            				                    ]);
+
+                    			DB::table('item_batch')
+                    			                    ->where('id',$bval)
+                    				                ->update([
+                    				                    'quantity' => DB::raw('quantity - '.$qtyArr[$bkey])
+                    				                ]);	                
+                    				                
+        				    }
+        				
+        				}*/
+        				//.....END BATCH ENTRY
+    				
 
 						//**************** Consignment Location *********************
 						if(isset($attributes['conloc_id'][$key]) && $attributes['conloc_id'][$key]!='') {
@@ -544,7 +685,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						}
 						//***********************************************************
 
-					}
+					} //END ITEM ID FOREACH
 					
 					/*CHG*/
 					$subtotal = (int)$line_total - (int)$discount;
@@ -564,7 +705,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					
 					if( isset($attributes['is_fc']) ) {
 						$total_fc 	   = $line_total / $attributes['currency_rate'];
-						$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
+						$discount_fc   = (float)$attributes['discount'] / (float)$attributes['currency_rate'];
 						$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
 						$tax_fc 	   = $tax_total / $attributes['currency_rate'];
 						$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
@@ -602,7 +743,8 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					}
 				}
 			}	
-				
+				if(isset($attributes['document_id'])) 
+					$this->setTransferStatusQuote($attributes);				
 								
 				DB::commit();
 				return $this->customer_do->id;//true;
@@ -632,46 +774,46 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						$deskey = $attributes['order_item_id'][$key];
 						$tax_code = (isset($attributes['is_export']))?"ZR":$attributes['tax_code'][$key];
 						if( isset($attributes['is_fc']) ) {
-								$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
-								$itemtotal = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key] ) * $attributes['currency_rate'];
-								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
-								$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+								$tax        = ( ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100) * (float)$attributes['currency_rate'];
+								$itemtotal = ( ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key] ) * (float)$attributes['currency_rate'];
+								$taxtotal  = round($tax * (float)$attributes['quantity'][$key],2);
+								$linetotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 								
 							} else {
 								
-								$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+								$linetotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 								
 								if(isset($attributes['is_export']) || $tax_code=="EX" || $tax_code=="ZR") {
 									
 									$tax        = 0;
-									$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
-									$taxtotal  = round($tax * $attributes['quantity'][$key],2);
+									$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+									$taxtotal  = round($tax * (float)$attributes['quantity'][$key],2);
 									
 								} else if($attributes['tax_include'][$key]==1){
 									
-									$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key];
+									$ln_total   = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 									$taxtotal  = $ln_total *  $attributes['line_vat'][$key] / (100 +  $attributes['line_vat'][$key]);
 									$itemtotal = $ln_total - $taxtotal;
 									
 								} else {
 									
-									$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-									$itemtotal = ((int)$attributes['cost'][$key] * (int)$attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key];
-									$taxtotal  = round($tax * $attributes['quantity'][$key],2);
+									$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+									$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
+									$taxtotal  = round($tax * (float)$attributes['quantity'][$key],2);
 								}
 							}
 							
 							//********DISCOUNT Calculation.............
-							$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+							$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 							$taxtype = 'tax_exclude';
 								
 							if($attributes['tax_include'][$key]==1 ) {
 								$vatPlus = 100 + $attributes['line_vat'][$key];
-								$total = $attributes['cost'][$key] * $attributes['quantity'][$key];
+								$total = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
 								$taxtype = 'tax_include';
 							} else {
 								$vatPlus = 100;
-								$total = $attributes['line_total'][$key];
+								$total = (float)$attributes['line_total'][$key];
 								$taxtype = 'tax_exclude';
 							}
 							
@@ -689,6 +831,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							$vat = $attributes['line_vat'][$key];
 						
 							$customerDoItem = CustomerDoItem::find($attributes['order_item_id'][$key]);
+							$exi_quantity = $customerDoItem->quantity;
+							$exi_item_id = $customerDoItem->item_id;
+							$exi_unit_id = $customerDoItem->unit_id;
+							$itemsobj = (object)['item_id' => $exi_item_id, 'unit_id' => $exi_unit_id];
 							$items['item_name'] = $attributes['item_name'][$key];
 							$items['item_id'] = $value;
 							$items['unit_id'] = $attributes['unit_id'][$key];
@@ -704,6 +850,24 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							$items['conloc_id'] 	= (isset($attributes['conloc_id'][$key]))?$attributes['conloc_id'][$key]:''; 
 							$items['conloc_qty'] 	= (isset($attributes['conloc_qty'][$key]))?$attributes['conloc_qty'][$key]:''; 
 							$customerDoItem->update($items);
+							$zero = DB::table('customer_do_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+						if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('customer_do_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+						}
+							
+							$this->setTransferStatusItem($attributes, $key, $attributes['document_type'], 'edit');
+							
+							//OCT24
+							$bquantity = $attributes['quantity'][$key] - $exi_quantity;
+							//CHECK WHEATHER Update Quantity by CDO
+							if($this->mod_do_qty->is_active==1) {
+								$attributes['sales_invoice_id'] = $id;
+								$sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key, $bquantity);//exit;
+								$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, 0);
+								$logid = $this->setSaleLog($attributes, $key, $this->customer_do->id, $CostAvg_log, $sale_cost, 'update', $itemsobj); //DEC 23 UPDATE...
+								$cost_value += $sale_cost; 
+							}
 							
 							
 							//description update...
@@ -749,19 +913,29 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								foreach($attributes['locqty'][$key] as $lk => $lq) {
 									if($lq!='') {
 										$updated = true;
-										$edit = DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->first();
-										$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
-																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
+										//$lcqty = $lq * $attributes['packing'][$key]; //MAY25
+										$lcqty = $lq;
+                                		if($attributes['packing'][$key]=="1") 
+                                		    $lcqty = $lq;
+                                		else {
+                                		   $pkgar = explode('-', $attributes['packing'][$key]);
+                                		   if($pkgar[0] > 0)
+                                		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
+                                		}
+										
+										$edit = DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->where('department_id',env('DEPARTMENT_ID'))->first();
+										$idloc = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
+																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																	  //echo '<pre>';print_r($edit);exit;
 										if($edit) {
 											
-											if($edit->quantity < $lq) {
-												$balqty = $lq - $edit->quantity;
-												DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+											if($edit->quantity < $lcqty) {
+												$balqty = $lcqty - $edit->quantity;
+												DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$balqty)]);
 											} else {
-												$balqty = $edit->quantity - $lq;
-												DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
+												$balqty = $edit->quantity - $lcqty;
+												DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$balqty)]);
 											}
 											
 										} else {
@@ -770,14 +944,16 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 											$itemLocationSI->location_id = $attributes['locid'][$key][$lk];
 											$itemLocationSI->item_id = $value;
 											$itemLocationSI->unit_id = $attributes['unit_id'][$key];
-											$itemLocationSI->quantity = $lq;
+											$itemLocationSI->quantity = $lcqty;
 											$itemLocationSI->status = 1;
 											$itemLocationSI->invoice_id = $attributes['order_item_id'][$key];
 											$itemLocationSI->is_do = 1;
+											$itemLocationSI->qty_entry = $lq;
+											$itemLocationSI->department_id = env('DEPARTMENT_ID');
 											$itemLocationSI->save();
 										}
 										
-										DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lq]);
+										DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => $lcqty, 'qty_entry' => $lq]);
 
 									}
 								}
@@ -786,26 +962,39 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							//Item default location add...
 							if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 									
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
-																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
+																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+																  
+								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key]; //MAY25
+								$lcqty = $attributes['quantity'][$key];
+                        		if($attributes['packing'][$key]=="1") 
+                        		    $lcqty = $attributes['quantity'][$key];
+                        		else {
+                        		   $pkgar = explode('-', $attributes['packing'][$key]);
+                        		   if($pkgar[0] > 0)
+                        		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+                        		}
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 									DB::table('item_location_si')->where('invoice_id', $attributes['order_item_id'][$key] )
 																 ->where('location_id', $qtys->location_id)
 																 ->where('item_id', $qtys->item_id)
 																 ->where('unit_id', $qtys->unit_id)
-																 ->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
+																 ->where('department_id',env('DEPARTMENT_ID'))
+																 ->update(['quantity' => DB::raw('quantity - '.$lcqty), 'qty_entry' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
 								} 
 								
 								$itemLocationSI = new ItemLocationSI();
 								$itemLocationSI->location_id = $attributes['default_location'];
 								$itemLocationSI->item_id = $value;
 								$itemLocationSI->unit_id = $attributes['unit_id'][$key];
-								$itemLocationSI->quantity = $attributes['quantity'][$key];
+								$itemLocationSI->quantity = $lcqty;
 								$itemLocationSI->status = 1;
 								$itemLocationSI->invoice_id = $attributes['order_item_id'][$key];
 								$itemLocationSI->is_do = 1;
+								$itemLocationSI->department_id = env('DEPARTMENT_ID');
+								$itemLocationSI->qty_entry = $attributes['quantity'][$key];
 								$itemLocationSI->save();
 							}
 								
@@ -843,6 +1032,20 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								
 								$customerDoItem->status = 1;
 								$itemObj = $this->customer_do->AddCustomerDoItem()->save($customerDoItem);
+								$zero = DB::table('customer_do_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+					       if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('customer_do_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+						    }
+								
+								//CHECK WHEATHER Update Quantity by CDO
+								if($this->mod_do_qty->is_active==1) {
+									$attributes['item_row_id'][$key] = $itemObj->id; //OCT24
+									$sale_cost = $this->updateItemQuantitySales($attributes, $key);
+										$CostAvg_log = $this->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
+											$logid = $this->setSaleLog($attributes, $key, $this->customer_do->id, $CostAvg_log, $sale_cost, 'add' );
+
+								}
 								
 								//new entry description.........
 								/*if(isset($attributes['itemdesc'][$key])) {
@@ -866,17 +1069,28 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								foreach($attributes['locqty'][$key] as $lk => $lq) {
 									if($lq!='') {
 										$updated = true;
-										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
-																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
+										//$lcqty = $lq * $attributes['packing'][$key]; //MAY25
+										$lcqty = $lq;
+                                		if($attributes['packing'][$key]=="1") 
+                                		    $lcqty = $lq;
+                                		else {
+                                		   $pkgar = explode('-', $attributes['packing'][$key]);
+                                		   if($pkgar[0] > 0)
+                                		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
+                                		}
+										
+										$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
+																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 										if($qtys) {
-											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lq) ]);
+											DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 										} else {
 											$itemLocation = new ItemLocation();
 											$itemLocation->location_id = $attributes['locid'][$key][$lk];
 											$itemLocation->item_id = $value;
 											$itemLocation->unit_id = $attributes['unit_id'][$key];
-											$itemLocation->quantity = $lq;
+											$itemLocation->quantity = $lcqty;
+											$itemLocation->department_id = env('DEPARTMENT_ID');
 											$itemLocation->status = 1;
 											$itemLocation->save();
 										}
@@ -885,10 +1099,12 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 										$itemLocationSI->location_id = $attributes['locid'][$key][$lk];
 										$itemLocationSI->item_id = $value;
 										$itemLocationSI->unit_id = $attributes['unit_id'][$key];
-										$itemLocationSI->quantity = $lq;
+										$itemLocationSI->quantity = $lcqty;
 										$itemLocationSI->status = 1;
 										$itemLocationSI->invoice_id = $inv_item->id;
 										$itemLocationSI->is_do = 1;
+										$itemLocationSI->qty_entry = $lq;
+										$itemLocationSI->department_id = env('DEPARTMENT_ID');
 										$itemLocationSI->save();
 									}
 								}
@@ -897,17 +1113,29 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							//Item default location add...
 							if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 									
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
-																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
+																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  
+								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key]; //MAY25
+								$lcqty = $attributes['quantity'][$key];
+                        		if($attributes['packing'][$key]=="1") 
+                        		    $lcqty = $attributes['quantity'][$key];
+                        		else {
+                        		   $pkgar = explode('-', $attributes['packing'][$key]);
+                        		   if($pkgar[0] > 0)
+                        		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
+                        		}
+								
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 								} else {
 										$itemLocation = new ItemLocation();
 										$itemLocation->location_id = $attributes['default_location'];
 										$itemLocation->item_id = $value;
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
-										$itemLocation->quantity = $attributes['quantity'][$key];
+										$itemLocation->quantity = $lcqty;
+										$itemLocation->department_id = env('DEPARTMENT_ID');
 										$itemLocation->status = 1;
 										$itemLocation->save();
 									}
@@ -916,10 +1144,12 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								$itemLocationSI->location_id = $attributes['default_location'];
 								$itemLocationSI->item_id = $value;
 								$itemLocationSI->unit_id = $attributes['unit_id'][$key];
-								$itemLocationSI->quantity = $attributes['quantity'][$key];
+								$itemLocationSI->quantity = $lcqty;
 								$itemLocationSI->status = 1;
 								$itemLocationSI->invoice_id = $inv_item->id;
 								$itemLocationSI->is_do = 1;
+								$itemLocationSI->qty_entry = $attributes['quantity'][$key];
+								$itemLocationSI->department_id = env('DEPARTMENT_ID');
 								$itemLocationSI->save();
 								
 							}
@@ -933,6 +1163,41 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						
 						
 							//################ Location Stock Entry End ####################
+							
+							
+							//BATCH NO ENTRY............
+            				/*if(isset($attributes['batchNos'][$key]) && $attributes['batchNos'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
+            				    
+            				    $batchArr = explode(',', $attributes['batchNos'][$key]);
+            				    $qtyArr = explode(',', $attributes['qtyBatchs'][$key]);
+            				    
+            				    foreach($batchArr as $bkey => $bval) {
+    
+                    			    DB::table('batch_log')
+                				                ->insert([
+                				                    'batch_id' => $bval,
+                				                    'item_id' => $value,
+                				                    'document_type' => 'CDO',
+                				                    'document_id' => $this->customer_do->id,
+                				                    'doc_row_id' => $inv_item->id,
+                				                    'quantity' => $qtyArr[$bkey],
+                				                    'trtype' => 0,
+                				                    'invoice_date' => ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+                				                    'log_id' => $logid,
+                				                    'created_at' => date('Y-m-d h:i:s'),
+                				                    'created_by' => Auth::User()->id
+                				                    ]);
+    
+                        			DB::table('item_batch')
+                        			                    ->where('id',$bval)
+                        				                ->update([
+                        				                    'quantity' => DB::raw('quantity - '.$qtyArr[$bkey])
+                        				                ]);	                
+                        				                
+            				    }
+            				
+            				}*/
+            				//.....END BATCH ENTRY
 						}
 						
 					}
@@ -1055,29 +1320,45 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			
 			//Update control of QS,SO... 
 			if($this->customer_do->document_id > 0) {
+			     $idarr = explode(',',$this->customer_do->document_id);
+			    foreach($idarr as $idr) {
 				if($this->customer_do->document_type=='QS') {
-					DB::table('quotation_sales')->where('id', $this->customer_do->document_id)
+					DB::table('quotation_sales')->where('id', $idr)
 										->update(['is_transfer' => 0]);
 				} else if($this->customer_do->document_type=='SO') {
-					DB::table('sales_order')->where('id', $this->customer_do->document_id)
-										->update(['is_transfer' => 0, 'is_editable' => 0]);
+				    
+				    
+					DB::table('sales_order')->where('id', $idr)->update(['is_transfer' => 0, 'is_editable' => 0]); //$this->customer_do->document_id
+					DB::table('sales_order_item')->where('sales_order_id', $idr)->update(['is_transfer' => 0]);		//$this->customer_do->document_id			
 				} 
+			    }
 			}
 			
-			$items = DB::table('customer_do_item')->where('customer_do_id', $id)->select('id','item_id','quantity','unit_id','unit_price')->get();
+			$items = DB::table('customer_do_item')->where('customer_do_id', $id)->select('id','item_id','quantity','unit_id','unit_price','doc_row_id')->get();
 			
 			$this->updateLastPurchaseCostAndCostAvgonDelete($items,$id);
 			DB::table('customer_do_item')->where('customer_do_id', $id)
 								  ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			foreach($items as $item) {
-				$pirow = DB::table('item_location_si')->where('invoice_id',$item->id)->where('is_do',1)->get();
+			    
+			    if($this->customer_do->document_type=='SO') {
+			    DB::table('sales_order_item')->where('sales_order_id',$this->customer_do->document_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
+								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 0 ]);
+			    }	
+			    
+			     if($this->customer_do->document_type=='QS') {
+			    DB::table('quotation_sales_item')->where('quotation_sales_id',$this->customer_do->document_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
+								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 0 ]);
+			    }		
+			    
+				$pirow = DB::table('item_location_si')->where('department_id',env('DEPARTMENT_ID'))->where('invoice_id',$item->id)->where('is_do',1)->get();
 				
 				DB::table('con_location')->where('invoice_id',$item->id)->where('is_do',1)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 				foreach($pirow as $prow) {
-					DB::table('item_location_si')->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+					DB::table('item_location_si')->where('id',$prow->id)->where('department_id',env('DEPARTMENT_ID'))->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 					
-					DB::table('item_location')->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+					DB::table('item_location')->where('location_id', $prow->location_id)->where('department_id',env('DEPARTMENT_ID'))->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 								->update(['quantity' => DB::raw('quantity + '.$prow->quantity) ]);
 					
 				}
@@ -1085,7 +1366,24 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				//REMOVE FROM CONSIGNMENT LOCATION
 				DB::table('con_location')->where('invoice_id',$item->id)->where('is_do',1)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			}
+			DB::table('customer_do')->where('id', $id)
+									  ->update(['deleted_by' => Auth::User()->id ]);
+									  
 			
+    		//MAY25 BATCH REMOVE..
+			/*$batch_log = DB::table('batch_log')
+		                        ->where('document_type','CDO')
+		                        ->where('document_id', $id)
+				                ->whereNull('deleted_at')
+				                ->select('id','quantity','item_id','batch_id','doc_row_id')->get();
+				                
+			foreach($batch_log as $blog) {	                
+				DB::table('batch_log')->where('id', $blog->id)->update(['deleted_at' => date('Y-m-d h:i:s'), 'deleted_by' => Auth::User()->id]);
+				
+				DB::table('item_batch')->where('id', $blog->batch_id)->update(['deleted_at' => DB::raw('quantity + '.$blog->quantity) ]);
+				
+			}*/
+
 			$this->customer_do->delete();
 			
 			DB::commit();
@@ -1117,7 +1415,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	public function customerDOListCount()
 	{
-		$query = $this->customer_do->where('customer_do.status',1);
+		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','customer_do.customer_id');
 						} )
@@ -1126,7 +1424,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	public function customerDOList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->customer_do->where('customer_do.status',1)
+		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'))
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','customer_do.customer_id');
 						} );
@@ -1153,6 +1451,9 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','customer_do.customer_id');
 						} )
+						->Join('location AS L',function($join) {
+						$join->on('L.id','=','customer_do.location_id');
+					})
 					->leftJoin('header_footer AS f',function($join) {
 						$join->on('f.id','=','customer_do.footer_id');
 					})
@@ -1162,7 +1463,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					->leftJoin('jobmaster AS J',function($join) {
 						$join->on('J.id','=','customer_do.job_id');
 					})
-					->select('customer_do.*','am.master_name AS customer','f.title AS footer','S.name AS salesman','J.code')
+					->select('customer_do.*','am.master_name AS customer','f.title AS footer','S.name AS salesman','J.code','am.duedays')
 					->first();
 		
 	}
@@ -1175,18 +1476,23 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		return $query->join('customer_do_item AS poi', function($join) {
 							$join->on('poi.customer_do_id','=','customer_do.id');
 						} )
-					  ->leftjoin('units AS u', function($join){
+					  ->join('units AS u', function($join){
 						  $join->on('u.id','=','poi.unit_id');
 					  }) 
-					  ->leftjoin('itemmaster AS im', function($join){
-						  $join->on('im.id','=','poi.item_id');
+					  ->leftjoin('item_unit AS iu', function($join){
+						  $join->on('iu.unit_id','=','poi.unit_id')
+						    ->on('iu.itemmaster_id','=','poi.item_id');
 					  })
-					   ->leftjoin('item_unit AS iu', function($join){
-						  $join->on('iu.itemmaster_id','=','im.id');
+					  ->join('itemmaster AS im', function($join){
+						   $join->on('im.id','=','poi.item_id');
 					  })
-					  ->where('poi.status',1)
+					   ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
+					   
+					  ->where('poi.status',1)->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.deleted_at','0000-00-00 00:00:00')
-					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.packing','isd.pkno')
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
 					  ->get();
@@ -1208,12 +1514,16 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					  })
 					   ->join('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on('iu.unit_id','=','poi.unit_id');
+						  $join->on(DB::raw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)'), DB::raw(''), DB::raw('')); //$join->on('iu.unit_id','=','poi.unit_id');
 					  })
+					   ->leftjoin('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
+					  })
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
 					  ->where('poi.deleted_at','0000-00-00 00:00:00')
-					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.cur_quantity')
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity','isd.packing','isd.pkno')
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
 					  ->get();
@@ -1250,11 +1560,11 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	public function getCustomerOrder($customer_id=null)
 	{
 		if($customer_id)
-		$query = $this->customer_do->where('customer_do.status', 1)
+		$query = $this->customer_do->where('customer_do.status', 1)->where('department_id',env('DEPARTMENT_ID'))
 									 ->where('customer_id', $customer_id)
 									 ->where('is_transfer', 0);
 		else		
-		$query = $this->customer_do->where('customer_do.status', 1)
+		$query = $this->customer_do->where('customer_do.status', 1)->where('department_id',env('DEPARTMENT_ID'))
 		                            ->where('is_transfer', 0); 
 									
 		return $query ->select('id','voucher_no','reference_no','description','voucher_date','net_total') ->get();
@@ -1358,9 +1668,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		
-		switch($attributes['search_type']) {
-			case 'summary':
+		$pending=isset($attributes['pending'])?$attributes['pending']:0;
+		//switch($attributes['search_type']) {
+		//	case 'summary':
+		if($attributes['search_type']=='summary' && $pending==0){
 				$query = $this->customer_do
 								->join('customer_do_item AS SOI', function($join) {
 									$join->on('SOI.customer_do_id','=','customer_do.id');
@@ -1374,7 +1685,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
-								->where('SOI.status',1);
+								->where('SOI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
 								
 						if( $date_from!='' && $date_to!='' ) { 
 							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
@@ -1392,9 +1703,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				return $query->select('customer_do.voucher_no','customer_do.reference_no','customer_do.total','customer_do.vat_amount','S.name AS salesman','J.code AS jobcode',
 									  'SOI.quantity','SOI.balance_quantity','SOI.unit_price','AM.master_name','customer_do.net_total','customer_do.discount')
 								->groupBy('customer_do.id')->get();
-				break;
-				
-			case 'summary_pending':
+			//	break;
+		}	
+		//	case 'summary_pending':
+		else if($attributes['search_type']=='summary' && $pending==1){
 				$query = $this->customer_do->where('SOI.is_transfer','!=',1)
 								->join('customer_do_item AS SOI', function($join) {
 									$join->on('SOI.customer_do_id','=','customer_do.id');
@@ -1408,7 +1720,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
-								->where('SOI.status',1);
+								->where('SOI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
 								
 						if( $date_from!='' && $date_to!='' ) { 
 							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
@@ -1428,9 +1740,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 									  'customer_do.voucher_date')
 								->get();
 								
-				break;
-				
-			case 'detail':
+			//	break;
+		}	
+		//	case 'detail':
+		else if($attributes['search_type']=='detail' && $pending==0){
 				$query = $this->customer_do
 								->join('customer_do_item AS SOI', function($join) {
 									$join->on('SOI.customer_do_id','=','customer_do.id');
@@ -1447,7 +1760,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
-								->where('SOI.status',1);
+								->where('SOI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
 								
 						if( $date_from!='' && $date_to!='' ) { 
 							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
@@ -1465,10 +1778,11 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				return $query->select('customer_do.voucher_no','customer_do.voucher_date','customer_do.reference_no','IM.item_code','IM.description','S.name AS salesman','SOI.vat_amount AS unit_vat',
 									  'SOI.quantity','SOI.unit_price','SOI.line_total','AM.master_name','customer_do.net_total','customer_do.discount','J.code AS jobcode')
 								->get();
-				break;
-				
-			case 'detail_pending'||'qty_report':
-				$query = $this->customer_do->where('QSI.is_transfer','!=',1)
+				//break;
+		}
+			//case 'detail_pending'||'qty_report':
+			else if($attributes['search_type']=='summary' && $pending==1){
+				$query = $this->customer_do->where('QSI.is_transfer','!=',1)->where('customer_do.department_id',env('DEPARTMENT_ID'))
 								->join('customer_do_item AS QSI', function($join) {
 									$join->on('QSI.customer_do_id','=','customer_do.id');
 								})
@@ -1484,6 +1798,44 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
+								->where('QSI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
+								
+						if( $date_from!='' && $date_to!='' ) { 
+							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
+						}
+						
+						if($attributes['salesman']!='') { 
+							$query->where('customer_do.salesman_id', $attributes['salesman']);
+						}
+						if(isset($attributes['customer_id']) && $attributes['customer_id']!=''){
+							$query->where('customer_do.customer_id', $attributes['customer_id']);	
+						}
+						if(isset($attributes['job_id']) && $attributes['job_id']!='')
+							$query->whereIn('customer_do.job_id', $attributes['job_id']);
+						
+				return $query->select('customer_do.voucher_no','customer_do.voucher_date','customer_do.reference_no','IM.item_code','IM.description','customer_do.total','customer_do.vat_amount','customer_do.discount',
+									  'QSI.quantity','QSI.balance_quantity','QSI.unit_price','QSI.line_total','AM.master_name','customer_do.net_total','S.name AS salesman','J.code AS jobcode')
+								->get();
+			//	break;
+		} else if($attributes['search_type']=='detail' && $pending==1) {
+		    
+		    $query = $this->customer_do->where('QSI.is_transfer','!=',1)->where('customer_do.department_id',env('DEPARTMENT_ID'))
+								->join('customer_do_item AS QSI', function($join) {
+									$join->on('QSI.customer_do_id','=','customer_do.id');
+								})
+								->join('account_master AS AM', function($join) {
+									$join->on('AM.id','=','customer_do.customer_id');
+								})
+								->join('itemmaster AS IM', function($join) {
+									$join->on('IM.id','=','QSI.item_id');
+								})
+								->leftJoin('salesman AS S', function($join) {
+									$join->on('S.id','=','customer_do.salesman_id');
+								})
+								->leftJoin('jobmaster AS J', function($join) {
+									$join->on('J.id','=','customer_do.job_id');
+								})
+								->where('customer_do.department_id',env('DEPARTMENT_ID'))
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1502,7 +1854,6 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				return $query->select('customer_do.voucher_no','customer_do.voucher_date','customer_do.reference_no','IM.item_code','IM.description','customer_do.total','customer_do.vat_amount','customer_do.discount',
 									  'QSI.quantity','QSI.balance_quantity','QSI.unit_price','QSI.line_total','AM.master_name','customer_do.net_total','S.name AS salesman','J.code AS jobcode')
 								->get();
-				break;
 		}
 	}
 	
@@ -1648,7 +1999,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			$cost_avg = round( (($itmcost / $itmqty) + $other_cost), 3);
 			$cost = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		} else {
-			$row = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cost_avg')->orderBy('id', 'DESC')->first();
+			$row = DB::table('item_log')->where('department_id',env('DEPARTMENT_ID'))->where('item_id', $attributes['item_id'][$key])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cost_avg')->orderBy('id', 'DESC')->first();
 			if($row)
 				$cost_avg = $cost = $row->cost_avg;
 			else
@@ -1665,12 +2016,14 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		foreach($items as $item) {
 									
 			//COST AVG Updating on DELETE section....
-			DB::table('item_log')->where('document_id', $id)->where('document_type','CDO')
+			DB::table('item_log')->where('document_id', $id)->where('document_type','CDO')->where('department_id',env('DEPARTMENT_ID'))
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
 								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity + '.$item->quantity)]);
+			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id',env('DEPARTMENT_ID'))->where('unit_id',$item->unit_id)
+								  ->update(['cur_quantity' => DB::raw('cur_quantity + '.$item->quantity)]);					  
 									  
 		}
 	}
@@ -1680,7 +2033,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		
 		//GET DEFAULT LOCATION
 		if($attributes['default_location']==0) {
-			$locData = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+			$locData = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 			$fromLoc = ($locData)?$locData->id:'';
 		} else
 			$fromLoc = $attributes['default_location'];
@@ -1691,7 +2044,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		foreach($locarr as $lk => $loc) {
 			
 			//GET LOCATION TRANSFER VOUCHER
-			$voucher = DB::table('voucher_no')->where('status',1)->where('voucher_type','LT')->select('no')->first();
+			$voucher = DB::table('voucher_no')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type','LT')->select('no')->first();
 		
 			$locTRid = DB::table('location_transfer')
 						->insertGetId([
@@ -1704,7 +2057,8 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							'created_at' => date('Y-m-d H:i:s'),
 							'created_by' => Auth::User()->id,
 							'type'		=> 'DO',
-							'typeid'	=> $typeid
+							'typeid'	=> $typeid,
+							'department_id'=>env('DEPARTMENT_ID')
 						]);
 			//INSERT TRANFER ITEM..			
 			DB::table('location_transfer_item')
@@ -1722,7 +2076,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				$this->stockUpdate($fromLoc,$loc,$qtyarr[$lk],$attributes,$key,'to');
 			
 			//INCREMENT VOUCHER NO..
-			DB::table('voucher_no')->where('voucher_type', 'LT')->update(['no' =>  DB::raw('no + 1') ]);
+			DB::table('voucher_no')->where('voucher_type', 'LT')->where('department_id',env('DEPARTMENT_ID'))->update(['no' =>  DB::raw('no + 1') ]);
 						
 		}
 								
@@ -1754,7 +2108,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		
 		//GET DEFAULT LOCATION
 		if($attributes['default_location']==0) {
-			$locData = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+			$locData = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 			$fromLoc = ($locData)?$locData->id:'';
 		} else
 			$fromLoc = $attributes['default_location'];
@@ -1768,11 +2122,11 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		foreach($locarr_old as $lk => $loc) { Storage::prepend('dolog.txt', 'old: '.$loc);
 			$locdataold = DB::table('location_transfer')//->where('type','DO')
 					->where('locto_id', $loc)
-					->where('typeid', $attributes['order_item_id'][$key])
-					->where('status',1)->where('deleyed_at','0000-00-00 00:00:00')->select('id')->first();
+					->where('typeid', $attributes['order_item_id'][$key])->where('department_id',env('DEPARTMENT_ID'))
+					->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 					
 			if($locdataold) { Storage::prepend('dolog.txt', 'old data: ');
-				DB::table('location_transfer')->where('id',$locdataold->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s')]);
+				DB::table('location_transfer')->where('id',$locdataold->id)->where('department_id',env('DEPARTMENT_ID'))->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s')]);
 				DB::table('location_transfer_item')->where('location_transfer_id',$locdataold->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s')]);
 				
 				//UPDATE STOCK QUANTITY IN LOCATION			
@@ -1787,10 +2141,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			$locdata_new = DB::table('location_transfer')->where('type','DO')
 					->where('locto_id', $loc)
 					->where('typeid', $attributes['order_item_id'][$key])
-					->where('status',1)->where('deleyed_at','0000-00-00 00:00:00')->select('id')->first();
+					->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 					
 			if($locdata_new) { //Storage::prepend('dolog.txt', 'new data: ');
-				DB::table('location_transfer')->where('id',$locdata_new->id)
+				DB::table('location_transfer')->where('id',$locdata_new->id)->where('department_id',env('DEPARTMENT_ID'))
 						->update([
 							'locto_id' => $loc,
 							'total'		=> $qtyarr[$lk]

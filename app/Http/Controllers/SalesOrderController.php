@@ -266,9 +266,12 @@ class SalesOrderController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$res = $this->voucherno->getVoucherNo('SO'); //echo '<pre>';print_r($res);exit;
 		//$vno = $res->no;
-		$row = DB::table('sales_order')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
+		$row = DB::table('sales_order')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
 		$apr = ($this->acsettings->doc_approve==1)?[1]:[0,1,2];
 		$location = $this->location->locationList();
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
 		
 		$footertxt = DB::table('header_footer')->where('doc','SO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		if($row && in_array($row->doc_status, $apr))
@@ -291,15 +294,11 @@ class SalesOrderController extends Controller
 		
 		if($id) {
 			$ids = explode(',', $id);
-			if($doctype=='QS') {
+			if($doctype=='SO') {
 				//$quoteRow = $this->sales_order->findPOdata($ids[0]);
 				$quoteRow = $this->quotation_sales->findQuoteData($ids[0]);
 				$quoteItems = $this->quotation_sales->getQSItems($ids);
 				//$quoteItems = $this->sales_order->getSOItems($ids);
-				//echo '<pre>';print_r($quoteItems);exit;
-			} else if($doctype=='SO') {
-				$quoteRow = $this->sales_order->findPOdata($ids[0]);
-				$quoteItems = $this->sales_order->getSOItems($ids);
 				//echo '<pre>';print_r($quoteItems);exit;
 			}
 			else{
@@ -361,6 +360,9 @@ class SalesOrderController extends Controller
 					->withLocation($location)
 					->withPrntjobs($prntjobs)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
@@ -379,23 +381,29 @@ class SalesOrderController extends Controller
 	
 	public function save(Request $request) { //echo '<pre>';print_r($request->all());exit;
 	
-		 $this->validate(
+		if( $this->validate(
 			$request, 
 			[//'voucher_no' => 'required|unique:sales_order',
+			'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
-			 /* 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			  'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
 			 'quantity.*' => 'required',
-			 'cost.*' => 'required' */
+			 'cost.*' => 'required' 
 			],
 			[//'voucher_no' => 'Voucher no should be unique.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 /* 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.' */
+			 'cost.*' => 'Item cost is required.' 
 			]
-			);
+		)) {
+
+			//echo '<pre>';print_r($request->flash());exit;
+			//return redirect('sales_order/add')->withInput()->withErrors();
+		}
 		
 		if($this->sales_order->create($request->all()))
 			Session::flash('message', 'Sales Order added successfully.');
@@ -413,23 +421,29 @@ class SalesOrderController extends Controller
        
        	public function saveDraft(Request $request) { //echo '<pre>';print_r($request->all());exit;
 	
-		 $this->validate(
+		if( $this->validate(
 			$request, 
 			[//'voucher_no' => 'required|unique:sales_order',
+			'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
-			 /* 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
 			 'quantity.*' => 'required',
-			 'cost.*' => 'required' */
+			 'cost.*' => 'required' 
 			],
 			[//'voucher_no' => 'Voucher no should be unique.',
+				'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 /* 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			  'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.' */
+			 'cost.*' => 'Item cost is required.'
 			]
-			);
+		)) {
+
+			//echo '<pre>';print_r($request->flash());exit;
+			//return redirect('sales_order/add')->withInput()->withErrors();
+		}
 		
 		if($this->sales_order->create($request->all()))
 			Session::flash('message', 'Sales Order drafted successfully.');
@@ -517,9 +531,10 @@ class SalesOrderController extends Controller
 	public function update(Request $request)
 	{
 		$id = $request->input('sales_order_id');
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			[//'reference_no' => 'required',
+			'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
 			 /* 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
@@ -527,13 +542,17 @@ class SalesOrderController extends Controller
 			 'cost.*' => 'required' */
 			],
 			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 			 /* 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.' */
 			]
-			);
+		)) {
+		
+			return redirect('sales_order/edit/'.$id)->withInput()->withErrors();
+		}
 		
 		$this->sales_order->update($id, $request->all());
 		
@@ -641,17 +660,17 @@ class SalesOrderController extends Controller
 			$request, 
 			[//'reference_no' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
-			 /* 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			  'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
 			 'quantity.*' => 'required',
-			 'cost.*' => 'required' */
+			 'cost.*' => 'required' 
 			],
 			[//'reference_no.required' => 'Reference no. is required.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 /* 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			  'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.' */
+			 'cost.*' => 'Item cost is required.' 
 			]
 		)) {
 		
@@ -857,10 +876,10 @@ class SalesOrderController extends Controller
 	
 	public function setSessionVal()
 	{
-		Session::put('voucher_no', $request->get('vchr_no'));
-		Session::put('reference_no', $request->get('ref_no'));
-		Session::put('voucher_date', $request->get('vchr_dt'));
-		Session::put('lpo_date', $request->get('lpo_dt'));
+		Session::set('voucher_no', $request->get('vchr_no'));
+		Session::set('reference_no', $request->get('ref_no'));
+		Session::set('voucher_date', $request->get('vchr_dt'));
+		Session::set('lpo_date', $request->get('lpo_dt'));
 	}
 	
 	protected function makeTree($result)
@@ -1481,7 +1500,6 @@ class SalesOrderController extends Controller
 		//if($search)
 			//$totalFiltered =  $this->accountmaster->accountMasterList('count', $start, $limit, $order, $dir, $search, $dept);
 		
-		//echo  $acmasters;exit;
 	$data = array();
 	if(!empty($acmasters))
 	{
@@ -1583,5 +1601,3 @@ class SalesOrderController extends Controller
 	//return true;
 	}
 }
-
-

@@ -100,13 +100,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@can('pi-print')
+								@permission('pi-print')
 								 <a href="{{ url('purchase_invoice/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endcan
+								@endpermission
 							<?php } ?>
 							</div>
 							
@@ -932,9 +932,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('purchase_invoice') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('purchase_invoice/add') }}" class="btn btn-warning">Clear</a>
-										@can('pi-history')
+										@permission('pi-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endcan
+										@endpermission
                                     </div>
                                 </div>
 								<div id="purchase_modal" class="modal fade animated" role="dialog">

@@ -29,10 +29,6 @@
     <link rel="stylesheet" type="text/css" href="{{asset('assets/css/custom.css')}}">
 	<link rel="stylesheet" type="text/css" href="{{asset('assets/css/custom_css/responsive_datatables.css')}}">
     <link rel="stylesheet" type="text/css" href="{{asset('assets/css/datepicker.css')}}">
-    
-    <style>
-        	#batch_modal { z-index:0; } /* MAY25  */
-	</style>
 @stop
 
 {{-- Page content --}}
@@ -41,7 +37,7 @@
         <section class="content-header">
             <!--section starts-->
             <h1>
-                Purchase Invoice
+                Purchase Invoice1
             </h1>
             <ol class="breadcrumb">
                 <li>
@@ -80,62 +76,72 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmPurchaseInvoice" id="frmPurchaseInvoice" action="{{ url('purchase_invoice/save/'.$docrow->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="default_location" value="{{ Auth::user()->location_id }}">
-								@if($formdata['send_email']==1)
+								@php $selectedLocId = $docrow->location_id; @endphp
+								<input type="hidden" name="default_location" id="default_location" value="{{ $selectedLocId }}">								@if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
 								@else
 								<input type="hidden" name="send_email" value="0">
 								@endif
-								@if($isdept)
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Department</b></label>
-                                    <div class="col-sm-10">
-                                       <select id="department_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="department_id">
-											@foreach($departments as $drow)
-												<option value="{{ $drow->id }}" <?php if($dptid==$drow->id) echo 'selected'; ?>>{{ $drow->name }}</option>
-											@endforeach
-                                        </select>
-                                    </div>
-                                </div>
-								@endif
+								
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Invoice</label>
                                     <div class="col-sm-10">
                                        <select id="voucher_id" class="form-control select2" style="width:100%" name="voucher_id">
-                                           <option value="">Select Voucher...</option>
+                
 											@foreach($vouchers as $voucher)
-											<option value="{{ $voucher['id'] }}" <?php if($voucherid==$voucher['id']) echo 'selected';?>>{{ $voucher['voucher_name'] }}</option>
+											<option value="{{ $voucher['id'] }}" <?php if($pivchrid==$voucher['id']) echo 'selected';?>>{{ $voucher['voucher_name'] }}</option>
 											@endforeach
                                         </select>
                                     </div>
                                 </div>
+
+								<div class="form-group">
+						            <label for="input-text" class="col-sm-2 control-label"></label>
+							    <div class="col-sm-10">
+                                  <label class="radio-inline">
+ 								  <font color="#16A085">  <input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
+							       </label>
+								   
+                                   <label class="radio-inline">
+								 <font color="#16A085">     <input type="radio" class="locinter-radio" name="is_intercompy"  value="{{$docrow->is_intercompany}}"><b>Inter Company</b></font>
+									  <input type="hidden"  name="is_intercompany"  value="{{$docrow->is_intercompany}}">
+									  
+                                    </label>
+                                   
+							    </div>
+						        </div>
+								
+								 <div class="form-group">
+                                <font color="#16A085"> <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
 								
 								<div class="form-group">
-                                   <font color="#16A085">  <label for="input-text" class="col-sm-2 control-label"><b>PI. No.</b></label></font>
-									<input type="hidden" name="curno" id="curno" value="{{$voucherno}}"> <input type="hidden" name="vat_no">
-                                    <div class="col-sm-10">
-										<div class="input-group">
-										@if($voucher['is_prefix']==1)<span class="input-group-addon">{{$voucher['prefix']}}</span>@endif
-                                        <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="{{$voucher['voucher_no']}}">
-										<span class="input-group-addon inputvn"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
-										</div>
-                                    </div>
-                                </div>
-                                
-								{{--<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">PI. No.</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$voucherno}}">
-                                    </div>
+									<div class="input-group">
+										<span class="input-group-addon" id="prefixBox">{{$voucher['prefix']}}</span>
+                                        <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="{{$voucher['voucher_no']}}">
+                                    <input type="hidden" value="{{$voucher['prefix']}}" name="prefix">
+									</div>
+									</div>
                                 </div>
-								<input type="hidden" name="curno" id="curno" value="{{$voucherno}}"> <input type="hidden" name="vat_no">--}}
+								<input type="hidden" name="curno" id="curno" value="{{$voucher['voucher_no']}}"> <input type="hidden" name="vat_no">
 								
 								<?php if($formdata['reference_no']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>">Reference No.</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control <?php if($errors->has('reference_no')) echo 'form-error';?>" id="reference_no" name="reference_no" autocomplete="off" value="<?php echo (old('reference_no'))?old('reference_no'):(($referenceno=='')?(isset($docrow->reference_no)?$docrow->reference_no:''):$referenceno); ?>">
+                                        <input type="text" class="form-control <?php if($errors->has('reference_no')) echo 'form-error';?>" id="reference_no" name="reference_no" autocomplete="off" value="<?php echo (old('reference_no'))?old('reference_no'):$referenceno; ?>">
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -174,8 +180,8 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Purchase Account</label>
                                     <div class="col-sm-10">
-                                        <input type="text" name="purchase_account" id="purchase_account" class="form-control" readonly value="{{$purchaseac}}">
-										<input type="hidden" name="account_master_id" id="account_master_id" class="form-control" value="{{$accountmstr}}">
+                                        <input type="text" name="purchase_account" id="purchase_account" class="form-control" readonly value="{{$voucher['account_id'].'-'.$voucher['master_name']}}">
+										<input type="hidden" name="account_master_id" id="account_master_id" class="form-control" value="{{$vouchers[0]['dr_account_master_id']}}">
 									</div>
                                 </div>
 								
@@ -193,8 +199,8 @@
                                     <div class="col-sm-10">
                                        <select id="document_type" class="form-control select2" style="width:100%" name="document_type">
                                            <option value="">Select Document...</option>
-										   <option value="PO" <?php if($doctype=='PO') echo 'selected';?>>Purchase Order</option>
-										   <option value="MR" <?php if($doctype=='MR') echo 'selected';?>>MaterialRequisition</option>
+										<!--   <option value="PO" <?php if($doctype=='PO') echo 'selected';?>>Purchase Order</option>
+										   <option value="MR" <?php if($doctype=='MR') echo 'selected';?>>MaterialRequisition</option>-->
 										   <option value="SDO" <?php if($doctype=='SDO') echo 'selected';?>>Supplier Delivery Order</option>
                                        </select>
                                     </div>
@@ -207,7 +213,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Document#</label>
                                     <div class="col-sm-10">
-										<input type="text" class="form-control" id="document" readonly name="document_no" value="{{old('document')?old('document'):$pordid}}" autocomplete="off" onclick="getDocument()">
+										<input type="text" class="form-control" id="document" readonly name="document" value="{{old('document')?old('document'):$docnos}}" autocomplete="off" onclick="getDocument()">
 										<input type="hidden" id="document_id" name="document_id" value="{{old('document_id')?old('document_id'):$pordid}}">
                                     </div>
                                 </div>
@@ -253,20 +259,6 @@
 								<input type="hidden" name="terms_id" id="terms_id">
 								<?php } ?>
 								
-									<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Day</label>
-                                    <div class="col-sm-4">
-                                        	<input type="number" class="form-control" id="duedays" name="duedays" value="{{$docrow->duedays}}" placeholder="Due Days">
-                                    </div>
-                                    <label for="input-text" class="col-sm-2 control-label">Due Date</label>
-                                    <div class="col-sm-4">
-                                        <div class="col-sm-10">
-										<input type="text" class="form-control pull-right" autocomplete="off" name="due_date" data-language='en' id="due_date" value="{{date('d-m-Y')}}"/>
-										
-                                    </div>
-                                    </div>
-                                </div>
-								
 								<?php if($formdata['job']==1) { ?>
 								<div class="form-group">
                                     <font color="#16A085"><label for="input-text" class="col-sm-2 control-label"><b>Job Code</b></label></font>
@@ -279,29 +271,6 @@
 								<input type="hidden" name="job_id" id="job_id">
 								<?php } ?>
 								
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}">{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($is_default==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
 								
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -568,7 +537,7 @@
 													<option value="{{$poitem->unit_id}}">{{$poitem->unit_name}}</option></select>
 												</td>
 												<td width="8%">
-													<input type="hidden" name="actual_quantity[]" id="itmactqty_{{$i}}" value="{{$actual_quantity}}"> 
+													<input type="hidden" name="actual_quantity[]" id="itmactqty_1" value="{{$actual_quantity}}"> 
 													<input type="number" id="itmqty_{{$i}}" step="any" autocomplete="off" name="quantity[]" class="form-control line-quantity" value="{{$quantity}}">
 												</td>
 												<td width="8%">
@@ -581,7 +550,7 @@
 													<select id="txincld_{{$i}}" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option <?php if($poitem->tax_include==0) echo 'selected';?> value="0">No</option><option <?php if($poitem->tax_include==1) echo 'selected';?> value="1">Yes</option></select>
 												</td>
 												<td width="9%">
-													<input type="hidden" id="packing_{{$i}}" name="packing[]" value="{{($poitem->is_baseqty==1)?1:$poitem->pkno.'-'.$poitem->packing}}">
+													<input type="hidden" id="packing_{{$i}}" name="packing[]" value="{{($poitem->is_baseqty==1)?1:$poitem->packing}}">
 													<input type="text" id="vatdiv_{{$i}}" step="any" readonly name="vatdiv[]" class="form-control vatdiv" value="{{$vat.'% - '.intval($vat_amount*100)/100}}"><!--<div class="h5" id="vatdiv_1"></div>--> 
 													<input type="hidden" id="vat_{{$i}}" name="line_vat[]" class="form-control vat" value="{{$vat}}">
 													<input type="hidden" id="vatlineamt_{{$i}}" name="vatline_amt[]" class="form-control vatline-amt" value="{{$vat_amount}}">
@@ -645,15 +614,6 @@
 								<input type="hidden" name="location_item" id="location_item">
 								<?php } ?>
 								
-								<!--MAY25-->
-								<div id="batchdiv_{{$i}}" style="float:left; padding-right:5px;" class="addBatchBtn">
-									<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-									<div class="form-group"><input type="text" name="batchNos[]" id="batchNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$poitem->id]['batches']}}"></div>
-									<input type="hidden" id="mfgDates_{{$i}}" name="mfgDates[]" value="{{$batchitems[$poitem->id]['mfgs']}}">
-                                    <input type="hidden" id="expDates_{{$i}}" name="expDates[]" value="{{$batchitems[$poitem->id]['exps']}}">
-                                    <input type="hidden" id="qtyBatchs_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$poitem->id]['qtys']}}">
-								</div>
-								
 								<?php if($formdata['dimension']==1) { ?>
 								<div id="itmInfo">
 									<button type="button" id="itmInfo_{{$i}}" class="btn btn-primary btn-xs dimn-view">Dimension</button>
@@ -691,32 +651,29 @@
 																</tr>
 																</thead>
 																<tbody>
-																<?php $tQty = 0; //NOV24
+																<?php 
 																foreach($itemloc as $key => $row) {
 																
-																$quantity = $id = $qty_entry = '';
+																$quantity = $id = '';
 																$location_id = $row->id; $cqty = $row->cqty;
 																if(array_key_exists($key, $itemlocedit[$poitem->id])) { 
 																	$cqty = $itemlocedit[$poitem->id][$key]->cqty;
 																	$quantity = $itemlocedit[$poitem->id][$key]->quantity;
 																	$location_id = $itemlocedit[$poitem->id][$key]->location_id;
 																	$id = $itemlocedit[$poitem->id][$key]->id;
-																	
-																	$qty_entry = $itemlocedit[$poitem->id][$key]->qty_entry;
-																	$tQty += $cqty; //NOV24
 																}
 																?>
 																<tr>
 																	<td>{{ $row->name }}</td>
 																	<td>{{ $cqty }}</td>
-																	<td class="num"><input type="number" name="locqty[<?php echo $i-1;?>][]" value="{{$qty_entry}}" class="loc-qty-{{$i}}" data-id="{{$i}}">
+																	<td class="num"><input type="number" name="locqty[<?php echo $i-1;?>][]" value="{{$quantity}}" class="loc-qty-{{$i}}" data-id="{{$i}}">
 																	<input type="hidden" name="locid[<?php echo $i-1;?>][]" value="{{$location_id}}"/>
 																	<input type="hidden" name="editid[<?php echo $i-1;?>][]" value="{{$id}}"/></td>
 																</tr>
 																<?php } ?>
 																</tbody>
 															</table>
-														</div><script> if(document.getElementById('iloc_{{$i}}')) { document.getElementById('iloc_{{$i}}').value='{{$tQty}}'; }</script><!--NOV24-->
+														</div>
 															<?php  } ?>
 													</div>
 												</div>
@@ -1245,45 +1202,6 @@
 				</div>
 			</div>
 		</div>
-		
-		<!--MAY25-->
-        <div id="batch_modal" class="modal fade animated" role="dialog">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal">&times;</button>
-                        <h4 class="modal-title">Add Batch</h4>
-                    </div>
-                    <div class="modal-body" id="batchData">
-                        <div class="row">
-                            <table class="table horizontal_table" id="batchTable">
-                                <thead>
-                                <tr>
-                                    <th>Batch No</th>
-                                    <th>Mfg. Date</th>
-                                    <th>Exp. Date</th>
-                                    <th>Qty.</th>
-                                    <th><button class="btn btn-success btn-xs funAddBacthRow" data-id="1" data-no="1"><i class="fa fa-fw fa-plus-circle"></i></button></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="btno"><input type="text" size="10" id="bthno_1" class="bno" name="batch_no" autocomplete="off"></td>
-                                    <td class="mfdt"><input type="text" size="12" id="bthmfg_1" name="mfg_date" readonly data-language='en' class="mfg-date" autocomplete="off"></td>
-                                    <td class="exdt"><input type="text" size="12" id="bthexp_1" name="exp_date" readonly data-language='en' class="exp-date" autocomplete="off"></td>
-                                    <td class="bqty"><input type="text" size="8" id="bthqty_1" name="qty" class="bth-qty" autocomplete="off"></td>
-                                    <td class="del"></td> 
-                                </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary saveBatch">Save</button> <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
 @stop
 
 {{-- page level scripts --}}
@@ -1326,33 +1244,14 @@
 
 <script>
 "use strict";
-$('#due_date').datepicker( { autoClose:true ,dateFormat: 'dd-mm-yyyy' } );
 var srvat={{$vatdata->percentage}};
-var dptTxt; var lqy;
-var deptid;
-//MAY25
-var lprice; var lqy;
-let bthArr = [];
-let uniqueBtharr;
-$('.mfg-date').datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
-$('.exp-date').datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
-
-$(document).ready(function () {
-    if(	$('#duedays').val() >0){
-		 var days=$('#duedays').val();
-	     calculateDueDate(parseInt(days));
-	}
-    
+var dptTxt;
+$(document).ready(function () { 
 	getNetTotal();
 	//ROWCHNG
 	$('.itemdivPrnt').find('.btn-add-item:not(:last)').hide();
 	if ( $('.itemdivPrnt').children().length == 1 ) {
 		$('.itemdivPrnt').find('.btn-remove-item').hide();
-	}
-	
-	if($('#department_id').length) {
-		dptTxt = $( "#department_id option:selected" ).text();
-		deptid = $( "#department_id option:selected" ).val();
 	}
 	
 $('.dimnInfodivPrntItm').toggle();
@@ -1371,6 +1270,42 @@ $('.dimnInfodivPrntItm').toggle();
 		if( $('.OCdivPrnt').is(":hidden") )
 			$('.OCdivPrnt').toggle(); 
 	<?php } else { ?> $('.OCdivPrnt').toggle();<?php } ?>
+
+
+	if( $('#selected_locfrom_id').val() !=''){  
+
+	      var val = $('#selected_locfrom_id').val();
+
+		  $('.locinter-radio').iCheck('disable');
+		$('.loccom-radio').iCheck('disable');
+
+	    if($('input[name="is_intercompy"]').val()==1){
+
+		$('.locinter-radio').iCheck('check');
+		$('.loccom-radio').iCheck('uncheck');
+		var prefix ='IPI';
+		}
+          else{
+		  $('.locinter-radio').iCheck('uncheck');
+		$('.loccom-radio').iCheck('check');
+		var prefix ='PI';
+		  
+		  }   
+		  
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  //$('input[name="prefix"]').val('');   
+             let newPrefix = prefix + locCode;               
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix); 
+				$('#default_location').val(val);
+              $('.locfrom-radio').prop('disabled', true);
+			 });  
+		}
+
+
 	
 	var urlcode = "{{ url('purchase_invoice/checkrefno/') }}";
     $('#frmPurchaseInvoice').bootstrapValidator({
@@ -1379,24 +1314,20 @@ $('.dimnInfodivPrntItm').toggle();
 			//voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},
 			reference_no: {
                 validators: {
-                     notEmpty: {
-                        message: 'The reference no is required and cannot be empty!'
-                    }, 
-					remote: {
+                   /*  notEmpty: {
+                        message: 'The reference no id is required and cannot be empty!'
+                    }, */
+					/*remote: {
                         url: urlcode,
                         data: function(validator) {
                             return {
                                 code: validator.getFieldElements('reference_no').val()
-                                
                             };
                         },
                         message: 'The reference no is not available'
-                    }
+                    }*/
                 }
             },
-            //'batchNos[]': { validators: { notEmpty: { message: 'Batch No. is required and cannot be empty!' } }}
-            @if($formdata['location_item']==1) ,'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }}  @endif //NOV24
-            //'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }}  //NOV24
 			//voucher_date: { validators: { notEmpty: { message: 'The voucher date is required and cannot be empty!' } }},
 			//description: { validators: { notEmpty: { message: 'The description is required and cannot be empty!' } }},
 			//purchase_account: { validators: { notEmpty: { message: 'The purchase account is required and cannot be empty!' } }},
@@ -1440,13 +1371,6 @@ $('.dimnInfodivPrntItm').toggle();
 	$('.pv_icheck').on('ifUnchecked', function(event){ 
 		$('#pv_form').toggle();
 		//$('input[name="rv_amount[]"]').removeAttr("required");
-	});
-
-	$(document).on('blur', '#voucher_no', function(e) {  
-		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
-			alert('Voucher no is greater than current range!');
-			$('#voucher_no').val('');
-		}
 	});
 	
 });
@@ -1691,16 +1615,7 @@ $('.dimnInfodivPrntItm').toggle();
 		
 		return true;
 	}
-	function calculateDueDate(days) {
-         const today = new Date();
-         const dueDate = new Date();
-         dueDate.setDate(today.getDate() + days);
-         const due= dueDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-         const formatted = dueDate.toLocaleDateString('es-CL'); // DD/MM/YYYY
-          console.log(formatted);
-        $('#due_date').val(formatted);
-
-    }	
+//
 $(function() {	
 	var rowNum = $('#rowNum').val();;
 	//$('#voucher_date').datepicker( { dateFormat: 'dd-mm-yyyy',minDate: new Date('{{$settings->from_date}}'),maxDate: new Date('{{$settings->to_date}}') } );
@@ -1720,7 +1635,7 @@ $(function() {
 	$('#department_id').on('change', function(e){
 		var dept_id = e.target.value; 
 		dptTxt = $( "#department_id option:selected" ).text();
-		$.get("{{ url('purchase_invoice/getdeptvoucher/') }}/" + dept_id, function(data) {  
+		$.get("{{ url('purchase_invoice/getdeptvoucher/') }}/" + dept_id, function(data) {  console.log(data);
 			$('#voucher_no').val(data[0].voucher_no);
 			$('#voucher_id').find('option').remove().end();
 				$.each(data, function(key, value) {  
@@ -1785,11 +1700,7 @@ $(function() {
 	    $('#othrcstItm_'+curNum).toggle();
 	});
 	
-	$('.inputvn').on('click', function(e) {
-		$('#voucher_no').attr("readonly", false);
-	});
-	
-	
+	  
 	$(document).on('click', '.btn-add-item', function(e)  { 
         rowNum++; //console.log(rowNum);
 		e.preventDefault();
@@ -1829,9 +1740,6 @@ $(function() {
 			newEntry.find($('.loc-info')).attr('id', 'loc_' + rowNum);
 			newEntry.find($('.loc-data')).attr('id', 'locData_' + rowNum);
 			$('#locData_'+rowNum).html('');
-			
-			newEntry.find($('input[name="iloc[]"]')).attr('id', 'iloc_' + rowNum); //NOV24
-			newEntry.find( $('#frmPurchaseInvoice').bootstrapValidator('addField',"iloc[]") ); //NOV24
 			
 			var indx = parseInt(rowNum - 1);
 			newEntry.find($('.loc-qty')).attr('name', 'locqty['+indx+'][]');
@@ -2030,12 +1938,6 @@ $(function() {
 		e.preventDefault();
 	});
 	
-		$('#duedays').on('blur', function(e){
-	     var days=$('#duedays').val()
-	    calculateDueDate(parseInt(days));
-	   });
-	
-	
 	var supurl = "{{ url('purchase_order/supplier_data/') }}";
 	$('#supplier_name').click(function() {
 		$('#supplierData').load(supurl, function(result) {
@@ -2050,7 +1952,7 @@ $(function() {
 	
 	//new change.................
 	$(document).on('click', '.itemRow', function(e) { 
-		var num = $('#lbnum').val();
+		var num = $('#num').val();
 		$('#itmcod_'+num).val( $(this).attr("data-code") );
 		$('#itmid_'+num).val( $(this).attr("data-id") );
 		$('#itmdes_'+num).val( $(this).attr("data-name") );
@@ -2070,8 +1972,7 @@ $(function() {
 		$.get("{{ url('purchase_order/getunit/') }}/" + itm_id, function(data) { 
 			$('#itmunt_'+num).find('option').remove().end();
 			$.each(data, function(key, value) {   
-			    //console.log(value);
-		$('#itmunt_'+num).find('option').end()
+			$('#itmunt_'+num).find('option').remove().end()
 			 .append($("<option></option>")
 						.attr("value",value.id)
 						.text(value.unit_name)); 
@@ -2085,7 +1986,7 @@ $(function() {
 	$(document).on('click', 'input[name="item_code[]"]', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1]; //console.log(curNum);
-		$('#item_data').load(itmurl+'/'+curNum+'/ser', function(result){ //.modal-body item
+		$('#item_data').load(itmurl+'/'+curNum, function(result){ //.modal-body item
 			$('#myModal').modal({show:true});
 			if($('#p_orditmid_'+curNum).val()!='')
 				resetValues(curNum);
@@ -2097,7 +1998,7 @@ $(function() {
 	$(document).on('click', 'input[name="item_name[]"]', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1]; 
-		$('#item_data').load(itmurl+'/'+curNum+'/ser', function(result){ 
+		$('#item_data').load(itmurl+'/'+curNum, function(result){ 
 			$('#myModal').modal({show:true});
 		});
 	});
@@ -2202,7 +2103,7 @@ $(function() {
 	$('#voucher_id').on('change', function(e){
 		var vchr_id = e.target.value; 
 		$.get("{{ url('purchase_invoice/getvoucher/') }}/" + vchr_id, function(data) { //console.log(data);
-			$('#voucher_no').attr('placeholder', data.voucher_no);  //$('#voucher_no').val(data.voucher_no);
+			$('#voucher_no').val(data.voucher_no);
 			$('#purchase_account').val(data.account_id+'-'+data.account_name);
 			$('#account_master_id').val(data.id);
 		});
@@ -2280,31 +2181,13 @@ $(function() {
 	   var res = this.id.split('_');
 	   var curNum = res[1];  
 	   var item_id = $('#itmid_'+curNum).val();
-	   
-	   var dt = $("#document_type option:selected").val();
-	   if(dt=='SDO')
-	   		var pi_id = $('#sdo_itemid_'+curNum).val();
-	   else
-			var pi_id = $('#p_orditmid_'+curNum).val();
-
 	   if(item_id!='') {
-		   var locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+item_id+"/"+curNum+"/"+pi_id+"/"+dt;
-		   if ($('#locData_'+curNum).is(':empty')){
-    		   $('#locData_'+curNum).load(locUrl, function(result) {
-    			  $('#myModal').modal({show:true});
-    		   });
-    			
-    		   $('#locPrntItm_'+curNum).toggle();
-		   } else
-		        $('#locPrntItm_'+curNum).toggle();
-		        
-		    var itQty = 0;
-			$('.loc-qty-'+curNum).each(function() { 
-				itQty += parseFloat( (this.value=='')?0:this.value );
-			});
+		   var locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+item_id+"/"+curNum
+		   $('#locData_'+curNum).load(locUrl, function(result) {
+			  $('#myModal').modal({show:true});
+		   });
 			
-			$('#iloc_'+curNum).val((itQty>0)?itQty:''); 
-			$('#frmPurchaseInvoice').bootstrapValidator('revalidateField', 'iloc[]');
+		   $('#locPrntItm_'+curNum).toggle();
 	   }
     });
 	
@@ -2444,7 +2327,7 @@ $(function() {
 	
 	//Supplier search...
 	var acmst = "{{ url('account_master/ajax_account/') }}";
-	$('#supplier_name').autocomplete({
+	/*$('#supplier_name').autocomplete({
         source: function(request, response) {
             $.ajax({
                 url: acmst,
@@ -2461,7 +2344,7 @@ $(function() {
 			$("#supplier_id").val(ui.item.id);
 		},
         minLength: 2,
-    });
+    });*/
 	
 	$(document).on('click', '.pur-his', function(e) { 
 	   e.preventDefault();
@@ -2511,25 +2394,11 @@ $(function() {
 			getNetTotal();
 	});
 	
-	//MAY25
-    $(document).on('click', '.num :input[type="number"]', function(e) {
-        lqy = $(this).val(); console.log('dd '+lqy)
-    });
-    
 	$(document).on('keyup', '.num :input[type="number"]', function(e) {
 		var itQty = 0; var curNum = $(this).data('id');
 		$('.loc-qty-'+curNum).each(function() { 
 			itQty += parseFloat( (this.value=='')?0:this.value );
 		});
-		
-		//MAY25
-		if(parseFloat(itQty) > parseFloat( $('#itmactqty_'+curNum).val() )) {
-			alert('Quantity should not exceed than Quotation/PO.');
-			//$('#itmqty_'+curNo).val( $('#itmaxqty_'+curNo).val() );
-			$(this).val(lqy);
-			return false;
-		}
-		
 		$('#itmqty_'+curNum).val(itQty);
 		
 		var isPrice = getAutoPrice(curNum);
@@ -2540,9 +2409,6 @@ $(function() {
 				getNetTotal();
 		}
 		$('#frmPurchaseInvoice').bootstrapValidator('revalidateField', 'quantity[]');
-		@if($formdata['location_item']==1)
-		$('#frmPurchaseInvoice').bootstrapValidator('revalidateField', 'iloc[]');
-		@endif
 	});
 	$(document).on('blur', '#voucher_no', function() {
 		
@@ -2723,245 +2589,6 @@ var custurl2;
 		   $('#dimnInfodivPrntItm_'+curNum).toggle();
 	   }
     });
-    
-    
-    //MAY25  BATCH ENTRY....
-	var icount = 0;
-    $(document).on('click', '.funAddBacthRow', function(e) {
-        e.preventDefault();
-        icount++;
-        var btno = parseInt($('#bth_count').val())+parseInt(icount);
-        
-       var table = $('#batchTable');
-       var clonedRow = $('#batchTable tbody tr:first').clone();
-       clonedRow.find('input').val('');
-       clonedRow.find('.btno').html('<input type="text" size="10" id="bthno_'+btno+'" class="bno" name="batch_no" autocomplete="off">'); 
-       clonedRow.find('.mfdt').html('<input type="text" size="12" id="bthmfg_'+btno+'" class="mfg-date" data-language="en" name="mfg_date" readonly autocomplete="off">');
-       clonedRow.find('.exdt').html('<input type="text" size="12" id="bthexp_'+btno+'" class="exp-date" data-language="en" name="exp_date" readonly  autocomplete="off">');
-       clonedRow.find('.bqty').html('<input type="text" size="8" id="bthqty_'+btno+'" class="bth-qty" name="qty" autocomplete="off">');
-       clonedRow.find('.del').html('<button class="btn btn-danger btn-xs funRemove" data-id="'+btno+'" data-no="'+btno+'"><i class="fa fa-fw fa-times-circle"></i></button>');
-       
-       table.append(clonedRow);
-       
-       clonedRow.find($('.mfg-date')).datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
-       clonedRow.find($('.exp-date')).datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
-    });
-    
-	$(document).on('click', '.batch-add', function(e) { 
-       
-       var res = this.id.split('_');
-	   var n = res[1];
-	   
-       var batch = $('#batchNos_'+n).val(); 
-       var mfgdate = $('#mfgDates_'+n).val(); 
-       var expdate = $('#expDates_'+n).val(); 
-       var btqty = $('#qtyBatchs_'+n).val(); 
-       var ids = $('#batchIds_'+n).val(); 
-       var batchurl = "{{ url('itemmaster/batch-view') }}";
-       
-       if(batch!='') {
-    	   var vwUrl = batchurl+'?batch='+batch+'&mfg_date='+mfgdate+'&exp_date='+expdate+'&qty='+btqty+'&act=add&no='+n; 
-    	   $('#batchData').load(vwUrl, function(result) {
-    		  $('#myModal').modal({show:true}); 
-    	   });
-       } else {
-           $('#batchData').html(`<div class="row">
-                                    <table class="table horizontal_table" id="batchTable">
-                                        <thead>
-                                        <tr>
-                                            <th>Batch No</th>
-                                            <th>Mfg. Date</th>
-                                            <th>Exp. Date</th>
-                                            <th>Qty. <input type="hidden" id="row_no" value="${n}"></th>
-                                            <th><button class="btn btn-success btn-xs funAddBacthRow" data-id="1" data-no="1"><i class="fa fa-fw fa-plus-circle"></i></button></th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td class="btno"><input type="text" size="10" id="bthno_1" class="bno" name="batch_no" autocomplete="off"></td>
-                                            <td class="mfdt"><input type="text" size="12" id="bthmfg_1" name="mfg_date" readonly data-language='en' class="mfg-date" autocomplete="off"></td>
-                                            <td class="exdt"><input type="text" size="12" id="bthexp_1" name="exp_date" readonly data-language='en' class="exp-date" autocomplete="off"></td>
-                                            <td class="bqty"><input type="text" size="8" id="bthqty_1" name="qty" class="bth-qty" autocomplete="off"></td>
-                                            <td class="del"></td> 
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                </div>`);
-                                
-                                $('.mfg-date').datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
-                                $('.exp-date').datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
-       }
-    });
-    
-    
-    var remId = '';
-    $(document).on('click', '.funRemove', function(e)  { 
-    e.preventDefault();
-    var rowNo = $('#row_no').val();
-      
-    remId = $('#batchRem_'+rowNo).val();
-    $('#batchRem_'+rowNo).val( (remId=='')?$('#bthid_'+$(this).attr("data-id")).val():remId+','+$('#bthid_'+$(this).attr("data-id")).val() );
-
-      
-      var remBno = $('#bthno_'+$(this).attr("data-id")).val();
-      bthArr = bthArr.filter(item => item !== remBno);
-
-      $(this).closest('tr').remove();
-    });
-    
-    
-    $(document).on('click', '.saveBatch', function(e)  { 
-       e.preventDefault();
-       
-       var rowNo = $('#row_no').val();
-       var is_batch = true; 
-       var batchNo = '';
-       var mfgDate = '';
-       var expDate = '';
-       var qtyBatch = '';
-       var totalQty = parseFloat(0);
-       
-       $('.bno').each(function() { 
-    	  var res = this.id.split('_');
-    	  var n = res[1];
-    	  if($('#bthno_'+n).val()=='')
-    	    is_batch = false;
-    	  else
-    	    batchNo = (batchNo=='')?$('#bthno_'+n).val():batchNo+','+$('#bthno_'+n).val();
-    	    
-    	    bthArr.push($('#bthno_'+n).val());
-    	    uniqueBtharr = bthArr.filter((value, index, self) => self.indexOf(value) === index);
-
-    	});
-    	
-       var is_mfdate = true;
-       $('.mfg-date').each(function() { 
-    	  var res = this.id.split('_');
-    	  var n = res[1];
-    	  if($('#bthmfg_'+n).val()=='')
-    	    is_mfdate = false;
-    	  else
-    	    mfgDate = (mfgDate=='')?$('#bthmfg_'+n).val():mfgDate+','+$('#bthmfg_'+n).val();
-    	});
-    	
-       var is_exdate = true;
-       $('.exp-date').each(function() { 
-    	  var res = this.id.split('_');
-    	  var n = res[1];
-    	  if($('#bthexp_'+n).val()=='')
-    	    is_exdate = false;
-    	  else
-    	    expDate = (expDate=='')?$('#bthexp_'+n).val():expDate+','+$('#bthexp_'+n).val();
-    	});
-    	
-       var is_qty = true;
-       $('.bth-qty').each(function() { 
-    	  var res = this.id.split('_');
-    	  var n = res[1];
-    	  if($('#bthqty_'+n).val()=='')
-    	    is_qty = false;
-    	  else {
-    	    qtyBatch = (qtyBatch=='')?$('#bthqty_'+n).val():qtyBatch+','+$('#bthqty_'+n).val();
-    	    totalQty += parseFloat($('#bthqty_'+n).val());
-    	  }
-    	});
-    	
-      if(is_batch==false || is_mfdate==false || is_exdate==false || is_qty==false) {
-        alert('All the batch entries are required!');
-        return false;
-      }
-      
-      if(is_batch==true || is_mfdate==true || is_exdate==true || is_qty==true) {
-          
-          //JUL25
-           var fmla = $('#packing_'+rowNo).val();
-           if(fmla!=1) {
-              var res = fmla.split('-');
-        	  var pkn = res[0];
-        	  var pkng = res[1]
-        	  
-        	  totalQty = totalQty / (pkn * pkng);
-           } else {
-               totalQty = totalQty*fmla;
-           }
-           //....
-           
-          $('#batchNos_'+rowNo).val(batchNo);
-          $('#mfgDates_'+rowNo).val(mfgDate);
-          $('#expDates_'+rowNo).val(expDate);
-          $('#qtyBatchs_'+rowNo).val(qtyBatch);
-          $('#itmqty_'+rowNo).val(totalQty);
-          var table = $('#batchTable');
-          table.find('input').val('');
-          $('#batch_modal').modal('hide');
-      }
-        $('#frmPurchaseInvoice').bootstrapValidator('revalidateField', 'batchNos[]');
-       // console.log('r2 '+uniqueBtharr)
-    });
-    
-    
-    $(document).on('blur', '.bno', function(e)  { 
-    
-        var res = this.id.split('_');
-    	var curid = res[1];
-        var curNo = $(this).val();
-        
-        
-    	 $.each(uniqueBtharr, function(index, bhno) {
-            
-            if(curNo==bhno) {
-                alert('Batch No is duplicate!');
-    			$('#bthno_'+curid).val('');
-    		}
-    		
-        });
-
-        $('.bno').each(function() {
-    		var r = this.id.split('_');
-    		var runid = r[1];
-    		var runNo = $('#bthno_'+runid).val();
-    		if(curNo==runNo && curid != runid) {
-    			alert('Batch No is duplicate!');
-    			$('#bthno_'+curid).val('');
-    		} 
-    	});
-    	
-    	if(curNo!='') {
-        	$.ajax({
-        		url: "{{ url('itemmaster/check_batchno/') }}",
-        		type: 'get',
-        		data: 'batch_no='+curNo+'&id=0',
-        		success: function(data) { 
-        			console.log(data)
-        			if(data==1) {
-        			    alert('Batch No already exist!');
-        			    $('#bthno_'+curid).val('');
-        			    return false;
-        			}
-        			
-        		}
-        	}); 
-    	}
-    });
-    
-    function parseDMY(dateStr) {
-        var parts = dateStr.split("-");
-        return new Date(parts[2], parts[1] - 1, parts[0]);
-    }
-        
-    $(document).on('blur', '.exp-date', function(e)  {  
-        var res = this.id.split('_');
-    	var n = res[1];
-        var mfg_date = $('#bthmfg_'+n).val();
-        var exp_date = $(this).val(); 
-        
-        if(parseDMY(exp_date) <= parseDMY(mfg_date)) {
-           alert('Exp. date should be greater than Mfg. date!');
-           $('#bthexp_'+n).val('');
-           return false;
-        }
-    });
-    
 	
 });
 

@@ -66,13 +66,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Return
                         </h3>
                         <div class="pull-right">
-							@can('pr-create')
+							@permission('pr-create')
                              <a href="{{ url('purchase_return/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endcan
+							@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -241,10 +241,10 @@ $(function() {
 		{ "data": "invoice_no" },
 		{ "data": "supplier" },
 		{ "data": "net_amount" },
-		@can('sr-edit'){ "data": "edit","bSortable": false },@endcan
-		@can('sr-edit'){ "data": "viewonly","bSortable": false },@endcan
-		@can('sr-print'){ "data": "print","bSortable": false },@endcan
-		@can('sr-delete'){ "data": "delete","bSortable": false },@endcan
+		@permission('sr-edit'){ "data": "edit","bSortable": false },@endpermission
+		@permission('sr-edit'){ "data": "viewonly","bSortable": false },@endpermission
+		@permission('sr-print'){ "data": "print","bSortable": false },@endpermission
+		@permission('sr-delete'){ "data": "delete","bSortable": false },@endpermission
 	]	
 	  
 	});

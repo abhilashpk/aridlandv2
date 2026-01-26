@@ -41,13 +41,17 @@ class LocationTransferController extends Controller
 	public function add() {
 
 		$data = array();
-		$location = $this->location->locationListAll();
+		$location = $this->location->locationList();
+		//$loc_from = $this->location->locationFrom();
+		//$loc_to = $this->location->locationTo();
 		$res = $this->voucherno->getVoucherNo('LT');
 		$vno = $res->no;
 		$lastid = DB::table('location_transfer')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 		return view('body.locationtransfer.add')
+					//->withLocfrom($loc_from)
+					//->withLocto($loc_to)
 					->withLocation($location)
-					->withVoucherno($vno)
+					->withVoucherno($res)
 					->withPrintid($lastid)
 					->withData($data);
 	}
@@ -83,10 +87,14 @@ class LocationTransferController extends Controller
 
 		$data = array();
 		$location = $this->location->locationList();
+		//$loc_from = $this->location->locationFrom();
+		//$loc_to = $this->location->locationTo();
 		$res = $this->voucherno->getVoucherNo('LT');
 		$orderrow = $this->location_transfer->findRow($id);
 		$orditems = $this->location_transfer->getItems($id); // echo '<pre>';print_r($orditems);exit;
 		return view('body.locationtransfer.edit')
+					//->withLocfrom($loc_from)
+					//->withLocto($loc_to)
 					->withLocation($location)
 					->withOrderrow($orderrow)
 					->withOrditems($orditems)
@@ -95,7 +103,7 @@ class LocationTransferController extends Controller
 		
 	}
 	
-	public function update($id, Request $request)
+	public function update(Request $request, $id)
 	{
 		//echo '<pre>';print_r($request->all());exit;
 		if($this->location_transfer->update($id, $request->all()))
@@ -118,4 +126,3 @@ class LocationTransferController extends Controller
 		
 	}
 }
-

@@ -76,6 +76,9 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		$this->purchase_invoice->document_no = isset($attributes['document_no'])?$attributes['document_no']:'';
 		$this->purchase_invoice->duedays = (isset($attributes['duedays']))?$attributes['duedays']:'';
 		$this->purchase_invoice->due_date = (isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):'';
+		$this->purchase_invoice->prefix = isset($attributes['prefix'])?$attributes['prefix']:'';
+		$this->purchase_invoice->is_intercompany = isset($attributes['is_intercompany'])?$attributes['is_intercompany']:'';
+		$this->purchase_invoice->doc_nos = isset($attributes['document'])?$attributes['document']:'';
 
 		$this->purchase_invoice->is_editable  = (isset($attributes['document_id']) && $attributes['document_id']!='')?2:0; //APR25
 		
@@ -122,7 +125,10 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				$tax        = 0;
 				$item_total = ($attributes['cost'][$key] * $attributes['quantity'][$key] * $attributes['currency_rate']) - (int)$attributes['line_discount'][$key];
 				$tax_total  = round($tax * $attributes['quantity'][$key] * $attributes['currency_rate'],2);
-				
+				if( isset($attributes['other_cost']) && $other_cost > 0 ) {//MY27
+					$othercost_unit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
+					$netcost_unit = $othercost_unit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+				}
 			} else if($attributes['tax_include'][$key]==1){
 				
 				$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key] * $attributes['currency_rate'];
@@ -275,7 +281,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										->get();
 										
 		//$itmcost = $itmqty = 0;
-		$itmcost = (isset($attributes['is_fc']))? ($attributes['quantity'][$key] * $attributes['item_price'][$key] * $attributes['currency_rate']) : $attributes['quantity'][$key] * $attributes['item_price'][$key];
+		$itmcost = (isset($attributes['is_fc']))? ($attributes['quantity'][$key] * $attributes['cost'][$key] * $attributes['currency_rate']) : $attributes['quantity'][$key] * $attributes['cost'][$key];
 		$itmqty = $attributes['quantity'][$key];
 		foreach($itmlogs as $log) {
 			$itmcost += ($log->cur_quantity * $log->pur_cost);
@@ -308,6 +314,14 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						  'pur_count' 		   => DB::raw('pur_count + 1'),
 						  'cost_avg'		   => $cost_avg
 						]);
+			DB::table('itemstock_department')
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->where('department_id',env('DEPARTMENT_ID'))
+				->where('unit_id', $attributes['unit_id'][$key])
+				->update(['last_purchase_cost' => $cost + $other_cost,
+						  'pur_count' 		   => DB::raw('pur_count + 1'),
+						  'cost_avg'		   => $cost_avg
+						]);
 						
 		//UPDATING ROWMATERIAL COST...
 		$itemlog = DB::table('mfg_items')->where('subitem_id', $attributes['item_id'][$key])->select('id','quantity')->get();
@@ -327,7 +341,8 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	{	
 		$pid = $attributes['purchase_invoice_id'];
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
-										->where('status', 1)
+										->where('department_id',env('DEPARTMENT_ID'))
+																				->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
 										->where('deleted_at','0000-00-00 00:00:00')
@@ -357,6 +372,13 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				->update(['last_purchase_cost' => $cost + $other_cost,
 						  'cost_avg'		   => $cost_avg
 						]);
+				DB::table('itemstock_department')
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->where('department_id',env('DEPARTMENT_ID'))
+				->where('unit_id', $attributes['unit_id'][$key])
+				->update(['last_purchase_cost' => $cost + $other_cost,
+						  'cost_avg'		   => $cost_avg
+						]);	
 		
 		//UPDATING ROWMATERIAL COST...
 		$itemlog = DB::table('mfg_items')->where('subitem_id', $attributes['item_id'][$key])->select('id','quantity')->get();
@@ -395,12 +417,16 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			}*/
 			
 			//COST AVG Updating on DELETE section....
-			DB::table('item_log')->where('document_id', $id)->where('document_type','PI')->where('quantity', $item->quantity)
+			DB::table('item_log')->where('document_id', $id)->where('department_id',env('DEPARTMENT_ID'))->where('document_type','PI')->where('quantity', $item->quantity)
 			                     ->where('item_row_id',$item->id)
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
 								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
+								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);
+
+			DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $item->item_id)
+			                                  ->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);
 									  
 			/* DB::table('item_location')->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)
@@ -474,7 +500,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										'reference_from'	=> $attributes['reference_no'],
 										'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 										'is_fc'				=> isset($attributes['is_fc'])?1:0,
-										'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+										'department_id'		=> env('DEPARTMENT_ID'),
 										'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):'',
 										'version_no'		=> $attributes['version_no']
 										]);
@@ -563,7 +589,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								'fc_amount'			=> $fc_amount,
 								'other_type'		=> ($amount_type=='OC' || $amount_type=='VATOC')?'OC':'',
 								'is_fc'				=> $is_fc,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'),
 								'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):'',
 								'version_no'		=> $attributes['version_no']
 							]);
@@ -684,7 +710,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	
 	private function setPurchaseLog($attributes, $key, $document_id, $cost_avg, $action,$other_cost, $item=null)
 	{
-		$irow = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
+		$irow = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
 		//JUN25
 		/*if(($attributes['unit_id'][$key]==1||$attributes['unit_id'][$key]==2)) {
 			$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']*$attributes['packing'][$key]):($attributes['cost'][$key]*$attributes['packing'][$key]);
@@ -695,8 +721,8 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		}*/	
 		
 		//JUN25
-		$unit_cost = (isset($attributes['is_fc']))?($attributes['item_price'][$key]*$attributes['currency_rate']):($attributes['item_price'][$key]);
-		$pur_cost = (isset($attributes['is_fc']))?($attributes['item_price'][$key]*$attributes['currency_rate'])+$other_cost:($attributes['item_price'][$key])+$other_cost;
+		$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']):($attributes['cost'][$key]);
+		$pur_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate'])+$other_cost:($attributes['cost'][$key])+$other_cost;
 		
 		$quantity = $attributes['quantity'][$key];
 		
@@ -728,6 +754,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			$logid = DB::table('item_log')->insertGetId([
 							 'document_type' => 'PI',
 							 'document_id'   => $document_id,
+							 'department_id' =>env('DEPARTMENT_ID'),
 							 'item_id' 	  => $attributes['item_id'][$key],
 							 'unit_id'    => $attributes['unit_id'][$key],
 							 'quantity'   => $quantity, //JUN25 $attributes['quantity'][$key] * $attributes['packing'][$key],
@@ -750,7 +777,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		} else if($action=='update') {
 			
 			//MAY25
-		    $slog = DB::table('item_log')->where('document_type','PI')->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
+		    $slog = DB::table('item_log')->where('document_type','PI')->where('department_id',env('DEPARTMENT_ID'))->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
 		                ->select('id')->first();
 			$logid = $slog->id;
 			
@@ -758,6 +785,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			//-----------ITEM LOG----------------							
 			DB::table('item_log')->where('document_type','PI')
 							->where('document_id', $document_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('item_id', $item->item_id)
 							->where('unit_id', $item->unit_id)
 							->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
@@ -791,6 +819,19 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						   'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
 							
 		}
+		$items = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+		                              ->where('itemmaster_id', $attributes['item_id'][$key])
+									  ->where('is_baseqty', 1)->first();
+									  
+		if($items) {
+			$qty = $attributes['quantity'][$key];
+			$baseqty = ($qty * $attributes['packing'][$key]);
+			DB::table('itemstock_department')
+				->where('id', $items->id)->where('department_id',env('DEPARTMENT_ID'))
+				->update([ 'cur_quantity' => $items->cur_quantity + $baseqty,
+						   'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
+							
+		}
 									  
 		return true;
 	}
@@ -801,6 +842,10 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		if($attributes['actual_quantity'][$key] != $attributes['quantity'][$key]) {
 			
 			$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
+										  ->where('is_baseqty', 1)->first();
+
+			$items = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])
+			                                          ->where('department_id',env('DEPARTMENT_ID'))
 										  ->where('is_baseqty', 1)->first();
 										  
 			if($item) {
@@ -818,6 +863,28 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				
 				DB::table('item_unit')
 					->where('itemmaster_id',  $attributes['item_id'][$key])
+					->where('is_baseqty',1)
+					->update([ 'cur_quantity' => $cur_quantity,
+								'received_qty' => DB::raw('received_qty + '.$received_qty) ]);
+					
+			}
+
+			if($items) {
+				$qty = $attributes['quantity'][$key];
+				//$packing = ($item->is_baseqty==1)?1:$item->packing;
+				$baseqty = ($qty * $attributes['packing'][$key]);
+				$diffqty = ($attributes['actual_quantity'][$key] * $attributes['packing'][$key]) - ($qty * $attributes['packing'][$key]);
+				$received_qty = $diffqty * -1;
+				
+				if($attributes['actual_quantity'][$key] < $qty) {
+					$cur_quantity = $items->cur_quantity + $received_qty;
+				} else { 
+					$cur_quantity = $items->cur_quantity - $diffqty;
+				}
+				
+				DB::table('itemstock_department')
+					->where('itemmaster_id',  $attributes['item_id'][$key])
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('is_baseqty',1)
 					->update([ 'cur_quantity' => $cur_quantity,
 								'received_qty' => DB::raw('received_qty + '.$received_qty) ]);
@@ -915,6 +982,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						$trfor = ($amount_type=='VATOC')?$attributes['oc_id'][$key]:0; //4KIM
 						DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('account_master_id', $vatrow->collection_account) //CHNG tax_code
 							->where('transaction_type' , 'Dr')
 							->where('voucher_type', 'PI')					
@@ -937,7 +1005,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										'reference_from'	=> $attributes['reference_no'],
 										'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 										'is_fc'				=> isset($attributes['is_fc'])?1:0,
-										'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+										'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:'',
 										'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 										]);
 										
@@ -958,7 +1026,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 										'reference_from'	=> $attributes['reference_no'],
 										'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
-										'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+										'department_id'		=> env('DEPARTMENT_ID'),
 											'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 										]);
 					
@@ -974,6 +1042,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						$trfor = ($amount_type=='VATOC')?$attributes['oc_id'][$key]:0; //4KIM
 						DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('account_master_id', $vatrow->collection_account) 
 							->where('transaction_type' , 'Dr')
 							->where('voucher_type', 'PI')					
@@ -989,6 +1058,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						//Update vat input import as Vat input a/c ...
 						DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('account_master_id', $vatrow->vatinput_import) //CHNG
 							->where('transaction_type' , 'Dr')
 							->where('voucher_type', 'PI')					
@@ -998,6 +1068,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						//Remove vatoutput acount		
 						DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('account_master_id', $vatrow->vatoutput_import) //CHNG
 							->where('transaction_type' , 'Cr')
 							->where('voucher_type', 'PI')					
@@ -1027,7 +1098,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+											'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 												'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 											]);
 											
@@ -1052,8 +1123,8 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
-												'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
+											'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
+											'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 											]);
 											
 							$dr_acnt_id = $account_id = $vatrow->vatinput_import;
@@ -1075,7 +1146,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+											'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:'',
 												'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 											]);
 											
@@ -1086,6 +1157,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							//Update Vat input a/c as vat input import a/c...
 							DB::table('account_transaction')
 								->where('voucher_type_id', $voucher_id)
+								->where('department_id',env('DEPARTMENT_ID'))
 								->where('account_master_id', $vatrow->collection_account) //CHNG tax_code
 								->where('transaction_type' , 'Dr')
 								->where('voucher_type', 'PI')					
@@ -1109,7 +1181,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+											'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 												'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 											]);
 											
@@ -1121,11 +1193,12 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							//Update Vat input a/c as vat a/c...
 							DB::table('account_transaction')
 								->where('voucher_type_id', $voucher_id)
+								->where('department_id',env('DEPARTMENT_ID'))
 								->where('account_master_id', $vatrow->vatinput_import) //CHNG tax_code
 								->where('transaction_type' , 'Dr')
 								->where('voucher_type', 'PI')					
 								->where('tr_for', 0)
-									->update(['account_master_id' => $vatrow->collection_account, 'department_id' => (isset($attributes['department_id']))?$attributes['department_id']:'']);
+									->update(['account_master_id' => $vatrow->collection_account, 'department_id' => env('DEPARTMENT_ID')]);
 									
 							$dr_acnt_id = $account_id = $vatrow->collection_account;
 							
@@ -1133,6 +1206,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							//Remove vatoutput acount		
 							DB::table('account_transaction')
 								->where('voucher_type_id', $voucher_id)
+								->where('department_id',env('DEPARTMENT_ID'))
 								->where('account_master_id', $vatrow->vatoutput_import) //CHNG
 								->where('transaction_type' , 'Cr')
 								->where('voucher_type', 'PI')					
@@ -1161,6 +1235,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				if($attributes['supplier_id'] != $attributes['old_supplier_id']) {
 					DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('voucher_type', 'PI')
 							->where('account_master_id', $attributes['old_supplier_id'])
 							->update( ['account_master_id' => $attributes['supplier_id'] ]);
@@ -1172,9 +1247,10 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				if($attributes['account_master_id'] != $attributes['old_account_master_id']) {
 					DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('voucher_type', 'PI')
 							->where('account_master_id', $attributes['old_account_master_id'])
-							->update( ['account_master_id' => $attributes['account_master_id'], 'department_id' => (isset($attributes['department_id']))?$attributes['department_id']:'' ]);
+							->update( ['account_master_id' => $attributes['account_master_id'], 'department_id' => env('DEPARTMENT_ID') ]);
 							
 					$this->objUtility->tallyClosingBalance($attributes['old_supplier_id']);
 				}
@@ -1219,7 +1295,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 									'reference_from'	=> $attributes['reference_no'],
 									'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 									'is_fc'				=> isset($attributes['is_fc'])?1:0,
-									'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+									'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:'',
 										'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 									]);
 									
@@ -1249,6 +1325,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			
 			DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $cur_account_id) //CHNG
 					->where('voucher_type', 'PI')					
 					->where('tr_for', $trfor)
@@ -1262,7 +1339,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								'reference_from'	=> ($amount_type=='OC' || $amount_type=='VATOC')?$attributes['oc_reference'][$key]:$attributes['reference_no'],
 								'fc_amount'			=> $fc_amount,
 								'is_fc'				=> $is_fc,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:'',
 									'due_date'          =>(isset($attributes['due_date']))?date('Y-m-d', strtotime($attributes['due_date'])):''
 								]);
 								
@@ -1274,6 +1351,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				//Remove vat account...
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $vatrow->collection_account)
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'PI')					
@@ -1285,6 +1363,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				//Remove vatoutput acount		
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $vatrow->vatoutput_import)
 					->where('transaction_type' , 'Cr')
 					->where('voucher_type', 'PI')					
@@ -1296,6 +1375,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				//Remove vatinput acount		
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $vatrow->vatinput_import)
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'PI')					
@@ -1312,6 +1392,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				//Update Vat input a/c as vat input import a/c...
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $vatrow->collection_account) //CHNG tax_code
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'PI')					
@@ -1340,6 +1421,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				//Remove DISCOUNT....		
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $cr_acnt_id) //CHNG
 					->where('transaction_type' , 'Cr')
 					->where('voucher_type', 'PI')					
@@ -1410,23 +1492,19 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		 try {
 			
 			$attributes['version_no'] = 1;
-			Session::put('PI_deptid', isset($attributes['department_id'])?$attributes['department_id']:null);
+			Session::put('PI_deptid', env('DEPARTMENT_ID'));
 			Session::put('PI_vchrid', $attributes['voucher_id']);
 			Session::put('PI_purac', $attributes['purchase_account']);
 			Session::put('PI_amid', $attributes['account_master_id']);
 			
 			//VOUCHER NO LOGIC.....................
-			// 2️⃣ Get the highest numeric part from voucher_master
-			$maxNumeric = DB::table('purchase_invoice')
-				->where('deleted_at', '0000-00-00 00:0:00')
-				//->where('department_id', $departmentId)
-				->where('status', 1)
-				->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
-				->value('max_no');
+			$dept = env('DEPARTMENT_ID');
+				 // ⿢ Get the highest numeric part from voucher_master
+				$qry = DB::table('purchase_invoice')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id',env('DEPARTMENT_ID'));
+
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 			
-			$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-			
-			$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
+			$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 			//VOUCHER NO LOGIC.....................
 			
 			//exit;
@@ -1451,16 +1529,13 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
 							strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$maxNumeric = DB::table('purchase_invoice')
-								->where('deleted_at', '0000-00-00 00:0:00')
-								//->where('department_id', $departmentId)
-								->where('status', 1)
-								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
-								->value('max_no');
-							
-							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
+							$dept = env('DEPARTMENT_ID');
+								// ⿢ Get the highest numeric part from voucher_master
+								$qry = DB::table('purchase_invoice')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+
+								$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+								
+								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -1524,6 +1599,11 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						
 						$purchaseInvoiceItem->status = 1;
 						$inv_item = $this->purchase_invoice->doItem()->save($purchaseInvoiceItem);
+						$zero = DB::table('purchase_invoice_item')->where('id', $inv_item->id)->where('unit_id',0)->first();
+					        if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('purchase_invoice_item')->where('id', $inv_item->id)->update(['unit_id' => $uid->unit_id]);
+						    }
 						
 						//update item transfer status...
 						$this->setTransferStatusItem($attributes, $key, $attributes['document_type'],'add');
@@ -1565,15 +1645,16 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                         		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                         		}
                         		
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key]) *******COMMENTED AS PER MULTI UNIT ISSUE
 													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 								if($qtys) { //NOV24
 								    if($attributes['document_type']!='SDO')
-								    	DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+								    	DB::table('item_location')->where('department_id', env('DEPARTMENT_ID'))->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 								} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $locid[$key][$lk];
+									$itemLocation->department_id = env('DEPARTMENT_ID');
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty;
@@ -1583,6 +1664,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								
 								$itemLocationPI = new ItemLocationPI();
 								$itemLocationPI->location_id = $attributes['locid'][$key][$lk];
+								$itemLocationPI->department_id = env('DEPARTMENT_ID');
 								$itemLocationPI->item_id = $value;
 								$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 								$itemLocationPI->quantity = $lcqty;  
@@ -1598,7 +1680,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					//Item default location add...
 					if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 							
-						$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
+						$qtys = DB::table('item_location')->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 														  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 														  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 														  
@@ -1613,10 +1695,11 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                 		}
 						
 						if($qtys) {
-							DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+							DB::table('item_location')->where('department_id', env('DEPARTMENT_ID'))->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 						} else {
 								$itemLocation = new ItemLocation();
 								$itemLocation->location_id = $attributes['default_location'];
+								$itemLocation->department_id = env('DEPARTMENT_ID');
 								$itemLocation->item_id = $value;
 								$itemLocation->unit_id = $attributes['unit_id'][$key];
 								$itemLocation->quantity = $lcqty;
@@ -1626,6 +1709,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 						$itemLocationPI = new ItemLocationPI();
 						$itemLocationPI->location_id = $attributes['default_location'];
+						$itemLocationPI->department_id = env('DEPARTMENT_ID');
 						$itemLocationPI->item_id = $value;
 						$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 						$itemLocationPI->quantity = $lcqty;
@@ -1640,6 +1724,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					//SALES STOCK ENTRY...
 					if(isset($attributes['sales_type']) && $attributes['sales_type']=='ltol') {
 						DB::table('item_location')->where('location_id', $attributes['sales_location'])
+						                           ->where('department_id', env('DEPARTMENT_ID'))
 												  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
 												  ->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 					}
@@ -1863,7 +1948,12 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								$tax        = 0;
 								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key] * $attributes['currency_rate']) - (int)$attributes['line_discount'][$key];
 								$taxtotal  = round($tax * $attributes['quantity'][$key] * $attributes['currency_rate'],2);
-								
+								$othercostunit = 0;
+								if(isset($attributes['other_cost'])) {
+									$othercostunit = (($other_cost * $attributes['cost'][$key]) / $attributes['total_fc']) * $attributes['currency_rate'];
+									$netcostunit = $othercostunit + ($attributes['cost'][$key] * $attributes['currency_rate']);
+							
+								}
 							} else if($attributes['tax_include'][$key]==1) {
 								
 								$ln_total   = $attributes['cost'][$key] * $attributes['quantity'][$key] * $attributes['currency_rate'];
@@ -2007,6 +2097,11 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						$itemsobj = (object)['item_id' => $exi_item_id, 'unit_id' => $exi_unit_id]; //DEC 23 UPDATE...
 						
 						$purchaseInvoiceItem->update($items);
+						$zero = DB::table('purchase_invoice_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+						if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('purchase_invoice_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+						}
 						
 						$this->setTransferStatusItem($attributes, $key, $attributes['document_type'],'edit');
 						
@@ -2067,8 +2162,8 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                         		   if($pkgar[0] > 0)
                         		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                         		}
-								$edit = DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',0)->first();//NOV24
-								$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+								$edit = DB::table('item_location_pi')->where('department_id', env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',0)->first();//NOV24
+								$idloc = DB::table('item_location')->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 															  //echo '<pre>';print_r($edit);exit;
@@ -2077,22 +2172,23 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 									
 									if($edit->quantity < $lcqty) {
 										$balqty = $lcqty - $edit->quantity;
-										DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
+										DB::table('item_location')->where('id', $idloc->id)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$balqty)]);
 									} else {
 										$balqty = $edit->quantity - $lcqty;
-										DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+										DB::table('item_location')->where('id', $idloc->id)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$balqty)]);
 									}
 									
 								} else {
 								    
 									//NOV24
 									if($attributes['document_type']!='SDO')
-										DB::table('item_location')->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+										DB::table('item_location')->where('department_id', env('DEPARTMENT_ID'))->where('id', $idloc->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 
-									$sdolog = DB::table('item_location_pi')->where('item_id',$value)->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_sdo',0)->first();
+									$sdolog = DB::table('item_location_pi')->where('department_id', env('DEPARTMENT_ID'))->where('item_id',$value)->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_sdo',0)->first();
 									
 									$itemLocationPI = new ItemLocationPI();
 									$itemLocationPI->location_id = $attributes['locid'][$key][$lk];
+									$itemLocationPI->department_id = env('DEPARTMENT_ID');
 									$itemLocationPI->item_id = $value;
 									$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 									$itemLocationPI->quantity = $lcqty;
@@ -2103,11 +2199,11 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								}
 								
 								//NOV24
-								DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => '0000-00-00 00:00:00','qty_entry' => $lq]);
+								DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => '0000-00-00 00:00:00','qty_entry' => $lq]);
 								
 
 							} else { //NOV24
-								DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => isset($lcqty)?$lcqty:'','status' => 0, 'deleted_at' => date('Y-m-d h:i:s'),'qty_entry' => $lq]);
+								DB::table('item_location_pi')->where('department_id', env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => isset($lcqty)?$lcqty:'','status' => 0, 'deleted_at' => date('Y-m-d h:i:s'),'qty_entry' => $lq]);
 							}
 						}
 					}
@@ -2115,10 +2211,9 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					//Item default location add...
 					if(($attributes['location_id']!='') && ($updated == false)) {
 							
-							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
+							$qtys = DB::table('item_location')->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $attributes['location_id'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
-													          
+													          ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();					          
 							//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 							$lcqty = $attributes['quantity'][$key];
                     		if($attributes['packing'][$key]=="1") 
@@ -2129,9 +2224,10 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                     		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
                     		}
 							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+								DB::table('item_location')->where('id', $qtys->id)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 								DB::table('item_location_pi')->where('invoice_id', $attributes['order_item_id'][$key] )
 															 ->where('location_id', $qtys->location_id)
+															 ->where('department_id', env('DEPARTMENT_ID'))
 															 ->where('item_id', $qtys->item_id)
 															 ->where('unit_id', $qtys->unit_id)
 															 ->update(['quantity' => DB::raw('quantity + '.$lcqty),'qty_entry' =>  DB::raw('quantity + '.$attributes['quantity'][$key])]);
@@ -2139,6 +2235,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 							$itemLocationPI = new ItemLocationPI();
 							$itemLocationPI->location_id = $attributes['location_id'];
+							$itemLocationPI->department_id=env('DEPARTMENT_ID');
 							$itemLocationPI->item_id = $value;
 							$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 							$itemLocationPI->quantity = $lcqty;
@@ -2153,7 +2250,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					    
 					    
 					//BATCH NO ENTRY............
-    				if($attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
+    				if(isset($attributes['batchNos'][$key]) && $attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
     				    
     				    $batchArr = explode(',', $attributes['batchNos'][$key]);
     				    $mfgArr = explode(',', $attributes['mfgDates'][$key]);
@@ -2263,6 +2360,11 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 							$purchaseInvoiceItem->status = 1;
 							$inv_item = $this->purchase_invoice->doItem()->save($purchaseInvoiceItem);
+							$zero = DB::table('purchase_invoice_item')->where('id', $inv_item->id)->where('unit_id',0)->first();
+					        if($zero && $zero->item_id != 0){
+						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+						     DB::table('purchase_invoice_item')->where('id', $inv_item->id)->update(['unit_id' => $uid->unit_id]);
+						    }
 							
 							//UPDATED MAR 1
 							//check whether suppliers DO or not
@@ -2291,15 +2393,16 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                         		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                         		}
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 								if($qtys) { //NOV24
 								    if($attributes['document_type']!='SDO')
-								    	DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+								    	DB::table('item_location')->where('id', $qtys->id)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 								} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $attributes['locid'][$key][$lk];
+									$itemLocation->department_id =env('DEPARTMENT_ID');
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty;
@@ -2309,6 +2412,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								
 								$itemLocationPI = new ItemLocationPI();
 								$itemLocationPI->location_id = $attributes['locid'][$key][$lk];
+								$itemLocationPI->department_id =env('DEPARTMENT_ID');
 								$itemLocationPI->item_id = $value;
 								$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 								$itemLocationPI->quantity = $lcqty;
@@ -2324,7 +2428,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					//Item default location add...
 					if(($attributes['location_id']!='') && ($updated == false)) {
 							
-							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
+							$qtys = DB::table('item_location')->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('location_id', $attributes['location_id'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 													          
@@ -2338,10 +2442,11 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                     		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
                     		}
 							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+								DB::table('item_location')->where('id', $qtys->id)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 							} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $attributes['location_id'];
+									$itemLocation->department_id =env('DEPARTMENT_ID');
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty; //$attributes['quantity'][$key];
@@ -2351,6 +2456,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								
 							$itemLocationPI = new ItemLocationPI();
 							$itemLocationPI->location_id = $attributes['location_id'];
+							$itemLocationPI->department_id =env('DEPARTMENT_ID');
 							$itemLocationPI->item_id = $value;
 							$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 							$itemLocationPI->quantity = $lcqty;
@@ -2365,7 +2471,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					
 					
 					//BATCH NO ENTRY............
-        				if($attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
+        				if(isset($attributes['batchNos'][$key]) & $attributes['batchNos'][$key]!='' && $attributes['mfgDates'][$key]!='' && $attributes['expDates'][$key]!='' && $attributes['qtyBatchs'][$key]!='') {
         				    
         				    $batchArr = explode(',', $attributes['batchNos'][$key]);
         				    $mfgArr = explode(',', $attributes['mfgDates'][$key]);
@@ -2424,11 +2530,11 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					//print_r($itm);exit;
 					$this->updateLastPurchaseCostAndCostAvgonDelete($itm, $attributes['purchase_invoice_id']);
 					
-					$pirow = DB::table('item_location_pi')->where('invoice_id',$row)->where('is_sdo',0)->get();
+					$pirow = DB::table('item_location_pi')->where('department_id', env('DEPARTMENT_ID'))->where('invoice_id',$row)->where('is_sdo',0)->get();
 					foreach($pirow as $prow) {
-						DB::table('item_location_pi')->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+						DB::table('item_location_pi')->where('department_id', env('DEPARTMENT_ID'))->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 						
-						DB::table('item_location')->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+						DB::table('item_location')->where('location_id', $prow->location_id)>where('department_id', env('DEPARTMENT_ID'))->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 									->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 					}
 					
@@ -2458,7 +2564,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				
 				//if($this->purchase_invoice->voucher_date != date('Y-m-d', strtotime($attributes['voucher_date']))) {
 					//VOUCHER DATE UPDATE IN LOG...
-					DB::table('item_log')->where('document_type','PI')->where('document_id',$this->purchase_invoice->id)
+					DB::table('item_log')->where('document_type','PI')->where('department_id',env('DEPARTMENT_ID'))->where('document_id',$this->purchase_invoice->id)
 										 ->update(['voucher_date' => date('Y-m-d', strtotime($attributes['voucher_date'])) ]);
 				//}
 				
@@ -2541,14 +2647,14 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			
 			
 			//UPDATED MAR 30 REMOVE OTHER COST...
-			if($attributes['remove_oc']!='')
+			if(isset($attributes['remove_oc']) && $attributes['remove_oc']!='')
 			{
 				$arrids = explode(',', $attributes['remove_oc']);
 				
 				foreach($arrids as $row) {
 					DB::table('pi_other_cost')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					
-					DB::table('account_transaction')->where('voucher_type', 'PI')->where('voucher_type_id', $this->purchase_invoice->id)
+					DB::table('account_transaction')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type', 'PI')->where('voucher_type_id', $this->purchase_invoice->id)
 								->where('tr_for', $row)->where('other_type','OC')
 								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					
@@ -2639,22 +2745,22 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										
 					DB::table('supplier_do_item')->whereIn('supplier_do_id', $ids)->update(['is_transfer' => 0]);
 					
-					DB::table('item_log')->where('document_type','SDO')->whereIn('document_id',$ids)->update(['status' => 1,'deleted_at' => '0000-00-00 00:00:00']);
+					DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->whereIn('document_id',$ids)->update(['status' => 1,'deleted_at' => '0000-00-00 00:00:00']);
 					
 					//NOV24
 					$doitems = DB::table('purchase_invoice_item')->where('purchase_invoice_id', $id)->select('id','item_id','item_name','quantity','doc_row_id')->get();
 					foreach($doitems as $doitem) {
 					     DB::table('supplier_do_item')->where('supplier_do_id',$this->purchase_invoice->document_id)->where('item_id',$doitem->item_id)->where('id',$doitem->doc_row_id)
 								->update(['balance_quantity' => DB::raw('balance_quantity + '.$doitem->quantity),'is_transfer' => 0 ]);
-						DB::table('item_location_pi')->where('invoice_id',$doitem->id)->where('is_sdo',1)->update(['status'=> 1,'deleted_at'=> '0000-00-00 00:00:00']);
+						DB::table('item_location_pi')->where('department_id', env('DEPARTMENT_ID'))->where('invoice_id',$doitem->id)->where('is_sdo',1)->update(['status'=> 1,'deleted_at'=> '0000-00-00 00:00:00']);
 					}
 					
 					foreach($ids as $idd) {
 				        $dorow = DB::table('item_log')->join('supplier_do_item','supplier_do_item.id','=','item_log.item_row_id')
-				                    ->where('item_log.document_type','SDO')->where('item_log.document_id',$idd)
+				                    ->where('item_log.document_type','SDO')->where('item_log.department_id',env('DEPARTMENT_ID'))->where('item_log.document_id',$idd)
 				                    ->select('item_log.quantity','supplier_do_item.balance_quantity')->first();//supplier_do_item.quantity
 				        if($dorow)
-				            DB::table('item_log')->where('document_type','SDO')->where('document_id',$idd)->update(['quantity' => $dorow->quantity, 'status' => 1,'deleted_at' => '0000-00-00 00:00:00']); //($dorow->balance_quantity > 0)?$dorow->balance_quantity:
+				            DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id',$idd)->update(['quantity' => $dorow->quantity, 'status' => 1,'deleted_at' => '0000-00-00 00:00:00']); //($dorow->balance_quantity > 0)?$dorow->balance_quantity:
 				    }
 				    
 				    
@@ -2682,7 +2788,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			//}
 		
 			//Transaction update....
-			DB::table('account_transaction')->where('voucher_type', 'PI')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+			DB::table('account_transaction')->where('voucher_type', 'PI')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			
 			$this->objUtility->tallyClosingBalance( $this->purchase_invoice->supplier_id );
 			
@@ -2698,12 +2804,12 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			     DB::table('purchase_order_item')->where('purchase_order_id',$this->purchase_invoice->document_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
 								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 2 ]);
 			    
-				$pirow = DB::table('item_location_pi')->where('invoice_id',$item->id)->where('is_sdo',0)->get();
+				$pirow = DB::table('item_location_pi')>where('department_id', env('DEPARTMENT_ID'))->where('invoice_id',$item->id)->where('is_sdo',0)->get();
 				
 				foreach($pirow as $prow) {
-					DB::table('item_location_pi')->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+					DB::table('item_location_pi')->where('id',$prow->id)>where('department_id', env('DEPARTMENT_ID'))->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 					
-					DB::table('item_location')->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+					DB::table('item_location')->where('location_id', $prow->location_id)>where('department_id', env('DEPARTMENT_ID'))->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 								->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 				}
 			}
@@ -2821,7 +2927,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	
 	public function getPIdata($did=null)
 	{
-		$query = $this->purchase_invoice->where('purchase_invoice.status',1);
+		$query = $this->purchase_invoice->where('purchase_invoice.status',1)->where('purchase_invoice.department_id',env('DEPARTMENT_ID'));
 		if($did)
 			$query->where('purchase_invoice.department_id', $did);
 				
@@ -2846,14 +2952,19 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					    })
 					    ->join('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on('iu.unit_id','=','poi.unit_id');//JUN25
+						 // $join->on('iu.unit_id','=','poi.unit_id');//JUN25
+					    })
+						->join('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
 					    })
     					->join('units AS u', function($join){
     					   $join->on('u.id','=','poi.unit_id');
     					}) 
-					  ->where('poi.status',1)
+						->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
+						->where('poi.status',1)
 					  ->where('poi.deleted_at','0000-00-00 00:00:00')
-					  ->select('poi.*','u.unit_name','iu.is_baseqty','iu.packing','iu.pkno')
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->select('poi.*','u.unit_name','isd.is_baseqty','isd.packing','isd.pkno')
 					  ->groupBy('poi.id')
 					  ->orderBy('poi.id','ASC')
 					  ->get();
@@ -3047,7 +3158,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	
 	public function findPOdata($id)
 	{
-		$query = $this->purchase_invoice->where('purchase_invoice.id', $id);
+		$query = $this->purchase_invoice->where('purchase_invoice.id', $id)->where('purchase_invoice.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_invoice.supplier_id');
 						} )
@@ -3074,7 +3185,10 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					    })
 					    ->join('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on('iu.unit_id','=','poi.unit_id');//JUN25
+						 // $join->on('iu.unit_id','=','poi.unit_id');//JUN25
+					    })
+						->join('itemstock_department AS isd', function($join){
+						  $join->on('isd.itemmaster_id','=','im.id');
 					    })
     					->join('units AS u', function($join){
     					   $join->on('u.id','=','poi.unit_id');
@@ -3082,8 +3196,10 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					  ->leftjoin('supplier_do_item AS ci', function($join){
 						  $join->on('ci.id','=','poi.doc_row_id');
 					  })
+					  ->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.status',1)
 					  ->where('poi.deleted_at','0000-00-00 00:00:00')
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.packing','iu.pkno','ci.balance_quantity as so_balance_quantity')
 					  ->orderBY('poi.id')
 					  ->groupBY('poi.id')
@@ -3220,6 +3336,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							->leftJoin('jobmaster AS J', function($join) {
 								$join->on('J.id','=','purchase_invoice.job_id');
 							})
+							->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
 							->where('POI.status',1);
 
 					if($attributes['isimport']==1)
@@ -3235,14 +3352,12 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					if(isset($attributes['supplier_id'])&& $attributes['supplier_id']!=''){
 							$query->where('purchase_invoice.supplier_id', $attributes['supplier_id']);	
 					}
-					if($department)
-						$query->where('purchase_invoice.department_id', $department);
+					
 					
 					if(isset($attributes['job_id']) && $attributes['job_id'] !='' )
 							$query->whereIn('purchase_invoice.job_id', $attributes['job_id']);
 							
-					if(isset($attributes['dept_id']))
-							$query->whereIn('purchase_invoice.department_id', $attributes['dept_id']);		
+					
 						
 			$query->select('purchase_invoice.voucher_no','purchase_invoice.reference_no','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.amount_transfer','POI.tax_code','purchase_invoice.discount',
 							'J.code AS jobcode','purchase_invoice.voucher_date','POI.quantity','POI.balance_quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no','purchase_invoice.net_amount','purchase_invoice.subtotal');
@@ -3270,6 +3385,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_invoice.job_id');
 								})
+								->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -3281,8 +3397,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						if(isset($attributes['job_id']) && $attributes['job_id'] !='')
 							$query->whereIn('purchase_invoice.job_id', $attributes['job_id']);
 							
-						if(isset($attributes['dept_id']))
-							$query->whereIn('purchase_invoice.department_id', $attributes['dept_id']);		
+						
 						 
 				$query->select('purchase_invoice.voucher_no','purchase_invoice.voucher_date','purchase_invoice.reference_no','IM.item_code','IM.description','purchase_invoice.total','purchase_invoice.vat_amount',
 								'POI.quantity','POI.balance_quantity','POI.unit_price','POI.discount','POI.total_price','AM.account_id','AM.master_name','purchase_invoice.net_amount','POI.item_total',
@@ -3710,6 +3825,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						->join('account_transaction', 'account_transaction.account_master_id', '=', 'account_master.id')
 						->where('account_transaction.voucher_type','!=','OBD')
 						->where('account_transaction.status',1)
+						->where('account_transaction.department_id',env('DEPARTMENT_ID'))
 						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
 						->where('account_master.status',1)
 						->where('account_master.deleted_at','0000-00-00 00:00:00')
@@ -3774,9 +3890,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		//CHECK DEPARTMENT.......
 		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
 		
-		$query = $this->purchase_invoice->where('purchase_invoice.status',1);
-		if($deptid!=0)
-			$query->where('purchase_invoice.department_id', $deptid);
+		$query = $this->purchase_invoice->where('purchase_invoice.status',1)->where('purchase_invoice.department_id',env('DEPARTMENT_ID'));
 			
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_invoice.supplier_id');
@@ -3789,20 +3903,14 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		//CHECK DEPARTMENT.......
 		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
 		
-		$query = $this->purchase_invoice->where('purchase_invoice.status',1)
+		$query = $this->purchase_invoice->where('purchase_invoice.status',1)->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_invoice.supplier_id');
 						} )->leftJoin('jobmaster AS JM', function($join) {
 							$join->on('JM.id','=','purchase_invoice.job_id');
 						});
 						
-				if($deptid!=0) //dept chk
-					$query->where('purchase_invoice.department_id', $deptid);
-				else {
-					if($dept!='' && $dept!=0) {
-						$query->where('purchase_invoice.department_id', $dept);
-					}
-				}
+				
 					
 				if($search) {
 					$query->where(function($qry) use($search) {
@@ -3832,7 +3940,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		$query = $this->purchase_invoice->where('purchase_invoice.supplier_id',$id);
+		$query = $this->purchase_invoice->where('purchase_invoice.supplier_id',$id)->where('purchase_invoice.department_id',env('DEPARTMENT_ID'));
 		
 		$query->join('account_master AS AM', function($join) {
 							$join->on('AM.id','=','purchase_invoice.supplier_id');
@@ -3844,12 +3952,15 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						  $join->on('u.id','=','poi.unit_id');
 					  }) 
 					   ->join('item_unit AS iu', function($join){
-						  $join->on('iu.unit_id','=','poi.unit_id')
-							   ->on('iu.itemmaster_id','=','poi.item_id');
+						  $join->on('iu.itemmaster_id','=','poi.item_id');
+					  })
+					   ->join('itemstock_department AS isd', function($join){
+						   $join->on('isd.itemmaster_id','=','poi.item_id');
 					  })
 					  ->join('itemmaster AS im', function($join){
 						  $join->on('im.id','=','poi.item_id');
 					  })
+					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.status',1);
 					  
 				if($date_from!='' && $date_to!='')
@@ -3938,6 +4049,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		$ids = explode(',', $attributes['document_id']);
 		$row = DB::table('item_log')->where('document_type','SDO')
 						->whereIn('document_id', $ids)
+						->where('department_id',env('DEPARTMENT_ID'))
 						->where('item_id',$attributes['item_id'][$key])
 						->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 						->select('id', DB::raw('SUM(quantity) AS quantity'))
@@ -3954,6 +4066,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		$ids = explode(',', $attributes['document_id']);
 		$row = DB::table('item_log')->where('document_type','SDO')
 						->whereIn('document_id', $ids)
+						->where('department_id',env('DEPARTMENT_ID'))
 						->where('item_id',$attributes['item_id'][$key])
 						->select('id', DB::raw('SUM(quantity) AS quantity'))
 						->groupBY('item_id')
@@ -3982,24 +4095,25 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		
 		if($SDOlogs->quantity==$quantity) {
 		    //DISABLE SDO TRANSACTION LOG.... 50,25,25   90
-	    	DB::table('item_log')->where('document_type','SDO')->whereIn('document_id',$pids)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+	    	DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->whereIn('document_id',$pids)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		} else {
 		    //PARTIAL TRANSFER OF DO TO SI HANDLING LOG PARIAL QUANTITY.....
 		    $siquantity = $quantity;
 		    foreach($pids as $pid) {
-		       $drow = DB::table('item_log')->where('document_type','SDO')->where('document_id',$pid)->select('quantity')->first();//25 < 15
+		       $drow = DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id',$pid)->select('quantity')->first();//25 < 15
 		       if($drow && $drow->quantity <= $siquantity) {
-		           DB::table('item_log')->where('document_type','SDO')->where('document_id',$pid)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+		           DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id',$pid)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		           $siquantity = $siquantity - $drow->quantity;//15
 		       } else {
 		           $finalqty = $drow->quantity - $siquantity;
-		           DB::table('item_log')->where('document_type','SDO')->where('document_id',$pid)->update(['quantity'=> $finalqty]);
+		           DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id',$pid)->update(['quantity'=> $finalqty]);
 		       }
 		    }
 		        
 		}
 		
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
+										->where('department_id',env('DEPARTMENT_ID'))
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
@@ -4027,6 +4141,13 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				->update(['last_purchase_cost' => $cost + $other_cost,
 						  'cost_avg'		   => $cost_avg
 						]);
+		DB::table('itemstock_department')
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->where('department_id',env('DEPARTMENT_ID'))
+				->where('unit_id', $attributes['unit_id'][$key])
+				->update(['last_purchase_cost' => $cost + $other_cost,
+						  'cost_avg'		   => $cost_avg
+						]);	
 							
 		return $cost_avg;
 	}
@@ -4042,7 +4163,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		
 		if($SDOlogs->quantity==$attributes['quantity'][$key]) {
 		    //DISABLE SDO TRANSACTION LOG.... 50,25,25   90
-	    	DB::table('item_log')->where('document_type','SDO')->whereIn('document_id',$pids)->update(['quantity' => 0, 'status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+	    	DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->whereIn('document_id',$pids)->update(['quantity' => 0, 'status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		} else {
 		    //PARTIAL TRANSFER OF DO TO SI HANDLING LOG PARIAL QUANTITY.....
 		    $siquantity = $attributes['quantity'][$key];
@@ -4094,6 +4215,13 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				->update(['last_purchase_cost' => $cost + $other_cost,
 						  'cost_avg'		   => $cost_avg
 						]);
+						DB::table('itemstock_department')
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->where('department_id',env('DEPARTMENT_ID'))
+				->where('unit_id', $attributes['unit_id'][$key])
+				->update(['last_purchase_cost' => $cost + $other_cost,
+						  'cost_avg'		   => $cost_avg
+						]);	
 							
 		return $cost_avg;
 	}
@@ -4102,6 +4230,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	{	
 		//FEB25  
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
+		->where('department_id',env('DEPARTMENT_ID'))
 										->where('status', 1)
 										->where('trtype', 0)
 										->where('cost_avg', 0)
@@ -4111,7 +4240,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		$quantity = 0;
 		foreach($itmlogs as $log) {
 			$quantity += $log->quantity;
-			DB::table('item_log')->where('id',$log->id)
+			DB::table('item_log')->where('id',$log->id)->where('department_id',env('DEPARTMENT_ID'))
 						->update([
 							 'cost_avg' => $cost_avg,
 							 'pur_cost' => (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate'])+$other_cost:$attributes['cost'][$key]+$other_cost,

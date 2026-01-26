@@ -67,13 +67,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Order
                         </h3>
                         <div class="pull-right">
-							@can('po-create')
+							@permission('po-create')
                              <a href="{{ url('purchase_order/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endcan
+							@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -89,11 +89,11 @@
 										<th>PO. Date</th>
 										<th>Supplier</th>
 										<th>Amount</th>
-										<th>Approval Status</th>
+										@if($modpurenq==1)<th>Approval Status</th> @endif
 										<th></th>
 										<th></th>
 										<th></th>
-										<th></th>
+											@if($modpurenq==1)<th></th>@endif
 										<th></th>
                                     </tr>
                                     </thead>
@@ -242,14 +242,14 @@ $(function() {
 			{ "data": "voucher_date" },
 			{ "data": "supplier" },
 			{ "data": "net_total" },
-			{ "data": "approval" },
-			@can('po-edit'){ "data": "edit","bSortable": false },@endcan
-			@can('po-view'){ "data": "viewonly","bSortable": false },@endcan
-			@can('po-print'){ "data": "print","bSortable": false },@endcan
-			{ "data": "view","bSortable": false },
-			@can('po-delete'){ "data": "delete","bSortable": false }@endcan
+			@if($modpurenq==1)	{ "data": "approval" },@endif
+			@permission('po-edit'){ "data": "edit","bSortable": false },@endpermission
+			@permission('po-view'){ "data": "viewonly","bSortable": false },@endpermission
+			@permission('po-print'){ "data": "print","bSortable": false },@endpermission
+				@if($modpurenq==1){ "data": "view","bSortable": false },@endif
+			@permission('po-delete'){ "data": "delete","bSortable": false }@endpermission
 		],
-			"createdRow": function( row, data, dataIndex){
+			@if($modpurenq==1)	"createdRow": function( row, data, dataIndex){
                             if( data["status"] == 1  ){
                                 $('td:eq(4)',row).css('background-color', '#00FF00');
                             }
@@ -258,7 +258,7 @@ $(function() {
                             }
                             
 
-                        },
+                        },@endif
 		  
 		});
 		

@@ -54,6 +54,17 @@
             </ol>
         </section>
         <!--section ends-->
+		@if(Session::has('message'))
+		<div class="alert alert-success">
+			<p>{{ Session::get('message') }}</p>
+		</div>
+		@endif
+		@if(Session::has('error'))
+		<div class="alert alert-danger">
+			<p>{{ Session::get('error') }}</p>
+		</div>
+		@endif
+		
 		@if (count($errors) > 0)
 			<div class="alert alert-danger">
 				<ul>
@@ -208,7 +219,7 @@
 										</div>
 									</div>
                                 </div>
-								
+								<?php if($formdata['location']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Location</label>
                                     <div class="col-sm-10">
@@ -222,7 +233,9 @@
                                         </select>
                                     </div>
                                 </div>
-								
+								<?php } else { ?>
+								<input type="hidden" name="location_id" id="location_id">
+								<?php } ?>
 								<br/>
 								<fieldset>
 								<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Item Details</span></h5></legend>
@@ -519,7 +532,11 @@
 								
 							       <fieldset>
 									<legend>
+									    <?php if($formdata['other_cost']==1) { ?>
 										<div id="oc_showmenu" style="padding-left:5px;"><button type="button" id="ocadd" class="btn btn-primary btn-xs">Other Cost</button></div>
+											<?php } else { ?>
+								<input type="hidden" name="other_cost" id="other_cost">
+								<?php } ?>
 									</legend>
 									<div class="OCdivPrnt">
 									<?php if(old('dr_acnt')) { $k = 0; 
@@ -546,8 +563,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_{{$l}}" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+															<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -610,8 +628,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_1" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+															<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -722,7 +741,8 @@
 									</div>
                                 </div>
 								
-								
+								<input type="hidden" step="any" id="other_cost" name="other_cost" readonly class="form-control" placeholder="0">
+								<input type="hidden" step="any" id="other_cost_fc" name="other_cost_fc" readonly class="form-control spl" placeholder="0">
 																
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Net Amount</label>

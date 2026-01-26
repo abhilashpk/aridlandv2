@@ -125,19 +125,19 @@
 										<div class="col-xs-1">
 											<button type="button" class="btn btn-primary" onClick="setSearch()">Search</button>
 										</div>
-										<div class="col-xs-1">
-											<a href="" class="btn btn-primary getform">Barcode</a> 
+										<!--<div class="col-xs-1">
+											<a href="" class="btn btn-primary getform">Barcode</a> -->
 											<!--<a href="" class="btn btn-primary barcode" data-toggle="modal" data-target="#barcode_modal">Barcode</a>-->
-											<!--@can('item-location')<a href="" class="btn btn-primary location" data-toggle="modal" data-target="#location_modal">Location</a>@endcan-->
-										</div>
-										<div class="col-xs-1">
+											<!--@permission('item-location')<a href="" class="btn btn-primary location" data-toggle="modal" data-target="#location_modal">Location</a>@endpermission-->
+									<!--	</div> -->
+									<!--	<div class="col-xs-1">
 											<a href="" class="btn btn-primary supersede" data-toggle="modal" data-target="#supersede_modal">Supersede</a>
-										</div>
+										</div>-->
 										<div class="col-xs-1" style="padding-left:22px;">
 											<a href="" class="btn btn-primary locQty" data-toggle="modal" data-target="#locqty_modal">Location</a>
 										</div>
 										<div class="col-xs-1" style="padding-left:22px;">
-											<a href="" class="btn btn-primary viewBatch" data-toggle="modal" data-target="#viewbatch_modal">Batch</a>
+											<a href="" class="btn btn-primary inlocQty" data-toggle="modal" data-target="#inlocqty_modal">Other Location</a>
 										</div>
 									</div>
 								</form>
@@ -209,6 +209,24 @@
                                     </div>
                                 </div>
                             </div>
+
+							<div id="inlocqty_modal" class="modal fade animated" role="dialog">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                            <h4 class="modal-title">Other Location Quantity</h4>
+                                        </div>
+                                        <div id="inlocqtyData">Please select an Item first!
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-default" data-dismiss="modal">Close
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             
                             <div id="viewbatch_modal" class="modal fade animated" role="dialog">
                                 <div class="modal-dialog">
@@ -319,6 +337,16 @@ $(function() {
 		var item_id = $("input[name='item']:checked").val();
 		if(item_id!='') {
 			$('#locqtyData').load(lqurl+'/'+item_id, function(result) {
+				$('#myModal').modal({show:true});
+			});
+		}
+	});
+
+	var lnurl = "{{ url('itemmaster/get_inlocqty/') }}";
+	$('.inlocQty').click(function() {
+		var item_id = $("input[name='item']:checked").val();
+		if(item_id!='') {
+			$('#inlocqtyData').load(lnurl+'/'+item_id, function(result) {
 				$('#myModal').modal({show:true});
 			});
 		}

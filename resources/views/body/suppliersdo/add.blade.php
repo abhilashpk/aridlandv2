@@ -102,13 +102,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@can('po-print')
+								@permission('po-print')
 								 <a href="{{ url('suppliers_do/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span>
 								</a>
-								@endcan
+								@endpermission
 							<?php } ?>
 							</div>
 							
@@ -117,18 +117,61 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmPurchaseInvoice" id="frmPurchaseInvoice" enctype="multipart/form-data" action="{{ url('suppliers_do/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="default_location" value="{{(Session::get('mod_location')==1)?Auth::user()->location_id:Session::get('location_id')}}"/>
+								<input type="hidden" name="default_location" id="default_location" value="{{(Session::get('mod_location')==1)?Auth::user()->location_id:Session::get('location_id')}}"/>
+								
+								<div class="form-group">
+						        <label for="input-text" class="col-sm-2 control-label"></label>
+							    <div class="col-sm-10">
+							        <label class="radio-inline">
+								<font color="#16A085">  <input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
+							       </label>
+							
+                                 <label class="radio-inline">
+								<font color="#16A085"><input type="radio" class="locinter-radio" name="is_intercompany"  value=""><b>Inter Company</b></font>
+                                </label>
+							 </div>
+						</div>
+
+								<div class="form-group">
+                             <font color="#16A085">    <label class="col-sm-2 control-label"><b>Location </b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                 <div id="locationRadioGroup">
+                                   @foreach($location as $loc)
+                                <label class="radio-inline">
+                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+                                 </label>
+                                 @endforeach
+								 </div>
+								 <div id="locationRadio">
+								 <label class="radio-inline">
+                                    <input type="radio" class="locin-radio"  data-id="{{$interid}}" value="{{$interid}}">{{$intername}}
+                                 </label>
+                                 </div>
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id">
+                                  <small class="text-muted" id="locfrom-mand">
+                                             '*' is mandatory fields
+                                    </small>
+                             </div>
+                             </div>
+								
+								
 								<div class="form-group">
                                    <font color="#16A085">  <label for="input-text" class="col-sm-2 control-label"><b>GR. No.</b></label></font>
                                     <div class="col-sm-10">
-										<div class="input-group">
-                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="{{$voucherno}}">
-										<span class="input-group-addon inputvn"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
-										</div>
+									 <div class="input-group">
+									   <span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> placeholder="{{old('voucher_no')}}" <?php } ?>>
+											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
+											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
+											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
+											<span class="input-group-addon inputvn"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
+                                        </div>
+										
                                     </div>
                                 </div>
-								<input type="hidden" name="curno" id="curno" value="{{$voucherno}}">
-								<input type="hidden" value="1" name="autoincrement">
+								<input type="hidden" name="curno" id="curno" value="{{$voucherno->no}}">
+								
 								 
                                 <?php if($formdata['copy_from']==1) { ?>
 								<div class="form-group">
@@ -223,8 +266,8 @@
                                        <select id="document_type" class="form-control select2" style="width:100%" name="document_type">
                                            <option value="">Select Document...</option>
 										   <option value="PO">Purchase Order</option>
-										   <option value="MR">Material Requisition</option>
-										   <!--<option value="SDO">Supplier Delivery Order</option>-->
+										 <!--  <option value="MR">Material Requisition</option>
+										   <option value="SDO">Supplier Delivery Order</option>-->
                                        </select>
                                     </div>
                                 </div>
@@ -293,29 +336,7 @@
 								<input type="hidden" name="job_id" id="job_id">
 								<?php } ?>
 								
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==old('location_id')) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($is_default==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+								
 								
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -353,23 +374,7 @@
 										</div>
 									</div>
                                 </div>
-									<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-										<option value="" selected>Select Location..</option>
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==old('location_id')) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+									
 								
 								<?php if($formdata['item_import']==1) { ?>
 								<div class="form-group">
@@ -749,8 +754,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_{{$l}}" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+															<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -813,8 +819,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_1" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+																<option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -827,7 +834,7 @@
 														<input type="number" name="oc_rate[]" id="ocrate_1" step="any" value="1" class="form-control oc-rate" placeholder="Rate">
 													</td>
 													<td width="10%">
-														<span class="small">Convrt Amt</span>
+														<span class="small">FC Amt</span>
 														<input type="number" name="oc_fc_amount[]" id="ocfcamt_1" step="any" readonly class="form-control oc-line-fc" placeholder="Convrt Amt">
 													</td>
 													<td width="5%">
@@ -960,9 +967,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('suppliers_do') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('suppliers_do/add') }}" class="btn btn-warning">Clear</a>
-										@can('pi-history')
+										@permission('pi-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endcan
+										@endpermission
                                     </div>
                                 </div>
 								<div id="purchase_modal" class="modal fade animated" role="dialog">
@@ -1244,6 +1251,75 @@ $(document).ready(function () {
 			$('.OCdivPrnt').toggle();$('.oc-amount-fc').toggle();
 		<?php  } ?> 
 	<?php  } ?>
+
+
+        $('.loccom-radio').iCheck('check');
+	 $('#locationRadio').hide();
+
+	$(document).on('ifChecked', '.locinter-radio', function (e) {
+      $('.loccom-radio').iCheck('uncheck');
+      $('.locfrom-radio').iCheck('uncheck');
+	   $('.locfrom-radio').iCheck('disable');
+      $('#locationRadioGroup').hide();
+		$('#locationRadio').show();
+    
+
+	   let locID   = {{$interid}};
+        let locCode = "{{$intercode}}";
+		let prefix ='IGRN';
+		let newPrefix = prefix + locCode; 
+		 $('#prefixBox').text(newPrefix);
+        $('input[name="prefix"]').val(newPrefix);
+        $('input[name="is_intercompany"]').val(1);
+		// Check only the default location radio
+    $('.locin-radio[data-id="' + locID + '"]').iCheck('check');
+    
+    // Disable all location radios so user cannot change
+   
+
+		$('#selected_locfrom_id').val(locID);
+        $('#default_location').val(locID);
+		
+	});
+
+	$(document).on('ifChecked', '.loccom-radio', function (e) {
+
+        $('.locinter-radio').iCheck('uncheck');
+
+         $('.locfrom-radio').iCheck('enable');
+         $('#locationRadioGroup').show();
+		$('#locationRadio').hide();
+        $('.locfrom-radio').iCheck('uncheck');
+		 $('#prefixBox').text('GRN');
+        $('input[name="prefix"]').val('');
+       $('#selected_locfrom_id').val('');
+	   $('#default_location').val('');
+	   $('input[name="is_intercompany"]').val('');
+});
+    
+    
+	$(document).on('ifChecked', '.locfrom-radio', function (e) {
+          var val = $(this).val();
+		   $('.locinter-radio').iCheck('uncheck');
+		    $('.loccom-radio').iCheck('check');
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  let prefix ='GRN' //$('input[name="prefix"]').val('QS');   // Example: LT
+             let newPrefix = prefix + locCode;               // LTWH1
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix);
+
+             //  $('.locfrom-radio').prop('disabled', true);
+         // store the value in the hidden field
+              $('#selected_locfrom_id').val(val);
+              $('#default_location').val(val);
+        
+     });
+      });
+
+
 	var urlvchr = "{{ url('suppliers_do/checkvchrno/') }}";
 	var urlcode = "{{ url('suppliers_do/checkrefno/') }}"; //CHNG
 	$('.sedePrntItm').toggle();
@@ -1251,7 +1327,7 @@ $(document).ready(function () {
 	<?php if($formdata['item_import']==0) { ?>
     $('#frmPurchaseInvoice').bootstrapValidator({
         fields: {
-			voucher_id: { validators: { notEmpty: { message: 'The voucher type is required and cannot be empty!' } }},
+			//voucher_id: { validators: { notEmpty: { message: 'The voucher type is required and cannot be empty!' } }},
 			voucher_no: {
                 validators: {
                    
@@ -1268,7 +1344,7 @@ $(document).ready(function () {
             },
 			reference_no: {
                 validators: {
-                   notEmpty: {  message: 'The reference no is required and cannot be empty!' }, 
+                  // notEmpty: {  message: 'The reference no is required and cannot be empty!' }, 
 					remote: {
                         url: urlcode,
                         data: function(validator) {
@@ -1280,7 +1356,7 @@ $(document).ready(function () {
                     }
                 }
             }
-            @if($formdata['location_item']==1) ,'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }}  @endif //NOV24
+           // @if($formdata['location_item']==1) ,'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }}  @endif //NOV24
 			
         }
         
@@ -1601,6 +1677,13 @@ $(function() {
 		  // $('input[name="dr_acnt_id[]"]').val( $('#account_master_id').val() );
            $('.OCdivPrnt').toggle();
     });
+
+	$(document).on('blur', '#voucher_no', function(e) {  
+		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
+			alert('Voucher no is greater than current range!');
+			$('#voucher_no').val('');
+		}
+	});
 	
 	//item more info view section
 	$(document).on('click', '.more-info', function(e) { 
@@ -2002,13 +2085,45 @@ $(function() {
 	$(document).on('keyup', '.line-quantity', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1];
-		$('.loc-qty-'+curNum).val('');
 		if( parseFloat(this.value) == 0 || parseFloat(this.value) < 0) {
-			alert('Item quantity is invalid.');
-			$('#itmqty_'+curNum).val('');
-			$('#itmqty_'+curNum).focus();
-			return false;
+			var con = confirm('Item quantity is zero. Do you want to continue with zero quantity?');
+			if(con==false){
+				$('#itmqty_'+curNum).val('');
+				$('#itmqty_'+curNum).focus();
+				return false;
+		
+		} else {
+			var itmid = $('#itmid_'+curNum).val();
+			$.get("{{ url('itemmaster/checkqty/') }}/" + itmid, function(data) {  
+				data = JSON.parse(data); console.log(data.cur_quantity+' '+data.min_quantity);
+				var cur_quantity = parseFloat(data.cur_quantity);
+				var min_quantity = parseFloat(data.min_quantity);
+				<?php if($settings->item_quantity==1) { ?>
+				@if(auth()->user()->can('-qty-sale')==1)
+					console.log('Minus Qty Sale');
+				@else
+				if(cur_quantity == 0 || cur_quantity < 0) {
+					alert('Item is out of stock!');
+					$('#itmqty_'+curNum).val('');
+					$('#itmqty_'+curNum).focus();
+					return false;
+				} else if(cur_quantity < parseFloat($('#itmqty_'+curNum).val())) {
+					alert('Item is out of stock!');
+					$('#itmqty_'+curNum).val('');
+					$('#itmqty_'+curNum).focus();
+					return false;
+						
+				} else if((min_quantity == cur_quantity) || (min_quantity > cur_quantity)) {
+					alert('Item quantity is reached on minimun quantity!');
+					$('#itmqty_'+curNum).val('');
+					$('#itmqty_'+curNum).focus();
+					return false;
+				}
+				@endif
+				<?php } ?>
+			});
 		}
+	}
 	});
 	
 	$(document).on('blur', '.line-quantity', function(e) {

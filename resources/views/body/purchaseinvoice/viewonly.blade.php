@@ -386,7 +386,7 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -592,7 +592,7 @@
 									
 								@foreach($orditems as $item)
 								@php $max_quantity = $item->do_balance_quantity + $item->quantity; @endphp
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<div class="itemdivChld">							
 										
 											<table border="0" class="table-dy-row">
@@ -725,16 +725,7 @@
 								<input type="hidden" name="net_cost" id="net_cost">
 								<?php } ?>
 								
-								<!--MAY25-->
-								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
-									<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-									<div class="form-group"><input type="text" name="batchNos[]" id="batchNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches'] ?? ''}}"></div>
-									<input type="hidden" id="batchIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids'] ?? ''}}">
-									<input type="hidden" id="mfgDates_{{$i}}" name="mfgDates[]" value="{{$batchitems[$item->id]['mfgs'] ?? ''}}">
-                                    <input type="hidden" id="expDates_{{$i}}" name="expDates[]" value="{{$batchitems[$item->id]['exps'] ?? ''}}">
-                                    <input type="hidden" id="qtyBatchs_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys'] ?? ''}}">
-                                    <input type="hidden" id="batchRem_{{$i}}" name="batchRem[]">
-								</div>
+								
 											
 								<?php if($formdata['location_item']==1) { ?>
 											<div id="loc" style="float:left; padding-right:5px;">

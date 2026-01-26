@@ -90,13 +90,13 @@
 							
 							<div class="pull-right">
 							<?php if($isprint) { ?>
-							@can('so-print')
+							@permission('so-print')
 							 <a href="{{ url('sales_order/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endcan
+							@endpermission
 							<?php } ?>
 							</div>
                         </div>
@@ -109,19 +109,25 @@
 								<input type="hidden" name="is_revice" value="{{ $orderrow->job_type }}">
 								<input type="hidden" name="parent_id" value="{{$orderrow->fabrication }}">
 								<?php } ?>
+
+								@php $selectedLocId = $orderrow->location_id; @endphp
+                                <div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"><b>SO. No.</b></label>
                                     <div class="col-sm-10">
-										<?php if($orderrow->prefix!='') { ?>
-										<div class="input-group">
-											<span class="input-group-addon">{{$orderrow->prefix}}</span>
 											<input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
 											<input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
-										</div>
-										<?php } else { ?>
-											<input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
-											<input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
-										<?php } ?>
                                     </div>
                                 </div>
 								
@@ -253,7 +259,7 @@
                                 <?php } else { ?>
 								<input type="hidden" name="order_type" id="order_type">
 								<?php } ?>
-								
+								<?php if($formdata['due_date']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Day</label>
                                     <div class="col-sm-4">
@@ -267,6 +273,9 @@
                                     </div>
                                     </div>
                                 </div>
+								 <?php } else { ?>
+								<input type="hidden" name="due_date" id="due_date">
+								<?php } ?>
 								
 								<?php if($formdata['job']==1) { ?>
 								<div class="form-group">
@@ -316,23 +325,7 @@
 										</div>
 									</div>
                                 </div>
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-										<option value="">Select Location..</option>
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$orderrow->location_id) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+								
 								<br/>
 								<fieldset>
 								<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Item Details</span></h5></legend>
@@ -372,7 +365,7 @@
 								</table>
 								
 								<!-- ROWCHNG -->
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -477,7 +470,7 @@
 								<?php $i++; } } else if(count($orditems)>0) { ?>
 								
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -556,11 +549,11 @@
 												</td>
 											</tr>
 										</table>
-										
+										<?php if($formdata['add_desc']==1) { ?>
 										<div id="moredesc" style="float:left; padding-right:5px;">
 												<button type="button" id="descinfoItm_{{$i}}" class="btn btn-primary btn-xs desc-info">Add Description</button>
 											</div>
-											
+										<?php } ?>	
 										<?php if($formdata['more_info']==1) { ?>
 											<div id="moreinfo" style="float:left; padding-right:5px;">
 												<button type="button" id="moreinfoItm_{{$i}}" class="btn btn-primary btn-xs more-info">More Info</button>
@@ -604,7 +597,7 @@
 												
 											echo '<input type="hidden" id="remitemdesc_'.$i.'" name="remove_itemdesc[]">';
 											foreach($itemdesc[$item->id] as $desc) { ?>
-												<div class="descdivPrntItm" id="descdivPrntItm_{{$i}}">
+												<div class="descdivPrntItm" id="descdivPrntItm_{{$i}}" style="display: none;">
 													<div class="descdivChldItm" >							
 														<div class="col-xs-10" style="padding-bottom:5px !important;">
 															<div class="col-xs-10">
@@ -986,7 +979,7 @@
 								<br/>
 								
 								
-								@can('so-aprv')
+								@permission('so-aprv')
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
                                     <div class="col-sm-10">
@@ -1004,7 +997,7 @@
                                         <input type="text" class="form-control" id="comment" value="<?php echo (old('comment'))?old('comment'):$orderrow->comment; ?>" name="comment" placeholder="comment">
                                     </div>
                                 </div>
-								@endcan
+								@endpermission
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
@@ -1241,7 +1234,9 @@ $(document).ready(function () {
 	if ( $('.itemdivPrnt').children().length == 1 ) {
 		$('.itemdivPrnt').find('.btn-remove-item').hide();
 	}
-	
+	if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+		}
 	$("#currency_rate").prop('disabled', true);
 	$("#currency_id").prop('disabled', true);
 	<?php if($orderrow->is_fc==0) { ?>
@@ -1576,6 +1571,7 @@ $(function() {
 	  
 	$(document).on('click', '.btn-add-item', function(e)  { 
         rowNum++; //console.log(rowNum);
+		$('.locPrntItm').toggle();
 		e.preventDefault();
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),

@@ -81,38 +81,17 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmPurReturn" id="frmPurReturn" action="{{ url('purchase_return/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="default_location" value="{{ Auth::user()->location_id }}">
+								@php $selectedLocId = $orderrow->location_id; @endphp
+								<input type="hidden" name="default_location" id="default_location" value="{{ $selectedLocId }}">
 								@if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
 								@else
 								<input type="hidden" name="send_email" value="0">
 								@endif
 								
-								@if($isdept)
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Department</label>
-                                    <div class="col-sm-10">
-                                       <select id="department_id" class="form-control select2" style="width:100%" name="department_id">
-											@foreach($departments as $drow)
-												<option value="{{ $drow->id }}" {{($orderrow->department_id==$drow->id)?'selected':''}} >{{ $drow->name }}</option>
-											@endforeach
-                                        </select>
-                                    </div>
-                                </div>
 								
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Invoice</b></label>
-                                    <div class="col-sm-10">
-                                    <select id="voucher_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="voucher_id">
-										@foreach($vouchers as $voucher)
-										<option value="{{ $voucher['id'] }}" <?php if($orderrow->voucher_id==$voucher['id']) echo 'selected';?>>{{ $voucher['voucher_name'] }}</option>
-										@endforeach
-									</select>
-                                    </div>
-                                </div>
-								@else
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Invoice</label>
+                                    <label for="input-text" class="col-sm-2 control-label">Purchase Return</label>
                                     <div class="col-sm-10">
                                        <select id="voucher_id" class="form-control select2" style="width:100%" name="voucher_id">
 											@foreach($vouchers as $voucher)
@@ -121,15 +100,46 @@
                                         </select>
                                     </div>
                                 </div>
-								@endif
+								
+								<div class="form-group">
+						            <label for="input-text" class="col-sm-2 control-label"></label>
+							    <div class="col-sm-10">
+                                  <label class="radio-inline">
+ 								  <font color="#16A085">  <input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
+							       </label>
+								   
+                                   <label class="radio-inline">
+								 <font color="#16A085">     <input type="radio" class="locinter-radio" name="is_intercompy"  value="{{$orderrow->is_intercompany}}"><b>Inter Company</b></font>
+									  <input type="hidden"  name="is_intercompany"  value="{{$orderrow->is_intercompany}}">
+									  
+                                    </label>
+                                   
+							    </div>
+						        </div>
+								
+								 <div class="form-group">
+                                <font color="#16A085"> <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
+								
+
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">PR. No.</label>
 									<input type="hidden" name="curno" id="curno" value="<?php echo $vouchers[0]['voucher_no']; ?>">
                                     <div class="col-sm-10">
 										<div class="input-group">
-										@if($vouchers[0]['is_prefix']==1)<span class="input-group-addon">{{$vouchers[0]['prefix']}}</span>@endif
+										<span class="input-group-addon" id="prefixBox">{{$vouchers[0]['prefix']}}</span>
                                         <input type="text" class="form-control" id="voucher_no" placeholder="<?php echo $vouchers[0]['voucher_no']; ?>" readonly name="voucher_no">
+										<input type="hidden" value="{{$vouchers[0]['prefix']}}" name="prefix">
 										<span class="input-group-addon"><i class="fa fa-fw fa-edit"></i></span>
 										</div>
                                     </div>
@@ -200,30 +210,7 @@
 								<?php } else { ?>
 								<input type="hidden" name="job_id" id="job_id">
 								<?php } ?>
-								
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$orderrow->location_id) echo 'selected';?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($orderrow->location_id==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+							
 								
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -305,7 +292,7 @@
 									</thead>
 								</table>
 								
-								@php $i = 0; $num = count($pitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; @endphp
+								{{--*/ $i = 0; $num = count($pitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -437,7 +424,7 @@
 									
 									<?php $i++; } } else { ?>
 								@foreach($pitems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 									<div class="itemdivChld">
 									<?php 
 											if($item->balance_quantity==0) {
@@ -557,11 +544,11 @@
 											</tr>
 										</table>
 										
-										
+										<?php if($formdata['more_info']==1) { ?>
 											<div id="moreinfo" style="float:left; padding-right:5px;">
 												<button type="button" id="moreinfoItm_{{$i}}" class="btn btn-primary btn-xs more-info">More Info</button>
 											</div>
-											
+											 <?php } ?>
 											<?php if($formdata['dimension']==1) { ?>
 								              <div id="itmInfo" style="float:left;padding-right:5px;">
 									          <button type="button" id="itmInfo_{{$i}}" class="btn btn-primary btn-xs dimn-view">Dimension</button>
@@ -575,16 +562,6 @@
 												<div class="form-group"><input type="text" name="iloc[]" id="iloc_{{$i}}" style="border:none;color:#FFF;"></div><!--NOV24-->
 											</div>
 											
-											<!--MAY25-->
-            								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
-            									<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-            									<div class="form-group"><input type="text" name="batchNos[]" id="batchNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches'] ?? ''}}"></div>
-            									<input type="hidden" id="batchIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids'] ?? ''}}">
-            									<input type="hidden" id="mfgDates_{{$i}}" name="mfgDates[]" value="{{$batchitems[$item->id]['mfgs'] ?? ''}}">
-                                                <input type="hidden" id="expDates_{{$i}}" name="expDates[]" value="{{$batchitems[$item->id]['exps'] ?? ''}}">
-                                                <input type="hidden" id="qtyBatchs_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys'] ?? ''}}">
-                                                <input type="hidden" id="batchRem_{{$i}}" name="batchRem[]">
-            								</div>
 											
 											<div class="infodivPrntItm" id="infodivPrntItm_{{$i}}">
 												<div class="infodivChldItm">							
@@ -908,6 +885,41 @@ $(document).ready(function () {
 			$('.OCdivPrnt').toggle(); 
 	<?php } ?>
 	$('.infodivPrntItm').toggle();  $('.locPrntItm').toggle();
+     
+	 if( $('#selected_locfrom_id').val() !=''){  
+
+	      var val = $('#selected_locfrom_id').val();
+
+		  $('.locinter-radio').iCheck('disable');
+		$('.loccom-radio').iCheck('disable');
+
+	    if($('input[name="is_intercompy"]').val()==1){
+
+		$('.locinter-radio').iCheck('check');
+		$('.loccom-radio').iCheck('uncheck');
+		var prefix ='IPR';
+		}
+          else{
+		  $('.locinter-radio').iCheck('uncheck');
+		$('.loccom-radio').iCheck('check');
+		var prefix ='PR';
+		  
+		  }   
+		  
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  //$('input[name="prefix"]').val('');   
+             let newPrefix = prefix + locCode;               
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix); 
+				$('#default_location').val(val);
+              $('.locfrom-radio').prop('disabled', true);
+			 });  
+		}
+
+
 	var urlcode = "{{ url('purchase_invoice/checkrefno/') }}";
     /* $('#frmPurReturn').bootstrapValidator({
         fields: {
@@ -1468,7 +1480,6 @@ $(function() {
 			getNetTotal();
 	});
 	
-	
 
 	$('#currency_id').on('change', function(e){
 		var curr_id = e.target.value; 
@@ -1481,7 +1492,7 @@ $(function() {
 	$('#voucher_id').on('change', function(e){
 		var vchr_id = e.target.value; 
 		$.get("{{ url('purchase_invoice/getvoucher/') }}/" + vchr_id, function(data) { //console.log(data);
-			$('#voucher_no').attr('placeholder', data.voucher_no); //$('#voucher_no').val(data.voucher_no);
+			$('#voucher_no').val(data.voucher_no);
 			$('#stock_account').val(data.account_id+'-'+data.account_name);
 			$('#account_master_id').val(data.id);
 		});
@@ -1616,7 +1627,7 @@ $(function() {
 		
 	});
 	
-	/* $(document).on('click', '.loc-info', function(e) { 
+	 $(document).on('click', '.loc-info', function(e) { 
 	   e.preventDefault();
 	   var res = this.id.split('_');
 	   var curNum = res[1];  
@@ -1629,7 +1640,7 @@ $(function() {
 			
 		   $('#locPrntItm_'+curNum).toggle();
 	   }
-    }); */
+    }); 
 	
 	$('input,select').keydown( function(e) {
         var key = e.charCode ? e.charCode : e.keyCode ? e.keyCode : 0;
@@ -1808,41 +1819,8 @@ $(function() {
 	});
 	
 	
-	$(document).on('click', '.loc-info', function(e) { 
-	   e.preventDefault();
-	   var res = this.id.split('_');
-	   var curNum = res[1];
-		//if( $('#locPrntItm_'+rowNum).is(":visible") ) 
-			$('#locPrntItm_'+rowNum).toggle();
-		
-	});
-
-	$(document).on('blur', '#voucher_no', function(e) {  
-		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
-			alert('Voucher no is greater than current range!');
-			$('#voucher_no').val('');
-		}
-	});
-
-	//VOUCHER NO DUPLICATE OR NOT
-	$(document).on('blur', '#voucher_no', function() {
-		
-		$.ajax({
-			url: "{{ url('purchase_return/checkvchrno/') }}", 
-			type: 'get',
-			data: 'voucher_no='+this.value+'&deptid='+deptid+'&id=',
-			success: function(data) { 
-				data = $.parseJSON(data);
-				if(data.valid==false) {
-					alert('Voucher No already exist!');
-					$('#voucher_no').val('');
-					return false;
-				}
-				//console.log('ff '+data.valid);
-			}
-		}); 
-	})
-	//VOUCHER NO DUPLICATE OR NOT
+	
+	
 	
 	//MAY25  BATCH ENTRY....
 	var icount = 0;

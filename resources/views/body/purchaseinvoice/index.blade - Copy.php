@@ -75,13 +75,13 @@
 							@endif
 							
                         <div class="pull-right">
-							@can('pi-create')
+							@permission('pi-create')
                              <a href="{{ url('purchase_invoice/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endcan
+							@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -275,9 +275,9 @@ $(function() {
 			{ "data": "voucher_date" },
 			{ "data": "supplier" },
 			{ "data": "net_total" },
-			@can('si-edit'){ "data": "edit","bSortable": false },@endcan
-			@can('si-print'){ "data": "print","bSortable": false },@endcan
-			@can('si-delete'){ "data": "delete","bSortable": false }@endcan
+			@permission('si-edit'){ "data": "edit","bSortable": false },@endpermission
+			@permission('si-print'){ "data": "print","bSortable": false },@endpermission
+			@permission('si-delete'){ "data": "delete","bSortable": false }@endpermission
 		]	
 		  
 		});

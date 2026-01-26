@@ -84,13 +84,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@can('pr-print')
+								@permission('pr-print')
 								 <a href="{{ url('purchase_return/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endcan
+								@endpermission
 							<?php } ?>
 							</div>
 							
@@ -100,6 +100,9 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmPurReturn" id="frmPurReturn" action="{{ url('purchase_return/update/'.$orderrow->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="purchase_return_id" id="purchase_return_id" value="{{ $orderrow->id }}">
+								@php $selectedLocId = $orderrow->location_id; @endphp
+								<input type="hidden" name="default_location" id="default_location" value="{{ $selectedLocId }}">
+								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"><b>Voucher</b></label>
                                     <div class="col-sm-10">
@@ -110,6 +113,19 @@
                                         </select>
                                     </div>
                                 </div>
+
+								<div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="location_id" value="{{ $selectedLocId }}">
+
+								 </div>
+								 </div>
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">PR. No.</label>
@@ -117,6 +133,7 @@
                                     <div class="col-sm-10">
 										<div class="input-group">
                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
+										 <input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
 										<span class="input-group-addon"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
 										</div>
                                     </div>
@@ -194,29 +211,7 @@
 								<input type="hidden" name="job_id" id="job_id">
 								<?php } ?>
 
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==$orderrow->location_id) echo 'selected';?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($orderrow->location_id==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+								
 
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -298,11 +293,11 @@
 									</thead>
 								</table>
 								<div class="itemdivPrnt">
-									@php $i = 0; $num = count($orditems); @endphp
+									{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<?php 
 								$vat_amount_net=0;
 								if($orderrow->is_fc==1) {
@@ -738,6 +733,12 @@ $(document).ready(function () {
 			$('.OCdivPrnt').toggle(); 
 	<?php } else { ?> $('.OCdivPrnt').toggle();<?php } ?>
 	$('.infodivPrntItm').toggle(); $('.locPrntItm').toggle();
+   
+   if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+		}
+
+
 	var urlcode = "{{ url('purchase_return/checkrefno/') }}";
 	var urlvchr = "{{ url('purchase_return/checkvchrno/') }}"; //CHNG
     $('#frmPurReturn').bootstrapValidator({

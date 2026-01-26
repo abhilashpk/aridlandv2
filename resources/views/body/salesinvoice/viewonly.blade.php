@@ -233,9 +233,9 @@
 											</div>
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											<div class="col-xs-1"><br/>
-												@can('si-history')
+												@permission('si-history')
 												<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">History</a>
-												@endcan
+												@endpermission
 											</div>
 										</div>
 										
@@ -262,12 +262,12 @@
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											
 											<div class="col-xs-1"><br/>
-												<!--@can('si-history')
+												<!--@permission('si-history')
 												<a href="" class="btn btn-info cust-history" data-toggle="modal" data-target="#custhistory_modal">History</a>
-												@endcan-->
-												@can('siph-history')
+												@endpermission-->
+												@permission('siph-history')
 												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endcan
+												@endpermission
 											</div>
 										</div>
 										
@@ -505,7 +505,7 @@
 									</thead>
 								</table>
 								<!-- ROWCHNG -->
-								@php $i = 0; $num = count($orditems); @endphp
+								{{--*/ $i = 0; $num = count($orditems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -740,7 +740,7 @@
 								<?php $i++; } } else { ?>
 								
 								@foreach($orditems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -860,9 +860,9 @@
 								            <!--MAY25-->
             								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
             									<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches'] ?? ''}}"></div>
-            									<input type="hidden" id="bthSelIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids'] ?? ''}}"> 
-                                                <input type="hidden" id="bthSelQty_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys'] ?? ''}}">
+            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches']}}"></div>
+            									<input type="hidden" id="bthSelIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids']}}"> 
+                                                <input type="hidden" id="bthSelQty_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys']}}">
                                                 <input type="hidden" id="batchRem_{{$i}}" name="batchRem[]">
             								</div>
 								
@@ -1628,7 +1628,7 @@
 								</div>
 								<br/>
 								
-								@can('qs-aprv')
+								@permission('qs-aprv')
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
@@ -1649,7 +1649,7 @@
                                     </div>
                                 </div>
 								<?php } ?>
-								@endcan
+								@endpermission
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">

@@ -16,12 +16,12 @@ use App\Repositories\Forms\FormsInterface;
 use App\Repositories\MaterialRequisition\MaterialRequisitionInterface;
 use App\Repositories\Location\LocationInterface;
 use App\Repositories\SalesOrder\SalesOrderInterface;
-use Illuminate\Support\Facades\Session;
+use App\Repositories\PurchaseEnquiry\PurchaseEnquiryInterface;
 
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
-//use Session;
+use Session;
 use Response;
 use Excel;
 use App;
@@ -43,10 +43,11 @@ class PurchaseOrderController extends Controller
 	protected $forms;
 	protected $formData;
 	protected $material_requisition;
+	protected $purchase_enquiry;
 	protected $location;
 	protected $sales_order;
 	
-	public function __construct(SalesOrderInterface $sales_order, PurchaseOrderInterface $purchase_order, ItemmasterInterface $itemmaster, TermsInterface $terms, JobmasterInterface $jobmaster, AccountMasterInterface $accountmaster, CurrencyInterface $currency, VoucherNoInterface $voucherno, AreaInterface $area,CountryInterface $country,AcgroupInterface $group,FormsInterface $forms,LocationInterface $location,MaterialRequisitionInterface $material_requisition) {
+	public function __construct(SalesOrderInterface $sales_order, PurchaseOrderInterface $purchase_order,PurchaseEnquiryInterface $purchase_enquiry, ItemmasterInterface $itemmaster, TermsInterface $terms, JobmasterInterface $jobmaster, AccountMasterInterface $accountmaster, CurrencyInterface $currency, VoucherNoInterface $voucherno, AreaInterface $area,CountryInterface $country,AcgroupInterface $group,FormsInterface $forms,LocationInterface $location,MaterialRequisitionInterface $material_requisition) {
 		
 		parent::__construct( App::make('App\Repositories\Parameter1\Parameter1Interface'), App::make('App\Repositories\VatMaster\VatMasterInterface') );
 		
@@ -66,6 +67,7 @@ class PurchaseOrderController extends Controller
 		$this->material_requisition = $material_requisition;
 		$this->location = $location;
 		$this->sales_order = $sales_order;
+		$this->purchase_enquiry = $purchase_enquiry;
 		
 		$this->mod_unit_serviceitem = DB::table('parameter2')->where('keyname', 'mod_unit_serviceitem')->where('status',1)->select('is_active')->first();
 		
@@ -79,12 +81,14 @@ class PurchaseOrderController extends Controller
 		//$sup = $this->accountmaster->supplierList();
 		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 		->select('id','master_name')->get(); 
+		$mod_purchase_enquiry= DB::table('parameter2')->where('keyname', 'mod_purchase_enquiry')->where('status',1)->select('is_active')->first();
 		//echo '<pre>';print_r($sup);exit;
 		return view('body.purchaseorder.index')
 					->withOrders($orders)
 					->withJobs($jobs)
 					->withSup($sup)
 					->withSettings($this->acsettings)
+					->withModpurenq($mod_purchase_enquiry->is_active)
 					->withData($data);
 	}
 	
@@ -242,15 +246,21 @@ class PurchaseOrderController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$res = $this->voucherno->getVoucherNo('PO');
 		$vno = $res->no;
-		$lastid = DB::table('purchase_order')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('purchase_order')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 	    //echo '<pre>';print_r($res);exit;
 		$location = $this->location->locationList();
+
+		$defaultInter = DB::table('location')
+                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('is_default', 1) ->first();
 		
 		$footertxt = DB::table('header_footer')->where('doc','PO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		$bcurrency = DB::table('parameter1')
 							 ->join('currency', 'currency.id', '=', 'parameter1.bcurrency_id')
 							  ->select('currency.code')
 							 ->first();					 
+		$cid=$this->acsettings->bcurrency_id;				
+		 $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
 					 
 		
 		$print = DB::table('report_view_detail')
@@ -261,7 +271,7 @@ class PurchaseOrderController extends Controller
 							->first();
 		
 		if($id) {
-			$ids = explode(',', $id);
+			$docnos='';$ids = explode(',', $id);
 			$ocrow = [];
 			if($doctype=='PO') {
 			$docRow = $this->purchase_order->findOrderData($ids[0]);
@@ -276,9 +286,13 @@ class PurchaseOrderController extends Controller
 			$terms = $this->terms->activeTermsList();
 			$jobs = $this->jobmaster->activeJobmasterList();
 			$currency = $this->currency->activeCurrencyList();
-			$docRow = $this->material_requisition->findMRdata($ids[0]);
-			$docItems = $this->material_requisition->getMRitems($ids);
+			$docRow = $this->purchase_enquiry->findMRdata($ids[0]);
+			$docItems = $this->purchase_enquiry->getMRitems($ids);//echo '<pre>';print_r($docItems);exit;
 			$ocrow = $this->purchase_order->getOtherCost($ids[0]);
+			$resdo = DB::table('purchase_enquiry')->whereIn('id',$ids)->select('voucher_no')->get();
+				foreach($resdo as $rw) {
+					$docnos = ($docnos=='')?$rw->voucher_no:$docnos.','.$rw->voucher_no;
+				}
 			}
 			//echo '<pre>';print_r($docItems);exit;
 			$total = 0; $discount = 0; $nettotal = 0; $vat_total = 0;
@@ -289,13 +303,12 @@ class PurchaseOrderController extends Controller
 			}
 			$nettotal = $total - $discount + $vat_total;
 			
-			return view('body.purchaseorder.addmr')
+			return view('body.purchaseorder.addpe')
 						->withItems($itemmaster)
 						->withTerms($terms)
 						->withJobs($jobs)
 						->withCurrency($currency)
 						->withVoucherno($res)
-						->withVoucherno($vno)
 						->withSettings($this->acsettings)
 						->withVatdata($this->vatdata)
 						->withPrintid($lastid)
@@ -304,6 +317,7 @@ class PurchaseOrderController extends Controller
 						->withDocrow($docRow)
 						->withDocitems($docItems)
 						->withPordid($id)
+						->withPonos($docnos)
 						->withTotal($total)
 						->withDiscount($discount)
 						->withOcrow($ocrow)
@@ -315,6 +329,10 @@ class PurchaseOrderController extends Controller
 						->withSettings($this->acsettings)
 						->withLocation($location)
 						->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
+						->withFcurrency($fcurrency)
+						->withInterid($defaultInter->id)
+                        ->withIntercode($defaultInter->code)
+					    ->withIntername($defaultInter->name)
 						->withData($data);
 		}
 		
@@ -332,46 +350,49 @@ class PurchaseOrderController extends Controller
 					->withLocation($location)
 					->withData($data)
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
-					->withFooter(isset($footertxt)?$footertxt->description:'');
+					->withFcurrency($fcurrency)
+					->withFooter(isset($footertxt)?$footertxt->description:'')
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name);
 	}
 	
-	public function save(Request $request)
-	{
-		// ✅ Laravel 10 validation (auto redirect on failure)
-		$this->validate(
-			$request,
-			[
-				'supplier_name' => 'required',
-				'supplier_id'   => 'required',
-
-				'item_code.*'   => 'required',
-				'item_id.*'     => 'required',
-				'unit_id.*'     => 'required',
-				'quantity.*'    => 'required',
-				'cost.*'        => 'required',
+	public function save(Request $request) {
+		
+		//echo '<pre>';print_r($request->all());exit;
+		if( $this->validate(
+			$request, 
+			[//'reference_no' => 'required',
+			 'supplier_name' => 'required','supplier_id' => 'required',
+			 'location_id' => 'required','location_id' => 'required',
+			 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			 'unit_id.*' => 'required',
+			 'quantity.*' => 'required',
+			 'cost.*' => 'required'
 			],
-			[
-				'supplier_name.required' => 'Supplier name is required.',
-				'supplier_id.required'   => 'Supplier name is invalid.',
-
-				'item_code.*.required'   => 'Item code is required.',
-				'item_id.*.required'     => 'Item code is invalid.',
-				'unit_id.*.required'     => 'Item unit is required.',
-				'quantity.*.required'    => 'Item quantity is required.',
-				'cost.*.required'        => 'Item cost is required.',
+			[//'reference_no.required' => 'Reference no. is required.',
+			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+			 'location_id.required' => 'Location is required.','location_id.required' => 'Location is invalid.',
+			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			 'unit_id.*' => 'Item unit is required.',
+			 'quantity.*' => 'Item quantity is required.',
+			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
 
-		// ✅ Only runs if validation PASSES
-		if ($this->purchase_order->create($request->all())) {
-			Session::flash('message', 'Purchase order added successfully.');
-		} else {
-			Session::flash('error', 'Something went wrong, Invoice failed to add!');
+			return redirect('purchase_order/add')->withInput()->withErrors();
 		}
-
+		if($request->input('total')==0){
+		    Session::flash('error', 'Cost is invalid, Invoice failed to add!');
+		    return redirect('purchase_order/add');
+		};
+		if( $this->purchase_order->create($request->all()) )
+			Session::flash('message', 'Purchase order added successfully.');
+		else
+			Session::flash('error', 'Something went wrong, Invoice failed to add!');
+		
 		return redirect('purchase_order/add');
 	}
-
 	
 	public function Settlement($id){
 		    DB::table('purchase_order')->where('id',$id)->update(['is_settled' => 1]);
@@ -458,7 +479,9 @@ class PurchaseOrderController extends Controller
 							 ->join('currency', 'currency.id', '=', 'parameter1.bcurrency_id')
 							  ->select('currency.code')
 							 ->first();					 
-					 
+		$cid=$this->acsettings->bcurrency_id;				
+		 $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
+					 			 
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','PO')
@@ -481,50 +504,45 @@ class PurchaseOrderController extends Controller
 					->withSettings($this->acsettings)
 					->withItemdesc($itemdesc)
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
+					->withFcurrency($fcurrency)
 					->withData($data);
 
 	}
 	
 	public function update(Request $request)
-{
-    // Get ID
-    $id = $request->input('purchase_order_id');
+	{
+		//echo '<pre>';print_r($request->all());exit;
+		$id = $request->input('purchase_order_id');
+		if( $this->validate(
+			$request, 
+			[//'reference_no' => 'required',
+			'location_id' =>'required','location_id' => 'required',
+			 'supplier_name' => 'required','supplier_id' => 'required',
+			 'item_code.*'  => 'required', 'item_id.*' => 'required',
+			 'unit_id.*' => 'required',
+			 'quantity.*' => 'required',
+			 'cost.*' => 'required'
+			],
+			[//'reference_no.required' => 'Reference no. is required.',
+			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
+			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+			 'unit_id.*' => 'Item unit is required.',
+			 'quantity.*' => 'Item quantity is required.',
+			 'cost.*' => 'Item cost is required.'
+			]
+		)) {
 
-    // ✅ Laravel 10 validation (auto redirect on failure)
-    $this->validate(
-        $request,
-        [
-            'supplier_name' => 'required',
-            'supplier_id'   => 'required',
-
-            'item_code.*'   => 'required',
-            'item_id.*'     => 'required',
-            'unit_id.*'     => 'required',
-            'quantity.*'    => 'required',
-            'cost.*'        => 'required',
-        ],
-        [
-            'supplier_name.required' => 'Supplier name is required.',
-            'supplier_id.required'   => 'Supplier name is invalid.',
-
-            'item_code.*.required'   => 'Item code is required.',
-            'item_id.*.required'     => 'Item code is invalid.',
-            'unit_id.*.required'     => 'Item unit is required.',
-            'quantity.*.required'    => 'Item quantity is required.',
-            'cost.*.required'        => 'Item cost is required.',
-        ]
-    );
-
-    // ✅ Only executes if validation PASSES
-    if ($this->purchase_order->update($id, $request->all())) {
-        Session::flash('message', 'Purchase Order updated successfully');
-    } else {
-        Session::flash('error', 'Something went wrong, Order failed to update!');
-    }
-
-    return redirect('purchase_order');
-}
-
+			return redirect('purchase_order/edit/'.$id)->withInput()->withErrors();
+		}
+		
+		if($this->purchase_order->update($id, $request->all()))
+			Session::flash('message', 'Purchase Order updated successfully');
+		else
+			Session::flash('error', 'Something went wrong, Order failed to update!');
+		
+		return redirect('purchase_order');
+	}
 	
 	
 	public function editDraft($id) { 
@@ -805,7 +823,12 @@ class PurchaseOrderController extends Controller
 		if($url=='MRO') {
 		    $mrdata = $this->material_requisition->getMRdata(); 
 		    $view = 'mrdata';
-		} else {
+		} else if($url=='PE') {
+		    $mrdata = $this->purchase_enquiry->getPEdata(); 
+		    $view = 'pedata';
+		} 
+		
+		else {
 		    $mrdata = DB::table('sales_order')
 		            ->join('account_master', 'account_master.id','=','sales_order.customer_id')
 		             ->where('sales_order.status', 1)
@@ -862,7 +885,7 @@ class PurchaseOrderController extends Controller
 		$data = array();
 		if($id) {
 			$row = DB::table('itemmaster')->where('id',$id)->select('class_id')->first();
-			if($row->class_id==2) {
+			if($this->mod_unit_serviceitem->is_active==1 && $row->class_id==2) {
 			   $data = DB::table('units')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','unit_name')->get();
 			   return $data;
 			} else {
@@ -1511,5 +1534,4 @@ class PurchaseOrderController extends Controller
 	}
 	
 }
-
 

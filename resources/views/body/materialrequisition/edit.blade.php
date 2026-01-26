@@ -58,6 +58,16 @@
              
         </section>
         <!--section ends-->
+        	@if (count($errors) > 0)
+			<div class="alert alert-danger">
+				<ul>
+					@foreach ($errors->all() as $error)
+						<li>{{ $error }}</li>
+					@endforeach
+				</ul>
+			</div>
+		@endif
+        
         <section class="content">
             <div class="row">
                 <div class="col-md-12">
@@ -68,13 +78,13 @@
                             </h3>
 			@endforeach		
 							<div class="pull-right">
-							@can('gi-print')
+							@permission('gi-print')
 							 <a href="{{ url('material_requisition/print/'.$orderrow->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endcan
+							@endpermission
 							</div>
                         </div>
                         <div class="panel-body">
@@ -82,11 +92,29 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmMaterialRequisition" id="frmMaterialRequisition" action="{{ url('material_requisition/update/'.$orderrow->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="material_requisition_id" id="material_requisition_id" value="{{ $orderrow->id }}">
+								
+								@php $selectedLocId = $orderrow->locfrom_id; @endphp
+                                <div class="form-group">
+                              <font color="#16A085">   <label class="col-sm-2 control-label"><b>Location From</b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                  @foreach($location as $loc)
+                                       <label class="radio-inline">
+                                      <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}"{{ $selectedLocId == $loc['id'] ? 'checked ' : '' }}>{{ $loc['name'] }}</label>
+                                  @endforeach
+
+                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{ $selectedLocId }}">
+
+								 </div>
+                                </div>
+
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">MR. No.</label>
                                     <div class="col-sm-10">
+									
                                         <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="{{$orderrow->voucher_no}}">
-                                    </div>
+                                        <input type="hidden" value="{{$orderrow->prefix}}" name="prefix">
+									
+									</div>
                                 </div>
 								
 								<div class="form-group">
@@ -98,7 +126,7 @@
 
 								<?php if($formdata['jobname']==1) { ?>
 								<div class="form-group">
-                                    <font color="#16A085"><label for="input-text" class="col-sm-2 control-label"><b>Job Code</b></label></font>
+                                    <font color="#16A085"><label for="input-text" class="col-sm-2 control-label"><b>Job Code</b><span class="text-danger">*</span></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" name="jobname" id="jobname" class="form-control" autocomplete="off" data-toggle="modal" data-target="#job_modal" value="{{$orderrow->code}}">
 										<input type="hidden" name="job_id" id="job_id" value="{{$orderrow->job_id}}">
@@ -111,7 +139,7 @@
 
 								<?php if($formdata['supplier_name']==1) { ?>
                                <div class="form-group">
-                                  <font color="#16A085">   <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b></label></font>
+                                  <font color="#16A085">   <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b><span class="text-danger">*</span></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" name="supplier_name" id="supplier_name" value="<?php echo (old('supplier'))?old('supplier'):$orderrow->supplier; ?>"  class="form-control <?php if($errors->has('supplier_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#supplier_modal" placeholder="Supplier">
 										<input type="hidden" name="supplier_id" id="supplier_id" value="{{$orderrow->supplier_id}}">
@@ -145,9 +173,9 @@
 								<input type="hidden" name="salesman" id="salesman">
 								<input type="hidden" name="salesman_id" id="salesman_id">
 								<?php } ?>
-								
+								<?php if($formdata['location']==1) { ?>
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
+                                    <label for="input-text" class="col-sm-2 control-label">Location To</label>
                                     <div class="col-sm-10">
                                         <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
 										<option value="">Select Location..</option>
@@ -159,30 +187,35 @@
                                         </select>
                                     </div>
                                 </div>
-								
+								<?php } else { ?>
+                                      <input type="hidden" name="location_id" id="location_id">
+								<?php } ?>
 								<br/>
 								<fieldset>
 								<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Item Details</span></h5></legend>
 								<table class="table table-bordered" style="margin-bottom:0px !important;">
 									<thead>
 									<tr>
-										<th width="14%" class="itmHd">
-											<span class="small">Item Code</span>
+										<th width="10%" class="itmHd">
+											<span class="small">Item Code*</span>
 										</th>
-										<th width="25%" class="itmHd">
-											<span class="small">Item Description</span>
+										<th width="18%" class="itmHd">
+											<span class="small">Item Description*</span>
 										</th>
 										<th width="7%" class="itmHd">
 											<span class="small">Unit</span>
 										</th>
-										<th width="7%" class="itmHd">
-											<span class="small">Quantity</span>
+										<th width="8%" class="itmHd">
+											<span class="small">Quantity*</span>
 										</th>
-										<th width="5%" class="itmHd">
+										<th width="6%" class="itmHd">
 											<span class="small">Cost/Unit</span>
 										</th>
-										<th width="14%" class="itmHd">
+										<th width="10%" class="itmHd">
 											<span class="small">Total</span> 
+										</th>
+										<th width="11%" class="itmHd">
+											<span class="small">Remarks</span> 
 										</th>
 										
 									</tr>
@@ -198,12 +231,12 @@
 									<div class="itemdivChld">
 										<table border="0" class="table-dy-row">
 											<tr>
-												<td width="16%">
+												<td width="12%">
 													<input type="hidden" name="order_item_id[]" id="p_orditmid_{{$i}}" value="{{$item->id}}">
 													<input type="hidden" name="item_id[]" id="itmid_{{$i}}" value="{{$item->item_id}}">
 													<input type="text" id="itmcod_{{$i}}" name="item_code[]" class="form-control" autocomplete="off" data-toggle="modal" data-target="#item_modal" value="{{$item->item_code}}">
 												</td>
-												<td width="29%">
+												<td width="22%">
 													<input type="text" name="item_name[]" id="itmdes_1" autocomplete="off" class="form-control" data-toggle="modal" data-target="#item_modal" value="{{$item->item_name}}">
 												</td>
 												<td width="7%">
@@ -220,8 +253,11 @@
 													<input type="hidden" id="vatlineamt_{{$i}}" name="vatline_amt[]" class="form-control vatline-amt" value="{{$item->vat_amount}}">
 													<input type="hidden" id="itmdsnt_{{$i}}" step="any" name="line_discount[]" class="form-control line-discount" placeholder="Discount">
 												</td>
-												<td width="11%">
+												<td width="10%">
 													<input type="number" id="itmttl_{{$i}}" step="any" name="line_total[]" class="form-control line-total" readonly value="{{$item->total_price}}">
+												</td>
+												<td width="14%">
+													<input type="text" name="remarks[]" id="remrk_{{$i}}" autocomplete="off" class="form-control"  value="{{$item->remarks}}">
 												</td>
 												<td width="1%">
 													@if($num==$i)
@@ -252,7 +288,7 @@
 											<div id="loc">
 												<button type="button" id="loc_{{$i}}" class="btn btn-primary btn-xs loc-info">Location</button>
 											</div>
-											</div>
+											
 											<?php } else { ?>
 								<input type="hidden" name="location_item" id="location_item">
 								<?php } ?>
@@ -275,6 +311,7 @@
 								</div>
 								
 								</fieldset>
+								<br/><br/>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Total</label>
                                     <div class="col-xs-10">
@@ -283,17 +320,17 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-										<span class="small" id="fc_label">Currency</span><input type="number" id="total" step="any" name="total" class="form-control spl" readonly value="{{$orderrow->total}}">
+										<input type="number" id="total" step="any" name="total" class="form-control spl" readonly value="{{$orderrow->total}}">
 										</div>
 										<div class="col-xs-2">
-										<span class="small" id="c_label">Currency Dhs</span>	<input type="number" id="total_fc" step="any" name="total_fc" class="form-control spl" readonly placeholder="0">
+										<input type="hidden" id="total_fc" step="any" name="total_fc" class="form-control spl" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>
 								
 								<input type="hidden" step="any" id="discount" name="discount" class="form-control" placeholder="0">
 								<input type="hidden" step="any" id="discount_fc" name="discount_fc" class="form-control" placeholder="0">
-								<br/>
+								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Net Amount</label>
                                     <div class="col-xs-10">
@@ -305,7 +342,7 @@
 											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly value="{{$orderrow->net_amount}}">
 										</div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" readonly placeholder="0">
+											<input type="hidden" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>
@@ -504,16 +541,32 @@ $(document).ready(function () {
 	$("#currency_id").prop('disabled', true);$("#c_label").toggle();
 	$("#fc_label").toggle(); $("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $('#other_cost_fc').toggle(); $('.OCdivPrnt').toggle(); 
+
+	 if( $('#selected_locfrom_id').val() !=''){   
+              $('.locfrom-radio').prop('disabled', true);
+         // update message
+           $('#locfrom-hint').text('Default location selected and locked.');
+		  // If editing, get pre-selected "Location From"
+                 let selectedFrom = $('#selected_locfrom_id').val();
+
+                 if (selectedFrom) {
+                // Remove selected "From" option from "To" list
+        $('#location_id option[value="' + selectedFrom + '"]').hide();
+         // Refresh select2
+        $('#location_id').trigger('change.select2');
+        }
+        }
+
     $('#frmMaterialRequisition').bootstrapValidator({
         fields: {
 			voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},
 			//voucher_date: { validators: { notEmpty: { message: 'The voucher date is required and cannot be empty!' } }},
-			jobname: { validators: { notEmpty: { message: 'The job name is required and cannot be empty!' } }},
+			//jobname: { validators: { notEmpty: { message: 'The job name is required and cannot be empty!' } }},
 			//description: { validators: { notEmpty: { message: 'The description is required and cannot be empty!' } }},
-			'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }},
+			//'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }},
 			//'item_name[]': { validators: { notEmpty: { message: 'The item description is required and cannot be empty!' } }},
-			'quantity[]': { validators: { notEmpty: { message: 'The item quantity is required and cannot be empty!' } }},
-			'cost[]': { validators: { notEmpty: { message: 'The item cost is required and cannot be empty!' } }}
+			//'quantity[]': { validators: { notEmpty: { message: 'The item quantity is required and cannot be empty!' } }},
+			//'cost[]': { validators: { notEmpty: { message: 'The item cost is required and cannot be empty!' } }}
         }
         
     }).on('reset', function (event) {
@@ -603,6 +656,7 @@ $(function() {
 			newEntry.find($('input[name="line_vat[]"]')).attr('id', 'vat_' + rowNum);
 			newEntry.find($('input[name="line_discount[]"]')).attr('id', 'itmdsnt_' + rowNum);
 			newEntry.find($('input[name="line_total[]"]')).attr('id', 'itmttl_' + rowNum);
+			newEntry.find($('input[name="remarks[]"]')).attr('id', 'remrk_' + rowNum);
 			newEntry.find($('input[name="vatline_amt[]"]')).attr('id', 'vatlineamt_' + rowNum); //new change
 			newEntry.find($('input[name="othr_cost[]"]')).attr('id', 'othrcst_' + rowNum);
 			newEntry.find($('input[name="net_cost[]"]')).attr('id', 'netcst_' + rowNum);

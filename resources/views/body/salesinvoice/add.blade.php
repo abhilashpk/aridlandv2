@@ -10,15 +10,8 @@
 @section('header_styles')
     <!--page level css -->
     <link rel="stylesheet" type="text/css" href="{{asset('assets/vendors/iCheck/css/all.css')}}" />
-	<link rel="stylesheet" type="text/css" href="{{asset('assets/vendors/bootstrap-fileinput/css/fileinput.min.css')}}" media="all" />
     <link rel="stylesheet" type="text/css" href="{{asset('assets/css/formelements.css')}}">
         <!--end of page level css-->
-        
-    <link href="{{asset('assets/vendors/bootstrap3-wysihtml5-bower/css/bootstrap3-wysihtml5.min.css')}}" rel="stylesheet" type="text/css"/>
-    <link rel="stylesheet" media="screen" type="text/css" href="{{asset('assets/vendors/summernote/summernote.css')}}">
-    <link href="{{asset('assets/vendors/trumbowyg/css/trumbowyg.min.css')}}" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="{{asset('assets/css/form_editors.css')}}">
-    
 	<link rel="stylesheet" href="{{asset('assets/vendors/datetime/css/jquery.datetimepicker.css')}}">
     <link href="{{asset('assets/vendors/airdatepicker/css/datepicker.min.css')}}" rel="stylesheet" type="text/css">
 	<link rel="stylesheet" type="text/css" href="{{asset('assets/vendors/datatables/css/buttons.bootstrap.css')}}">
@@ -40,8 +33,6 @@
 		.ui-helper-hidden-accessible{
 			display:none !important;
 		}
-		
-		#batch_modal { z-index:0; } /* MAY25  */
 	</style>
 	
 @stop
@@ -52,7 +43,7 @@
         <section class="content-header">
             <!--section starts-->
             <h1>
-                Sales Invoice
+                Sales Invoice Credit
             </h1>
             <ol class="breadcrumb">
                 <li>
@@ -61,7 +52,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#">Sales Invoice</a>
+                    <a href="#">Sales Invoice Credit</a>
                 </li>
                 <li class="active">
                     Add
@@ -104,7 +95,7 @@
 						Sales Invoice voucher is not found! Please create a voucher in Account Settings.
 					</p>
 				</div>
-				<?php } elseif($accstatus==false) { ?>
+		          	<?php } elseif($accstatus===false) { ?>
 				<div class="alert alert-warning">
 					<p>
 						Please set other accounts settings properly.
@@ -114,25 +105,25 @@
                     <div class="panel panel-primary">
                         <div class="panel-heading clearfix">
                             <h3 class="panel-title pull-left m-t-6">
-                                <i class="fa fa-fw fa-crosshairs"></i> New Sales Invoice
+                                <i class="fa fa-fw fa-crosshairs"></i> New Sales Invoice Credit
                             </h3>
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@can('si-print')
+								@permission('si-print')
 								 <a href="{{ url('sales_invoice/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 									<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span>
 								 </a>
-								@endcan
-								@can('si-print')
+								@endpermission
+								@permission('si-print')
 								 <!--<a href="{{ url('sales_invoice/printdo/'.$printid->id) }}" target="_blank" class="btn btn-info btn-sm">
 									<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i> DO
 									</span>
 								 </a>-->
-								@endcan
+								@endpermission
 							<?php } ?>
 							</div>
 							
@@ -142,96 +133,74 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmSalesInvoice" id="frmSalesInvoice" action="{{ url('sales_invoice/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="default_location" value="{{ Auth::user()->location_id }}">
-								<input type="hidden" name="is_cash" id="is_cash" value="{{($siscsh)?$siscsh:$vouchers[0]->is_cash_voucher}}">
-								@if($formdata['send_email']==1)
+								<input type="hidden" name="default_location" id="default_location" value="{{ $locdefault->id }}">
+								<input type="hidden" name="is_cash" id="is_cash" value="{{$vouchers[0]->is_cash_voucher}}">
+							    @if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
 								@else
 								<input type="hidden" name="send_email" value="0">
 								@endif
-								<input type="hidden" name="mq_loc" value="{{($ismqloc)?1:0}}">
-								@if($isdept)
+								
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Department</b></label>
-                                    <div class="col-sm-10">
-                                       <select id="department_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="department_id">
-											@foreach($departments as $drow)
-												<option value="{{ $drow->id }}" {{($sideptid==$drow->id)?'selected':''}} >{{ $drow->name }}</option>
-											@endforeach
-                                        </select>
-                                    </div>
-                                </div>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Sales Invoice</b></label>
+                                    <label for="input-text" class="col-sm-2 control-label">Invoice</label>
                                     <div class="col-sm-10">
                                        <select id="voucher_id" class="form-control select2" style="width:100%" name="voucher_id">
-                                           @foreach($vouchers as $voucher)
-											<option value="{{ $voucher['id'] }}" {{($sivchrid==$voucher['id'])?'selected':''}}>{{ $voucher['voucher_name'] }}</option>
-											@endforeach
+											<option value="{{ $vouchers[0]['id'] }}" <?php if(old('voucher_id')==$vouchers[0]['id']) echo 'selected'; ?>>{{ $vouchers[0]['voucher_name'] }}</option>
+											
                                         </select>
                                     </div>
                                 </div>
-								@else
+                                
+						<div class="form-group">
+						<label for="input-text" class="col-sm-2 control-label"></label>
+							<div class="col-sm-10">
+							    <label class="radio-inline">
+							<font color="#16A085">	<input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
+							    </label>
+							
+                                 <label class="radio-inline">
+							<font color="#16A085">	<input type="radio" class="locinter-radio" name="is_intercompany"  value=""><b>Inter Company</b></font>
+                                </label>
+							   </div>
+							</div>
+
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"><b>Sales Invoice</b></label>
-                                    <div class="col-sm-10">
-                                       <select id="voucher_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="voucher_id">
-                                           @foreach($vouchers as $voucher)
-										   @if(old('voucher_id') && old('voucher_id')==$voucher['id'])
-											   @php $sel = 'selected'; @endphp
-										   @elseif($sivchrid)==$voucher['id'])
-												@php $sel = 'selected'; @endphp
-										   @else
-											   @php $sel = ''; @endphp
-										   @endif
-											<option value="{{ $voucher['id'] }}" {{$sel}} >{{ $voucher['voucher_name'] }}</option>
-											@endforeach
-                                        </select>
-                                    </div>
-                                </div>
-								@endif
-								
+                                <font color="#16A085"> <label class="col-sm-2 control-label"><b>Location </b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                 <div id="locationRadioGroup">
+                                   @foreach($location as $loc)
+                                <label class="radio-inline">
+                                    <input type="radio" class="locfrom-radio" name="location_from" data-id="{{ $loc['id'] }}" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+                                 </label>
+                                 @endforeach
+								 </div>
+
+								 <div id="locationRadio">
+								 <label class="radio-inline">
+                                    <input type="radio" class="locin-radio"  data-id="{{$interid}}" value="{{$interid}}">{{$intername}}
+                                 </label>
+                                 </div>
+                               <input type="hidden" id="selected_locfrom_id" name="location_id">
+                                  <small class="text-muted" id="locfrom-mand">
+                                             '*' is mandatory fields
+                                    </small>
+                             </div>
+                             </div>
 							
 								<div class="form-group">
                                      <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label"><b>SI. No.</b></label></font>
 									<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$vouchers[0]['voucher_no']}}">
                                     <div class="col-sm-10">
-										@can('si-invno')
+										
 										<div class="input-group">
-										@if($vouchers[0]['is_prefix']==1)<span class="input-group-addon">{{$vouchers[0]['prefix']}}</span>@endif
+										<span class="input-group-addon" id="prefixBox">{{$vouchers[0]['prefix']}}</span>
                                         <input type="text" class="form-control" id="voucher_no" placeholder="{{(old('voucher_no'))?old('voucher_no'):$vouchers[0]['voucher_no']}}" readonly name="voucher_no">
 										<span class="input-group-addon inputvn"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
+										<input type="hidden" value="{{$vouchers[0]['prefix']}}" name="prefix">
 										</div>
-										@else
-										@if($voucher['is_prefix']==1)<span class="input-group-addon">{{$voucher['prefix']}}</span>@endif
-										<input type="text" class="form-control" id="voucher_no" placeholder="{{(old('voucher_no'))?old('voucher_no'):$vouchers[0]['voucher_no']}}" readonly name="voucher_no">
-										@endcan
+										
                                     </div>
                                 </div>
-                                
-								<?php if($formdata['copy_from']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"> Paste From</label>
-                                    <div class="col-sm-10">
-										<input type="text" class="form-control" id="sinvoice_id" readonly name="sinvoice_id" placeholder="Copy from existing Invoice" autocomplete="off" onclick="getSalesInvoice()">
-                                    </div>
-                                </div>
-								<?php } else { ?>
-									<input type="hidden" name="sinvoice_id" id="sinvoice_id">
-								<?php } ?>
-								
-
-								<?php if($formdata['copy_from_loc']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"> Paste From LOC</label>
-                                    <div class="col-sm-10">
-										<input type="text" class="form-control" id="sinvoice_id" readonly name="sinvoice_id" placeholder="Copy from existing Loc" autocomplete="off" onclick="getLocation()">
-                                    </div>
-                                </div>
-								<?php } else { ?>
-									<input type="hidden" name="sinvoice_id" id="sinvoice_id">
-								<?php } ?>
-
 								
 								<?php if($formdata['reference_no']==1) { ?>
 									<div class="form-group">
@@ -247,10 +216,9 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">SI. Date</label>
                                     <div class="col-sm-10">
-										<input type="text" class="form-control pull-right"  <?php if(old('voucher_date')!='') { ?> value="{{(old('voucher_date')=='')?date('d-m-Y'):old('voucher_date')}}"<?php } ?> name="voucher_date" data-language='en' readonly id="voucher_date" placeholder="{{date('d-m-Y')}}"/>
+										<input type="text" class="form-control pull-right"  <?php if(old('voucher_date')!='') { ?> value="{{old('voucher_date')}}" <?php } ?> name="voucher_date" data-language='en' readonly id="voucher_date" placeholder="{{date('d-m-Y')}}"/>
                                     </div>
                                 </div>
-								
 								
 								<?php if($formdata['lpo_no']==1) { ?>
 								<div class="form-group">
@@ -326,75 +294,56 @@
 								<div class="form-group">
                                  <font color="#16A085">  <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('customer_name')) echo 'form-error';?>"><b>Customer</b></label></font>
                                     <div class="col-sm-10">
+										<?php if($scstname) {?>
+                                        <input type="text" name="customer_name" id="customer_name" value="{{$scstname}}" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#customer_modal" placeholder="Customer" readonly>
+                                        <?php } else { ?>
+										<input type="text" name="customer_name" id="customer_name" value="{{old('customer_name')}}" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#customer_modal" placeholder="Customer" readonly>
+										<?php } ?>
 										
-                                        <input type="text" name="customer_name" id="customer_name" value="{{(old('customer_name'))?old('customer_name'):$vouchers[0]->default_account}}" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#customer_modal" placeholder="Customer" readonly>
-										<input type="hidden" name="customer_id" id="customer_id" value="{{(old('customer_id'))?old('customer_id'):$vouchers[0]->default_account_id}}">
-										<input type="hidden" name="dr_account_id" id="dr_account_id" value="{{(old('dr_account_id'))?old('dr_account_id'):$vouchers[0]->default_account_id}}">
-
+										<?php if($scstid) { ?>
+										<input type="hidden" name="customer_id" id="customer_id" value="{{$scstid}}">
+										<?php } else { ?>
+										<input type="hidden" name="customer_id" id="customer_id" value="{{old('customer_id')}}">
+										<?php } ?>
+										
+										<?php if($sdrid) { ?>
+										<input type="hidden" name="dr_account_id" id="dr_account_id" value="{{$sdrid}}">
+										<?php } else { ?>
+										<input type="hidden" name="dr_account_id" id="dr_account_id" value="{{old('dr_account_id')}}">
+										<?php } ?>
 										<div class="col-xs-10" id="customerInfo">
-											<div class="col-xs-2">
+											<div class="col-xs-4">
 												<span class="small">Current Balance</span> <input type="text" id="cr_balance" name="cbal" value="{{old('cbal')}}" readonly class="form-control line-quantity">
 											</div>
-											<div class="col-xs-2">
+											<div class="col-xs-4">
 												<span class="small">PDC</span> <input type="text" id="pdc" name="pdc" value="{{old('pdc')}}" readonly class="form-control line-cost">
 											</div>
-											<!--<div class="col-xs-2">
+											<div class="col-xs-3">
 												<span class="small">Crdit Limit</span> <input type="text" id="cr_limit" name="clmt" value="{{old('clmt')}}" readonly readonly class="form-control cost">
-											</div>-->
-											<div class="col-xs-2">
-												<span class="small">Phone No</span> <input type="text" id="customer_phone" name="customer_phone" value="{{old('customer_phone')}}" class="form-control cpno" autocomplete="off">
 											</div>
-											<?php if($formdata['vehicle_no']==1) { ?>
-											<div class="col-xs-2">
-												<span class="small">Vehicle No.</span> <input type="text" id="vehicle_no" name="vehicle_no" value="{{old('vehicle_no')}}" class="form-control vno" autocomplete="off">
-											</div>
-											<?php } else { ?><input type="hidden" name="vehicle_no" id="vehicle_no"><?php } ?>
-											<?php if($formdata['km_miles']==1) { ?>
-											<div class="col-xs-2">
-												<span class="small">Kilometer/Miles</span> <input type="text" id="kilometer" name="kilometer" value="{{old('kilometer')}}" class="form-control km" autocomplete="off">
-											</div>
-											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											<div class="col-xs-1"><br/>
-											<?php if (('customer_phone')=='') { ?>
-											@can('si-history')
+												@permission('si-history')
 												<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">History</a>
-												@endcan
-											
-											<?php	} else { ?>
-												@can('siph-history')
-												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endcan
-												<?php } ?>
+												@endpermission
 											</div>
 										</div>
 										<div class="col-xs-10" id="newcustomerInfo">
-											<div class="col-xs-3">
-												<span class="small">Customer Name</span> <input type="text" id="customername" name="customername" value="{{old('customername')}}" class="form-control" autocomplete="off" >
+											<div class="col-xs-4">
+												<span class="small">Customer Name</span> <input type="text" id="customername" name="customername" value="{{old('customername')}}" class="form-control" autocomplete="off" data-toggle="modal" data-target="#newcustomer_modal">
 											</div>
-											<div class="col-xs-2">
-												<span class="small">Phone No</span> <input type="text" id="customer_phone" name="customer_phone" value="{{old('customer_phone')}}" class="form-control cpno" autocomplete="off">
-											</div>
-											<div class="col-xs-2">
+											<div class="col-xs-4">
 												<span class="small">TRN No</span> <input type="text" id="customer_trn" name="customer_trn" value="{{old('customer_trn')}}" class="form-control" autocomplete="off">
 											</div>
-											<?php if($formdata['vehicle_no']==1) { ?>
-											<div class="col-xs-2">
-												<span class="small">Vehicle No.</span> <input type="text" id="vehicle_no" name="vehicle_no" value="{{old('vehicle_no')}}" class="form-control vno" autocomplete="off">
+											<div class="col-xs-3">
+												<span class="small">Phone No</span> <input type="text" id="customer_phone" name="customer_phone" value="{{old('customer_phone')}}" class="form-control" autocomplete="off">
 											</div>
-											<?php } else { ?><input type="hidden" name="vehicle_no" id="vehicle_no"><?php } ?>
-											<?php if($formdata['km_miles']==1) { ?>
-											<div class="col-xs-2">
-												<span class="small">Kilometer/Miles</span> <input type="text" id="kilometer" name="kilometer" value="{{old('kilometer')}}" class="form-control km" autocomplete="off">
-											</div>
-											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
-											
 											<div class="col-xs-1"><br/>
-												<!--@can('si-history')
+												@permission('si-history')
 												<a href="" class="btn btn-info cust-history" data-toggle="modal" data-target="#custhistory_modal">History</a>
-												@endcan-->
-												@can('siph-history')
+												@endpermission
+												@permission('siph-history')
 												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endcan
+												@endpermission
 											</div>
 										</div>
 									</div>
@@ -406,34 +355,6 @@
                                         <input type="text" class="form-control" id="vat_no" name="vat_no" placeholder="TRN No." value="{{old('vat_no')}}" autocomplete="off">
                                     </div>
                                 </div>
-								
-								@if($formdata['crm_details']==1)
-								<h5><a href="#" id="crmBtn"><b>CRM Details</b></a></h5>
-								<hr/>
-								<div class="crm_info">
-									@foreach($crm as $rw)
-									<div class="form-group">
-										<label for="input-text" class="col-sm-2 control-label">{{$rw->label}}</label>
-										<input type="hidden" name="tempid[]" value="{{$rw->id}}">
-										@if($rw->text_no==1)
-										<div class="col-sm-10">
-											<input type="text" name="crmtext[]" class="form-control" autocomplete="on">
-											<input type="hidden" name="crmtext2[]">
-										</div>
-										@else
-										<div class="col-sm-4">
-											<input type="text" name="crmtext[]" class="form-control" autocomplete="on">
-										</div>
-										<label for="input-text" class="col-sm-2 control-label">{{$rw->label2}}</label>
-										<div class="col-sm-4">
-											<input type="text" name="crmtext2[]" class="form-control" autocomplete="on">
-										</div>
-										@endif
-									</div>
-									@endforeach
-								<hr/>
-								</div>
-								@endif
 								
 								<?php if($formdata['salesman']==1) { ?>
 								<div class="form-group">
@@ -464,8 +385,8 @@
                                     <div class="col-sm-10">
 									 <select id="document_type" class="form-control select2" style="width:100%" name="document_type">
 										<option value="">Select Document...</option>
-										<option value="SQ">Sales Quotation</option>
-										<option value="SO">Sales Order</option>
+									<!--	<option value="SQ">Sales Quotation</option>
+										<option value="SO">Sales Order</option>-->
 										<option value="CDO">@php echo (Session::get('trip_entry')==1)?'Daily Entry':'Delivery Order'; @endphp</option>
 										<!--<option value="SO">Payment Certificate</option>-->
 									</select>
@@ -498,6 +419,17 @@
 								<input type="hidden" name="so_no" id="so_no">
 								<?php } ?>
 								
+								<div class="form-group">
+                                    <label for="input-text" class="col-sm-2 control-label">Day</label>
+                                    <div class="col-sm-4">
+                                        	<input type="number" class="form-control" id="duedays" name="duedays" placeholder="Due Days">
+                                    </div>
+                                    <label for="input-text" class="col-sm-2 control-label">Due Date</label>
+                                    <div class="col-sm-4">
+                                        
+										<input type="text" class="form-control pull-right" autocomplete="off" name="due_date" data-language='en' id="due_date" value="{{date('d-m-Y')}}"/>
+								     </div>
+                                </div>
 								
 								<?php if($formdata['terms']==1) { ?>
 								<div class="form-group">
@@ -515,55 +447,23 @@
 								<input type="hidden" name="terms_id" id="terms_id">
 								<?php } ?>
 								
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Day</label>
-                                    <div class="col-sm-4">
-                                        	<input type="number" class="form-control" id="duedays" name="duedays" placeholder="Due Days">
-                                    </div>
-                                    <label for="input-text" class="col-sm-2 control-label">Due Date</label>
-                                    <div class="col-sm-4">
-                                        <div class="col-sm-10">
-										<input type="text" class="form-control pull-right" autocomplete="off" name="due_date" data-language='en' id="due_date" value="{{date('d-m-Y')}}"/>
-										
-                                    </div>
-                                    </div>
-                                </div>
-								
 								<?php if($formdata['job']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Job</label>
                                     <div class="col-sm-10">
-                                        <input type="text" name="jobname" id="jobname" class="form-control" autocomplete="off" data-toggle="modal" data-target="#job_modal" placeholder="Job Code">
-										<input type="hidden" name="job_id" id="job_id">
+                                        <select id="job_id" class="form-control select2" style="width:100%" name="job_id">
+                                            <option value="">Select Job...</option>
+											@foreach($jobs as $job)
+											<option value="{{ $job['id'] }}" <?php if($job['id']==old('job_id')) echo 'selected'; ?>>{{ $job['code'] }}</option>
+											@endforeach
+                                        </select>
                                     </div>
                                 </div>
 								<?php } else { ?>
 								<input type="hidden" name="job_id" id="job_id">
 								<?php } ?>
 								
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-											<?php 
-											$is_default = 0;
-											foreach($location as $loc) { 
-											if($loc->is_default==1)
-												$is_default = 1;
-											?>
-											<option value="{{ $loc['id'] }}" <?php if(old('location_id')==$loc['id']) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-											
-											<?php if($is_default==0) { ?>
-											<option value="" selected>Select Location..</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+								
 								
 								<?php if($formdata['foreign_currency']==1) { ?>
 								<div class="form-group">
@@ -601,8 +501,6 @@
 										</div>
 									</div>
                                 </div>
-                                
-                    
 								
 								<br/>
 								<fieldset>
@@ -610,20 +508,15 @@
 								<table class="table table-bordered" style="margin-bottom:0px !important;">
 									<thead>
 									<tr>
-										<th width="11%" class="itmHd">
+										<th width="14%" class="itmHd">
 											<span class="small">Item Code</span>
 										</th>
-										<th width="21%" class="itmHd">
+										<th width="25%" class="itmHd">
 											<span class="small">Item Description</span>
 										</th>
 										<th width="7%" class="itmHd">
 											<span class="small">Unit</span>
 										</th>
-										@if($ismpqty==1)
-										<th width="7%" class="itmHd">
-											<span class="small">MP Qty</span>
-										</th>
-										@endif
 										<th width="7%" class="itmHd">
 											<span class="small">Quantity</span>
 										</th>
@@ -673,7 +566,8 @@
 													<select id="taxcode_{{$j}}" class="form-control select2 tax-code" style="width:100%" name="tax_code[]"><option value="SR">SR</option><option value="EX">EX</option><option value="ZR">ZR</option></select>
 												</td>
 												<td width="6%">
-													<select id="txincld_{{$j}}" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option value="0" {{($settings->si_vat_inc==0) ? 'selected' : ''}}>No</option><option value="1" {{($settings->si_vat_inc==1) ? 'selected' : ''}} >Yes</option></select>
+													<span class="small">Tx.Inc.</span><br/>
+													<select id="txincld_{{$j}}" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option value="0">No</option><option value="1">Yes</option></select>
 												</td>
 												<td width="9%">
 													<input type="hidden" id="hidunit_{{$j}}" name="hidunit[]" class="hidunt" value="{{old('hidunit')[$i]}}">
@@ -684,7 +578,6 @@
 													<input type="hidden" id="itmdsnt_{{$j}}" name="line_discount[]" value="{{ old('line_discount')[$i]}}">
 													<input type="hidden" id="costavg_{{$j}}" name="costavg[]" value="{{ old('costavg')[$i]}}">
 													<input type="hidden" id="purcost_{{$j}}" name="purcost[]" value="{{ old('purcost')[$i]}}">
-													<input type="hidden" id="cqty_{{$j}}" name="curqty[]" value="{{ old('curqty')[$i]}}">
 												</td>
 												<td width="11%">
 													<input type="number" id="itmttl_{{$j}}" step="any" name="line_total[]" value="{{ old('item_total')[$i]}}" class="form-control line-total" readonly placeholder="Total">
@@ -713,52 +606,51 @@
 											<div id="moreinfo" style="float:left; padding-right:5px;">
 												<button type="button" id="moreinfoItm_{{$j}}" class="btn btn-primary btn-xs more-info">More Info</button>
 											</div>
-											<?php } else { ?>
-								<input type="hidden" name="more_info" id="more_info">
-								<?php } ?>
-								<?php if($formdata['add_desc']==1) { ?>
+										<?php } else { ?>
+								             <input type="hidden" name="more_info" id="more_info">
+								         <?php } ?>	
+										 <?php if($formdata['add_desc']==1) { ?>
 											<div id="moredesc" style="float:left; padding-right:5px;">
 												<button type="button" id="descinfoItm_{{$j}}" class="btn btn-primary btn-xs desc-info">Add Description</button>
-											</div><?php } else { ?>
-								<input type="hidden" name="add_desc" id="add_desc">
-								<?php } ?>
-								<?php if($formdata['location_item']==1) { ?>
+											</div>
+											<?php } else { ?>
+								                    <input type="hidden" name="add_desc" id="add_desc">
+								             <?php } ?>
+											<?php if($formdata['location_item']==1) { ?>
 											<div id="loc" style="float:left; padding-right:5px;">
 												<button type="button" id="loc_{{$j}}" class="btn btn-primary btn-xs loc-info">Location</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="location_item" id="location_item">
-								<?php } ?>	
-											@if($isconloc)
-											<div id="cnloc" style="float:left; padding-right:5px;">
-												<button type="button" id="cnloc_{{$j}}" class="btn btn-primary btn-xs cnloc-info">Consignment Location</button>
-											</div>
-											@endif
+								              <input type="hidden" name="location_item" id="location_item">
+								            <?php } ?>	
 											<?php if($formdata['supersede']==1) { ?>
 											<div id="ssede" style="float:left; padding-right:5px;">
 												<button type="button" id="sede_{{$j}}" class="btn btn-primary btn-xs sup-sede">Supersede</button>
 											</div>
-											<?php } else { ?>
-								<input type="hidden" name="supersede" id="supersede">
-								<?php } ?><?php if($formdata['purchase_item']==1) { ?>	
+											   <?php } else { ?>
+								               <input type="hidden" name="supersede" id="supersede">
+								              <?php } ?>
+											  <?php if($formdata['purchase_item']==1) { ?>
 											<div style="float:left; padding-right:5px;">
 												<button type="button" id="purhisItm_{{$j}}" data-toggle="modal" data-target="#purchase_modal" class="btn btn-primary btn-xs pur-his">Purchse</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="purchase_item" id="purchase_item">
-								<?php } ?><?php if($formdata['sales_item']==1) { ?>
+								                    <input type="hidden" name="purchase_item" id="purchase_item">
+								             <?php } ?>
+											 <?php if($formdata['sales_item']==1) { ?>
 											<div style="float:left;">
 												<button type="button" id="saleshisItm_{{$j}}" data-toggle="modal" data-target="#sales_modal" class="btn btn-primary btn-xs sales-his">Sales</button>
 											</div>
-											<?php } else { ?>
-								<input type="hidden" name="sales_item" id="sales_item">
-								<?php } ?><?php if($formdata['customer_sales']==1) { ?>	
-											<div>
+											?php } else { ?>
+								              <input type="hidden" name="sales_item" id="sales_item">
+								          <?php } ?>
+										  <?php if($formdata['customer_sales']==1) { ?>	
+											<div style="float:left;">
 												<button type="button" id="custsaleshisItm_{{$j}}" data-toggle="modal" data-target="#cust_sales_modal" class="btn btn-primary btn-xs cust-sales-his">Customer Sales</button>
 											</div>
-											<?php } else { ?>
-								<input type="hidden" name="customer_sales" id="customer_sales">
-								<?php } ?>
+                                            <?php } else { ?>
+								                   <input type="hidden" name="customer_sales" id="customer_sales">
+								           <?php } ?>
 											<!--
 											<div style="float:left;">
 												Amount in % <input type="text" style="width:50px;" id="per_{{$j}}" name="per[]" class="perc"/> <input type="text" style="width:250px;" placeholder="Description..." id="perdesc_{{$j}}" name="perdesc[]"/>
@@ -777,12 +669,6 @@
 												</div>
 											</div>
 											
-											<div class="cnlocPrntItm" id="cnlocPrntItm_{{$j}}">
-												<div class="cnlocChldItm">							
-													<div class="table-responsive cnloc-data" id="cnlocData_{{$j}}"></div>
-												</div>
-											</div>
-
 											<div class="sedePrntItm" id="sedePrntItm_{{$j}}">
 												<div class="sedeChldItm">							
 													<div class="table-responsive sede-data" id="sedeData_{{$j}}"></div>
@@ -811,25 +697,18 @@
 									<div class="itemdivChld">
 										<table border="0" class="table-dy-row">
 											<tr>
-												<td width="13%">
+												<td width="16%">
 													<input type="hidden" name="item_id[]" id="itmid_1">
-													<input type="hidden" name="item_wit[]" id="itmwit_1">
-														<input type="hidden" name="item_lnt[]" id="itmlnt_1">
-													<input type="text" id="itmcod_1" name="item_code[]" class="form-control" autocomplete="off" placeholder="Item Code" data-toggle="modal" data-target="#item_modal">
+													<input type="text" id="itmcod_1" name="item_code[]" class="form-control" autocomplete="off" autocomplete="off" placeholder="Item Code" data-toggle="modal" data-target="#item_modal">
 												</td>
-												<td width="24%">
+												<td width="29%">
 													<input type="text" name="item_name[]" id="itmdes_1" autocomplete="off" class="form-control" placeholder="Item Description">
 												</td>
 												<td width="7%">
 													<select id="itmunt_1" class="form-control select2 line-unit" style="width:100%" name="unit_id[]"><option value="">Unit</option></select>
 												</td>
-												@if($ismpqty==1)
-												<td width="8%" class="itcodmp">
-													<input type="number" id="itmmpqty_1" autocomplete="off" step="any" name="mpquantity[]" class="form-control line-mpquantity" placeholder="MP Qty.">
-												</td>
-												@endif
 												<td width="8%">
-													<input type="number" id="itmqty_1" step="any" name="quantity[]" autocomplete="off" class="form-control line-quantity" placeholder="Qty." {{($formdata['location_item']==1)?'readonly':''}}>
+													<input type="number" id="itmqty_1" step="any" name="quantity[]" autocomplete="off" class="form-control line-quantity" placeholder="Qty.">
 												</td>
 												<td width="8%">
 													<input type="number" id="itmcst_1" step="any" name="cost[]" autocomplete="off" class="form-control line-cost" placeholder="Cost/Unit">
@@ -838,7 +717,7 @@
 													<select id="taxcode_1" class="form-control select2 tax-code" style="width:100%" name="tax_code[]"><option value="SR">SR</option><option value="EX">EX</option><option value="ZR">ZR</option></select>
 												</td>
 												<td width="6%">
-													<select id="txincld_1" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option value="0" {{($settings->si_vat_inc==0) ? 'selected' : ''}}>No</option><option value="1" {{($settings->si_vat_inc==1) ? 'selected' : ''}}>Yes</option></select>
+													<select id="txincld_1" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option value="0">No</option><option value="1">Yes</option></select>
 												</td>
 												<td width="9%">
 													<input type="hidden" id="hidunit_1" name="hidunit[]" class="hidunt">
@@ -849,7 +728,6 @@
 													<input type="hidden" id="itmdsnt_1" name="line_discount[]">
 													<input type="hidden" id="costavg_1" name="costavg[]">
 													<input type="hidden" id="purcost_1" name="purcost[]">
-													<input type="hidden" id="cqty_1" name="curqty[]">
 												</td>
 												<td width="11%">
 													<input type="number" id="itmttl_1" step="any" name="line_total[]" class="form-control line-total" readonly placeholder="Total">													
@@ -866,87 +744,75 @@
 												</td>
 											</tr>
 										</table>
-										<?php if($formdata['more_info']==1) { ?>
+										   <?php if($formdata['more_info']==1) { ?>
 											<div id="moreinfo" style="float:left; padding-right:5px;">
 												<button type="button" id="moreinfoItm_1" class="btn btn-primary btn-xs more-info">More Info</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="more_info" id="more_info">
-								<?php } ?>
-								<?php if($formdata['add_desc']==1) { ?>
+								                  <input type="hidden" name="more_info" id="more_info">
+								             <?php } ?>
+											 <?php if($formdata['add_desc']==1) { ?>
 											<div id="moredesc" style="float:left; padding-right:5px;">
 												<button type="button" id="descinfoItm_1" class="btn btn-primary btn-xs desc-info">Add Description</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="add_desc" id="add_desc">
-								<?php } ?><?php if($formdata['location_item']==1) { ?>
+								                  <input type="hidden" name="add_desc" id="add_desc">
+								             <?php } ?>
+											 <?php if($formdata['location_item']==1) { ?>
 											<div id="loc" style="float:left; padding-right:5px;">
 												<button type="button" id="loc_1" class="btn btn-primary btn-xs loc-info">Location</button>
-												<div class="form-group"><input type="text" name="iloc[]" id="iloc_1" style="border:none;color:#FFF;"></div><!-- NOV24 -->
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="location_item" id="location_item">
-								<?php } ?>	
-								
-								<!--MAY25-->
-								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
-									<button type="button" id="btnBth_1" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelIds_1" style="border:none;color:#FFF;"></div>
-                                    <input type="hidden" id="bthSelQty_1" name="qtyBatchs[]">
-								</div>
-											@if($isconloc)
-											<div id="cnloc" style="float:left; padding-right:5px;">
-												<button type="button" id="cnloc_1" data-toggle="modal" data-target="#conloc_modal" class="btn btn-primary btn-xs cnloc-info">Consignment Location</button>
-												<input type="hidden" name="conloc_id[]" id="conlocid_1">
-												<input type="hidden" name="conloc_qty[]" id="conlocqty_1">
-											</div>
-											@endif
-											<?php if($formdata['supersede']==1) { ?>	
+								                  <input type="hidden" name="location_item" id="location_item">
+								            <?php } ?>	
+											<?php if($formdata['supersede']==1) { ?>
 											<div id="ssede" style="float:left; padding-right:5px;">
 												<button type="button" id="sede_1" class="btn btn-primary btn-xs sup-sede">Supersede</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="supersede" id="supersede">
-								<?php } ?><?php if($formdata['purchase_item']==1) { ?>	
+								                <input type="hidden" name="supersede" id="supersede">
+								               <?php } ?>
+											   <?php if($formdata['purchase_item']==1) { ?>
 											<div style="float:left; padding-right:5px;">
 												<button type="button" id="purhisItm_1" data-toggle="modal" data-target="#purchase_modal" class="btn btn-primary btn-xs pur-his">Purchse</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="purchase_item" id="purchase_item">
-								<?php } ?>								<?php if($formdata['sales_item']==1) { ?>
-											
+								                      <input type="hidden" name="purchase_item" id="purchase_item">
+								            <?php } ?>	
+											<?php if($formdata['sales_item']==1) { ?>			
 											<div style="float:left; padding-right:10px;">
 												<button type="button" id="saleshisItm_1" data-toggle="modal" data-target="#sales_modal" class="btn btn-primary btn-xs sales-his">Sales</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="sales_item" id="sales_item">
-								<?php } ?><?php if($formdata['customer_sales']==1) { ?>
+								                  <input type="hidden" name="sales_item" id="sales_item">
+								             <?php } ?>
+											 <?php if($formdata['customer_sales']==1) { ?>
+											
 											<div style="float:left; padding-right:10px;">
 												<button type="button" id="custsaleshisItm_1" data-toggle="modal" data-target="#cust_sales_modal" class="btn btn-primary btn-xs cust-sales-his">Customer Sales</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="customer_sales" id="customer_sales">
-								<?php } ?><?php if($formdata['add_assembley']==1) { ?>
-											<div style="float:left; padding-right:10px;">
+								                <input type="hidden" name="customer_sales" id="customer_sales">
+								                  <?php } ?>
+												  
+												  <?php if($formdata['add_assembley']==1) { ?>
+												  <div style="float:left; padding-right:10px;">
 												<button type="button" id="assemblyItm_1" data-toggle="modal" data-target="#assembly_modal" class="btn btn-primary btn-xs asm-itm">Add Assembly Items</button>
 												<input type="hidden" name="assembly_items[]" id="asmid_1">
 												<input type="hidden" name="assembly_items_qty[]" id="asmqt_1">
 											</div>
+											</div>
 											<?php } else { ?>
-								<input type="hidden" name="add_assembley" id="add_assembley">
-								<?php } ?><?php if($formdata['view_assembley']==1) { ?>
-											<div style="float:left; padding-right:5px;">
+								                  <input type="hidden" name="add_assembley" id="add_assembley">
+								              <?php } ?>
+											  <?php if($formdata['view_assembley']==1) { ?>
+											
+											<div style="float:left; padding-right:10px;">
 												<button type="button" id="assemblyItmVw_1" data-toggle="modal" data-target="#view_assembly_modal" class="btn btn-primary btn-xs view-asm-itm">View Assembly Items</button>
 											</div>
 											<?php } else { ?>
-								<input type="hidden" name="view_assembley" id="view_assembley">
-								<?php } ?><?php if($formdata['dimension']==1) { ?>
-								<div id="itmInfo">
-								<button type="button" id="itmInfo_1" class="btn btn-primary btn-xs dimn-view">Dimension</button>
-								</div>
-								<?php } else { ?>
-								<input type="hidden" name="itmInfo" id="itmInfo">
-								<?php } ?>
+								                     <input type="hidden" name="view_assembley" id="view_assembley">
+								                <?php } ?>
 											<!--
 											<div style="float:left;">
 												Amount in % <input type="text" style="width:50px;" id="per_1" name="per[]" class="perc"/> <input type="text" style="width:250px;" placeholder="Description..." id="perdesc_1" name="perdesc[]"/>
@@ -964,24 +830,12 @@
 													<div class="table-responsive loc-data" id="locData_1"></div>
 												</div>
 											</div>
-
-											<div class="cnlocPrntItm" id="cnlocPrntItm_1">
-												<div class="cnlocChldItm">							
-													<div class="table-responsive cnloc-data" id="cnlocData_1"></div>
-												</div>
-											</div>
 												
 											<div class="sedePrntItm" id="sedePrntItm_1">
 												<div class="sedeChldItm" style="float:right; padding-right:10px;">							
 													<div class="table-responsive sede-data" id="sedeData_1"></div>
 												</div>
 											</div>
-
-											<div class="dimnInfodivPrntItm" id="dimnInfodivPrntItm_1">
-													<div class="dimnInfodivChldItm">							
-														<div class="table-responsive dimn-item-data" id="dimnitemData_1"></div>
-													</div>
-												</div>
 											
 											<div class="descdivPrntItm" id="descdivPrntItm_1">
 												<div class="descdivChldItm" >							
@@ -1005,57 +859,7 @@
 								</div>
 								
 								</fieldset>
-								
-								<fieldset>
-									<legend>
-									    <?php if($formdata['selling_expense']==1) { ?>
-										<div id="oc_showmenu" style="padding-left:5px;"><button type="button" id="ocadd" class="btn btn-primary btn-xs">Selling Expense</button></div>
-										<?php } else { ?>
-								<input type="hidden" name="selling_expense" id="selling_expense">
-								<?php } ?>
-									</legend>
-									<div class="OCdivPrnt">
-									<input type="hidden" id="ocrowNum" value="1">
-									<div class="OCdivChld">
-											<div class="form-group">
-											<table border="0" class="table-dy-row">
-												<tr>
-													<td width="15%">
-														<input type="hidden" name="dr_acnt_id[]" id="dracntid_1">
-														<span class="small">Debit Account</span>
-														<input type="text" id="dracnt_1" name="dr_acnt[]" class="form-control" autocomplete="off" data-toggle="modal" data-target="#account_modal" placeholder="Debit Account">
-													</td>
-													<td width="10%">
-														<span class="small">Reference</span>
-														<input type="text" name="oc_reference[]" id="ocref_1" autocomplete="off" class="form-control" placeholder="Reference">
-													</td>
-													<td width="15%">
-														<span class="small">Description</span>
-														<input type="text" name="oc_description[]" id="ocdesc_1" autocomplete="off" class="form-control" placeholder="Description">
-													</td>
-													<td width="10%">
-														<span class="small">Amount</span>
-														<input type="number" name="oc_amount[]" step="any" id="ocamt_1" autocomplete="off" class="form-control oc-line" placeholder="Amount">
-													</td>
-													<td width="15%">
-														<span class="small">Credit Account</span>
-														<input type="hidden" name="cr_acnt_id[]" id="cracntid_1">
-														<input type="text" id="cracnt_1" name="cr_acnt[]" class="form-control"  autocomplete="off" data-toggle="modal" data-target="#paccount_modal" placeholder="Credit Account">
-													</td>
-													<td width="3%"><br/>
-														<button type="button" class="btn btn-success btn-add-oc" >
-															<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
-														 </button>
-													</td>
-												</tr>
-											</table>
-											</div>											
-											<hr/>
-										</div>
-									</div>
-								</fieldset>
-								
-								
+								<hr/>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Total</label>
                                     <div class="col-xs-10">
@@ -1072,25 +876,6 @@
 									</div>
                                 </div>
 								
-								@if($roundoff)
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Round Off</label>
-                                    <div class="col-xs-10">
-										<div class="col-xs-2"></div>
-										<div class="col-xs-2"></div>
-										<div class="col-xs-2"></div>
-										<div class="col-xs-2"></div>
-										<div class="col-xs-2">
-											<input type="number" step="any" id="roundoff" name="roundoff" value="{{old('roundoff')}}" class="form-control spl round-off" placeholder="0">
-											<input type="hidden" id="discount" name="discount" value="{{old('discount')}}" class="form-control spl discount-cal">
-										</div>
-										<div class="col-xs-2">
-											<input type="number" step="any" id="roundoff_fc" name="roundoff_fc" value="{{old('roundoff_fc')}}" class="form-control spl">
-											<input type="hidden" id="discount_fc" name="discount_fc" value="{{old('discount_fc')}}" class="form-control spl">
-										</div>
-									</div>
-                                </div>
-								@else
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Discount</label>
                                     <div class="col-xs-10">
@@ -1106,18 +891,20 @@
 										</div>
 									</div>
                                 </div>
-								@endif
 								
 								<?php if($formdata['less_amount']==1) { ?>
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Less</label>
+                                    <label for="input-text" class="col-sm-2 control-label">Other Charges</label>
                                     <div class="col-xs-10">
 										<div class="col-xs-8">
-											<input type="text" step="any" class="form-control spl" id="les_amt_desc" name="less_description" placeholder="Description" autocomplete="on">
+											<input type="hidden" step="any" class="form-control spl" id="les_amt_desc" name="less_description" placeholder="Description" autocomplete="on">
 										</div>
                                     
 										<div class="col-xs-2">
 											<input type="number" step="any" id="less_amount" name="less_amount" value="{{old('less_amount')}}" class="form-control spl lesamt" placeholder="0">
+										</div>
+										<div class="col-xs-2">
+											<input type="number" step="any" id="less_amountfc" name="less_amountfc" value="{{old('less_amount')}}" class="form-control spl" placeholder="0">
 										</div>
 									</div>
                                 </div>
@@ -1127,14 +914,17 @@
 								
 								<?php if($formdata['less_amount']==1) { ?>
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Less</label>
+                                    <label for="input-text" class="col-sm-2 control-label">Shipping Charges</label>
                                     <div class="col-xs-10">
 										<div class="col-xs-8">
-											<input type="text" step="any" class="form-control spl" id="les_amt_desc2" name="less_description2" placeholder="Description" autocomplete="on">
+											<input type="hidden" step="any" class="form-control spl" id="les_amt_desc2" name="less_description2" placeholder="Description" autocomplete="on">
 										</div>
                                     
 										<div class="col-xs-2">
 											<input type="number" step="any" id="less_amount2" name="less_amount2" value="{{old('less_amount2')}}" class="form-control spl lesamt" placeholder="0">
+										</div>
+										<div class="col-xs-2">
+											<input type="number" step="any" id="less_amount2fc" name="less_amount2fc" value="{{old('less_amount2')}}" class="form-control spl" placeholder="0">
 										</div>
 									</div>
                                 </div>
@@ -1142,7 +932,7 @@
 								<input type="hidden" name="less_amount2" id="less_amount2">
 								<?php } ?>
 								
-								<?php if($formdata['less_amount']==1) { ?>
+								<!--<?php if($formdata['less_amount']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Less</label>
                                     <div class="col-xs-10">
@@ -1174,7 +964,7 @@
                                 </div>
 								<?php } else { ?>
 								<input type="hidden" name="less_amount" id="less_amount">
-								<?php } ?>
+								<?php } ?>-->
 								
 								
 								<div class="form-group">
@@ -1224,7 +1014,6 @@
 											<input type="number" step="any" id="net_amount" name="net_amount" value="{{old('net_amount')}}" class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
-											<input type="hidden" step="any" id="other_cost" name="other_cost">
 											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" value="{{old('net_amount_fc')}}" class="form-control spl" readonly placeholder="0">
 										</div>
 									</div>
@@ -1253,33 +1042,6 @@
 								<?php } ?>
 								
 								<hr/>
-								<?php if($formdata['images']==1) { ?>
-								<div class="filedivPrnt">
-									<div class="filedivChld">
-										<div class="form-group">
-											<label for="input-text" class="col-sm-2 control-label filelbl" id="lblif_1">Upload Image 1</label>
-											<div class="col-sm-9">
-												<input type="file" id="input-51" name="photos" class="file-loading" data-show-preview="true" data-url="{{url('sales_invoice/upload/')}}">
-												<div id="files_list_1"></div>
-												<p id="loading_1"></p>
-												<input type="hidden" name="photo_name[]" id="photo_name_1">
-											</div>
-											<div class="col-sm-1">
-												<button type="button" class="btn-success btn-add-file" id="btn_1">
-													<i class="fa fa-fw fa-plus-square"></i>
-												</button>
-												<button type="button" class="btn-danger btn-remove-file">
-													<i class="fa fa-fw fa-minus-square"></i>
-												 </button>
-											</div>
-											<label for="input-text" class="col-sm-2 control-label filedslbl" id="lblifd_1">Description</label>
-											<div class="col-sm-10">
-												<input type="text" class="form-control" id="imgdesc_1" name="imgdesc[]" placeholder="Description" autocomplete="off">
-											</div>
-										</div>
-									</div>
-								</div>
-								<?php } ?>
 								
 								<?php if($formdata['footer']==1) { ?>
 								<div class="form-group">
@@ -1306,76 +1068,52 @@
 								<?php } ?>
 								
 								<div id="rv_form">
-									<input type="hidden" id="rvdraccount" value="{{$rvvoucher['account_name']}}">
-									<input type="hidden" id="rvdraccountid" value="{{$rvvoucher['id']}}">
-									<input type="hidden" name="rvid" value="{{$rvvoucher['rid']}}">
-									<div class="RVdivPrnt">
-										<div class="RVdivChld">	
-											<table border="0" class="table-dy-row">
-												<tr>
-													<td width="10%">
-														<input type="hidden" id="rvvoucher_1" name="rv_voucher[]" value="{{$rvid}}"/>
-														<span class="small">Voucher Type</span>
-														<select id="vouchertype_1" class="form-control select2 voucher_type" style="width:100%" name="voucher_type[]">
-														<option value="CASH">Cash</option>
-														<option value="BANK">Bank</option>
-														<option value="PDCR">PDC</option>
-													</select>
-													</td>
-													<td width="10%">
-														<span class="small">Voucher No</span>
-														<input type="text" name="rv_voucher_no[]" value="{{$rvvoucher['voucher_no']}}" id="rvvoucherno_1" autocomplete="off" class="form-control">
-													</td>
-													<td width="20%">
-														<span class="small">Debit Account</span>
-														<input type="text" name="rv_dr_account[]" id="rvdraccount_1" autocomplete="off" data-toggle="modal" data-target="#customer_modalRV" class="form-control" value="{{$rvvoucher['account_name']}}">
-														<input type="hidden" id="rvdraccountid_1" name="rv_dr_account_id[]" value="{{$rvvoucher['id']}}">
-													</td>
-													<td width="15%" class="form-group">
-														<span class="small">Amount</span> 
-														<input type="number" id="rvamount_1" step="any" name="rv_amount[]" class="form-control" placeholder="Amount" />
-													</td>
-													<td width="15%">
-														<span class="small lbban_1">Bank</span> 
-														<select id="bankid_1" class="form-control select2 bank" style="width:100%" name="bank_id[]">
-														<option value="">Select</option>
-														@foreach($banks as $bank)
-														<option value="{{$bank['id']}}" <?php if(old('bank_id')==$bank['id']) echo 'selected'; ?>>{{$bank['name']}}</option>
-														@endforeach
-														</select>
-													</td>
-													<td width="15%" class="form-group">
-														<span class="small lbchq_1">Cheque No</span>
-														<input type="text" name="cheque_no[]" id="chequeno_1" class="form-control" placeholder="Cheque No" />
-													</td>
-													<td width="15%" class="form-group">
-														<span class="small lbchqd_1">Cheque Date</span>
-														<input type="text" name="cheque_date[]" id="chequedate_1" autocomplete="off" class="form-control" data-language='en' readonly placeholder="Cheque Date">
-													</td>
-													<td width="1%">
-														<button type="button" class="btn-success btn-add-rv">
-															<i class="fa fa-fw fa-plus-square"></i>
-														 </button>
-														 <button type="button" class="btn-danger btn-remove-rv" data-id="rem_1">
-															<i class="fa fa-fw fa-minus-square"></i>
-														 </button>
-													</td>
-												</tr>
-											</table>
-										</div>
-									</div>
+								<table border="0" class="table-dy-row">
+									<tr>
+										<td width="10%">
+											<input type="hidden" id="rv_voucher" name="rv_voucher" value="{{$rvid}}"/>
+											<span class="small">Voucher Type</span>
+											<select id="voucher_type" class="form-control select2" style="width:100%" name="voucher_type">
+											<option value="CASH">Cash</option>
+											<option value="BANK">Bank</option>
+											<option value="PDCR">PDC</option>
+										</select>
+										</td>
+										<td width="10%">
+											<span class="small">RV Voucher No</span>
+											<input type="text" name="rv_voucher_no" value="{{$rvvoucher['voucher_no']}}" id="rv_voucher_no" autocomplete="off" class="form-control">
+										</td>
+										<td width="20%">
+											<span class="small">Debit Account</span>
+											<input type="text" name="rv_dr_account" id="rv_dr_account" autocomplete="off" class="form-control" value="{{$rvvoucher['account_name']}}">
+											<input type="hidden" id="rv_dr_account_id" name="rv_dr_account_id" value="{{$rvvoucher['id']}}">
+										</td>
+										<td width="15%">
+											<span class="small">Amount</span> 
+											<input type="number" id="rv_amount" step="any" name="rv_amount" class="form-control" placeholder="Amount">
+										</td>
+										<td width="15%">
+											<span class="small pdcr">Bank</span> 
+											<select id="bank_id" class="form-control select2" style="width:100%" name="bank_id">
+											@foreach($banks as $bank)
+											<option value="{{$bank['id']}}" <?php if(old('bank_id')==$bank['id']) echo 'selected'; ?>>{{$bank['name']}}</option>
+											@endforeach
+											</select>
+										</td>
+										<td width="15%">
+											<span class="small pdcr">Cheque No</span>
+											<input type="text" name="cheque_no" id="cheque_no" class="form-control" placeholder="Cheque No">
+										</td>
+										<td width="15%">
+											<span class="small pdcr">Cheque Date</span>
+											<input type="text" name="cheque_date" id="cheque_date" autocomplete="off" class="form-control" data-language='en' readonly placeholder="Cheque Date">
+										</td>
+										
+									</tr>
+								</table>
 								</div>
 								
 								<input type="hidden" name="footer" id="footer">
-									
-								<?php if($formdata['footer_edit']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label"></label>
-                                    <div class="col-sm-10">
-                                        <textarea name="foot_description" id="foot_description" class="form-control editor-cls" placeholder="Description">{{$footer}}</textarea>
-                                    </div>
-                                </div>
-								<?php } ?>
 								
 								<!--<div id="showmenu">
 									<button type="button" id="infoadd" class="btn btn-primary btn-xs">Add Info..</button>
@@ -1409,9 +1147,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('sales_invoice') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('sales_invoice/add') }}" class="btn btn-warning">Clear</a>
-										@can('si-history')
+										@permission('si-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endcan
+										@endpermission
                                     </div>
                                 </div>
                             
@@ -1462,22 +1200,6 @@
                                     </div>
                                 </div>
                             </div> 
-
-                            <div id="conloc_modal" class="modal fade animated" role="dialog">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                            <h4 class="modal-title">Consignment Location</h4>
-                                        </div>
-                                        <div class="modal-body" id="conLocData">
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> 
 							
 							<div id="assembly_modal" class="modal fade animated" role="dialog">
                                 <div class="modal-dialog">
@@ -1487,22 +1209,6 @@
                                             <h4 class="modal-title">Assembly Items</h4>
                                         </div>
                                         <div class="modal-body" id="asmblyitmData">
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> 
-
-                            <div id="conloc_modal" class="modal fade animated" role="dialog">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                            <h4 class="modal-title">Assembly Items</h4>
-                                        </div>
-                                        <div class="modal-body" id="conlocData">
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -1542,41 +1248,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>  
-                            
-                            <div id="job_modal" class="modal fade animated" role="dialog">
-			                                 <div class="modal-dialog">
-			                                    	<div class="modal-content">
-					                                      <div class="modal-header">
-						                                      <button type="button" class="close" data-dismiss="modal">&times;</button>
-						                                     <h4 class="modal-title">Job Master</h4>
-					                                        </div>
-					                                  <div class="modal-body" id="jobData">
-						
-					                                 </div>
-					                             <div class="modal-footer">
-					                   	<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-					                </div>
-				                 </div>
-			                </div>
-	                  	</div>
-							
-							<div id="customer_modalRV" class="modal fade animated" role="dialog">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                            <h4 class="modal-title">Select Account</h4>
-                                        </div>
-                                        <div class="modal-body" id="customerDataRV">
-														
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>  
+                            </div>   
 							
 							 <div id="newcustomer_modal" class="modal fade animated" role="dialog">
                                 <div class="modal-dialog">
@@ -1702,74 +1374,11 @@
 				<?php } ?>
                 </div>
             </div>
-			
-			<div id="account_modal" class="modal fade animated" role="dialog">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<div class="modal-header">
-							<button type="button" class="close" data-dismiss="modal">&times;</button>
-							<h4 class="modal-title">Select Account</h4>
-						</div>
-						<div class="modal-body" id="account_data">
-						</div>
-						<div class="modal-footer">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-						</div>
-					</div>
-				</div>
-			</div> 
-			
-			<div id="paccount_modal" class="modal fade animated" role="dialog">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<div class="modal-header">
-							<button type="button" class="close" data-dismiss="modal">&times;</button>
-							<h4 class="modal-title">Select Account</h4>
-						</div>
-						<div class="modal-body" id="paccount_data">
-						</div>
-						<div class="modal-footer">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-						</div>
-					</div>
-				</div>
-			</div>	
-			
-			<div id="bcost_modal" class="modal fade animated" role="dialog">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<div class="modal-header">
-							<button type="button" class="close" data-dismiss="modal">&times;</button>
-							<h4 class="modal-title"></h4>
-						</div>
-						<div class="modal-body" id="confirm_data">
-						<label for="pwd">Enter the Password:</label>
-						<input type="password" id="pwd" name="pwd" placeholder="" >
-						</div>
-						<div class="modal-footer">
-							<button type="button" class="btn btn-primary" onClick="pswdOkSubmit()">OK</button>
-							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-						</div>
-					</div>
-				</div>
-			</div>
-			
-			<!--MAY25-->
-            <div id="batch_modal" class="modal fade animated" role="dialog">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal">&times;</button>
-                            <h4 class="modal-title">Add Batch</h4>
-                        </div>
-                        <div class="modal-body" id="batchData"></div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-primary saveBatch">Add</button> <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+       
+            <!--main content-->
+            <!-- row -->
+        @include('layouts.right_sidebar')
+        <!-- right side bar end -->
         </section>
 @stop
 
@@ -1801,46 +1410,17 @@
 <script type="text/javascript" src="{{asset('assets/vendors/datatables/js/buttons.print.js') }}"></script>
 <script type="text/javascript" src="{{asset('assets/vendors/datatables/js/dataTables.scroller.js')}}"></script>
 
-<script src="{{asset('assets/vendors/bootstrap3-wysihtml5-bower/js/bootstrap3-wysihtml5.all.min.js')}}" type="text/javascript"></script>
-<script src="{{asset('assets/vendors/trumbowyg/js/trumbowyg.js')}}" type="text/javascript"></script>
-<script type="text/javascript" src="{{asset('assets/vendors/bootstrap3-wysihtml5-bower/js/bootstrap3-wysihtml5.min.js')}}"></script>
-<script type="text/javascript" src="{{asset('assets/vendors/summernote/summernote.min.js')}}"></script>
-<script src="{{asset('assets/js/custom_js/form_editors.js')}}" type="text/javascript"></script>
-
 <script src="{{asset('assets/vendors/mark.js/jquery.mark.js')}}" charset="UTF-8"></script>
 <script src="{{asset('assets/vendors/datatablesmark.js/js/datatables.mark.min.js')}}" charset="UTF-8"></script>
 <script src="{{asset('assets/js/custom_js/responsive_datatables.js')}}" type="text/javascript"></script>
-<script src="{{asset('assets/js/jquery.fileupload.js')}}"></script>
 <script> 
 "use strict";
-
-//MAY25
-$('.addBatchBtn').hide();
-let bthArr = [];
-let uniqueBtharr;
-
 $('#optHide').toggle(); var srvat=<?php echo ($vatdata)?$vatdata->percentage:'0';?>; var packing = 1; //VAT CHNG
-$('#saleloc').toggle(); var dptTxt; var deptid;
-$('.OCdivPrnt').toggle();
-$('#voucher_date').datepicker( { autoClose: true ,dateFormat: 'dd-mm-yyyy'} );
-$('#lpo_date').datepicker( { dateFormat: 'dd-mm-yyyy',minDate: new Date('{{$settings->from_date}}'),maxDate: new Date('{{$settings->to_date}}'),autoClose: true } );
-
-var is_belowCost = false;
-	
+$('#saleloc').toggle(); var dptTxt;
 $(document).ready(function () { 
-
-	$('.crm_info').hide();
-	@if(old('voucher_date')=='')
-		$('#voucher_date').val('{{date('d-m-Y')}}');
-	@else
-		$('#voucher_date').val('{{old('voucher_date')}}'); 
-	@endif
-
-	$('.dimnInfodivPrntItm').toggle();
 	
 	if($('#department_id').length) {
 		dptTxt = $( "#department_id option:selected" ).text();
-		deptid = $( "#department_id option:selected" ).val();
 	}
 	
 	<?php if(!old('item_code')) { ?>
@@ -1853,10 +1433,8 @@ $(document).ready(function () {
 	$('.itemdivPrnt').find('.btn-add-item:not(:last)').hide();
 	<?php } ?>
 	
-	@if(!old('voucher_id'))
-
-	<?php if(!Session::has('is_cash') && sizeof($vouchers) > 0 && $vouchers[0]->is_cash_voucher==1) { ?> //cash customer....  customerInfo
-		//$('#customer_name').removeAttr("data-toggle");  customername F7
+	<?php if(!Session::has('is_cash') && sizeof($vouchers) > 0 && $vouchers[0]->is_cash_voucher==1) { ?> //cash customer.... 
+		$('#customer_name').removeAttr("data-toggle");
 		if( $('#newcustomerInfo').is(":hidden") )
 			$('#newcustomerInfo').toggle();
 		$('#customer_id').val({{$vouchers[0]->default_account_id}});
@@ -1874,96 +1452,127 @@ $(document).ready(function () {
 			$('#customer_id').val('');
 			$('#dr_account_id').val('');
 			$('#customer_name').val('');
-	<?php } } ?>
-		if(localStorage.getItem("isCs")==1) {
-			if( $('#newcustomerInfo').is(":hidden") )
-				$('#newcustomerInfo').show();
 		
-			if( $('#customerInfo').is(":visible") )
-				$('#customerInfo').hide();
-		} else {
-			if( $('#customerInfo').is(":hidden") ) 
-					$('#customerInfo').show();
-			
-			if( $('#newcustomerInfo').is(":visible") )
-				$('#newcustomerInfo').hide();
-		}
-	@else
-		if( $('#newcustomerInfo').is(":visible") )
-			$('#newcustomerInfo').toggle();
-		if( $('#customerInfo').is(":hidden") ) 
-			$('#customerInfo').toggle();
-	@endif
+	<?php } } ?>
 	
-	//console.log('dd'+localStorage.getItem("cName"));
-	if(localStorage.getItem("vcId")!=null) {
-		//$('#voucher_id option[value='+localStorage.getItem("vcId")+']').attr('selected','selected');
-		$("#voucher_id").val(localStorage.getItem("vcId")).change();
-		$('#cr_account_id').val(localStorage.getItem("crId"));
-		$('#sales_account').val(localStorage.getItem("sAc"));
-
-		$('#customer_name').val(localStorage.getItem("cName"));
-		$('#customer_id').val(localStorage.getItem("cId"));
-		$('#dr_account_id').val(localStorage.getItem("drId"));
-
-
-	}
-
+	//$('#customerInfo').toggle(); $('#newcustomerInfo').toggle(); 
 	//$("#currency_rate").prop('disabled', true); 
-	$('#rv_form').toggle(); $('#chequeno_1').hide(); $('#chequedate_1').hide(); $('#bankid_1').hide(); $('.lbban_1').hide();$('.lbchq_1').hide();$('.lbchqd_1').hide();
+	$('#rv_form').toggle(); $('#cheque_no').hide(); $('#cheque_date').hide(); $('#bank_id').hide(); $('.pdcr').hide();
 	$('#trninfo').toggle();
 	$("#currency_id").prop('disabled', true); 
-	$("#fc_label").toggle(); $("#c_label").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();
+	$("#fc_label").toggle(); $("#c_label").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#less_amountfc").toggle(); $("#less_amount2fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $("#subtotal_fc").toggle(); $('.sedePrntItm').toggle();
-	$('.descdivPrntItm').toggle();$('.locPrntItm').toggle(); $('.cnlocPrntItm').toggle(); $('#roundoff_fc').toggle();
+	$('.descdivPrntItm').toggle();$('.locPrntItm').toggle();
+
+	$('.loccom-radio').iCheck('check');
+	 $('#locationRadio').hide();
+
+	$(document).on('ifChecked', '.locinter-radio', function (e) {
+      $('.loccom-radio').iCheck('uncheck');
+      $('.locfrom-radio').iCheck('uncheck');
+	   $('.locfrom-radio').iCheck('disable');
+      $('#locationRadioGroup').hide();
+		$('#locationRadio').show();
+    
+
+	   let locID   = {{$interid}};
+        let locCode = "{{$intercode}}";
+		let prefix ='ISI';
+		let newPrefix = prefix + locCode; 
+		 $('#prefixBox').text(newPrefix);
+        $('input[name="prefix"]').val(newPrefix);
+          $('input[name="is_intercompany"]').val(1);
+		// Check only the default location radio
+    $('.locin-radio[data-id="' + locID + '"]').iCheck('check');
+    
+    // Disable all location radios so user cannot change
+   
+
+		$('#selected_locfrom_id').val(locID);
+        $('#default_location').val(locID);
+		
+	});
+
+	$(document).on('ifChecked', '.loccom-radio', function (e) {
+
+        $('.locinter-radio').iCheck('uncheck');
+
+         $('.locfrom-radio').iCheck('enable');
+         $('#locationRadioGroup').show();
+		$('#locationRadio').hide();
+        $('.locfrom-radio').iCheck('uncheck');
+		 $('#prefixBox').text('SI');
+        $('input[name="prefix"]').val('');
+		 $('input[name="is_intercompany"]').val('');
+       $('#selected_locfrom_id').val('');
+	   $('#default_location').val('');
+});
+    
+	$(document).on('ifChecked', '.locfrom-radio', function (e) {
+          var val = $(this).val();
+		  $('.loccom-radio').iCheck('check');
+         $('.locinter-radio').iCheck('uncheck');
+		  
+    
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  let prefix ='SI'; //$('input[name="prefix"]').val('QS');   // Example: LT
+             let newPrefix = prefix + locCode;               // LTWH1
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix);
+
+             //  $('.locfrom-radio').prop('disabled', true);
+         // store the value in the hidden field
+              $('#selected_locfrom_id').val(val);
+              $('#default_location').val(val);
+        
+     });
+      });
+
+
 	var urlvchr = "{{ url('sales_invoice/checkvchrno/') }}"; //CHNG
 	var urlcode = "{{ url('sales_invoice/checkrefno/') }}";
     $('#frmSalesInvoice').bootstrapValidator({
         fields: {
 			//voucher_id: { validators: { notEmpty: { message: 'The voucher type is required and cannot be empty!' } }},
-			voucher_no: { //CHNG
+			/* voucher_no: { //CHNG
                 validators: {
-                    /*notEmpty: {
+                    notEmpty: {
                         message: 'The voucher no is required and cannot be empty!'
-                    },*/
-					/*remote: {
+                    },
+					remote: {
                         url: urlvchr,
                         data: function(validator) {
                             return {
-                                code: validator.getFieldElements('voucher_no').val(),
-								deptid: deptid
+                                code: validator.getFieldElements('voucher_no').val()
                             };
                         },
                         message: 'This SI. No. is already exist!'
-                    }*/
+                    }
+                }
+            }, */
+			reference_no: {
+                validators: {
+                    /* notEmpty: {
+                        message: 'The reference no is required and cannot be empty!'
+                    }, */
+					remote: {
+                        url: urlcode,
+                        data: function(validator) {
+                            return {
+                                code: validator.getFieldElements('reference_no').val()
+                            };
+                        },
+                        message: 'This Reference No. is already exist!'
+                    }
                 }
             },
-            customer_name: { validators: { notEmpty: { message: 'The customer name is required and cannot be empty!' } }},
-			'rv_amount[]': { validators: { notEmpty: { message: 'The RV amount is required and cannot be empty!' } }},
-			@if($formdata['location_item']==1) , 'iloc[]': { validators: { notEmpty: { message: 'Item location quantity is required and cannot be empty!' } }},@endif  //NOV24
-			/*'cheque_no[]': { validators: { notEmpty: { message: 'The cheque no is required and cannot be empty!' } }},
-			'cheque_date[]': { validators: { notEmpty: { message: 'The cheque date is required and cannot be empty!' } }},
-			'bank_id[]': { validators: { notEmpty: { message: 'The bank is required and cannot be empty!' } }}, */
-			// reference_no: {
-            //     validators: {
-            //         /* notEmpty: {
-            //             message: 'The reference no is required and cannot be empty!'
-            //         }, */
-			// 		remote: {
-            //             url: urlcode,
-            //             data: function(validator) {
-            //                 return {
-            //                     code: validator.getFieldElements('reference_no').val()
-            //                 };
-            //             },
-            //             message: 'This Reference No. is already exist!'
-            //         }
-            //     }
-            // },
 			//voucher_date: { validators: { notEmpty: { message: 'The voucher date is required and cannot be empty!' } }},
 			//description: { validators: { notEmpty: { message: 'The description is required and cannot be empty!' } }},
-			
-			//'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }}
+			//customer_name: { validators: { notEmpty: { message: 'The customer name is required and cannot be empty!' } }},
+			//'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }},
 			//'item_name[]': { validators: { notEmpty: { message: 'The item description is required and cannot be empty!' } }}
         }
         
@@ -1974,12 +1583,12 @@ $(document).ready(function () {
 	$('.custom_icheck').on('ifChecked', function(event){ 
 		$("#currency_id").prop('disabled', false);
 		$("#currency_rate").prop('disabled', false);
-		$("#fc_label").toggle(); $("#c_label").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle(); $("#subtotal_fc").toggle();
+		$("#fc_label").toggle(); $("#c_label").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#less_amountfc").toggle(); $("#less_amount2fc").toggle();$("#net_amount_fc").toggle(); $("#vat_fc").toggle(); $("#subtotal_fc").toggle();
 	});
 	$('.custom_icheck').on('ifUnchecked', function(event){ 
 		$("#currency_id").prop('disabled', true);
 		$("#currency_rate").prop('disabled', true);
-		$("#fc_label").toggle(); $("#c_label").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle(); $("#subtotal_fc").toggle();
+		$("#fc_label").toggle(); $("#c_label").toggle();$("#total_fc").toggle(); $("#discount_fc").toggle(); $("#less_amountfc").toggle(); $("#less_amount2fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle(); $("#subtotal_fc").toggle();
 	});
 	
 	$('.export').on('ifChecked', function(event){ 
@@ -1998,14 +1607,14 @@ $(document).ready(function () {
 		getNetTotal();
 	});
 	
-	$(document).on('ifChecked', '.rv_icheck', function(event){ 
+	$('.rv_icheck').on('ifChecked', function(event){ 
 		$('#rv_form').toggle(); $('#rv_amount').val( parseFloat( ($('#net_amount').val()=='') ? '' : $('#net_amount').val() ) );
-		//$('[name="rv_amount[]"]').attr("required",true);
+		
 	});
 	
 	$('.rv_icheck').on('ifUnchecked', function(event){ 
 		$('#rv_form').toggle();
-		//$('input[name="rv_amount[]"]').removeAttr("required");
+		
 	});
 });
 
@@ -2035,14 +1644,14 @@ $(document).ready(function () {
 			lineTotal = lineTotal - prvamt;
 		} */
 		
-		var less = 0;
+		/* var less = 0;
 		if($('.lesamt').length) {
 			$( '.lesamt' ).each(function() {
 				var v = (this.value=='')?0:parseFloat(this.value);
 				less = less + v;
 			});
 			lineTotal = lineTotal - less;
-		}
+		} */
 		
 		$('#subtotal').val(lineTotal.toFixed(2));
 		
@@ -2058,23 +1667,30 @@ $(document).ready(function () {
 		$('#vat').val(vatcur.toFixed(2));
 		
 		var discount = parseFloat( ($('#discount').val()=='') ? 0 : $('#discount').val() );
+		
+		var less1 = parseFloat( ($('#less_amount').val()=='') ? 0 : $('#less_amount').val() );
+		var less2 = parseFloat( ($('#less_amount2').val()=='') ? 0 : $('#less_amount2').val() );
+		
 		var vat      = parseFloat( ($('#vat').val()=='') ? 0 : $('#vat').val() );
 		var total 	 = lineTotal - discount;
-		var netTotal = total + vat;
+		var netTotal = total + vat + less1 + less2;
 		$('#net_amount').val(netTotal.toFixed(2));
 		$('#net_amount_hid').val(netTotal+discount);
 		
 		if( $('#is_fc').is(":checked") ) { 
 			var rate       = parseFloat($('#currency_rate').val());
-			console.log(' rate: '+ rate);
 			var vat        = parseFloat( ($('#vat').val()=='') ? 0 : $('#vat').val() );
 			var fcTotal    = total * rate;
-			console.log(' discount: '+ discount);
 			var fcDiscount = discount * rate;
 			$('#total_fc').val(fcTotal.toFixed(2));
-			$('#discount_fc').val(fcDiscount.toFixed(2));
-			var fcTax = vat * rate; var subfc = lineTotal * rate;
-			var fcNetTotal = (fcTotal - fcDiscount) + fcTax;
+			$('#discount_fc').val(fcDiscount.toFixed(2)); 
+			
+			var L1fc = less1 * rate; var L2fc = less2 * rate;
+			$('#less_amountfc').val(L1fc.toFixed(2));
+			$('#less_amount2fc').val(L2fc.toFixed(2));
+			
+			var fcTax = vat * rate; var subfc = (lineTotal * rate) + L1fc + L2fc;
+			var fcNetTotal = (fcTotal - fcDiscount) + fcTax + L1fc + L2fc;
 			$('#vat_fc').val(fcTax); $('#subtotal_fc').val(subfc.toFixed(2));
 			$('#net_amount_fc').val(fcNetTotal.toFixed(2));
 		}
@@ -2127,38 +1743,19 @@ $(document).ready(function () {
 	} 
 	
 	function getAutoPrice(curNum) {
-		var item_id = $('#itmid_'+curNum).val();
-		var unit_id = $('#itmunt_'+curNum+' option:selected').val();
-		var customer_id = $('#customer_id').val();
-		var crate = $('#currency_rate').val();
-		$.ajax({
-			url: "{{ url('itemmaster/get_sale_cost/') }}",
-			type: 'get',
-			data: 'item_id='+item_id+'&unit_id='+unit_id+'&customer_id='+customer_id+'&crate='+crate,
-			success: function(data) {
-				$('#itmcst_'+curNum).val((data==0)?'':data);
-				return true;
-			}
-		}) 
-	}
-	
-	function getAutoPriceBkp(curNum) {
 		
 		var item_id = $('#itmid_'+curNum).val();
 		var unit_id = $('#itmunt_'+curNum+' option:selected').val();
 		var customer_id = $('#customer_id').val(); 
 		var crate = $('#currency_rate').val();
-		var cst = $('#itmcst_'+curNum).val(); //NW
 		if($('#sales_type option:selected').val()=='normal') {
 			$.ajax({
 				url: "{{ url('itemmaster/get_sale_cost/') }}", 
 				type: 'get',
+				//data: 'item_id='+item_id+'&unit_id='+unit_id+'&customer_id='+customer_id,
 				data: 'item_id='+item_id+'&customer_id='+customer_id+'&crate='+crate,
-				success: function(data) { 
-					if(cst=='') //NW
-						$('#itmcst_'+curNum).val((data==0)?'':data);
-					else
-						$('#itmcst_'+curNum).val(cst);
+				success: function(data) {
+					$('#itmcst_'+curNum).val( (data==0)?'':data );
 					$('#itmcst_'+curNum).focus();
 					return true;
 				}
@@ -2170,36 +1767,14 @@ $(document).ready(function () {
 				type: 'get',
 				data: 'item_id='+item_id,
 				//data: 'item_id='+item_id+'&unit_id='+unit_id,
-				success: function(data) { 
-					if(cst=='') //NW
-						$('#itmcst_'+curNum).val((data==0)?'':data);
-					else
-						$('#itmcst_'+curNum).val(cst);
-					//$('#itmcst_'+curNum).focus();
+				success: function(data) { console.log(data);
+					$('#itmcst_'+curNum).val((data==0)?'':data);
+					$('#itmcst_'+curNum).focus();
 					return true;
 				}
 			}); 
 		}
 	}
-	
-	
-	//calculation other cost...
-	function getOtherCost() {
-		 
-		var otherCost = 0; var otherCostTx = 0;
-		if( $('.OCdivPrnt').is(":visible") ) { 
-			$( '.oc-line' ).each(function() { 
-				var res = this.id.split('_');
-				var curNum = res[1];
-				var ocamt_ln = this.value;
-				otherCostTx = otherCostTx + parseFloat(ocamt_ln);
-				otherCost = otherCost + parseFloat(ocamt_ln);
-			}); 
-			$('#other_cost').val(otherCostTx.toFixed(2));
-		}
-		return true;
-	}
-	
 	
 	function calculateTaxInclude(curNum)
 	{
@@ -2235,11 +1810,6 @@ $(document).ready(function () {
 		var lineTotal = parseFloat( ($('#total').val()=='') ? 0 : $('#total').val() );
 		var vatTotal = parseFloat( ($('#vat').val()=='') ? 0 : $('#vat').val() );
 		
-		if($('#roundoff').length)
-			var roundoff = parseFloat( ($('#roundoff').val()=='') ? 0 : $('#roundoff').val() );
-		else
-			var roundoff = 0;
-		
 			var subtotal = lineTotal - discount;
 			
 			/* if($('#less_amount').length) {
@@ -2260,7 +1830,7 @@ $(document).ready(function () {
 					var v = (this.value=='')?0:parseFloat(this.value);
 					less = less + v;
 				});
-				subtotal = subtotal - less;
+				subtotal = subtotal + less;
 			}
 			
 			var amountTotal = 0; var discountAmt; var vatLine = 0; var vatnet = 0; var amountNet = 0; var total; var taxinclude = false;
@@ -2306,33 +1876,18 @@ $(document).ready(function () {
 			if(taxinclude==true && discount==0) {
 				$('#subtotal').val( (subtotal - vatnet).toFixed(2) );
 				$('#subttle').html('(VAT Exclude)');
-				$('#net_amount').val( (subtotal - roundoff).toFixed(2) );
+				$('#net_amount').val( subtotal.toFixed(2) );
 				
 			} else if(taxinclude==true && discount>0) { 
 				$('#subttle').html('');
-				//$('#net_amount').val( (parseFloat($('#subtotal').val()) - parseFloat($('#vat').val()) - roundoff ).toFixed(2) );
-				$('#subtotal').val( (parseFloat($('#subtotal').val()) - parseFloat($('#vat').val()) - roundoff ).toFixed(2) );
-				$('#net_amount').val(subtotal.toFixed(2));
+				$('#net_amount').val( (parseFloat($('#subtotal').val()) - parseFloat($('#vat').val()) ).toFixed(2) );
 			} else {
 				$('#subttle').html('');
-				$('#net_amount').val( (parseFloat($('#subtotal').val()) + parseFloat($('#vat').val()) - roundoff ).toFixed(2) );
+				$('#net_amount').val( (parseFloat($('#subtotal').val()) + parseFloat($('#vat').val()) ).toFixed(2) );
 			}
 			
-			if( $('#is_fc').is(":checked") ) {
-				var crate = $('#currency_rate').val();
-				discount = discount * crate;
-				$('#discount_fc').val(discount.toFixed(2));
-				$('#subtotal_fc').val( (subtotal*crate).toFixed(2) );
-				$('#vat_fc').val( (vatnet*crate).toFixed(2) );
-				$('#net_amount_fc').val( (parseFloat($('#subtotal_fc').val()) + parseFloat($('#vat_fc').val()) ).toFixed(2) );
-			}
 		
 		return true;
-	}
-	
-	function calculateRoundoff()
-	{ 
-		calculateDiscount();
 	}
 	
 	function removeAr(arr) {
@@ -2345,63 +1900,12 @@ $(document).ready(function () {
 		}
 		return arr;
 	}
-function calculateDueDate(days) {
-           const today = new Date();
-           const dueDate = new Date();
-            console.log(dueDate);
-            dueDate.setDate(today.getDate() + days);
-            const due= dueDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-           const formatted = dueDate.toLocaleDateString('es-CL'); // DD/MM/YYYY
-           console.log(formatted);
-        $('#due_date').val(formatted);
-
-    }
-
-var spPswd = '{{$settings->special_pswd}}';
-function pswdOkSubmit() {
-	//var con = confirm('Are you sure want to remove the data from the selected sections?');
-	//if(con) {
-		//let pswd = prompt('Please enter password'); 
-        let pswd=$('#confirm_data #pwd').val();
-		if(pswd==spPswd) { 
-			//document.frmData.action="{{ url('data_remove/cleardb_custom') }}";
-			document.getElementById("frmSalesInvoice").submit();
-		} else {
-			alert('Invalid password!');
-			return false;
-		}
-	//}
-}
-
+//
 $(function() {	
-
-	$(document).on('click', '.saveBtn', function(e) { 
-		   e.preventDefault(); 
-         // $('#frmSalesInvoice').submit();
-		 if(is_belowCost) {
-			$('#bcost_modal').modal('show');
-		 } else
-			document.getElementById("frmSalesInvoice").submit();
-    });
-	//var flg = false;
-	/*$(document).on('submit','#frmSalesInvoice',function(e){
-		
-		//console.log('test'); alert('ssg');
-		if(flg==false) {
-			alert('error');
-			return false;
-		}
-		e.preventDefault();
-	});*/
-
-	$(document).on('click', '#crmBtn', function(e) { 
-		   e.preventDefault();
-           $('.crm_info').toggle();
-    });
-	
 	$(':input[type=number]').on('mousewheel',function(e){ $(this).blur(); });
 	var rowNum = 1;
-	 
+	 $('#voucher_date').datepicker( { dateFormat: 'dd-mm-yyyy',minDate: new Date('{{$settings->from_date}}'),maxDate: new Date('{{$settings->to_date}}') } );
+	
 	$('.lpo_date1').datepicker( { 
 			dateFormat: 'dd-mm-yyyy',
 			minDate: new Date('{{$settings->from_date}}'),
@@ -2413,11 +1917,6 @@ $(function() {
 		   e.preventDefault();
            $('.infodivPrnt').toggle();
       });
-	  
-	  $(document).on('click', '#ocadd', function(e) { 
-		   e.preventDefault();
-           $('.OCdivPrnt').toggle();
-		});
 	
 	//item more info view section
 	$(document).on('click', '.more-info', function(e) { 
@@ -2450,7 +1949,7 @@ $(function() {
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),
             newEntry = $(currentEntry.clone()).appendTo(controlForm);
-			newEntry.find($('.line-unit')).attr('id', 'itmunt_' + rowNum); //input[type='select'] line-unit
+			newEntry.find($('.line-unit')).attr('id', 'itmunt_' + rowNum); //input[type='select']
 			newEntry.find($('input[name="item_id[]"]')).attr('id', 'itmid_' + rowNum);
 			newEntry.find($('input[name="item_code[]"]')).attr('id', 'itmcod_' + rowNum);
 			newEntry.find($('input[name="item_name[]"]')).attr('id', 'itmdes_' + rowNum);
@@ -2468,38 +1967,10 @@ $(function() {
 			newEntry.find($('.locPrntItm')).attr('id', 'locPrntItm_' + rowNum);
 			newEntry.find($('.loc-info')).attr('id', 'loc_' + rowNum);
 			newEntry.find($('.loc-data')).attr('id', 'locData_' + rowNum);
-			newEntry.find($('.sedePrntItm')).attr('id', 'sedePrntItm_' + rowNum);
-			newEntry.find($('.sup-sede')).attr('id', 'sede_' + rowNum); 
-			newEntry.find($('.sede-data')).attr('id', 'sedeData_' + rowNum);
-
-			newEntry.find($('input[name="mpquantity[]"]')).attr('id', 'itmmpqty_' + rowNum);
-			newEntry.find($('input[name="item_wit[]"]')).attr('id', 'itmwit_' + rowNum);
-			newEntry.find($('input[name="item_lnt[]"]')).attr('id', 'itmlnt_' + rowNum);
-
-			newEntry.find($('.cnlocPrntItm')).attr('id', 'cnlocPrntItm_' + rowNum);
-			newEntry.find($('.cnloc-info')).attr('id', 'cnloc_' + rowNum);
-			newEntry.find($('.cnloc-data')).attr('id', 'cnlocData_' + rowNum);
-
-			
-            newEntry.find($('.dimnInfodivPrntItm')).attr('id', 'dimnInfodivPrntItm_' + rowNum);
-            newEntry.find($('.dimn-item-data')).attr('id', 'dimnitemData_' + rowNum);
-            newEntry.find($('.dimn-view')).attr('id', 'itmInfo_' + rowNum);
-
-            newEntry.find($('input[name="iloc[]"]')).attr('id', 'iloc_' + rowNum); //NOV24
-            @if($formdata['location_item']==1)
-			newEntry.find( $('#frmSalesInvoice').bootstrapValidator('addField',"iloc[]") ); //NOV24
-			@endif
-            
-            //MAY25..
-			newEntry.find($('.btn-remove-item')).attr('data-id', 'rem_' + rowNum);
-			newEntry.find($('.batch-add')).attr('id', 'btnBth_' + rowNum);
-			newEntry.find($('input[name="batchNos[]"]')).attr('id', 'bthSelIds_' + rowNum);
-			newEntry.find($('input[name="qtyBatchs[]"]')).attr('id', 'bthSelQty_' + rowNum);
-			newEntry.find($('.addBatchBtn')).attr('id', 'batchdiv_' + rowNum);
-			$('#itmqty_'+rowNum).attr('readonly', false);
-			//...
-			
-			$('#sedeData_'+rowNum).html('');
+				newEntry.find($('.sedePrntItm')).attr('id', 'sedePrntItm_' + rowNum);
+				newEntry.find($('.sup-sede')).attr('id', 'sede_' + rowNum); 
+				newEntry.find($('.sede-data')).attr('id', 'sedeData_' + rowNum);
+				$('#sedeData_'+rowNum).html('');
 			$('#locData_'+rowNum).html('');
 			newEntry.find('input').val(''); 
 			newEntry.find('.line-unit').find('option').remove().end().append('<option value="">Unit</option>');//NW CHNG
@@ -2521,7 +1992,6 @@ $(function() {
 			
 			newEntry.find($('input[name="costavg[]"]')).attr('id', 'costavg_' + rowNum);
 			newEntry.find($('input[name="purcost[]"]')).attr('id', 'purcost_' + rowNum);
-			newEntry.find($('input[name="curqty[]"]')).attr('id', 'cqty_' + rowNum);
 			
 			//VAT CHNG
 			newEntry.find($('input[name="packing[]"]')).attr('id', 'packing_' + rowNum);
@@ -2533,9 +2003,6 @@ $(function() {
 			newEntry.find($('.view-asm-itm')).attr('id', 'assemblyItmVw_' + rowNum);
 			newEntry.find($('input[name="assembly_items[]"]')).attr('id', 'asmid_' + rowNum); 
 			newEntry.find($('input[name="assembly_items_qty[]"]')).attr('id', 'asmqt_' + rowNum); 
-
-			newEntry.find($('input[name="conloc_id[]"]')).attr('id', 'conlocid_' + rowNum); 
-			newEntry.find($('input[name="conloc_qty[]"]')).attr('id', 'conlocqty_' + rowNum); 
 			
 			newEntry.find($('input[name="per[]"]')).attr('id', 'per_' + rowNum); //CHNG SEP 17
 			newEntry.find($('input[name="perdesc[]"]')).attr('id', 'perdesc_' + rowNum); //CHNG SEP 17
@@ -2578,52 +2045,9 @@ $(function() {
 					select: function (event, ui) {
 						var itm_id = ui.item.id;
 						$("#itmdes_"+rowNum).val(ui.item.name);
-						$('#itmcod_'+rowNum).val( ui.item.code );
+						$('#itmcod_'+rowNum).val( ui.item.value );
 						$('#itmid_'+rowNum).val( itm_id );
 						
-						if($('.export').is(":checked") ) { 
-							$('#vatdiv_'+rowNum).val( '0%' );
-							$('#vat_'+rowNum).val( 0 );
-						} else {
-							srvat = ui.item.vat;
-							$('#vatdiv_'+rowNum).val( srvat+'%' );
-							$('#vat_'+rowNum).val( srvat );
-						}
-						
-						$.get("{{ url('purchase_order/getunit/') }}/" + itm_id, function(data) {
-							$('#itmunt_'+rowNum).find('option').remove().end();
-							$.each(data, function(key, value) {   
-							$('#itmunt_'+rowNum).find('option').end()
-							 .append($("<option></option>")
-										.attr("value",value.id)
-										.text(value.unit_name)); 
-										$('#hidunit_'+rowNum).val(value.unit_name);
-							});
-						});
-					},
-					minLength: 1,
-				});
-					
-					var src2 = "{{ url('itemmaster/ajax_search2/') }}";
-					newEntry.find($('input[name="item_name[]"]')).autocomplete({
-					source: function(request, response) {
-						$.ajax({
-							url: src2+'/C',
-							dataType: "json",
-							data: {
-								term : request.term
-							},
-							success: function(data) {
-								response(data); 
-							}
-						});
-					},
-					select: function (event, ui) {
-						var itm_id = ui.item.id;
-						$("#itmdes_"+rowNum).val(ui.item.name);
-						$('#itmcod_'+rowNum).val( ui.item.code );
-						$('#itmid_'+rowNum).val( itm_id );
-
 						if($('.export').is(":checked") ) { 
 							$('#vatdiv_'+rowNum).val( '0%' );
 							$('#vat_'+rowNum).val( 0 );
@@ -2726,86 +2150,6 @@ $(function() {
 		return false;
 	});
 	
-	
-	var ocrowNum = $('#ocrowNum').val();
-	$(document).on('click', '.btn-add-oc', function(e) 
-    { 
-        ocrowNum++; //console.log(rowNum);
-		e.preventDefault();
-        var controlForm = $('.controls .OCdivPrnt'),
-            currentEntry = $(this).parents('.OCdivChld:first'),
-            newEntry = $(currentEntry.clone()).appendTo(controlForm);
-			newEntry.find($('input[name="dr_acnt_id[]"]')).attr('id', 'dracntid_' + ocrowNum);
-			newEntry.find($('input[name="dr_acnt[]"]')).attr('id', 'dracnt_' + ocrowNum);
-			newEntry.find($('input[name="oc_reference[]"]')).attr('id', 'ocref_' + ocrowNum);
-			newEntry.find($('input[name="oc_description[]"]')).attr('id', 'ocdesc_' + ocrowNum);
-			newEntry.find($('input[name="oc_amount[]"]')).attr('id', 'ocamt_' + ocrowNum);
-			newEntry.find($('input[name="cr_acnt_id[]"]')).attr('id', 'cracntid_' + ocrowNum);
-			newEntry.find($('input[name="cr_acnt[]"]')).attr('id', 'cracnt_' + ocrowNum);
-			newEntry.find('input').val(''); 
-			$('#vatocamt_' + ocrowNum).val(5);
-			controlForm.find('.btn-add-oc:not(:last)')
-            .removeClass('btn-default').addClass('btn-danger')
-            .removeClass('btn-add-oc').addClass('btn-remove-oc')
-            .html('<span class="glyphicon glyphicon-minus" aria-hidden="true"></span> ');
-    }).on('click', '.btn-remove-oc', function(e)
-    { 
-		$(this).parents('.OCdivChld:first').remove();
-		
-		var res = getOtherCost();
-		if(res) 
-			getNetTotal();
-		
-		e.preventDefault();
-		return false;
-	});
-	
-	
-	var src = "{{ url('itemmaster/ajax_search/') }}";
-	$('input[name="item_code[]"]').autocomplete({
-		
-        source: function(request, response) {
-            $.ajax({
-                url: src+'/C',
-                dataType: "json",
-                data: {
-                    term : request.term
-                },
-                success: function(data) {
-                    response(data);
-                }
-            });
-        },
-		select: function (event, ui) { 
-			
-			var itm_id = ui.item.id;
-			$("#itmdes_1").val(ui.item.name);
-			$('#itmcod_1').val( ui.item.code );
-			$('#itmid_1').val( itm_id );
-			
-			if($('.export').is(":checked") ) { 
-				$('#vatdiv_1').val( '0%' );
-				$('#vat_1').val( 0 );
-			} else {
-				srvat = ui.item.vat;
-				$('#vatdiv_1').val( srvat+'%' );
-				$('#vat_1').val( srvat );
-			}
-			
-			$.get("{{ url('purchase_order/getunit/') }}/" + itm_id, function(data) {
-				$('#itmunt_1').find('option').remove().end();
-				$.each(data, function(key, value) {   
-				$('#itmunt_1').find('option').end()
-				 .append($("<option></option>")
-							.attr("value",value.id)
-							.text(value.unit_name)); 
-				});
-			});
-		},
-        minLength: 1,
-		
-    });
-	
 	$(document).on('click', '.btn-add-info', function(e) 
     { 
         e.preventDefault();
@@ -2826,7 +2170,12 @@ $(function() {
 		return false;
 	});
 	
-	
+	$(document).on('blur', '#voucher_no', function(e) {  
+		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
+			alert('Voucher no is greater than current range!');
+			$('#voucher_no').val('');
+		}
+	});
 	$(document).on('click', '.btn-add-desc', function(e) 
     { 
         e.preventDefault();
@@ -2846,11 +2195,11 @@ $(function() {
 	
 	var custurl;
 	$('#customer_name').click(function() { 
-		if($('#department_id').length) { console.log('dept');
+		if($('#department_id').length)
 			custurl = "{{ url('sales_order/customer_data/') }}"+'/'+$('#department_id option:selected').val();
-		} else
+		else
 			custurl = "{{ url('sales_order/customer_data/') }}";
-		$('#customer_modal #customerData').load(custurl, function(result) {
+		$('#customerData').load(custurl, function(result) {
 			$('#myModal').modal({show:true});
 			$('.input-sm').focus()
 			/* if( $('#customerInfo').is(":hidden") ) 
@@ -2866,20 +2215,6 @@ $(function() {
 			$('#myModal').modal({show:true});
 			
 		});
-	});
-	
-	
-		var joburl = "{{ url('jobmaster/jobb_data/') }}";
-	$('#jobname').click(function() {
-		$('#jobData').load(joburl, function(result) {
-			$('#myModal').modal({show:true});
-		});
-	});
-	
-	$(document).on('click', '.jobbRow', function(e) {
-		$('#jobname').val($(this).attr("data-cod"));
-		$('#job_id').val($(this).attr("data-id"));
-		e.preventDefault();
 	});
 	
 	$('#duedays').on('blur', function(e){
@@ -2917,60 +2252,9 @@ $(function() {
 		});
 	});
 	
-	$(document).on('keyup', '.oc-line', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		var res = getOtherCost();
-		if(res) 
-			getNetTotal();
-	});
-	
-	var acurl = "{{ url('account_master/get_accounts/') }}";
-	$(document).on('click', 'input[name="dr_acnt[]"]', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		$('#account_data').load(acurl+'/'+curNum, function(result){ //.modal-body item
-			$('#myModal').modal({show:true}); $('.input-sm').focus()
-		});
-	});
-	
-	$(document).on('click', '#account_data .custRow', function(e) { 
-		var num = $('#account_data #num').val();
-		$('#dracnt_'+num).val( $(this).attr("data-name") );
-		$('#dracntid_'+num).val( $(this).attr("data-id") );
-	});
-	$(document).on('click', '.accountRow', function(e) { 
-		var num = $('#account_data #num').val(); console.log(num);
-		$('#dracnt_'+num).val( $(this).attr("data-name") );
-		$('#dracntid_'+num).val( $(this).attr("data-id") );
-	});
-	
-	var acurlall = "{{ url('account_master/get_account_all/') }}";
-	$(document).on('click', 'input[name="cr_acnt[]"]', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		$('#paccount_data').load(acurlall+'/'+curNum, function(result){ //.modal-body item
-			$('#myModal').modal({show:true}); $('.input-sm').focus();
-		});
-	});
-	
-	$(document).on('click', '#paccount_data .custRow', function(e) { 
-		var num = $('#paccount_data #anum').val();
-		$('#cracnt_'+num).val( $(this).attr("data-name") );
-		$('#cracntid_'+num).val( $(this).attr("data-id") );
-		
-	});
-	
-	$(document).on('click', '.accountRowall', function(e) { 
-		var num = $('#anum').val();
-		$('#cracnt_'+num).val( $(this).attr("data-name") );
-		$('#cracntid_'+num).val( $(this).attr("data-id") );
-	});
-	
 	$('#department_id').on('change', function(e){ 
 		var dept_id = e.target.value; 
 		dptTxt = $( "#department_id option:selected" ).text();
-		deptid = $( "#department_id option:selected" ).val();
 		$.get("{{ url('sales_invoice/getdeptvoucher/') }}/" + dept_id, function(data) { 
 			$('#voucher_no').val(data[0].voucher_no);
 			$('#voucher_id').find('option').remove().end();
@@ -3020,33 +2304,18 @@ $(function() {
 	});
 	
 	
-	$(document).on('blur', '#voucher_no', function(e) {  
-		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
-			alert('Voucher no is greater than current range!');
-			$('#voucher_no').val('');
-		}
-	});
-
 	$('#voucher_id').on('change', function(e){ 
 		var vchr_id = e.target.value; 
-		localStorage.setItem("vcId", vchr_id);
 		$.get("{{ url('sales_invoice/getvoucher/') }}/" + vchr_id, function(data) { 
-			//$('#voucher_no').val(data.voucher_no);
-			$('#voucher_no').val('');
-			$('#voucher_no').attr('placeholder', data.voucher_no);
+			$('#voucher_no').val(data.voucher_no);
 			$('#curno').val(data.voucher_no); //CHNG
 			$('#is_cash').val(data.cash_voucher); //CHNG
 			if(data.account_id!=null && data.account_name!=null) {
 				$('#sales_account').val(data.account_id+'-'+data.account_name);
 				$('#cr_account_id').val(data.id);
-
-				localStorage.setItem("sAc", data.account_id+'-'+data.account_name);
-				localStorage.setItem("crId", data.id);
 			} else {
 				$('#sales_account').val('');
 				$('#cr_account_id').val('');
-				localStorage.setItem("sAc", '');
-				localStorage.setItem("crId", '');
 			}
 			
 			if(data.cash_voucher==1) {
@@ -3059,13 +2328,7 @@ $(function() {
 				$('#customer_id').val(data.cash_account);
 				$('#dr_account_id').val(data.cash_account);
 				$('#customer_name').removeAttr("data-toggle");
-
-				localStorage.setItem("cName", data.default_account);
-				localStorage.setItem("cId", data.cash_account);
-				localStorage.setItem("drId", data.cash_account);
-				localStorage.setItem("isCs", 1);
-			} 
-			else {
+			} else {
 				if( $('#customerInfo').is(":hidden") ) 
 					$('#customerInfo').toggle();
 			
@@ -3075,15 +2338,9 @@ $(function() {
 				$('#customer_id').val('');
 				$('#dr_account_id').val('');
 				$('#customer_name').attr("data-toggle", "modal");
-
-				localStorage.setItem("cName", '');
-				localStorage.setItem("cId", '');
-				localStorage.setItem("drId", '');
-				localStorage.setItem("isCs", 0);
 			}
 			
 		});
-		
 	});
 	
 	/* var custurl2 = "{{ url('sales_order/customer_data/') }}";
@@ -3096,25 +2353,20 @@ $(function() {
 		
 	}); */
 	
-	$(document).on('click', '#customerData .custRow', function(e) { //console.log($(this).attr("data-trnno"));
+	$(document).on('click', '.custRow', function(e) { //console.log($(this).attr("data-trnno"));
 	
-		//if( $('#newcustomerInfo').is(":hidden") ) { F6
+		if( $('#newcustomerInfo').is(":hidden") ) {
 			$('#customer_name').val($(this).attr("data-name"));
 			$('#customer_id').val($(this).attr("data-id"));
 			$('#dr_account_id').val($(this).attr("data-id"));
 			$('#cr_balance').val($(this).attr("data-clbalance"));
 			$('#cr_limit').val($(this).attr("data-crlimit"));
 			$('#pdc').val($(this).attr("data-pdc"));
-
-			if($(this).attr("data-new")==true)
-				alert('CRM details are required!')
-		//}
+		}
 		
-		    $('#frmSalesInvoice').bootstrapValidator('revalidateField', 'customer_name');//NOV24
-		    
-		/* if( $('#newcustomerInfo').is(":visible") ) {
+		if( $('#newcustomerInfo').is(":visible") ) {
 			$('#customername').val($(this).attr("data-name"));
-		} */
+		}
 		
 		var group_id = $(this).attr("data-groupid");
 		var trnno = $(this).attr("data-trnno");
@@ -3131,14 +2383,12 @@ $(function() {
 			if( $('#newcustomerInfo').is(":visible") )
 				$('#newcustomerInfo').toggle();
 		} */
-		
 		$('#duedays').val($(this).attr("data-duedays"));
 		
 		if(	$('#duedays').val() >0){
 		    var days=$('#duedays').val();
 	     calculateDueDate(parseInt(days));
 		}
-		
 		//JAN20
 		if($(this).attr("data-term")!='')
 			$("#terms_id option[value="+$(this).attr("data-term")+"]").attr('selected', 'selected'); 
@@ -3183,60 +2433,44 @@ $(function() {
 	$(document).on('click', 'input[name="item_code[]"]', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1]; 
+		if($('#document_id').val()=='')
+		alert('SI Credit can only be created from DO!!!');
+		else{
 		$('#item_data').load(itmurl+'/'+curNum, function(result){ //.modal-body item
 			$('#myModal').modal({show:true}); $('.input-sm').focus()
 		});
+		}
 	});
 	
-	//new change............ DEC2
-	$(document).on('click', 'input[name="item_name[]"]', function(e) {
+	//new change............
+	/*$(document).on('click', 'input[name="item_name[]"]', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1]; 
 		$('#item_data').load(itmurl+'/'+curNum, function(result){ 
 			$('#myModal').modal({show:true}); $('.input-sm').focus()
 		});
-	});
+	});*/
 	
 	//new change.................
 	$(document).on('click', '.itemRow', function(e) { 
-		var num = $('#item_modal #num').val();
+		var num = $('#num').val();
 		$('#itmcod_'+num).val( $(this).attr("data-code") );
 		$('#itmid_'+num).val( $(this).attr("data-id") );
 		$('#itmdes_'+num).val( $(this).attr("data-name") );
 		$('#costavg_'+num).val( $(this).attr("data-costavg") );
 		$('#purcost_'+num).val( $(this).attr("data-purcost") );
-		$('#cqty_'+num).val( $(this).attr("data-cqty") );
 		
-		$('#itmwit_'+num).val( $(this).attr("data-wit") );
-		$('#itmlnt_'+num).val( $(this).attr("data-lnt") );
-
-		if($('.export').is(":checked") ) {  
+		if($('.export').is(":checked") ) { 
 			$('#vatdiv_'+num).val( '0%' );
 			$('#vat_'+num).val( 0 );
-			$('#itmcst_'+num).val( ($(this).attr("data-cost")==0)?'':$(this).attr("data-cost") );
+			$('#itmcst_'+num).val( $(this).attr("data-cost") );
 		} else {
 			$('#vatdiv_'+num).val( $(this).attr("data-vat")+'%' );
 			$('#vat_'+num).val( $(this).attr("data-vat") );
-			$('#itmcst_'+num).val( ($(this).attr("data-cost")==0)?'':$(this).attr("data-cost") );
+			$('#itmcst_'+num).val( $(this).attr("data-cost") );
 			srvat = $(this).attr("data-vat");
 		}
 		
-		//MAY25
-	    if($(this).attr("data-batch-req")==1) {
-	        $('#itmqty_'+num).attr('readonly', true);
-	        $('#batchdiv_'+num).show();
-	        $('#frmSalesInvoice').bootstrapValidator('addField', 'batchNos[]');
-	        $('#frmSalesInvoice').data('bootstrapValidator')
-                .addField('batchNos[]', {
-                    validators: {
-                        notEmpty: {
-                            message: 'Batch no is required!'
-                        }
-                    }
-            });
-	    } else
-	        $('#batchdiv_'+num).hide();
-	        
 		//AG24
 		//if( $(this).attr("data-type")==1) {
 			var itm_id = $(this).attr("data-id")
@@ -3247,7 +2481,6 @@ $(function() {
 				 .append($("<option></option>")
 							.attr("value",value.id)
 							.text(value.unit_name)); 
-							$('#hidunit_'+num).val(value.unit_name);
 				});
 			});
 			
@@ -3263,16 +2496,9 @@ $(function() {
 			});
 		} */
 		
-		//getAutoPrice(num);
-		$('#itmcst_'+num).focus();
+		getAutoPrice(num);
 	});
 
-	$(document).on('blur','.line-mpquantity', function() {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		var qtywt = this.value * $('#itmwit_'+curNum).val() * $('#itmlnt_'+curNum).val();
-		$('#itmqty_'+curNum).val(qtywt);
-	})
 	
 	var hdrurl = "{{ url('header_footer/header_data/') }}";
 	$('#headermsg').click(function() {
@@ -3323,29 +2549,22 @@ $(function() {
 				data = JSON.parse(data); console.log(data.cur_quantity+' '+data.min_quantity);
 				var cur_quantity = parseFloat(data.cur_quantity);
 				var min_quantity = parseFloat(data.min_quantity);
-				<?php if($settings->item_quantity==1) { ?>
-				@if(auth()->user()->can('-qty-sale'))
-					console.log('Minus Qty Sale');
-				@else
+				<?php //if($settings->item_quantity==1) { ?>
+				@permission('-qty-sale')
 				if(cur_quantity == 0 || cur_quantity < 0) {
 					alert('Item is out of stock!');
 					$('#itmqty_'+curNum).val('');
 					$('#itmqty_'+curNum).focus();
 					return false;
-				} else if(cur_quantity < parseFloat($('#itmqty_'+curNum).val())) {
-					alert('Item is out of stock!');
-					$('#itmqty_'+curNum).val('');
-					$('#itmqty_'+curNum).focus();
-					return false;
-						
+					
 				} else if((min_quantity == cur_quantity) || (min_quantity > cur_quantity)) {
 					alert('Item quantity is reached on minimun quantity!');
 					$('#itmqty_'+curNum).val('');
 					$('#itmqty_'+curNum).focus();
 					return false;
 				}
-				@endif
-				<?php } ?>
+				@endpermission
+				<?php //} ?>
 			});
 		}
 	});
@@ -3372,10 +2591,7 @@ $(function() {
 		if(res) 
 			getNetTotal();
 
-		
-		@if(auth()->user()->can('bcost-sale'))
-			console.log('Below Cost');
-		@else
+		@permission('si-create')
 			//MAR18
 			var rate = 1;
 			if( $('#is_fc').is(":checked") ) { 
@@ -3383,12 +2599,11 @@ $(function() {
 			}//..
 			var salecost = parseFloat( $('#costavg_'+curNum).val() ); 
 			if(this.value!='' && this.value!=0 && salecost > (this.value * rate)) { //MAR18
-				/*alert('This item price is lower than cost avg.');
+				alert('This item price is lower than cost avg.');
 				$('#itmcst_'+curNum).val('');
-				$('#itmcst_'+curNum).focus();*/
-				is_belowCost = true;
+				$('#itmcst_'+curNum).focus();
 			}
-		@endif
+		@endpermission
 	});
 	
 	var ordhisurl = "{{ url('sales_invoice/order_history/') }}";
@@ -3452,7 +2667,7 @@ $(function() {
 		
 	});
 	
-	//CHNG 
+	//CHNG
 	$('.inputvn').on('click', function(e) {
 		$('#voucher_no').attr("readonly", false);
 	});
@@ -3498,14 +2713,13 @@ $(function() {
 	});
 	
 	$(document).on('keyup', '.discount-cal', function(e) { 
-		calculateDiscount();
-		
+		//calculateDiscount();
+		getNetTotal();
 	});
 	
-	$(document).on('keyup', '.round-off', function(e) { 
-		calculateRoundoff();
+	$(document).on('keyup', '.lesamt', function(e) { 
+		getNetTotal();
 	});
-	
 	
 	$(document).on('click', '.loc-info', function(e) { 
 	   e.preventDefault();
@@ -3514,81 +2728,14 @@ $(function() {
 	   var item_id = $('#itmid_'+curNum).val();
 	   if(item_id!='') {
 		   var locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+item_id+"/"+curNum
-		   if ($('#locData_'+curNum).is(':empty')){
-    		   $('#locData_'+curNum).load(locUrl, function(result) {
-    			  $('#myModal').modal({show:true});
-    		   });
-    		   $('#locPrntItm_'+curNum).toggle();
-		   } else
-		       $('#locPrntItm_'+curNum).toggle(); 
-	   }
-    });
-
-
-    var cnlocUrl = "{{ url('itemmaster/conloc_data/') }}";
-	$(document).on('click', '.cnloc-info', function(e) { 
-	   e.preventDefault();
-	    var res = this.id.split('_');
-		var curNum = res[1]; 
-		var item_id = $('#itmid_'+curNum).val();
-	    var cst_id = $('#customer_id').val();
-
-		$('#conLocData').load(cnlocUrl+'/'+curNum+'/'+cst_id+'/'+item_id, function(result){
-			$('#myModal').modal({show:true}); $('.input-sm').focus()
-		});
-    });
-	
-	
-	$(document).on('click', '.dimn-view', function(e) { 
-	   e.preventDefault();
-	   var res = this.id.split('_');
-	   var curNum = res[1];
-	   var item_id = $('#itmid_'+curNum).val();
-	   if(item_id!='') {
-		   var infoUrl = "{{ url('itemmaster/get_dimn_info/') }}/"+item_id;
-		   $('#dimnitemData_'+curNum).load(infoUrl, function(result) {
+		   $('#locData_'+curNum).load(locUrl, function(result) {
 			  $('#myModal').modal({show:true});
 		   });
 			
-		   $('#dimnInfodivPrntItm_'+curNum).toggle();
+		   $('#locPrntItm_'+curNum).toggle();
 	   }
     });
-
-	$(document).on('click', '.add-loc-qty', function(e)  { 
-		var locid = []; var locqty = [];
-		$("input[name='lcid[]']:checked").each(function(){
-			locid.push($(this).val());
-			locqty.push( $('#clqty_'+$(this).val().toString()).val() );
-			
-		});
-		//console.log('v'+locid+' q'+locqty);
-		 var nm = $('#numasm').val(); 
-		 $('#conlocid_'+nm).val(locid);  //$('#clocid').val()
-		 $('#conlocqty_'+nm).val(locqty);  //$('#clocqty').val()
-		 
-		 let qtyout = 0;
-		 var qtyarr = $('#conlocqty_'+nm).val().split(',');
-		 $.each(qtyarr , function(index, val) { 
-		   qtyout = qtyout + parseFloat(val);
-		});
-		$('#itmqty_'+nm).val(qtyout);
-	});
 	
-	/*$(document).on('click', '.cnloc-info', function(e) { 
-	   e.preventDefault();
-	   var res = this.id.split('_');
-	   var curNum = res[1];  
-	   var item_id = $('#itmid_'+curNum).val();
-	   var cst_id = $('#customer_id').val();
-	   if(item_id!='') {
-		   let cnlocUrl = "{{ url('itemmaster/get_cnlocinfo/') }}/"+item_id+"/"+curNum+"/"+cst_id
-		   $('#cnlocData_'+curNum).load(cnlocUrl, function(result) {
-			  $('#myModal').modal({show:true});
-		   });
-		   $('#cnlocPrntItm_'+curNum).toggle();
-	   }
-    });*/
-
 	$(document).on('click', '.sup-sede', function(e) { 
 	   e.preventDefault();
 	   var res = this.id.split('_');
@@ -3613,55 +2760,8 @@ $(function() {
         }
     });
 	
-		var src2 = "{{ url('itemmaster/ajax_search2/') }}";
-	$('input[name="item_name[]"]').autocomplete({
-		
-        source: function(request, response) {
-            $.ajax({
-                url: src2+'/C',
-                dataType: "json",
-                data: {
-                    term : request.term
-                },
-                success: function(data) {
-                    response(data);
-                }
-            });
-        },
-		select: function (event, ui) { 
-			
-			var itm_id = ui.item.id;
-			$("#itmdes_1").val(ui.item.name);
-			$('#itmcod_1').val( ui.item.code );
-			$('#itmid_1').val( itm_id );
-			
-			//$("#itmdes_1").val(ui.item.name);
-			//$('#itmcod_1').val( ui.item.value );
-			
-			if($('.export').is(":checked") ) { 
-				$('#vatdiv_1').val( '0%' );
-				$('#vat_1').val( 0 );
-			} else {
-				srvat = ui.item.vat;
-				$('#vatdiv_1').val( srvat+'%' );
-				$('#vat_1').val( srvat );
-			}
-			
-			$.get("{{ url('purchase_order/getunit/') }}/" + itm_id, function(data) {
-				$('#itmunt_1').find('option').remove().end();
-				$.each(data, function(key, value) {   
-				$('#itmunt_1').find('option').end()
-				 .append($("<option></option>")
-							.attr("value",value.id)
-							.text(value.unit_name)); 
-				});
-			});
-		},
-        minLength: 1,
-		
-    });
-	
-	/* $('input[name="item_name[]"]').autocomplete({
+	var src = "{{ url('itemmaster/ajax_search/') }}";
+	$('input[name="item_code[]"]').autocomplete({
 		
         source: function(request, response) {
             $.ajax({
@@ -3697,22 +2797,20 @@ $(function() {
 				$('#itmunt_1').find('option').end()
 				 .append($("<option></option>")
 							.attr("value",value.id)
-							.text(value.unit_name));
-							$('#hidunit_1').val(value.unit_name); 
+							.text(value.unit_name)); 
 				});
 			});
 		},
         minLength: 1,
 		
-    }); */
+    });
 	
 	$(document).on('blur', 'input[name="item_code[]"]', function(e) { 
 		var res = this.id.split('_');
 		var curNum = res[1]; 
 		var code = this.value;
-		//##COMMANTED ON DEC 31  2021
-		/* if(code!='') {
-			$.get("{{ url('itemmaster/item_load/') }}/" + code, function(data) {
+		if(code!='') {
+			$.get("{{ url('itemmaster/item_load/') }}/" + code, function(data) { //console.log(data);
 				$("#itmdes_"+curNum).val(data.description);
 				$('#itmid_'+curNum).val( data.id );
 				$('#vat_'+curNum).val(data.vat)
@@ -3720,9 +2818,13 @@ $(function() {
 				$('#costavg_'+curNum).val(data.cost_avg);
 				$('#purcost_'+curNum).val(data.pur_cost);
 				
-				
+				/* $('#itmunt_'+curNum).find('option').remove().end();
+				$('#itmunt_'+curNum).find('option').end()
+					 .append($("<option></option>")
+								.attr("value",data.unit_id)
+								.text(data.unit)); */
 			});
-		} */
+		}
 	});
 	
 	//Multiple Unit loading........
@@ -3902,6 +3004,38 @@ $(function() {
     });
 	
 	
+	$('#voucher_type').on('change', function(e){
+		var vchr = e.target.value; 
+		var vchr_id = $('#rv_voucher').val();
+		
+		$.get("{{ url('customer_receipt/getvoucher/') }}/" + vchr_id+'/'+vchr, function(data) {
+			$('#rv_voucher_no').val(data.voucher_no);
+			if(data.id!=null && data.account_name!=null) {
+				$('#rv_dr_account').val(data.account_name);
+				$('#rv_dr_account_id').val(data.id);
+			} else {
+				$('#rv_dr_account').val('');
+				$('#rv_dr_account_id').val('');
+			}
+		});
+		
+		if(vchr=='BANK' || vchr=='PDCR') {
+			$('#cheque_no').show();$('#cheque_date').show();$('#bank_id').show();$('.pdcr').show();
+		} else {
+			$('#cheque_no').hide();$('#cheque_date').hide();$('#bank_id').hide();$('.pdcr').hide();
+		}
+	});
+	
+	$(document).on('blur', '#rv_amount', function(e) {
+		var amount = this.value;
+		var netamount = parseFloat( ($('#net_amount').val()=='') ? 0 : $('#net_amount').val() );
+		if(netamount < amount) {
+			alert('Amount should not greater than bill amount.');
+			$('#rv_amount').val(netamount);
+		}
+		
+	});
+	
 	$(document).on('keyup', '.line-cost', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1];
@@ -4001,31 +3135,21 @@ $(function() {
 		});
     });
 	
-	
 	$(document).on('click', '.add-asm-item', function(e)  { 
 		 var nm = $('#numasm').val();
-		 $('#asmid_'+nm).val( ($('#asmid_'+nm).val()=='')?$('#asit').val():$('#asmid_'+nm).val()+','+$('#asit').val());
-		 $('#asmqt_'+nm).val( ($('#asmqt_'+nm).val()=='')?$('#asqt').val():$('#asmqt_'+nm).val()+','+$('#asqt').val());
+		 $('#asmid_'+nm).val($('#asit').val());
+		 $('#asmqt_'+nm).val($('#asqt').val());
 		 
+		/*var itid = $('#asmid_'+nm).val();
+		var ids = [];
+		$("input[name='itmid[]']:checked").each(function() { 
+			ids.push($(this).val());
+		});
+		$('#asmid_'+nm).val((itid=='')?ids:itid+','+ids); */
+		
 	});
 	
 	$(document).on('click', '.view-asm-itm', function(e) { 
-	   e.preventDefault();
-	   var res = this.id.split('_');
-	   var curNum = res[1];
-	   var item_id = $('#asmid_'+curNum).val(); 
-	   var item_qty = $('#asmqt_'+curNum).val();  
-	   if(item_id!='') {
-		   var vwUrl = "{{ url('itemmaster/get_assembly_items/') }}/"+item_id+'/'+item_qty+'/'+curNum; 
-		   $('#asmblyitmDataVw').load(vwUrl, function(result) {
-			  $('#myModal').modal({show:true});
-		   });
-	   } else {
-	       $('#asmblyitmDataVw').html('');
-	   }
-    });
-	
-/*	$(document).on('click', '.view-asm-itm', function(e) { 
 	   e.preventDefault();
 	   var res = this.id.split('_');
 	   var curNum = res[1];
@@ -4037,7 +3161,7 @@ $(function() {
 			  $('#myModal').modal({show:true});
 		   });
 	   }
-    });*/
+    });
 	
 	$(document).on('click', '.funRemove', function(e) { 
 		var n = $(this).data("no");
@@ -4054,375 +3178,7 @@ $(function() {
 		
 	});
 	
-	$(document).on('keyup', '.vno', function(e) { 
-		$('input[name="vehicle_no"]').val($(this).val());
-	});
-	
-	$(document).on('keyup', '.cpno', function(e) { 
-		$('input[name="customer_phone"]').val($(this).val());
-	});
-	
-	$(document).on('keyup', '.km', function(e) { 
-		$('input[name="kilometer"]').val($(this).val());
-	});
-	
-	
-	$(document).on('keyup', '.num :input[type="number"]', function(e) {
-		var itQty = 0; var curNum = $(this).data('id');
-		
-		//NOV24
-		if(this.value > $(this).data('qty')) {
-			alert('Quantity out of stock in this location!');
-			this.value='';//$(this).find($('.loc-qty-'+curNum).val(''));
-			return false;
-		}
-		var itmid = $('#itmid_'+curNum).val();
-		$.get("{{ url('itemmaster/checkqty/') }}/" + itmid, function(data) {  
-			data = JSON.parse(data); 
-			var cur_quantity = parseFloat(data.cur_quantity);
-			var min_quantity = parseFloat(data.min_quantity);
-			@if(auth()->user()->can('-qty-sale'))
-				console.log('Minus Qty Sale');
-			@else
-				if(cur_quantity == 0 || cur_quantity < 0) {
-					alert('Item is out of stock!');
-					$('#itmqty_'+curNum).val('');
-					$(this).find($('.loc-qty-'+curNum).val(''));
-					$('#itmqty_'+curNum).focus();
-					return false;
-				} else if((min_quantity == cur_quantity) || (min_quantity > cur_quantity)) {
-					alert('Item quantity is reached on minimun quantity!');
-					$('#itmqty_'+curNum).val('');
-					$('#itmqty_'+curNum).focus();
-					return false;
-				}
-			@endif
-		});
-		
-		$('.loc-qty-'+curNum).each(function() { 
-			itQty += parseFloat( (this.value=='')?0:this.value );
-		});
-		$('#itmqty_'+curNum).val(itQty);
-		
-		$('#iloc_'+curNum).val((itQty>0)?itQty:''); //NOV24
-		var isPrice = getAutoPrice(curNum);
-		var res = getLineTotal(curNum);
-		if(res) {
-			var call = getOtherCost();
-			if(call)
-				getNetTotal();
-		}
-		
-		$('#frmSalesInvoice').bootstrapValidator('revalidateField', 'quantity[]');//NOV24
-	});
-	
-	
-	$(document).on('change', '.voucher_type', function(e){ //DEC
-		var res = this.id.split('_');
-	    var curNum = res[1];
-		var vchr = e.target.value; 
-		var vchr_id = $('#rvvoucher_'+curNum).val();
-		
-		
-    		$.get("{{ url('customer_receipt/getvoucher/') }}/" + vchr_id+'/'+vchr, function(data) {
-    			$('#rvvoucherno_'+curNum).val(data.voucher_no);
-    			if(data.id!=null && data.account_name!=null) {
-    				$('#rvdraccount_'+curNum).val(data.account_name);
-    				$('#rvdraccountid_'+curNum).val(data.id);
-    			} else {
-    				$('#rvdraccount_'+curNum).val('');
-    				$('#rvdaccountid_'+curNum).val('');
-    			}
-    		});
-		
-		if(vchr=='PDCR') { //vchr=='BANK' || 
-			$('#chequeno_'+curNum).show();$('#chequedate_'+curNum).show();$('#bankid_'+curNum).show();$('.lbban_'+curNum).show();$('.lbchq_'+curNum).show();$('.lbchqd_'+curNum).show();
-			if(vchr=='PDCR') {
-				$('[name="cheque_no[]"]').attr("required",true);
-			} else {
-				$('[name="cheque_no[]"]').removeAttr("required");
-			}
-		} else {
-			$('#chequeno_'+curNum).hide();$('#chequedate_'+curNum).hide();$('#bankid_'+curNum).hide();$('.lbban_'+curNum).hide();$('.lbchq_'+curNum).hide();$('.lbchqd_'+curNum).hide();
-			$('[name="cheque_no[]"]').removeAttr("required");
-		}
-	});
-	
-	$(document).on('blur', 'input[name="rv_amount[]"]', function(e) {
-		var res = this.id.split('_');
-	    var curNum = res[1];
-		
-		var amount = getRvTotal();
-		var netamount = parseFloat( ($('#net_amount').val()=='') ? 0 : $('#net_amount').val() );
-		if(netamount < amount) {
-			alert('Amount should not greater than bill amount.');
-			$('#rvamount_'+curNum).val('');
-		}
-	});
-	
-	$('input[name="cheque_date[]"]').datepicker( { autoClose:true ,dateFormat: 'dd-mm-yyyy' } );
-	var rvNum = 1;
-	$(document).on('click', '.btn-add-rv', function(e)  { //DEC
-		rvNum++;
-		e.preventDefault();
-        var controlForm = $('.controls .RVdivPrnt'),
-            currentEntry = $(this).parents('.RVdivChld:first'),
-            newEntry = $(currentEntry.clone()).appendTo(controlForm);
-			newEntry.find($('input[name="rv_voucher[]"]')).attr('id', 'rvvoucher_' + rvNum);
-			newEntry.find($('input[name="rv_voucher_no[]"]')).attr('id', 'rvvoucherno_' + rvNum);
-			newEntry.find($('input[name="rv_dr_account[]"]')).attr('id', 'rvdraccount_' + rvNum);
-			newEntry.find($('input[name="rv_dr_account_id[]"]')).attr('id', 'rvdraccountid_' + rvNum);
-			newEntry.find($('input[name="rv_amount[]"]')).attr('id', 'rvamount_' + rvNum);
-			newEntry.find($('input[name="cheque_no[]"]')).attr('id', 'chequeno_' + rvNum);
-			newEntry.find($('input[name="cheque_date[]"]')).attr('id', 'chequedate_' + rvNum);
-			newEntry.find($('.voucher_type')).attr('id', 'vouchertype_' + rvNum);
-			newEntry.find($('.bank')).attr('id', 'bankid_' + rvNum);
-			newEntry.find($('.lbban_'+(rvNum-1))).attr('class', 'small lbban_' + rvNum);
-			newEntry.find($('.lbchq_'+(rvNum-1))).attr('class', 'small lbchq_' + rvNum);
-			newEntry.find($('.lbchqd_'+(rvNum-1))).attr('class', 'small lbchqd_' + rvNum);
-			
-			$('#chequeno_'+rvNum).hide();$('#chequedate_'+rvNum).hide();$('#bankid_'+rvNum).hide();
-			$('.lbban_'+rvNum).hide();$('.lbchq_'+rvNum).hide();$('.lbchqd_'+rvNum).hide();
-			
-			$('#rvdraccount_'+rvNum).val( $('#rvdraccount').val() );
-			$('#rvdraccountid_'+rvNum).val( $('#rvdraccountid').val() );
-			$('#rvamount_'+rvNum).val('');
-			$('#chequeno_'+rvNum).val('');
-			$('#chequedate_'+rvNum).val('');
-			controlForm.find('.btn-add-rv:not(:last)').hide();
-			controlForm.find('.btn-remove-rv').show();
-			$('input[name="cheque_date[]"]').datepicker( { autoClose:true ,dateFormat: 'dd-mm-yyyy' } );
-			
-    }).on('click', '.btn-remove-rv', function(e)
-    { 
-		var res = $(this).attr('data-id').split('_');
-		var curNum = res[1]; var ids;
-		
-		var remitem = $('#remitem').val();
-		ids = (remitem=='')?$('#id_'+curNum).val():remitem+','+$('#id_'+curNum).val();
-		$('#remitem').val(ids);
-		$(this).parents('.RVdivChld:first').remove();
-		
-		//ROWCHNG
-		$('.RVdivPrnt').find('.RVdivChld:last').find('.btn-add-rv').show();
-		if ( $('.RVdivPrnt').children().length == 1 ) {
-			$('.RVdivPrnt').find('.btn-remove-rv').hide();
-		}
-		
-		e.preventDefault();
-		return false;
-	});
-	
-	
-	$(document).on('blur', 'input[name="cheque_no[]"]', function(e) {
-		var chqno = this.value;
-		var res = this.id.split('_');
-		var curNum = res[1]; //console.log(res[0]);
-		var bank = $('#bankid_'+curNum+' option:selected').val();
-		
-		$.ajax({
-			url: "{{ url('account_master/check_chequeno/') }}",
-			type: 'get',
-			data: 'chqno='+chqno+'&bank_id='+bank,
-			success: function(data) { 
-				if(data=='') {
-					alert('Cheque no is duplicate!');
-					$('#chequeno_'+curNum).val('');
-				}
-			}
-		})
-	});
-	
-	$('#input-51').fileupload({
-		dataType: 'json',
-		add: function (e, data) {
-			$('#loading_1').text('Uploading...');
-			data.submit();
-		},
-		done: function (e, data) {
-			var pn = $('#photo_name_1').val();
-			$('#photo_name_1').val( (pn=='')?data.result.file_name:pn+','+data.result.file_name );
-			$('#loading_1').text('Completed.');
-		}
-	});
-	
-	var fNum;
-	$(document).on('click', '.btn-add-file', function(e)  { 
-		var res = this.id.split('_');
-		fNum = res[1];
-	    fNum++;
-		$.ajax({
-			url: "{{ url('job_order/get_fileform/SI') }}",
-			type: 'post',
-			data: {'no':fNum},
-			success: function(data) {
-				$('.filedivPrnt').append(data);
-				return true;
-			}
-		}) 
-		
-	}).on('click', '.btn-remove-file', function(e) { 
-		$(this).parents('.filedivChld:first').remove();
-		
-		$('.filedivPrnt').find('.filedivChld:last').find('.btn-add-file').show();
-		if ( $('.filedivPrnt').children().length == 1 ) {
-			$('.filedivPrnt').find('.btn-remove-file').hide();
-		}
-		
-		e.preventDefault();
-		return false;
-	});
-
-	var custurl2;
-	$(document).on('click', '#rvdraccount_1', function(e)  {   
-		//if($('#department_id').length)
-			//custurl2 = "{{ url('sales_order/customer_data/') }}"+'/'+$('#department_id option:selected').val();
-		//else
-		var vtype = $('#vouchertype_1 option:selected').val();
-		custurl2 = "{{ url('sales_order/account_data/') }}"+'/'+vtype;
-		$('#customer_modalRV #customerDataRV').load(custurl2, function(result) {
-			$('#myModal').modal({show:true});
-			$('.input-sm').focus()
-			/* if( $('#customerInfo').is(":hidden") ) 
-				$('#customerInfo').toggle(); */
-		});
-	});
-
-
-	$(document).on('click', '#customerDataRV .custRow', function(e) { //console.log($(this).attr("data-trnno"));
-	
-			$('#rvdraccount_1').val($(this).attr("data-name"));
-			$('#rvdraccountid_1').val($(this).attr("data-id"));
-			
-		e.preventDefault();
-	});
-
-	//VOUCHER NO DUPLICATE OR NOT
-	$(document).on('blur', '#voucher_no', function() {
-		
-		$.ajax({
-			url: "{{ url('sales_invoice/checkvchrno/') }}", 
-			type: 'get',
-			data: 'voucher_no='+this.value+'&deptid='+deptid+'&id=',
-			success: function(data) { 
-				data = $.parseJSON(data);
-				if(data.valid==false) {
-					alert('Voucher No already exist!');
-					$('#voucher_no').val('');
-					return false;
-				}
-				//console.log('ff '+data.valid);
-			}
-		}); 
-	})
-	//VOUCHER NO DUPLICATE OR NOT
-	
-	//MAY25 BATCH SYSTEM...
-	
-	$(document).on('click', '.batch-add', function(e) { 
-       
-       var res = this.id.split('_');
-	   var n = res[1];
-	   
-	   var item_id = $('#itmid_'+n).val(); 
-	   var batch = $('#bthSelIds_'+n).val(); 
-	   var btqty = $('#bthSelQty_'+n).val(); 
-       var batchurl = "{{ url('itemmaster/batch-get') }}";
-       
-       if(batch!='') {
-    	   var vwUrl = batchurl+'?item_id='+item_id+'&batch='+batch+'&qty='+btqty+'&act=add&no='+n; 
-    	   $('#batchData').load(vwUrl, function(result) {
-    		  $('#myModal').modal({show:true}); 
-    	   });
-    	   
-       } else {	  
-           
-           if(item_id!='') {
-        	   var vwUrl = batchurl+'?item_id='+item_id+'&act=add&no='+n; 
-        	   $('#batchData').load(vwUrl, function(result) {
-        		  $('#myModal').modal({show:true}); 
-        	   });
-           } 
-       }
-    });
-    
-     
-    $(document).on('click', '.saveBatch', function(e)  { 
-         e.preventDefault();
-        var isvalid = true;
-        var batchId = '';
-        var qtyBatch = '';
-        var totalQty = parseFloat(0);
-        
-        $( '.req-bqty' ).each(function() { 
-            
-    		  var res = this.id.split('_');
-    		  var n = res[1];
-    		  
-    		  if( $('#bthqty_'+n).is(':not(:disabled)') && this.value=='') {
-    		      alert('Quantity is required!');
-    		      isvalid = false;
-    		      return false;
-    		  } 
-    		  
-    		  if( $('#bthqty_'+n).is(':enabled') && this.value!='') {
-    		      
-    		      batchId = (batchId=='')?n:batchId+','+n; //var n is batch id
-        	    
-        	      bthArr.push(n);
-        	      uniqueBtharr = bthArr.filter((value, index, self) => self.indexOf(value) === index);
-        	      
-        	      qtyBatch = (qtyBatch=='')?$(this).val():qtyBatch+','+$(this).val();
-        	      totalQty += parseFloat($(this).val());
-    		  }
-		 
-		});
-		
-		if(isvalid==true) {
-    		 var row_no = $('#row_no').val();
-            
-            //JUL25
-           var fmla = $('#packing_'+row_no).val();
-           if(fmla!=1) {
-              var res = fmla.split('-');
-        	  var pkn = res[0];
-        	  var pkng = res[1]
-        	  
-        	  totalQty = totalQty / (pkn * pkng);
-           } else {
-               totalQty = totalQty*fmla;
-           }
-           //....
-           
-    		 $('#bthSelIds_'+row_no).val( batchId );
-    		 $('#bthSelQty_'+row_no).val( qtyBatch );
-    		 $('#batch_modal').modal('hide');
-    		 $('#itmqty_'+row_no).val(totalQty);
-		}
-	});
-	
-	$(document).on('change', '.chk-batch', function(e) {  
-    
-        if( $(this).is(":checked") ) { 
-        	
-        	$('#bthqty_'+$(this).val().toString()).prop("disabled", false);
-        } else {
-            
-        	$('#bthqty_'+$(this).val().toString()).prop("disabled", true);
-        }
-    
-    });
 });
-
-function getRvTotal() {
-	var tamount = 0;
-	$( 'input[name="rv_amount[]"]' ).each(function() {
-		if(this.value!='') {
-			tamount += parseFloat(this.value);
-		}
-			
-	}); return tamount; 
-}
 
 function funRemove(id,n)
 {
@@ -4431,6 +3187,19 @@ function funRemove(id,n)
 	$('#asmid_'+n).val(idar);
 	console.log(this); 
 }
+
+function calculateDueDate(days) {
+           const today = new Date();
+           const dueDate = new Date();
+            console.log(dueDate);
+            dueDate.setDate(today.getDate() + days);
+            const due= dueDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+           const formatted = dueDate.toLocaleDateString('es-CL'); // DD/MM/YYYY
+           console.log(formatted);
+        $('#due_date').val(formatted);
+
+}
+
 
 
 var popup;
@@ -4477,31 +3246,9 @@ function getAccount(e) {
 	return false
 }
 
-function getSalesInvoice() { 
-	
-	var ht = $(window).height();
-	var wt = $(window).width();
-	var pourl = "{{ url('sales_invoice/get_salesinvoice/') }}";
-	popup = window.open(pourl, "Popup", "width=900,height=500,top=100,left=200");
-	popup.focus();
-	return false
-}
-
-function getLocation() { 
-	
-	var ht = $(window).height();
-	var wt = $(window).width();
-	var pourl = "{{ url('sales_invoice/get_locationTransfer/') }}";
-	popup = window.open(pourl, "Popup", "width=900,height=500,top=100,left=200");
-	popup.focus();
-	return false
-}
-
 function openWin(id) {
   myWindow = window.open("{{url('sales_invoice/print/')}}/"+id, "", "width=400, height=477");
 }
 
-
 </script>
-
 @stop

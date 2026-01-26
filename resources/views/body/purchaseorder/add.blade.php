@@ -92,13 +92,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@can('po-print')
+								@permission('po-print')
 								 <a href="{{ url('purchase_order/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> Print
 								</a>
-								@endcan
+								@endpermission
 							<?php } ?>
 							</div>
                         </div>
@@ -107,14 +107,51 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmPurchaseOrder" id="frmPurchaseOrder" action="{{ url('purchase_order/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">	
                                 <input type="hidden" name="is_draft" id="is_draft" value="0">
+                                
+								<div class="form-group">
+						    <label for="input-text" class="col-sm-2 control-label"></label>
+							<div class="col-sm-10">
+							    <label class="radio-inline">
+								<font color="#16A085"><input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
+							    </label>
+							
+                                 <label class="radio-inline">
+								<font color="#16A085"><input type="radio" class="locinter-radio" name="is_intercompany"  value=""><b>Inter Company</b></font>
+                                </label>
+							 </div>
+						</div>
+
+                            <div class="form-group">
+                               <font color="#16A085">  <label class="col-sm-2 control-label"><b>Location </b><span class="text-danger">*</span></label></font>
+                               <div class="col-sm-10">
+                                 <div id="locationRadioGroup">
+                                   @foreach($location as $loc)
+                                <label class="radio-inline">
+                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+                                 </label>
+                                 @endforeach
+								 </div>
+                                 <div id="locationRadio">
+								 <label class="radio-inline">
+                                    <input type="radio" class="locin-radio"  data-id="{{$interid}}" value="{{$interid}}">{{$intername}}
+                                 </label>
+                                 </div>
+                               <input type="hidden" id="selected_locfrom_id" name="location_id">
+                                  <small class="text-muted" id="locfrom-mand">
+                                             '*' is mandatory fields
+                                    </small>
+                             </div>
+                             </div>
+
+
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('voucher_no')) echo 'form-error';?>">PO. No.</label>
                                     <div class="col-sm-10">
 										<?php if($voucherno->prefix!='') { ?>
 										
 										<div class="input-group"> 
-											<span class="input-group-addon">{{$voucherno->prefix}}</span>
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
+											<span class="input-group-addon" id="prefixBox">{{$voucherno->prefix}}</span>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> placeholder="{{old('voucher_no')}}" <?php } ?>>
 											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
@@ -123,7 +160,7 @@
 										</div>
 										<?php } else { ?>
 										<div class="input-group">
-											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly placeholder="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
+											<input type="text" class="form-control" id="voucher_no" name="voucher_no" <?php if($voucherno->autoincrement==1) { ?> readonly value="{{$voucherno->no}}" <?php } else { ?> value="{{old('voucher_no')}}" <?php } ?>>
 											<input type="hidden" value="{{$voucherno->prefix}}" name="prefix">
 											<input type="hidden" value="{{$voucherno->voucher_type}}" name="voucher_type">
 											<input type="hidden" value="{{$voucherno->autoincrement}}" name="autoincrement">
@@ -183,8 +220,8 @@
                                     <div class="col-sm-10">
 									 <select id="document_type" class="form-control select2" style="width:100%" name="document_type">
 										<option value="">Select Document...</option>
-										<option value="MR">Material Requisition</option>
-										<option value="SO">Sales Order</option>
+										<option value="PE">Purchase Enquiry</option>
+										
 									</select>
                                     </div>
                                 </div>
@@ -250,7 +287,7 @@
 								<?php } ?>
 								
 								<div class="form-group">
-                                   <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b></label></font>
+                                   <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('supplier_name')) echo 'form-error';?>"><b>Supplier</b><span class="text-danger">*</span></label></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" name="supplier_name" id="supplier_name" value="{{ old('supplier_name') }}" class="form-control <?php if($errors->has('supplier_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#supplier_modal" placeholder="Supplier">
 										<input type="hidden" name="supplier_id" id="supplier_id" value="{{ old('supplier_id') }}">
@@ -293,23 +330,7 @@
 										</div>
 									</div>
                                 </div>
-								<?php if($formdata['location']==1) { ?>
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">Location</label>
-                                    <div class="col-sm-10">
-                                        <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
-										<option value="" selected>Select Location..</option>
-											<?php 
-											foreach($location as $loc) { 
-											?>
-											<option value="{{ $loc['id'] }}" <?php if($loc['id']==old('location_id')) echo 'selected'; ?>>{{ $loc['name'] }}</option>
-											<?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
-								<?php } else { ?>
-								<input type="hidden" name="location_id" id="location_id">
-								<?php } ?>
+								
 								<br/>
 								<fieldset>
 								<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Item Details</span></h5></legend>
@@ -647,8 +668,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_{{$l}}" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+															     <option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -711,8 +733,9 @@
 													<td width="8%">
 															<span class="small">Currency</span>
 															<select id="occrncy_1" class="form-control select2 oc-curr" style="width:100%" name="oc_currency[]">
-																@foreach($currency as $curr)
-																<option value="{{$curr['id']}}">{{$curr['code']}}</option>
+															     <option value="{{$settings->bcurrency_id}}">Select</option>
+																@foreach($fcurrency as $curr)
+																<option value="{{$curr->id}}" >{{$curr->code}}</option>
 																@endforeach
 															</select>
 													</td>
@@ -725,7 +748,7 @@
 														<input type="number" name="oc_rate[]" id="ocrate_1" step="any" value="1" class="form-control oc-rate" placeholder="Rate">
 													</td>
 													<td width="10%">
-														<span class="small">Convrt Amt</span>
+														<span class="small">FC Amt</span>
 														<input type="number" name="oc_fc_amount[]" id="ocfcamt_1" step="any" readonly class="form-control oc-line-fc" placeholder="Convrt Amt">
 													</td>
 													<td width="5%">
@@ -910,9 +933,9 @@
                                          <button type="button" value="button" name="btn" onclick="submitDraft()"class="btn btn-success">Draft</button>
 										<a href="{{ url('purchase_order') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('purchase_order/add') }}" class="btn btn-warning">Clear</a>
-										@can('po-history')
+										@permission('po-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endcan
+										@endpermission
                                     </div>
                                 </div>
                                          
@@ -1156,6 +1179,73 @@ $(document).ready(function () {
 	$("#currency_id").prop('disabled', true); $('#othrcstItm_1').toggle();
 	$("#fc_label").toggle(); $("#c_label").toggle(); $("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $('.OCdivPrnt').toggle(); $("#other_cost_fc").toggle(); $('.oc-amount-fc').toggle();$("#subtotal_fc").toggle();
+	
+	$('.loccom-radio').iCheck('check');
+	 $('#locationRadio').hide();
+
+	$(document).on('ifChecked', '.locinter-radio', function (e) {
+      $('.loccom-radio').iCheck('uncheck');
+      $('.locfrom-radio').iCheck('uncheck');
+	   $('.locfrom-radio').iCheck('disable');
+      $('#locationRadioGroup').hide();
+		$('#locationRadio').show();
+    
+
+	   let locID   = {{$interid}};
+        let locCode = "{{$intercode}}";
+		let prefix ='IPO';
+		let newPrefix = prefix + locCode; 
+		 $('#prefixBox').text(newPrefix);
+        $('input[name="prefix"]').val(newPrefix);
+        $('input[name="is_intercompany"]').val(1);
+		// Check only the default location radio
+    $('.locin-radio[data-id="' + locID + '"]').iCheck('check');
+    
+    // Disable all location radios so user cannot change
+   
+
+		$('#selected_locfrom_id').val(locID);
+        
+		
+	});
+
+	$(document).on('ifChecked', '.loccom-radio', function (e) {
+
+        $('.locinter-radio').iCheck('uncheck');
+
+         $('.locfrom-radio').iCheck('enable');
+         $('#locationRadioGroup').show();
+		$('#locationRadio').hide();
+        $('.locfrom-radio').iCheck('uncheck');
+		 $('#prefixBox').text('PO');
+        $('input[name="prefix"]').val('');
+       $('#selected_locfrom_id').val('');
+	   $('input[name="is_intercompany"]').val('');
+});
+    
+	$(document).on('ifChecked', '.locfrom-radio', function (e) {
+          var val = $(this).val();
+		  $('.locinter-radio').iCheck('uncheck');
+		  $('.loccom-radio').iCheck('check');
+         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+             
+			  let prefix ='PO' //$('input[name="prefix"]').val('QS');   // Example: LT
+             let newPrefix = prefix + locCode;               // LTWH1
+
+               // show new prefix on screen
+                $('#prefixBox').text(newPrefix);
+                $('input[name="prefix"]').val(newPrefix);
+
+             //  $('.locfrom-radio').prop('disabled', true);
+         // store the value in the hidden field
+              $('#selected_locfrom_id').val(val);
+
+        
+     });
+      });
+
+	
+	
 	var urlcode = "{{ url('purchase_order/checkrefno/') }}";
     $('#frmPurchaseOrder').bootstrapValidator({
         fields: {
@@ -1207,13 +1297,6 @@ $(document).ready(function () {
 		$('.tax-code').attr("disabled", false); 
 	});
 	
-});
-
-$(document).on('blur', '#voucher_no', function(e) {  
-	if(parseInt($(this).val()) > parseInt($('#curno').val())) {
-		alert('Voucher no is greater than current range!');
-		$('#voucher_no').val('');
-	}
 });
 
 function submitDraft() {
@@ -1512,6 +1595,7 @@ $(function() {
 	$(document).on('click', '.btn-add-item', function(e)  { 
         rowNum++; //console.log(rowNum);
 		e.preventDefault();
+		$('.locPrntItm').toggle();
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),
             newEntry = $(currentEntry.clone()).appendTo(controlForm);
@@ -1737,6 +1821,13 @@ $(function() {
 		$('#jobData').load(joburl, function(result) {
 			$('#myModal').modal({show:true});
 		});
+	});
+
+	$(document).on('blur', '#voucher_no', function(e) {  
+		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
+			alert('Voucher no is greater than current range!');
+			$('#voucher_no').val('');
+		}
 	});
 
 	var acturl = "{{ url('purchase_invoice/account_data/') }}";
@@ -2413,7 +2504,7 @@ function getDocument() {
 	
 	var ht = $(window).height();
 	var wt = $(window).width();
-	var pourl = "{{ url('purchase_order/mr_data/') }}/MRO";
+	var pourl = "{{ url('purchase_order/mr_data/') }}/PE";
 	popup = window.open(pourl, "Popup", "width=900,height=500,top=100,left=200");
 	popup.focus();
 	return false

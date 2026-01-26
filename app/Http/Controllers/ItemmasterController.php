@@ -452,7 +452,7 @@ public function ajaxPaging(Request $request)
 								
 		//CHECK ITEM ALREADY IN USE OTHER DOCS	...					
 		$readonly = false;						
-		$logcount = DB::table('item_log')->where('item_id', $id)->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+		$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',env('DEPARTMENT_ID'))->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 		if($logcount > 0)
 		    $readonly = true;
 		else {
