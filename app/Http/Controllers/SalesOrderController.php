@@ -381,7 +381,7 @@ class SalesOrderController extends Controller
 	
 	public function save(Request $request) { //echo '<pre>';print_r($request->all());exit;
 	
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'voucher_no' => 'required|unique:sales_order',
 			'location_id' =>'required','location_id' => 'required',
@@ -399,11 +399,7 @@ class SalesOrderController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.' 
 			]
-		)) {
-
-			//echo '<pre>';print_r($request->flash());exit;
-			//return redirect('sales_order/add')->withInput()->withErrors();
-		}
+		);
 		
 		if($this->sales_order->create($request->all()))
 			Session::flash('message', 'Sales Order added successfully.');
@@ -531,7 +527,7 @@ class SalesOrderController extends Controller
 	public function update(Request $request)
 	{
 		$id = $request->input('sales_order_id');
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			'location_id' =>'required','location_id' => 'required',
@@ -549,10 +545,7 @@ class SalesOrderController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.' */
 			]
-		)) {
-		
-			return redirect('sales_order/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		$this->sales_order->update($id, $request->all());
 		

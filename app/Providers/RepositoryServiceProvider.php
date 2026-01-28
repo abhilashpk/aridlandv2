@@ -82,6 +82,9 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(\App\Repositories\VoucherType\VoucherTypeInterface::class, \App\Repositories\VoucherType\VoucherTypeRepository::class);
         $this->app->bind(\App\Repositories\VoucherwiseReport\VoucherwiseReportInterface::class, \App\Repositories\VoucherwiseReport\VoucherwiseReportRepository::class);
         $this->app->bind(\App\Repositories\WageEntry\WageEntryInterface::class, \App\Repositories\WageEntry\WageEntryRepository::class);
+
+        $this->app->bind(\App\Repositories\PurchaseEnquiry\PurchaseEnquiryInterface::class, \App\Repositories\PurchaseEnquiry\PurchaseEnquiryRepository::class);
+        //$this->app->bind('App\Repositories\PurchaseEnquiry\PurchaseEnquiryInterface', 'App\Repositories\PurchaseEnquiry\PurchaseEnquiryRepository');
     }
 
     public function boot(): void

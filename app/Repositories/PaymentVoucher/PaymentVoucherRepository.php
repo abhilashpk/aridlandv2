@@ -1219,10 +1219,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							} else {
 								throw $ex; //echo $ex;exit;// rethrow if different DB error
 							}
-
 								
-								throw $ex; //echo $ex;exit;// rethrow if different DB error
-							}
 						}
 					}
 										
@@ -1484,7 +1481,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				}
 				DB::commit();
 				return $this->payment_voucher->id;
-				//abi-----------
+				
 				
 			} catch (\Exception $e) {
 			  
@@ -1595,7 +1592,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 															'description' => $attributes['description'][$key],
 															'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 															'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0,
-															'deleted_at' => '0000-00-00 00:00:00',,
+															'deleted_at' => '0000-00-00 00:00:00',
 															'department_id'=>env('DEPARTMENT_ID')
 														]);
 								} else {

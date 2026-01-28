@@ -495,6 +495,7 @@ Route::get('/location/get_loc/{id}', [LocationController::class, 'getLocation'])
 Route::get('/location/get_loc', [LocationController::class, 'getLocation']);
 Route::get('/location/bin_data/{n}', [LocationController::class, 'getBin']);
 Route::get('/location/ajax_create', [LocationController::class, 'ajaxSave']);
+Route::get('location/getCode/{id}', [LocationController::class, 'getCode']);
 
 Route::get('/country', [CountryController::class, 'index']);
 Route::get('/country/add', [CountryController::class, 'add']);
@@ -1194,6 +1195,11 @@ Route::get('/sales_invoice/photo-view/{id}', [SalesInvoiceController::class, 'ph
 Route::get('/sales_invoice/get_salesinvoice', [SalesInvoiceController::class, 'getSalesInvoice']);
 Route::get('/sales_invoice/refresh_do/{id}', [SalesInvoiceController::class, 'refreshDO']);
 Route::get('/sales_invoice/getjob/{id}', [SalesInvoiceController::class, 'getJob']);
+
+Route::get('/sales_invoice/cash', ['as' => 'sales_invoice.index', 'uses' => SalesInvoiceController::class.'@indexc', 'middleware' => ['permission:si-list|si-create|si-edit|si-delete']]);
+Route::post('/sales_invoice/cashpaging', [SalesInvoiceController::class, 'ajaxPagingCash']);
+Route::get('/sales_invoice/addc', ['as'=>'sales_invoice.add','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
+Route::get('/sales_invoice/addc/{id}/{n}', ['as'=>'sales_invoice.add','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
 
 		//sales_invoice/edit/'.$sirow->id.'/SO/'.$id
 		

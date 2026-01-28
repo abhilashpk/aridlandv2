@@ -67,13 +67,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Quotation Sales
                         </h3>
                         <div class="pull-right">
-							@permission('qs-create')
+							@can('qs-create')
                              <a href="{{ url('quotation_sales/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
+							@endcan
                         </div>
                     </div>
                     <div class="panel-body">
@@ -246,11 +246,11 @@ $(function() {
 			{ "data": "net_total" },
 			//{ "data": "approval" },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } ?>
-			@permission('qs-edit'){ "data": "edit","bSortable": false },@endpermission
-				@permission('qs-view'){ "data": "viewonly","bSortable": false },@endpermission
-			@permission('qs-print'){ "data": "print","bSortable": false },@endpermission
+			@can('qs-edit'){ "data": "edit","bSortable": false },@endcan
+				@can('qs-view'){ "data": "viewonly","bSortable": false },@endcan
+			@can('qs-print'){ "data": "print","bSortable": false },@endcan
 			//{ "data": "view","bSortable": false },
-			@permission('qs-delete'){ "data": "delete","bSortable": false },@endpermission
+			@can('qs-delete'){ "data": "delete","bSortable": false },@endcan
 		],
 			/*"createdRow": function( row, data, dataIndex){
                             if( data["approval_status"] == 1  ){

@@ -97,6 +97,13 @@ class LocationController extends Controller
 					->withInfo($info);
 	}
 
+	public function getCode($id)
+	{
+		$loc = DB::table('location')->where('id', $id)->first();
+
+		return $loc ? $loc->code : '';
+	}
+
 	public function getBin($num,$mod=null)
 	{
 		$binloc = DB::table('bin_location')->where('deleted_at',null)->get();
