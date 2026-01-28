@@ -492,10 +492,13 @@ Route::post('/location/update/{id}', [LocationController::class, 'update']);
 Route::get('/location/delete/{id}', [LocationController::class, 'destroy']);
 Route::get('/location/checkcode', [LocationController::class, 'checkcode']);
 Route::get('/location/checkname', [LocationController::class, 'checkname']);
-Route::get('/location/get_loc/{id}', [LocationController::class, 'getLocation']);
+Route::get('/location/get_loc/{id?}', [LocationController::class, 'getLocation']);
+// Route::get('/location/get_loc/{id}', [LocationController::class, 'getLocation']);
 Route::get('/location/get_loc', [LocationController::class, 'getLocation']);
 Route::get('/location/bin_data/{n}', [LocationController::class, 'getBin']);
 Route::get('/location/ajax_create', [LocationController::class, 'ajaxSave']);
+Route::get('location/get_loc/{id}/{n}', [LocationController::class, 'getLocInfo']);
+
 
 Route::get('/country', [CountryController::class, 'index']);
 Route::get('/country/add', [CountryController::class, 'add']);

@@ -699,14 +699,25 @@
                                     </div>
                                 </div>-->
 								
-								<?php if($formdata['location']==1) { ?>
+								{{-- <?php if($formdata['location']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">
                                     <button type="button" id="loc_1" class="btn btn-primary btn-xs loc-info">Stock in Location</button>
                                     </div>
 									
-                                </div>
+                                </div> --}}
+
+								<?php if($formdata['location']==1) { ?>
+									<div class="form-group">
+										<label for="input-text" class="col-sm-2 control-label"></label>
+										<div class="col-sm-10">
+											<button type="button" id="loc_1" class="btn btn-primary btn-xs loc-info" data-item-id="{{ $itemrow->id }}">
+												Stock in Location
+											</button>
+										</div>
+									</div>
+								
 								
 								
 								<div class="form-group locPrntItm">
@@ -1426,17 +1437,41 @@ $(function() {
 		  
     });
 	 
-	 $(document).on('click', '.loc-info', function(e) { 
-	   e.preventDefault();
+	// $(document).on('click', '.loc-info', function(e) { 
+	//    e.preventDefault();
 	   
-		   var locUrl = "{{ url('location/get_loc') }}";
-		   $('#locData_1').load(locUrl, function(result) {
-			  $('#myModal').modal({show:true});
-		   });
+	// 	   var locUrl = "{{ url('location/get_loc') }}";
+	// 	   $('#locData_1').load(locUrl, function(result) {
+	// 		  $('#myModal').modal({show:true});
+	// 	   });
 			
-		   $('.locPrntItm').toggle();
-    });
+	// 	   $('.locPrntItm').toggle();
+    // });
 	
+	$(document).on('click', '.loc-info', function(e) { 
+		e.preventDefault();
+		
+		var itemId = $(this).data('item-id');
+		
+		console.log('Item ID:', itemId); // DEBUG
+		
+		if (!itemId) {
+			alert('Item ID is missing!');
+			return;
+		}
+		
+		var locUrl = "{{ url('location/get_loc') }}/" + itemId;
+		
+		console.log('Loading URL:', locUrl); // DEBUG
+		
+		$('#locData_1').load(locUrl, function(result) {
+			console.log('Result loaded'); // DEBUG
+			$('#myModal').modal({show: true});
+		});
+		
+		$('.locPrntItm').toggle();
+	});
+
 	
     $(document).on('change', '#unit_2', function(e) { //console.log( $(this).find("option:selected").text() );
 		var title = $(this).find("option:selected").text();

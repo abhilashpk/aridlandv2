@@ -10,6 +10,7 @@ use Session;
 use Response;
 use App;
 use DB;
+use Log;
 
 class LocationController extends Controller
 {
@@ -119,18 +120,31 @@ class LocationController extends Controller
 	// public function getLocation($id=null)
 	// {
 	// 	$info = $this->location->locationList();
+	// 	 dd($this->location->locationList());
+
 	// 	return view('body.location.locinfo')
 	// 				->withId($id)
 	// 				->withInfo($info);
 	// }
 
-	public function getLocation($id=null)
+	public function getLocation($id = null)
 	{
-		$info = $this->location->locationList();
-
-		return view('body.location.locinfo', compact('info'));
+		if ($id) {
+			$info = $this->location->getItemStockByLocation($id);
+			
+			// DEBUG: Check what we're getting
+			// \Log::info('Item ID: ' . $id);
+			// \Log::info('Info count: ' . count($info));
+			// \Log::info('Info data: ' . json_encode($info));
+			
+		} else {
+			$info = collect(); // Empty collection
+		}
+		
+		return view('body.location.locinfo')
+			->with('id', $id)
+			->with('info', $info);
 	}
-
 
 
 	public function getBin($num,$mod=null)

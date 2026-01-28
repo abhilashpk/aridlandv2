@@ -1,4 +1,4 @@
-<br/>
+{{-- <br/>
 <div class="col-xs-4">
 	<table class="table table-bordered table-hover">
 		<thead>
@@ -22,8 +22,51 @@
 		@endforeach
 		</tbody>
 	</table>
-</div>
+</div> --}}
 
+<br/>
+<div class="col-xs-6">
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Location</th>
+                <th>Quantity</th>
+                <th>Bin</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if($info && count($info) > 0)
+            @foreach($info as $row)
+            <tr>
+                <td>
+                    @if($row->location_name)
+                        {{ $row->location_name }}
+                    @elseif($row->location_code)
+                        {{ $row->location_code }}
+                    @else
+                        Location {{ $row->location_id }}
+                    @endif
+                </td>
+                <td>{{ $row->quantity }}</td>
+                <td>
+                    @if($row->bin_code)
+                        {{ $row->bin_code }}
+                    @elseif($row->bin_id && $row->bin_id > 0)
+                        Bin {{ $row->bin_id }}
+                    @else
+                        -
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+        @else
+            <tr>
+                <td colspan="3" class="text-center">No stock information available</td>
+            </tr>
+        @endif
+        </tbody>
+    </table>
+</div>
 
 
 <script>

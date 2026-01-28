@@ -499,7 +499,7 @@ class ItemmasterController extends Controller
 					
 
 		Session::flash('message', 'Item added successfully.');
-		return redirect('itemmaster/add');
+		return redirect('itemmaster');
 	}
 	
 	public function destroy($id)

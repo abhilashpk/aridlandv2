@@ -10,6 +10,7 @@ use Config;
 use Auth;
 use Illuminate\Support\Facades\DB;
 use Validator;
+use Illuminate\Support\Facades\Log;
 
 class LocationRepository extends AbstractValidator implements LocationInterface {
 	
@@ -145,15 +146,31 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	// 		return $this->location->where('status',1)->where('is_conloc',0)->get();
 	// }
 
+	// public function locationList()
+	// {
+	// 	if (Auth::check() && Auth::user()->location_id > 0)
+	// 		return $this->location
+	// 			->where('status',1)
+	// 			->where('id', Auth::user()->location_id)
+	// 			->get();
+	// 	else
+	// 		return $this->location
+	// 			->where('status',1)
+	// 			->where('is_conloc',0)
+	// 			->get();
+	// }
+
 	public function locationList()
 	{
-		$query = $this->location->where('status', 1);
+		$query = $this->location
+			->with(['itemLocations' => function ($q) use ($itemId) {
+				$q->select('location_id', 'item_id', 'quantity', 'opn_qty')
+				->where('item_id', $itemId);
+			}])
+			->where('status', 1);
 
-		if (Auth::user()->location_id > 0) {
-			$query->where(function ($q) {
-				$q->where('id', Auth::user()->location_id)
-				->orWhere('is_conloc', 0);
-			});
+		if (Auth::check() && Auth::user()->location_id > 0) {
+			$query->where('id', Auth::user()->location_id);
 		} else {
 			$query->where('is_conloc', 0);
 		}
@@ -161,6 +178,36 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 		return $query->get();
 	}
 
+	public function getItemStockByLocation($itemId)
+	{
+		$deptId = env('DEPARTMENT_ID');
+		
+		return DB::table('item_location AS IL')
+			->leftJoin('location AS L', 'L.id', '=', 'IL.location_id')
+			->leftJoin('bin_location AS BL', 'BL.id', '=', 'IL.bin_id')
+			->where('IL.item_id', $itemId)
+			// FIX: Check for NULL or matching department_id
+			->where(function($query) use ($deptId) {
+				$query->where('IL.department_id', $deptId)
+					->orWhereNull('IL.department_id');
+			})
+			->where('IL.status', 1)
+			->where(function($query) {
+				$query->where('IL.deleted_at', '0000-00-00 00:00:00')
+					->orWhereNull('IL.deleted_at');
+			})
+			->select(
+				'IL.id',
+				'IL.location_id',
+				'IL.quantity',
+				'IL.bin_id',
+				'L.name as location_name',
+				'L.code as location_code',
+				'BL.code as bin_code'
+			)
+			->orderBy('IL.location_id', 'ASC')
+			->get();
+	}
 	
 	public function activeLocationList()
 	{
