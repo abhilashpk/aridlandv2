@@ -42,3 +42,5 @@ ALTER TABLE `other_account_setting` ADD `department_id` INT NOT NULL AFTER `stat
 ALTER TABLE `account_setting` CHANGE `dr_account_master_id` `dr_account_master_id` INT(11) NULL, CHANGE `cr_account_master_id` `cr_account_master_id` INT(11) NULL, CHANGE `cash_account_id` `cash_account_id` INT(11) NULL, CHANGE `bank_account_id` `bank_account_id` INT(11) NULL, CHANGE `pdc_account_id` `pdc_account_id` INT(11) NULL, CHANGE `is_cash_voucher` `is_cash_voucher` TINYINT(4) NULL, CHANGE `default_account_id` `default_account_id` INT(11) NULL, CHANGE `description` `description` VARCHAR(150) CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL, CHANGE `dr_account_master_id_to` `dr_account_master_id_to` INT(11) NULL, CHANGE `cr_account_master_id_to` `cr_account_master_id_to` INT(11) NULL;
 UPDATE `account_setting` SET `department_id` = '1' WHERE `account_setting`.`id` = 68
 UPDATE `account_setting` SET `department_id` = '1' WHERE `account_setting`.`id` = 69
+
+ALTER TABLE `sales_return` ADD `department_id` INT NOT NULL AFTER `deleted_by`, ADD `prefix` VARCHAR(25) NULL AFTER `department_id`, ADD `is_intercompany` TINYINT NULL AFTER `prefix`;
