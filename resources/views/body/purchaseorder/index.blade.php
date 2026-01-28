@@ -67,13 +67,15 @@
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Order
                         </h3>
                         <div class="pull-right">
-							@permission('po-create')
+							{{-- @permission('po-create') --}}
+							@can('po-create')
                              <a href="{{ url('purchase_order/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
+							{{-- @endpermission --}}
+							 @endcan
                         </div>
                     </div>
                     <div class="panel-body">

@@ -343,9 +343,12 @@ class PurchaseReturnController extends Controller
 					->withDeptid($deptid)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withIsmpqty($this->mod_mpqty->is_active)
-					->withInterid($defaultInter->id)
-                     ->withIntercode($defaultInter->code)
-					->withIntername($defaultInter->name)
+					// ->withInterid($defaultInter->id)
+                    //  ->withIntercode($defaultInter->code)
+					// ->withIntername($defaultInter->name)
+					->withInterid($defaultInter ? $defaultInter->id : null)
+                    ->withIntercode($defaultInter ? $defaultInter->code : null)
+					->withIntername($defaultInter ? $defaultInter->name : null)
 					->withData($data);
 	}
 	

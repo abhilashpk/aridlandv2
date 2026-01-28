@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Repositories\Location\LocationInterface;
+use Illuminate\Support\Facades\Validator;
 
 use App\Http\Requests;
 use Session;
@@ -38,11 +39,37 @@ class LocationController extends Controller
 					->withData($data);
 	}
 	
-	public function save(Request $request) {
+	// public function save(Request $request) {
+	// 	$this->location->create($request->all());
+	// 	Session::flash('message', 'Location added successfully.');
+	// 	return redirect('location/add');
+	// }
+
+	public function save(Request $request)
+	{
+		$rules = [
+			'code' => 'required',
+			'name' => 'required',
+			'is_conloc' => 'required|in:0,1',
+		];
+
+		// customer required ONLY if consignment location = YES
+		if ($request->is_conloc == 1) {
+			$rules['customer_id'] = 'required|integer';
+		}
+
+		$validator = Validator::make($request->all(), $rules);
+
+		if ($validator->fails()) {
+			return back()->withErrors($validator)->withInput();
+		}
+
 		$this->location->create($request->all());
-		Session::flash('message', 'Location added successfully.');
-		return redirect('location/add');
+
+		return redirect('location')
+			->with('message', 'Location added successfully.');
 	}
+
 	
 	public function edit($id) { 
 
@@ -89,13 +116,22 @@ class LocationController extends Controller
 						));
 	}
 	
+	// public function getLocation($id=null)
+	// {
+	// 	$info = $this->location->locationList();
+	// 	return view('body.location.locinfo')
+	// 				->withId($id)
+	// 				->withInfo($info);
+	// }
+
 	public function getLocation($id=null)
 	{
 		$info = $this->location->locationList();
-		return view('body.location.locinfo')
-					->withId($id)
-					->withInfo($info);
+
+		return view('body.location.locinfo', compact('info'));
 	}
+
+
 
 	public function getBin($num,$mod=null)
 	{

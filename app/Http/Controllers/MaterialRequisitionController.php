@@ -23,6 +23,15 @@ use DB;
 use Excel;
 use App;
 use Auth;
+
+
+
+use App\Repositories\StockTransferout\StockTransferoutInterface;
+use App\Repositories\StockTransferin\StockTransferinInterface;
+use App\Repositories\UpdateUtility;
+
+use App\Repositories\Production\ProductionInterface;
+
 class MaterialRequisitionController extends Controller
 {
 	protected $itemmaster;

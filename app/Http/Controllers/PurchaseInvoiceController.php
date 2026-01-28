@@ -493,9 +493,12 @@ class PurchaseInvoiceController extends Controller
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withBanks($banks)
 					->withFcurrency($fcurrency)
-					->withInterid($defaultInter->id)
-                    ->withIntercode($defaultInter->code)
-					->withIntername($defaultInter->name)
+					// ->withInterid($defaultInter->id)
+                    // ->withIntercode($defaultInter->code)
+					// ->withIntername($defaultInter->name)
+					->withInterid($defaultInter ? $defaultInter->id : null)
+                    ->withIntercode($defaultInter? $defaultInter->code : null)
+					->withIntername($defaultInter? $defaultInter->name : null)
 					->withData($data);
 	}
 	

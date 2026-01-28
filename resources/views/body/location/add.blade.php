@@ -183,10 +183,24 @@ $(document).ready(function () {
             }
           
         }
+    }).on('success.form.bv', function (e) {
+    e.preventDefault(); // 🚨 THIS STOPS DOUBLE SUBMIT
+    e.target.submit(); // submit ONLY ONCE
         
     }).on('reset', function (event) {
         $('#frmLocation').data('bootstrapValidator').resetForm();
     });
+
+    $('input[name="is_conloc"]').change(function () {
+        if ($(this).val() == 1) {
+            $('select[name="customer_id"]').closest('.form-group').show();
+        } else {
+            $('select[name="customer_id"]').val('');
+            $('select[name="customer_id"]').closest('.form-group').hide();
+        }
+    }).trigger('change');
+
 });
+
 </script>
 @stop

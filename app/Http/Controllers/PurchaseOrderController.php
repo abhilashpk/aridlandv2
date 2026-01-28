@@ -352,9 +352,9 @@ class PurchaseOrderController extends Controller
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withFcurrency($fcurrency)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
-					->withInterid($defaultInter->id)
-                    ->withIntercode($defaultInter->code)
-					->withIntername($defaultInter->name);
+					->withInterid($defaultInter ? $defaultInter->id : null)
+                    ->withIntercode($defaultInter? $defaultInter->code : null)
+					->withIntername($defaultInter? $defaultInter->name : null);
 	}
 	
 	public function save(Request $request) {

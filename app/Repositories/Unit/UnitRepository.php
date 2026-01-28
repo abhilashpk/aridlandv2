@@ -31,19 +31,36 @@ class UnitRepository extends AbstractValidator implements UnitInterface {
 		return $this->unit->where('id', $id)->first();
 	}
 	
+	// public function create($attributes)
+	// {
+	// 	if($this->isValid($attributes)) { 
+			
+	// 		$this->unit->unit_name = $attributes['unit_name'];
+	// 		$this->unit->description = $attributes['description'];
+	// 		$this->unit->fracount = $attributes['fracount'];
+	// 		$this->unit->status = 1;
+	// 		$this->unit->fill($attributes)->save();
+	// 		return true;
+	// 	}
+		
+	// }
+
 	public function create($attributes)
 	{
-		if($this->isValid($attributes)) { 
-			
-			$this->unit->unit_name = $attributes['unit_name'];
-			$this->unit->description = $attributes['description'];
-			$this->unit->fracount = $attributes['fracount'];
-			$this->unit->status = 1;
-			$this->unit->fill($attributes)->save();
+		if ($this->isValid($attributes)) {
+
+			$attributes['fracount'] = $attributes['fracount'] ?? 0;
+			$attributes['status']   = 1;
+
+			$this->unit->fill($attributes);
+			$this->unit->save();
+
 			return true;
 		}
-		
+
+		return false;
 	}
+
 	
 	public function update($id, $attributes)
 	{

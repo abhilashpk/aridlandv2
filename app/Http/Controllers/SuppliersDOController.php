@@ -202,9 +202,9 @@ class SuppliersDOController extends Controller
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withFcurrency($fcurrency)
-					->withInterid($defaultInter->id)
-                    ->withIntercode($defaultInter->code)
-					->withIntername($defaultInter->name)
+					->withInterid($defaultInter ? $defaultInter->id : null)
+                    ->withIntercode($defaultInter ? $defaultInter->code : null)
+					->withIntername($defaultInter ? $defaultInter->name : null)
 					->withData($data);
 	}
 	

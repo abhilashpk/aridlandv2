@@ -2,7 +2,7 @@
 use Illuminate\Support\Facades\Route;
 
 // ================================================
-//  Migrated from Laravel 5.2 routes.php
+//  Migrated from Laravel 5.2 routes.php and now in Laravel Framework 10.50.0
 // ================================================
 
 use \App\Http\Controllers\ReportController;
@@ -307,7 +307,8 @@ Route::get('roles/{id}',['as'=>'roles.show','uses'=>RoleController::class.'@show
 Route::get('roles/{id}/edit',['as'=>'roles.edit','uses'=>RoleController::class.'@edit','middleware' => ['permission:role-edit']]);
 Route::patch('roles/{id}',['as'=>'roles.update','uses'=>RoleController::class.'@update','middleware' => ['permission:role-edit']]);
 Route::delete('roles/{id}',['as'=>'roles.destroy','uses'=>RoleController::class.'@destroy','middleware' => ['permission:role-delete']]);
-		
+
+Route::resource('users', UserController::class);
 Route::get('/users/{id}/delete', [UserController::class, 'deluser']);
 Route::get('/users/{id}/password', [UserController::class, 'changePassword']);
 Route::post('/users/{id}/password', [UserController::class, 'updatePassword']);
@@ -1753,14 +1754,23 @@ Route::get('/purchase_enquiry/edit_draft/{id}', "PurchaseEnquiryController@editD
 Route::post('/purchase_enquiry/update_draft/{id}', "PurchaseEnquiryController@updateDraft");
 
 		
-Route::get('/location_transfer', "LocationTransferController@index");
-Route::get('/location_transfer/add', "LocationTransferController@add");
-Route::post('/location_transfer/save', "LocationTransferController@save");
-Route::get('/location_transfer/checkrefno', 'LocationTransferController@checkRefNo');
-Route::get('/location_transfer/delete/{id}', "LocationTransferController@destroy");
-Route::get('/location_transfer/edit/{id}', "LocationTransferController@edit");
-Route::post('/location_transfer/update/{id}', 'LocationTransferController@update');
-Route::get('/location_transfer/print/{id}', 'LocationTransferController@getPrint');
+// Route::get('/location_transfer', "LocationTransferController@index");
+// Route::get('/location_transfer/add', "LocationTransferController@add");
+// Route::post('/location_transfer/save', "LocationTransferController@save");
+// Route::get('/location_transfer/checkrefno', 'LocationTransferController@checkRefNo');
+// Route::get('/location_transfer/delete/{id}', "LocationTransferController@destroy");
+// Route::get('/location_transfer/edit/{id}', "LocationTransferController@edit");
+// Route::post('/location_transfer/update/{id}', 'LocationTransferController@update');
+// Route::get('/location_transfer/print/{id}', 'LocationTransferController@getPrint');
+
+Route::get('/location_transfer', [LocationTransferController::class, 'index']);
+Route::get('/location_transfer/add', [LocationTransferController::class, 'add']);
+Route::post('/location_transfer/save', [LocationTransferController::class, 'save']);
+Route::get('/location_transfer/checkrefno', [LocationTransferController::class, 'checkRefNo']);
+Route::get('/location_transfer/delete/{id}', [LocationTransferController::class, 'destroy']);
+Route::get('/location_transfer/edit/{id}', [LocationTransferController::class, 'edit']);
+Route::post('/location_transfer/update/{id}', [LocationTransferController::class, 'update']);
+Route::get('/location_transfer/print/{id}', [LocationTransferController::class, 'getPrint']);
 		
 Route::get('/package_master', [PackageMasterController::class, 'index']);
 Route::get('/package_master/add', [PackageMasterController::class, 'add']);
@@ -2164,26 +2174,44 @@ Route::get('/manufacture/search/{id}', [ManufactureController::class, 'getSearch
 Route::get('/manufacture/getvoucher/{id}', [ManufactureController::class, 'getVoucher']);
 Route::get('/manufacture/add/{id}', ['as' => 'manufacture.addN', 'uses' => ManufactureController::class.'@add', 'middleware' => ['permission:pi-create']]);
 
-
-Route::get('/material_requisition', "MaterialRequisitionController@index");
-Route::get('/material_requisition/add', "MaterialRequisitionController@add");
-Route::post('/material_requisition/save', 'MaterialRequisitionController@save');
-Route::post('/material_requisition/save/{id}','MaterialRequisitionController@save');
-Route::get('/material_requisition/edit/{id}', 'MaterialRequisitionController@edit');
-Route::post('/material_requisition/update/{id}', 'MaterialRequisitionController@update');
-Route::get('/material_requisition/delete/{id}', 'MaterialRequisitionController@destroy');
-Route::get('/material_requisition/print/{id}', 'MaterialRequisitionController@getPrint');
-Route::get('/material_requisition/item_details/{id}', "MaterialRequisitionController@getItemDetails");
-Route::post('/material_requisition/search', "MaterialRequisitionController@getSearch");
-Route::post('/material_requisition/export', 'MaterialRequisitionController@dataExport');
-Route::post('/material_requisition/paging', 'MaterialRequisitionController@ajaxPaging');
-Route::post('/material_requisition/set_session', 'MaterialRequisitionController@setSessionVal');
-Route::get('/material_requisition/add/{id}/{n}', 'MaterialRequisitionController@add');
-Route::get('/material_requisition/get_enquiry/{id}/{url}', "MaterialRequisitionController@getEnquiry");
-Route::get('/material_requisition/views/{id}','MaterialRequisitionController@getViews');
-Route::get('/material_requisition/approve/{id}', 'MaterialRequisitionController@getApproval');
-Route::get('/material_requisition/reject/{id}', 'MaterialRequisitionController@getReject');
-Route::get('/material_requisition/print/{id}/{n}', 'MaterialRequisitionController@getPrint');
+Route::get('/material_requisition', [MaterialRequisitionController::class, 'index']);
+Route::get('/material_requisition/add', [MaterialRequisitionController::class, 'add']);
+Route::post('/material_requisition/save', [MaterialRequisitionController::class, 'save']);
+Route::post('/material_requisition/save/{id}', [MaterialRequisitionController::class, 'save']);
+Route::get('/material_requisition/edit/{id}', [MaterialRequisitionController::class, 'edit']);
+Route::post('/material_requisition/update/{id}', [MaterialRequisitionController::class, 'update']);
+Route::get('/material_requisition/delete/{id}', [MaterialRequisitionController::class, 'destroy']);
+Route::get('/material_requisition/print/{id}', [MaterialRequisitionController::class, 'getPrint']);
+Route::get('/material_requisition/item_details/{id}',[MaterialRequisitionController::class,'getItemDetails']);
+Route::post('/material_requisition/search', [MaterialRequisitionController::class,'getSearch']);
+Route::post('/material_requisition/export', [MaterialRequisitionController::class,'dataExport']);
+Route::post('/material_requisition/paging', [MaterialRequisitionController::class,'ajaxPaging']);
+Route::post('/material_requisition/set_session', [MaterialRequisitionController::class,'setSessionVal']);
+Route::get('/material_requisition/add/{id}/{n}', [MaterialRequisitionController::class,'add']);
+Route::get('/material_requisition/get_enquiry/{id}/{url}',[MaterialRequisitionController::class,'getEnquiry']);
+Route::get('/material_requisition/views/{id}',[MaterialRequisitionController::class,'getViews']);
+Route::get('/material_requisition/approve/{id}', [MaterialRequisitionController::class,'getApproval']);
+Route::get('/material_requisition/reject/{id}', [MaterialRequisitionController::class,'getReject']);
+Route::get('/material_requisition/print/{id}/{n}', [MaterialRequisitionController::class,'getPrint']);
+// Route::get('/material_requisition', "MaterialRequisitionController@index");
+// Route::get('/material_requisition/add', "MaterialRequisitionController@add");
+// Route::post('/material_requisition/save', 'MaterialRequisitionController@save');
+// Route::post('/material_requisition/save/{id}','MaterialRequisitionController@save');
+// Route::get('/material_requisition/edit/{id}', 'MaterialRequisitionController@edit');
+// Route::post('/material_requisition/update/{id}', 'MaterialRequisitionController@update');
+// Route::get('/material_requisition/delete/{id}', 'MaterialRequisitionController@destroy');
+// Route::get('/material_requisition/print/{id}', 'MaterialRequisitionController@getPrint');
+// Route::get('/material_requisition/item_details/{id}', "MaterialRequisitionController@getItemDetails");
+// Route::post('/material_requisition/search', "MaterialRequisitionController@getSearch");
+// Route::post('/material_requisition/export', 'MaterialRequisitionController@dataExport');
+// Route::post('/material_requisition/paging', 'MaterialRequisitionController@ajaxPaging');
+// Route::post('/material_requisition/set_session', 'MaterialRequisitionController@setSessionVal');
+// Route::get('/material_requisition/add/{id}/{n}', 'MaterialRequisitionController@add');
+// Route::get('/material_requisition/get_enquiry/{id}/{url}', "MaterialRequisitionController@getEnquiry");
+// Route::get('/material_requisition/views/{id}','MaterialRequisitionController@getViews');
+// Route::get('/material_requisition/approve/{id}', 'MaterialRequisitionController@getApproval');
+// Route::get('/material_requisition/reject/{id}', 'MaterialRequisitionController@getReject');
+// Route::get('/material_requisition/print/{id}/{n}', 'MaterialRequisitionController@getPrint');
 		
 Route::get('/ms_customer', [MsCustomerController::class, 'index']);
 Route::get('/ms_customer/add', [MsCustomerController::class, 'add']);

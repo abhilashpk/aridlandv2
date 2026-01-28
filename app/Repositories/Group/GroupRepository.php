@@ -39,9 +39,10 @@ class GroupRepository extends AbstractValidator implements GroupInterface {
 			//list($parent_id, $level) = explode(':', $attributes['parent_id']);
 			$this->group->parent_id = $attributes['parent_id'];
 			$this->group->group_name = $attributes['group_name'];
-			$this->group->description = $attributes['description'];
+			 $this->group->description = $attributes['description'] ?? '';
 			$this->group->status = 1;
-			$this->group->fill($attributes)->save();
+			// $this->group->fill($attributes)->save();
+			$this->group->save();
 			return true;
 		}
 		

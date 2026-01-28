@@ -10,7 +10,7 @@ class ItemLocation extends Model {
 	
 	protected $table = 'item_location';
 	protected $primaryKey = 'id';
-	protected $fillable = [];
+	protected $fillable = ['location_id'];
 	public $timestamps = false;
 	protected $dates = ['deleted_at'];
 	

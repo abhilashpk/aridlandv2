@@ -308,7 +308,9 @@
 										</div>
 									</div>
                                 </div>
-								<?php if($formdata['document_upload']==1) { ?>
+								<?php 
+								// if($formdata['document_upload']==1) { 
+								if (isset($formdata['document_upload']) && $formdata['document_upload'] == 1) { ?>
 								<div class="form-group">
 									<label for="input-text" class="col-sm-2 control-label">Document</label>
 									<div class="col-sm-10">
@@ -318,8 +320,7 @@
 										<input type="hidden" name="photo_name[]" id="photo_name">
 									</div>
 								</div>
-								<?php } ?>
-								
+								<?php } ?>				
 								
 								
 								<?php if($formdata['item_import']==1) { ?>

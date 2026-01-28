@@ -805,6 +805,35 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->orderBy('u.id','ASC')
 						->select('ID.*','u.id AS iuid ')->get();
 	}
+
+	// public function getItemUnit($id)
+	// {
+	// 	return DB::table('item_unit as u')
+	// 		->join('itemstock_department as sd', function ($join) {
+	// 			$join->on('sd.itemmaster_id', '=', 'u.itemmaster_id');
+	// 			$join->on('sd.unit_id', '=', 'u.unit_id');
+	// 		})
+	// 		->where('u.itemmaster_id', $id)
+	// 		->where('sd.department_id', env('DEPARTMENT_ID'))
+	// 		// ->where('sd.deleted_at', '0000-00-00 00:00:00')
+	// 		->orderBy('u.id', 'ASC')
+	// 		->select([
+	// 			'u.id as iuid',
+	// 			'u.unit_id',
+	// 			'u.packing',
+	// 			'u.pkno',
+
+	// 			'sd.opn_quantity',
+	// 			'sd.opn_cost',
+	// 			'sd.sell_price',
+	// 			'sd.wsale_price',
+	// 			'sd.min_quantity',
+	// 			'sd.reorder_level',
+	// 			'sd.vat'
+	// 		])
+	// 		->get();
+	// }
+
 	
 	public function getItemUnits($id)
 	{
@@ -897,75 +926,106 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					else
 						return $query->count();
 	}
+
 	
-	public function itemmasterList($type,$start,$limit,$order,$dir,$search)
-	{	
-		$query = $this->itemmaster->where('itemmaster.status', 1);
-				
-		$query->join('item_unit AS u', function($join) {
-							$join->on('u.itemmaster_id','=','itemmaster.id');
-						} )
-						->join('itemstock_department AS ID', function($join) {
-							$join->on('ID.itemmaster_id','=','itemmaster.id');
-						} )
-						->leftJoin('groupcat AS GC', function($join) {
-							$join->on('GC.id','=','itemmaster.group_id');
-						} )
-						->leftJoin('groupcat AS GS', function($join) {
-							$join->on('GS.id','=','itemmaster.subgroup_id');
-						} )
-						->leftJoin('category AS C', function($join) {
-							$join->on('C.id','=','itemmaster.category_id');
-						} )
-						->leftJoin('category AS S', function($join) {
-							$join->on('S.id','=','itemmaster.subcategory_id');
-						} );
-						
-						
-				if($search) {
-				    
-				    $query->where(function($qry) use($search) {
-						$qry->where('item_code','LIKE',"%{$search}%")
-							->orWhere('itemmaster.description', 'LIKE',"%{$search}%")
-						    ->orWhere('GC.description', 'LIKE',"%{$search}%");
-					});
-					
-					/*$query->where('item_code','LIKE',"%{$search}%")
-                          ->orWhere('itemmaster.description', 'LIKE',"%{$search}%")
-						  ->orWhere('GC.description', 'LIKE',"%{$search}%");*/
-				}
-				
-				$query->where('u.is_baseqty',1)
-				       ->where('ID.department_id',env('DEPARTMENT_ID'));
-				
-				$query->select('itemmaster.*','ID.cur_quantity AS quantity','ID.received_qty','ID.opn_quantity','C.category_name AS category','S.category_name AS subcategory',
-								 'ID.last_purchase_cost','ID.cost_avg','ID.issued_qty','u.packing','GC.description AS group_name','u.reorder_level','ID.sell_price',
-								 'GS.description AS subgroup')
-						->groupBy('u.itemmaster_id')
-						->offset($start)
-                        ->limit($limit)
-                        ->orderBy($order,$dir);
-					if($type=='get')
-						return $query->get();
-					else
-						return $query->count();
-	}
-	
-	public function itemmasterListCount()
+	public function itemmasterList($type, $start, $limit, $order, $dir, $search)
 	{	
 		$query = $this->itemmaster->where('itemmaster.status', 1);
 		
-		return $query->join('item_unit AS u', function($join) {
-							$join->on('u.itemmaster_id','=','itemmaster.id');
-						} )
-						->leftJoin('groupcat AS GC', function($join) {
-							$join->on('GC.id','=','itemmaster.group_id');
-						} )
-						->where('u.is_baseqty','=',1)
-						//->groupBy('u.itemmaster_id')
-						//->select('itemmaster.*','u.cur_quantity AS quantity','u.received_qty','u.last_purchase_cost','u.cost_avg','u.issued_qty','GC.description AS group_name')
-						->count();
+		// Add the conditions INSIDE the join (like you did in itemmasterListCount)
+		$query->join('item_unit AS u', function($join) {
+					$join->on('u.itemmaster_id', '=', 'itemmaster.id')
+						->where('u.is_baseqty', 1);  // ← MOVED HERE
+				})
+				->join('itemstock_department AS ID', function($join) {
+					$join->on('ID.itemmaster_id', '=', 'itemmaster.id')
+						->where('ID.department_id', env('DEPARTMENT_ID')); // ← MOVED HERE
+				})
+				->leftJoin('groupcat AS GC', function($join) {
+					$join->on('GC.id', '=', 'itemmaster.group_id');
+				})
+				->leftJoin('groupcat AS GS', function($join) {
+					$join->on('GS.id', '=', 'itemmaster.subgroup_id');
+				})
+				->leftJoin('category AS C', function($join) {
+					$join->on('C.id', '=', 'itemmaster.category_id');
+				})
+				->leftJoin('category AS S', function($join) {
+					$join->on('S.id', '=', 'itemmaster.subcategory_id');
+				});
+		
+		if($search) {
+			$query->where(function($qry) use($search) {
+				$qry->where('item_code', 'LIKE', "%{$search}%")
+					->orWhere('itemmaster.description', 'LIKE', "%{$search}%")
+					->orWhere('GC.description', 'LIKE', "%{$search}%");
+			});
+		}
+		
+		// REMOVE these lines - they're now in the join conditions above
+		// $query->where('u.is_baseqty', 1)
+		//       ->where('ID.department_id', env('DEPARTMENT_ID'));
+		
+		$query->select(
+				'itemmaster.*',
+				'ID.cur_quantity AS quantity',
+				'ID.received_qty',
+				'ID.opn_quantity',
+				'C.category_name AS category',
+				'S.category_name AS subcategory',
+				'ID.last_purchase_cost',
+				'ID.cost_avg',
+				'ID.issued_qty',
+				'u.packing',
+				'GC.description AS group_name',
+				'u.reorder_level',
+				'ID.sell_price',
+				'GS.description AS subgroup'
+			)
+			->groupBy('u.itemmaster_id')
+			->offset($start)
+			->limit($limit)
+			->orderBy($order, $dir);
+		
+		if($type == 'get')
+			return $query->get();
+		else
+			return $query->count();
 	}
+	
+	
+	// public function itemmasterListCount()
+	// {	
+	// 	$query = $this->itemmaster->where('itemmaster.status', 1);
+		
+	// 	return $query->join('item_unit AS u', function($join) {
+	// 						$join->on('u.itemmaster_id','=','itemmaster.id');
+	// 					} )
+	// 					->leftJoin('groupcat AS GC', function($join) {
+	// 						$join->on('GC.id','=','itemmaster.group_id');
+	// 					} )
+	// 					->where('u.is_baseqty','=',1)
+	// 					//->groupBy('u.itemmaster_id')
+	// 					//->select('itemmaster.*','u.cur_quantity AS quantity','u.received_qty','u.last_purchase_cost','u.cost_avg','u.issued_qty','GC.description AS group_name')
+	// 					->count();
+	// }
+
+	public function itemmasterListCount()
+	{
+		return $this->itemmaster
+		->where('itemmaster.status', 1)
+		->join('item_unit AS u', function ($join) {
+			$join->on('u.itemmaster_id','=','itemmaster.id')
+				->where('u.is_baseqty', 1);
+		})
+		->join('itemstock_department AS ID', function ($join) {
+			$join->on('ID.itemmaster_id','=','itemmaster.id')
+				->where('ID.department_id', 1);
+		})
+		->count();
+
+	}
+
 	
 	public function activeItemmasterList()
 	{
@@ -5694,6 +5754,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 
 			return true;
 	}
+
+	private function getItemOpnQtyFromLog($item_id){
+       $oqtyin = DB::table('item_log')->where('item_id', $item_id)->where('document_type', 'OQ')->where('trtype',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
+		return ['opq' => $oqtyin];
+	}
+	
 
 	private function getItemQtyFromLog($item_id)
 	{

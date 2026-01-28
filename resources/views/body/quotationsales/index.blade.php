@@ -66,7 +66,7 @@
                         <h3 class="panel-title pull-left m-t-6">
                             <i class="fa fa-fw fa-list-alt"></i> Quotation Sales
                         </h3>
-                        <div class="pull-right">
+                        {{-- <div class="pull-right">
 							@permission('qs-create')
                              <a href="{{ url('quotation_sales/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
@@ -74,7 +74,18 @@
 								</span> Add New
 							</a>
 							@endpermission
-                        </div>
+                        </div> --}}
+						<div class="pull-right">
+							@can('qs-create')
+								<a href="{{ url('quotation_sales/add') }}" class="btn btn-primary btn-sm">
+									<span class="btn-label">
+										<i class="glyphicon glyphicon-plus"></i>
+									</span>
+									Add New
+								</a>
+							@endcan
+						</div>
+
                     </div>
                     <div class="panel-body">
 						 <div class="row">

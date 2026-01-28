@@ -193,7 +193,7 @@
                             <span class="fa arrow"></span>
                         </a>
                         <ul class="sub-menu">
-                            {{--
+                            
                             
 							@can('job-list')
 							<li {!! (Request::is('jobmaster') || Request::is('jobmaster/*') ? 'class="active"' : '') !!}>
@@ -344,7 +344,7 @@
                                         </a>
                                     </li>
                             @endcan  
-                            --}}
+                           
                             
                             @can('bank-list')
                             <li {!! (Request::is('bank') || Request::is('bank/*') ? 'class="active"' : '') !!}>
@@ -906,7 +906,7 @@
 				 </li>
 				@endif				
                
-{{--
+
 	@if(auth()->user()->can('it-group-list') || auth()->user()->can('it-subgroup-list') || auth()->user()->can('it-category-list') || auth()->user()->can('it-subcategory-list') || auth()->user()->can('unit-list') || auth()->user()->can('item-list') || auth()->user()->can('item-enquiry-list') || auth()->user()->can('po-list') || auth()->user()->can('pi-list') || auth()->user()->can('pr-list') || auth()->user()->can('qs-list') || auth()->user()->can('so-list') ||auth()->user()->can('pfi-list') || auth()->user()->can('do-list') || auth()->user()->can('si-list') || auth()->user()->can('sr-list') || auth()->user()->can('gin-list') || auth()->user()->can('gr-list') || auth()->user()->can('jbe-list') || auth()->user()->can('jbo-list') || auth()->user()->can('jbi-list') || auth()->user()->can('loc-tran-list') || auth()->user()->can('stock-trin-list') || auth()->user()->can('stock-trout-list')|| auth()->user()->can('job-order-list')||auth()->user()->can('srl-list'))
                     <li {!! (Request::is('contract') || Request::is('contract/*') || Request::is('group') || Request::is('group/*') || Request::is('subgroup') || Request::is('subgroup/*') ||Request::is('proforma_invoice') || Request::is('proforma_invoice/*') || Request::is('category') || Request::is('category/*') || Request::is('unit') || Request::is('unit/*') || Request::is('subcategory') || Request::is('subcategory/*') || Request::is('itemmaster') || Request::is('itemmaster/*') || Request::is('purchase_order') || Request::is('purchase_order/*') || Request::is('quotation') || Request::is('quotation/*') || Request::is('suppliers_do') || Request::is('suppliers_do/*') || Request::is('purchase_invoice') || Request::is('purchase_invoice/*') || Request::is('purchase_return') || Request::is('purchase_return/*') || Request::is('sales_rental/*') || Request::is('sales_rental') || Request::is('quotation_sales/*') || Request::is('quotation_sales') || Request::is('quotation_rental/*') || Request::is('quotation_rental') || Request::is('sales_order/*') || Request::is('sales_order') ||  Request::is('customers_do') || Request::is('customers_do/*') || Request::is('sales_invoice') || Request::is('sales_invoice/*') || Request::is('sales_return/*') || Request::is('sales_return') || Request::is('itemenquiry') || Request::is('itemenquiry/*') || Request::is('goods_issued') || Request::is('goods_issued/*') || Request::is('goods_return') || Request::is('goods_return/*') || Request::is('job_estimate') || Request::is('job_estimate/*') || Request::is('job_order') || Request::is('job_order/*') || Request::is('job_invoice') || Request::is('job_invoice/*') || Request::is('location_transfer') || Request::is('location_transfer/*') || Request::is('stock_transferin/*') || Request::is('stock_transferin') || Request::is('stock_transferout/*') || Request::is('stock_transferout') || Request::is('customer_enquiry') || Request::is('customer_enquiry/*') || Request::is('production') || Request::is('production/*') || Request::is('manufacture') || Request::is('manufacture/*') || Request::is('material_requisition') || Request::is('material_requisition/*') ? 'class="menu-dropdown active"' : 'class="menu-dropdown"') !!}>
                         <a href="#">
@@ -1239,7 +1239,7 @@
                         </ul>
                     </li>
 					@endif
-				--}}	
+					
 					@if(auth()->user()->can('jv-list') || auth()->user()->can('vp-list') || auth()->user()->can('vs-list') || auth()->user()->can('rv-list') || auth()->user()->can('pv-list') || auth()->user()->can('as-list') || auth()->user()->can('pc-list'))
 					<li {!! ( Request::is('contra_voucher') || Request::is('contra_voucher/*') || Request::is('credit_note') || Request::is('credit_note/*') || Request::is('customer_receipt') || Request::is('customer_receipt/*') ||Request::is('receipt_voucher') || Request::is('receipt_voucher/*') || Request::is('supplier_payment') || Request::is('supplier_payment/*') || Request::is('payment_voucher') || Request::is('payment_voucher/*') || Request::is('other_receipt') || Request::is('other_receipt/*') || Request::is('supplier_payment') || Request::is('supplier_payment/*') || Request::is('other_payment') || Request::is('other_payment/*') || Request::is('pdc_received') || Request::is('pdc_issued') || Request::is('journal') || Request::is('journal/*') || Request::is('pettycash') || Request::is('pettycash/*') || Request::is('advance_set') || Request::is('advance_set/*') || Request::is('purchase_voucher') || Request::is('purchase_voucher/*') || Request::is('sales_voucher') || Request::is('sales_voucher/*') || Request::is('pdc_received/*') || Request::is('pdc_issued/*')|| Request::is('purchase_split') || Request::is('purchase_split/*') || Request::is('sales_split') || Request::is('sales_split/*')? 'class="menu-dropdown active"' : 'class="menu-dropdown"') !!}>
                         <a href="#">

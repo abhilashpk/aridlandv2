@@ -231,18 +231,14 @@ class ItemmasterController extends Controller
         echo json_encode($json_data);
 	}*/
 	
-public function ajaxPaging(Request $request)
-	{
-		
-	
-		
+	public function ajaxPaging(Request $request)
+	{		
 		$colarr = $this->sortFormData($this->forms->getFormData('IE'));
 		
 		$columns[] = 'itemmaster.id';
 		foreach($colarr as $col) {
 			$columns[] = $col;
-		}
-		
+		}	
 		
 						
 		$totalData = $this->itemmaster->itemmasterListCount();
@@ -313,6 +309,58 @@ public function ajaxPaging(Request $request)
             
         echo json_encode($json_data);
 	}
+
+	// public function ajaxPaging(Request $request)
+	// {
+	// 	$colarr = $this->sortFormData($this->forms->getFormData('IE'));
+
+	// 	$columns = ['itemmaster.id'];
+	// 	foreach ($colarr as $col) {
+	// 		$columns[] = $col;
+	// 	}
+
+	// 	$limit  = $request->input('length');
+	// 	$start  = $request->input('start');
+
+	// 	$orderColumnIndex = $request->input('order.0.column');
+	// 	$order = $columns[$orderColumnIndex] ?? 'itemmaster.id';
+	// 	$dir   = $request->input('order.0.dir') ?? 'asc';
+
+	// 	$search = $request->input('search.value');
+
+	// 	$totalData = $this->itemmaster->itemmasterListCount();
+	// 	$totalFiltered = $search
+	// 		? $this->itemmaster->itemmasterList('count', $start, $limit, $order, $dir, $search)
+	// 		: $totalData;
+
+	// 	$items = $this->itemmaster->itemmasterList('get', $start, $limit, $order, $dir, $search);
+
+	// 	$data = [];
+
+	// 	foreach ($items as $post) {
+	// 		$data[] = [
+	// 			'id' => $post->id,
+	// 			'item_code' => $post->item_code,
+	// 			'unit' => $post->packing,
+	// 			'description' => $post->description,
+	// 			'model_no' => $post->model_no,
+	// 			'unit_price' => number_format($post->sell_price, 2),
+	// 			'group' => $post->group_name,
+	// 			'subgroup' => $post->subgroup,
+	// 			'avg_cost' => number_format($post->cost_avg, 2),
+	// 			'last_pur_cost' => number_format($post->last_purchase_cost, 2),
+	// 			'qty_in_hand' => $post->quantity,
+	// 		];
+	// 	}
+
+	// 	return response()->json([
+	// 		"draw" => intval($request->input('draw')),
+	// 		"recordsTotal" => intval($totalData),
+	// 		"recordsFiltered" => intval($totalFiltered),
+	// 		"data" => $data,
+	// 	]);
+	// }
+
 	
 	
 	
@@ -356,6 +404,60 @@ public function ajaxPaging(Request $request)
 		return $arrData;
 		
 	}
+
+	// public function getGroupCategory()
+	// {
+	// 	$arrData = [];
+
+	// 	$groups = $this->group->activeGroupList();
+
+	// 	$arrData['groups'] = array_values(array_filter(array_map(function ($row) {
+	// 		if ($row['parent_id'] == 0) {
+	// 			return [
+	// 				'id' => $row['id'],
+	// 				'name' => $row['group_name'],
+	// 			];
+	// 		}
+	// 		return null;
+	// 	}, $groups)));
+
+	// 	$arrData['subgroups'] = array_values(array_filter(array_map(function ($row) {
+	// 		if ($row['parent_id'] != 0) {
+	// 			return [
+	// 				'id' => $row['id'],
+	// 				'name' => $row['group_name'],
+	// 			];
+	// 		}
+	// 		return null;
+	// 	}, $groups)));
+
+	// 	$categories = $this->category->activeCategoryList();
+
+	// 	$arrData['category'] = array_values(array_filter(array_map(function ($row) {
+	// 		if ($row['parent_id'] == 0) {
+	// 			return [
+	// 				'id' => $row['id'],
+	// 				'name' => $row['category_name'],
+	// 			];
+	// 		}
+	// 		return null;
+	// 	}, $categories)));
+
+	// 	$arrData['subcategory'] = array_values(array_filter(array_map(function ($row) {
+	// 		if ($row['parent_id'] != 0) {
+	// 			return [
+	// 				'id' => $row['id'],
+	// 				'name' => $row['category_name'],
+	// 			];
+	// 		}
+	// 		return null;
+	// 	}, $categories)));
+
+	// 	$arrData['units'] = $this->unit->activeUnitList();
+
+	// 	return $arrData;
+	// }
+
 	
 	public function add() {
 
@@ -412,15 +514,28 @@ public function ajaxPaging(Request $request)
 		return redirect('itemmaster');
 	}
 	
-	public function checkcode(Request $request) {
+	// public function checkcode(Request $request) {
 
-		$check = $this->itemmaster->check_item_code(trim($request->get('item_code')), $request->get('id'));
-		$isAvailable = ($check) ? false : true;
-		echo json_encode(array(
-							'valid' => $isAvailable,
-						));
-	}
+	// 	$check = $this->itemmaster->check_item_code(trim($request->get('item_code')), $request->get('id'));
+	// 	$isAvailable = ($check) ? false : true;
+	// 	echo json_encode(array(
+	// 						'valid' => $isAvailable,
+	// 					));
+	// }
 	
+	public function checkcode(Request $request)
+	{
+		$check = $this->itemmaster->check_item_code(
+			trim($request->get('item_code')),
+			$request->get('id')
+		);
+
+		return response()->json([
+			'valid' => $check ? false : true
+		]);
+	}
+
+
 	public function checkdesc(Request $request) {
 
 		$check = $this->itemmaster->check_item_description(trim($request->get('description')), $request->get('id'));
@@ -430,111 +545,241 @@ public function ajaxPaging(Request $request)
 						));
 	}
 	
+	// public function edit($id) { 
+
+	// 	$data = array();
+	// 	$url = (str_replace(url('/'), '', url()->previous())=='/itemenquiry')?'itemenquiry':'itemmaster';
+	// 	$itemrow = $this->itemmaster->find($id);
+	// 	$item_unit = $this->itemmaster->getItemUnit($id);
+	// 	$arrData = $this->getGroupCategory();;
+	// 	$vats = $this->vatmaster->activeVatMasterList();
+	// 	$loc = $this->itemmaster->getLocation();
+	// 	//$stockloc = $this->itemmaster->getStockLocation($id); 
+	// 	$stockloc = $this->makeTree( $this->itemmaster->getStockLocation($id) ); //echo '<pre>';print_r($loc);  echo '<pre>';print_r($stockloc); exit;
+	// 	$items = $this->itemmaster->activeItemmasterList();
+	// 	$rowmaterials = DB::table('mfg_items')->where('mfg_items.item_id',$id)
+	// 							->join('itemmaster AS IM', function($join) {
+	// 								$join->on('IM.id','=','mfg_items.subitem_id');
+	// 							})
+	// 							->where('mfg_items.deleted_at','0000-00-00 00:00:00')
+	// 							->select('mfg_items.*','IM.item_code','IM.description')
+	// 							->get();
+								
+	// 	//CHECK ITEM ALREADY IN USE OTHER DOCS	...					
+	// 	$readonly = false;						
+	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',env('DEPARTMENT_ID'))->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 	if($logcount > 0)
+	// 	    $readonly = true;
+	// 	else {
+	// 	    $qp = DB::table('quotation_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 	    if($qp > 0)
+	// 	        $readonly = true;
+	// 	    else {
+    //     		$mr = DB::table('material_requisition_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //     		if($mr > 0)
+	// 	            $readonly = true;
+	// 	        else {
+    //         		$ce = DB::table('customer_enquiry_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //         		if($ce > 0)
+    // 		            $readonly = true;
+    // 		        else {
+    //             		$sdo = DB::table('supplier_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //             		if($sdo > 0)
+    //     		            $readonly = true;
+    //     		        else {
+    //                 		$qs = DB::table('quotation_sales_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //                 		if($qs > 0)
+    //         		            $readonly = true;
+    //         		        else {
+    //                 		    $so = DB::table('sales_order_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //                 		    if($so > 0)
+    //             		            $readonly = true;
+    //             		        else 
+    //                 		        $cdo = DB::table('customer_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //                 		        if($cdo > 0)
+    //             		                $readonly = true;
+    //         		        }
+    //     		        }
+    // 		        }
+	// 	        }
+	// 	    }
+	// 	}
+		
+		
+	// 	//echo $logcount;exit;
+	// 	//MAY25 BATCH ENTRY.....						
+	// 	if($itemrow->batch_req==1) {						
+    // 		$batchs = DB::table('item_batch')->whereNull('item_batch.deleted_at')
+    // 		                    ->Join('batch_log AS BL', function($join) {
+    //                         		$join->on('BL.batch_id','=','item_batch.id');
+    //                         		$join->where('BL.document_type','=','OQ');
+    //                         	})
+    //                         	->where('item_batch.item_id', $id)
+    //                         	->select('item_batch.*')->get();
+        
+    // 		$batchArr = $mfgArr = $expArr = $qtyArr = $idArr = '';
+    // 		foreach($batchs as $ky => $batch) {
+    // 		    $idArr = ($idArr=='')?$batch->id:$idArr.','.$batch->id;
+    // 		    $batchArr = ($batchArr=='')?$batch->batch_no:$batchArr.','.$batch->batch_no;
+    // 		    $mfgArr = ($mfgArr=='')?date('d-m-Y',strtotime($batch->mfg_date)):$mfgArr.','.date('d-m-Y',strtotime($batch->mfg_date));
+    // 		    $expArr = ($expArr=='')?date('d-m-Y',strtotime($batch->exp_date)):$expArr.','.date('d-m-Y',strtotime($batch->exp_date));
+    // 		    $qtyArr = ($qtyArr=='')?$batch->quantity:$qtyArr.','.$batch->quantity;
+    // 		}
+    // 		$batch_items = ['ids' => $idArr, 'batches' => $batchArr, 'mfgs' => $mfgArr, 'exps' => $expArr, 'qtys' => $qtyArr];
+	// 	} else {
+	// 	    $batchs = $batch_items = null;
+	// 	}
+		
+	// 	//echo count($batchs).'<pre>';print_r($batchs); exit;
+	// 	return view('body.itemmaster.edit')//edit-mlang
+	// 				->withItemrow($itemrow)
+	// 				->withGroups($arrData['groups'])
+	// 				->withSubgroups($arrData['subgroups'])
+	// 				->withCategory($arrData['category'])
+	// 				->withSubcategory($arrData['subcategory'])
+	// 				->withUnits($arrData['units'])
+	// 				->withItemunits($item_unit)
+	// 				->withVats($vats)
+	// 				->withLocations($loc)
+	// 				->withStockloc($stockloc)
+	// 				->withFromurl($url)
+	// 				->withFormdata($this->formData)
+	// 				->withItems($items)
+	// 				->withRowmaterials($rowmaterials)
+	// 				->withBatchitems($batch_items)
+	// 				->withReadonly($readonly)
+	// 				->withBatchcount(count($batchs ?? []));
+	// }
+
+
 	public function edit($id) { 
 
-		$data = array();
 		$url = (str_replace(url('/'), '', url()->previous())=='/itemenquiry')?'itemenquiry':'itemmaster';
 		$itemrow = $this->itemmaster->find($id);
 		$item_unit = $this->itemmaster->getItemUnit($id);
-		$arrData = $this->getGroupCategory();;
+		$arrData = $this->getGroupCategory();
 		$vats = $this->vatmaster->activeVatMasterList();
 		$loc = $this->itemmaster->getLocation();
-		//$stockloc = $this->itemmaster->getStockLocation($id); 
-		$stockloc = $this->makeTree( $this->itemmaster->getStockLocation($id) ); //echo '<pre>';print_r($loc);  echo '<pre>';print_r($stockloc); exit;
+		$stockloc = $this->makeTree( $this->itemmaster->getStockLocation($id) );
 		$items = $this->itemmaster->activeItemmasterList();
+		
 		$rowmaterials = DB::table('mfg_items')->where('mfg_items.item_id',$id)
-								->join('itemmaster AS IM', function($join) {
-									$join->on('IM.id','=','mfg_items.subitem_id');
-								})
-								->where('mfg_items.deleted_at','0000-00-00 00:00:00')
-								->select('mfg_items.*','IM.item_code','IM.description')
-								->get();
-								
-		//CHECK ITEM ALREADY IN USE OTHER DOCS	...					
-		$readonly = false;						
+							->join('itemmaster AS IM', function($join) {
+								$join->on('IM.id','=','mfg_items.subitem_id');
+							})
+							->where('mfg_items.deleted_at','0000-00-00 00:00:00')
+							->select('mfg_items.*','IM.item_code','IM.description')
+							->get();
+		
+		// CHECK ITEM ALREADY IN USE OTHER DOCS
+		$readonly = false;
 		$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',env('DEPARTMENT_ID'))->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-		if($logcount > 0)
-		    $readonly = true;
-		else {
-		    $qp = DB::table('quotation_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-		    if($qp > 0)
-		        $readonly = true;
-		    else {
-        		$mr = DB::table('material_requisition_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-        		if($mr > 0)
-		            $readonly = true;
-		        else {
-            		$ce = DB::table('customer_enquiry_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-            		if($ce > 0)
-    		            $readonly = true;
-    		        else {
-                		$sdo = DB::table('supplier_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-                		if($sdo > 0)
-        		            $readonly = true;
-        		        else {
-                    		$qs = DB::table('quotation_sales_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-                    		if($qs > 0)
-            		            $readonly = true;
-            		        else {
-                    		    $so = DB::table('sales_order_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-                    		    if($so > 0)
-                		            $readonly = true;
-                		        else 
-                    		        $cdo = DB::table('customer_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-                    		        if($cdo > 0)
-                		                $readonly = true;
-            		        }
-        		        }
-    		        }
-		        }
-		    }
-		}
 		
-		
-		//echo $logcount;exit;
-		//MAY25 BATCH ENTRY.....						
-		if($itemrow->batch_req==1) {						
-    		$batchs = DB::table('item_batch')->whereNull('item_batch.deleted_at')
-    		                    ->Join('batch_log AS BL', function($join) {
-                            		$join->on('BL.batch_id','=','item_batch.id');
-                            		$join->where('BL.document_type','=','OQ');
-                            	})
-                            	->where('item_batch.item_id', $id)
-                            	->select('item_batch.*')->get();
-        
-    		$batchArr = $mfgArr = $expArr = $qtyArr = $idArr = '';
-    		foreach($batchs as $ky => $batch) {
-    		    $idArr = ($idArr=='')?$batch->id:$idArr.','.$batch->id;
-    		    $batchArr = ($batchArr=='')?$batch->batch_no:$batchArr.','.$batch->batch_no;
-    		    $mfgArr = ($mfgArr=='')?date('d-m-Y',strtotime($batch->mfg_date)):$mfgArr.','.date('d-m-Y',strtotime($batch->mfg_date));
-    		    $expArr = ($expArr=='')?date('d-m-Y',strtotime($batch->exp_date)):$expArr.','.date('d-m-Y',strtotime($batch->exp_date));
-    		    $qtyArr = ($qtyArr=='')?$batch->quantity:$qtyArr.','.$batch->quantity;
-    		}
-    		$batch_items = ['ids' => $idArr, 'batches' => $batchArr, 'mfgs' => $mfgArr, 'exps' => $expArr, 'qtys' => $qtyArr];
+		if($logcount > 0) {
+			$readonly = true;
 		} else {
-		    $batchs = $batch_items = null;
+			$qp = DB::table('quotation_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+			if($qp > 0) {
+				$readonly = true;
+			} else {
+				$mr = DB::table('material_requisition_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				if($mr > 0) {
+					$readonly = true;
+				} else {
+					$ce = DB::table('customer_enquiry_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+					if($ce > 0) {
+						$readonly = true;
+					} else {
+						$sdo = DB::table('supplier_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+						if($sdo > 0) {
+							$readonly = true;
+						} else {
+							$qs = DB::table('quotation_sales_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+							if($qs > 0) {
+								$readonly = true;
+							} else {
+								$so = DB::table('sales_order_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+								if($so > 0) {
+									$readonly = true;
+								} else {
+									$cdo = DB::table('customer_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+									if($cdo > 0) {
+										$readonly = true;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		$batch_items = [
+			'ids'     => '',
+			'batches' => '',
+			'mfgs'    => '',
+			'exps'    => '',
+			'qtys'    => '',
+		];
+		
+		// MAY25 BATCH ENTRY
+		if($itemrow->batch_req==1) {
+			$batchs = DB::table('item_batch')->whereNull('item_batch.deleted_at')
+							->Join('batch_log AS BL', function($join) {
+								$join->on('BL.batch_id','=','item_batch.id');
+								$join->where('BL.document_type','=','OQ');
+							})
+							->where('item_batch.item_id', $id)
+							->select('item_batch.*')->get();
+			
+			$idArr = $batchArr = $mfgArr = $expArr = $qtyArr = '';
+			foreach($batchs as $ky => $batch) {
+				$idArr = ($idArr=='')?$batch->id:$idArr.','.$batch->id;
+				$batchArr = ($batchArr=='')?$batch->batch_no:$batchArr.','.$batch->batch_no;
+				$mfgArr = ($mfgArr=='')?date('d-m-Y',strtotime($batch->mfg_date)):$mfgArr.','.date('d-m-Y',strtotime($batch->mfg_date));
+				$expArr = ($expArr=='')?date('d-m-Y',strtotime($batch->exp_date)):$expArr.','.date('d-m-Y',strtotime($batch->exp_date));
+				$qtyArr = ($qtyArr=='')?$batch->quantity:$qtyArr.','.$batch->quantity;
+			}
+			$batch_items = ['ids' => $idArr, 'batches' => $batchArr, 'mfgs' => $mfgArr, 'exps' => $expArr, 'qtys' => $qtyArr];
+		} else {
+			$batchs = $batch_items = null;
 		}
 		
-		//echo count($batchs).'<pre>';print_r($batchs); exit;
-		return view('body.itemmaster.edit')//edit-mlang
-					->withItemrow($itemrow)
-					->withGroups($arrData['groups'])
-					->withSubgroups($arrData['subgroups'])
-					->withCategory($arrData['category'])
-					->withSubcategory($arrData['subcategory'])
-					->withUnits($arrData['units'])
-					->withItemunits($item_unit)
-					->withVats($vats)
-					->withLocations($loc)
-					->withStockloc($stockloc)
-					->withFromurl($url)
-					->withFormdata($this->formData)
-					->withItems($items)
-					->withRowmaterials($rowmaterials)
-					->withBatchitems($batch_items)
-					->withReadonly($readonly)
-					->withBatchcount(count($batchs ?? []));
+		$batchcount = count($batchs ?? []);
+		
+		// Extract array data
+		$groups = $arrData['groups'];
+		$subgroups = $arrData['subgroups'];
+		$category = $arrData['category'];
+		$subcategory = $arrData['subcategory'];
+		$units = $arrData['units'];
+		$itemunits = $item_unit;
+		$locations = $loc;
+		$fromurl = $url;
+		$formdata = $this->formData;
+		
+		// CORRECT WAY - Use compact()
+		return view('body.itemmaster.edit', compact(
+			'itemrow',
+			'groups',
+			'subgroups',
+			'category',
+			'subcategory',
+			'units',
+			'itemunits',
+			'vats',
+			'locations',
+			'stockloc',
+			'fromurl',
+			'formdata',
+			'items',
+			'rowmaterials',
+			'batch_items',
+			'readonly',
+			'batchcount'
+		));
 	}
+	
 	
 	public function update($id, Request $request)
 	{

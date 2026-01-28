@@ -58,7 +58,8 @@ class CustomerEnquiryController extends Controller
 		$this->forms = $forms;
 		$this->formData = $this->forms->getFormData('CE');
 		$this->location = $location;
-		if(Auth::user()->roles[0]->name=='Salesman') {
+		// if(Auth::user()->roles[0]->name=='Salesman') {
+		if (Auth::check() && Auth::user()->hasRole('Salesman')) {
 		    $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
 		    if($srec)
 		        Session::put('salesman_id',$srec->id);

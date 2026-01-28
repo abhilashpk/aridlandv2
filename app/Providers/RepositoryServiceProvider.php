@@ -54,6 +54,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(\App\Repositories\Production\ProductionInterface::class, \App\Repositories\Production\ProductionRepository::class);
         $this->app->bind(\App\Repositories\ProformaInvoice\ProformaInvoiceInterface::class, \App\Repositories\ProformaInvoice\ProformaInvoiceRepository::class);
         $this->app->bind(\App\Repositories\PurchaseInvoice\PurchaseInvoiceInterface::class, \App\Repositories\PurchaseInvoice\PurchaseInvoiceRepository::class);
+        $this->app->bind(\App\Repositories\PurchaseEnquiry\PurchaseEnquiryInterface::class, \App\Repositories\PurchaseEnquiry\PurchaseEnquiryRepository::class);
         $this->app->bind(\App\Repositories\PurchaseOrder\PurchaseOrderInterface::class, \App\Repositories\PurchaseOrder\PurchaseOrderRepository::class);
         $this->app->bind(\App\Repositories\PurchaseRental\PurchaseRentalInterface::class, \App\Repositories\PurchaseRental\PurchaseRentalRepository::class);
         $this->app->bind(\App\Repositories\PurchaseReturn\PurchaseReturnInterface::class, \App\Repositories\PurchaseReturn\PurchaseReturnRepository::class);

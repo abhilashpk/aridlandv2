@@ -62,12 +62,22 @@ class QuotationSalesController extends Controller
 		$this->formData = $this->forms->getFormData('QS');
 		$this->customer_enquiry = $customer_enquiry;
 		$this->location = $location;
-		if(Auth::user()->roles[0]->name=='Salesman') {
-		    $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
-		    if($srec)
-		        Session::set('salesman_id',$srec->id);
-		}
-		
+		// if(Auth::user()->roles[0]->name=='Salesman') {
+		//     $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
+		//     if($srec)
+		//         Session::set('salesman_id',$srec->id);
+		// }
+		if (Auth::check() && Auth::user()->hasRole('Salesman')) {
+
+			$srec = DB::table('salesman')
+				->where('name', Auth::user()->name)
+				->select('id')
+				->first();
+
+			if ($srec) {
+				session(['salesman_id' => $srec->id]); // Laravel 10 way
+			}
+		}		
 		
 	}
 	

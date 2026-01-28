@@ -125,8 +125,10 @@
 												$sel1="";
 											/*--}}	
 											@endif
-											<option value="1" {{ $sel1 }}>Stock</option>
-											<option value="2" {{ $sel2 }}>Service</option>
+											{{-- <option value="1" {{ $sel1 }}>Stock</option>
+											<option value="2" {{ $sel2 }}>Service</option> --}}
+											<option value="1" @selected($itemrow->class_id == 1)>Stock</option>
+											<option value="2" @selected($itemrow->class_id == 2)>Service</option>
                                         </select>
                                     </div>
                                 </div>
@@ -194,15 +196,15 @@
                                     <div class="col-sm-10">
                                         <select id="group_id" class="form-control select2" style="width:100%" name="group_id">
 											<option value="">Select Group...</option>
+
 											@foreach ($groups as $group)
-											@if($itemrow->group_id==$group['id'])
-											{{--*/ $sel = "selected" /*--}}
-											@else
-											{{--*/ $sel = "" /*--}}	
-											@endif
-											<option value="{{ $group['id'] }}" {{ $sel }}>{{ $group['name'] }}</option>
+												<option value="{{ $group['id'] }}"
+													{{ $itemrow->group_id == $group['id'] ? 'selected' : '' }}>
+													{{ $group['name'] }}
+												</option>
 											@endforeach
-                                        </select>
+										</select>
+
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -214,16 +216,16 @@
                                     <label for="input-text" class="col-sm-2 control-label">Sub Group</label>
                                     <div class="col-sm-10">
                                         <select id="subgroup_id" class="form-control select2" style="width:100%" name="subgroup_id">
-                                            <option value="">Select Sub Group...</option>
+											<option value="">Select Sub Group...</option>
+
 											@foreach ($subgroups as $subgroup)
-											@if($itemrow->subgroup_id==$subgroup['id'])
-											{{--*/ $sel = "selected" /*--}}
-											@else
-											{{--*/ $sel = "" /*--}}	
-											@endif
-											<option value="{{ $subgroup['id'] }}" {{ $sel }}>{{ $subgroup['name'] }}</option>
+												<option value="{{ $subgroup['id'] }}"
+													{{ $itemrow->subgroup_id == $subgroup['id'] ? 'selected' : '' }}>
+													{{ $subgroup['name'] }}
+												</option>
 											@endforeach
-                                        </select>
+										</select>
+
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -242,7 +244,11 @@
 											@else
 											{{--*/ $sel = "" /*--}}	
 											@endif
-											<option value="{{ $cat['id'] }}" {{ $sel }}>{{ $cat['name'] }}</option>
+											{{-- <option value="{{ $cat['id'] }}" {{ $sel }}>{{ $cat['name'] }}</option> --}}
+											<option value="{{ $cat['id'] }}"
+												{{ (isset($itemrow) && $itemrow->category_id == $cat['id']) ? 'selected' : '' }}>
+												{{ $cat['name'] }}
+											</option>
 											@endforeach
                                         </select>
                                     </div>
@@ -263,7 +269,11 @@
 											@else
 											{{--*/ $sel = "" /*--}}	
 											@endif
-											<option value="{{ $subcat['id'] }}" {{ $sel }}>{{ $subcat['name'] }}</option>
+											{{-- <option value="{{ $subcat['id'] }}" {{ $sel }}>{{ $subcat['name'] }}</option> --}}
+											<option value="{{ $subcat['id'] }}" 
+													{{ $subcat['id'] == old('subcategory_id', $selectedSubcat ?? '') ? 'selected' : '' }}>
+												{{ $subcat['name'] }}
+											</option>
 											@endforeach
                                         </select>
                                     </div>
@@ -341,8 +351,8 @@
 											<input type="hidden" step="any" type="text" name="packing[]" id="packing" class="form-control itemunit" value="{{ $itemunits[0]->packing }}" >
 												<input type="hidden" step="any" name="wsale_price[]" id="wsale_price" class="form-control itemunit" >
 												<input type="hidden" step="any" name="sell_price[]" id="sell_price" class="form-control itemunit" >
-												<input type="hidden" name="min_quantity[]" id="min_quantity" class="form-control itemunit" >
-												<input type="number" name="reorder_level[]" id="reorder_level" class="form-control itemunit" >
+												{{-- <input type="hidden" name="min_quantity[]" id="min_quantity" class="form-control itemunit" > --}}
+												{{-- <input type="number" name="reorder_level[]" id="reorder_level" class="form-control itemunit" > --}}
 
 											</td>	
 										</tr>
@@ -437,13 +447,90 @@
 												@else
 													{{--*/ $pkno = $packing = $opn_cost = $opn_qty_cur = $opn_qty = $sell_price = $wsale_price = $min_quantity = $reorder_level = $vat = $item_unit_id = $base = $sub = ''; /*--}}
 												@endif
-												<input type="hidden" name="item_unit_id[]" id="item_unit_id_2" class="form-control" value="{{ $item_unit_id }}">
-												<div><input type="text" name="pkno[]" id="pkno_22" {{($readonly)?'readonly':''}} value="{{$pkno}}" style="width:15%;float:left;" class="form-control"> <span id="title_1" style="float:left;">{{$sub}}</span><input type="text" name="packing[]" id="packing_22" {{($readonly)?'readonly':''}} value="{{ $packing }}" style="width:40%;float:left;" class="form-control" > <span id="title_12">{{$base}}</span>
-												<!--<button type="button" class="btn btn-success btn-xs" data-toggle="modal" data-target="#editqty_modal">Edit</button></div>-->
+												@php
+													if (isset($itemunits[1])) {
+														$packing       = $itemunits[1]->packing;
+														$opn_qty       = $itemunits[1]->opn_quantity;
+														$opn_qty_cur   = $itemunits[1]->opn_quantity;
+														$opn_cost      = $itemunits[1]->opn_cost;
+														$sell_price    = $itemunits[1]->sell_price;
+														$wsale_price   = $itemunits[1]->wsale_price;
+														$min_quantity  = $itemunits[1]->min_quantity;
+														$reorder_level = $itemunits[1]->reorder_level;
+														$vat           = $itemunits[1]->vat;
+														$item_unit_id  = $itemunits[1]->iuid;
+														$base          = $itemunits[0]->packing ?? '';
+														$sub           = ' '.$sub.' =';
+														$pkno          = $itemunits[1]->pkno;
+													} else {
+														$packing       = '';
+														$opn_qty       = '';
+														$opn_qty_cur   = '';
+														$opn_cost      = '';
+														$sell_price    = '';
+														$wsale_price   = '';
+														$min_quantity  = '';
+														$reorder_level = '';
+														$vat           = '';
+														$item_unit_id  = '';
+														$base          = '';
+														$sub           = '';
+														$pkno          = '';
+													}
+												@endphp
+
+												{{-- <pre>{{ print_r($itemunits ?? 'NOT SET') }}</pre> --}}
+												{{-- <input type="hidden" name="item_unit_id[]" id="item_unit_id_2" class="form-control" value="{{ $item_unit_id }}"> --}}
+												<input type="hidden" name="item_unit_id[]" id="item_unit_id_2" class="form-control" value="{{ is_array($unit) ? $unit['id'] : $unit->id }}">
+
+												{{-- <div><input type="text" name="pkno[]" id="pkno_22" {{($readonly)?'readonly':''}} value="{{$pkno}}" style="width:15%;float:left;" class="form-control"> <span id="title_1" style="float:left;">{{$sub}}</span><input type="text" name="packing[]" id="packing_22" {{($readonly)?'readonly':''}} value="{{ $packing }}" style="width:40%;float:left;" class="form-control" > <span id="title_12">{{$base}}</span> --}}
+												<div>
+													<input type="text"
+														name="pkno[]"
+														id="pkno_22"
+														{{ $readonly ? 'readonly' : '' }}
+														value="{{ $pkno ?? '' }}"
+														style="width:15%;float:left;"
+														class="form-control">
+
+													<span id="title_1" style="float:left;">
+														{{ $sub ?? '' }}
+													</span>
+
+													<input type="text"
+														name="packing[]"
+														id="packing_22"
+														{{ $readonly ? 'readonly' : '' }}
+														value="{{ $packing ?? '' }}"
+														style="width:40%;float:left;"
+														class="form-control">
+
+													<span id="title_12">
+														{{ $base ?? '' }}
+													</span>
+												</div>
+
+													<!--<button type="button" class="btn btn-success btn-xs" data-toggle="modal" data-target="#editqty_modal">Edit</button></div>-->
 											</td>
-											<td>
+											{{-- <td>
 												<input type="hidden" name="opn_quantity_cur[]" id="opn_qty_cur_2" value="{{ $opn_qty_cur }}">
 												<input type="number" name="opn_quantity[]" {{$readonly}} step="any" id="opn_qty_2" readonly class="form-control" value="{{$opn_qty}}" placeholder="Open Qty.">
+											</td> --}}
+											<td>
+												<input type="hidden"
+													name="opn_quantity_cur[]"
+													id="opn_qty_cur_2"
+													value="{{ $opn_qty_cur ?? '' }}">
+
+												<input type="number"
+													name="opn_quantity[]"
+													{{ $readonly ?? '' }}
+													step="any"
+													id="opn_qty_2"
+													readonly
+													class="form-control"
+													value="{{ $opn_qty ?? '' }}"
+													placeholder="Open Qty.">
 											</td>
 											<td>
 												<input type="number" step="any" name="opn_cost[]" {{$readonly}} id="opn_cost_2" readonly class="form-control" value="{{ $opn_cost }}" placeholder="Open Cost">
@@ -480,7 +567,7 @@
 												</select>
 											</td>
 											<td>@if(sizeof($itemunits) > 2)
-													{{--*/ $packing = $itemunits[2]->packing;
+													{{-- */ $packing = $itemunits[2]->packing;
 														   $opn_qty = $itemunits[2]->opn_quantity;
 														   $opn_qty_cur = $itemunits[2]->opn_quantity;
 														   $opn_cost = $itemunits[2]->opn_cost;
@@ -493,9 +580,9 @@
 														   $base = $itemunits[0]->packing;
 														   $pkno = $itemunits[2]->pkno;
 														   //$sub = '1 '.$sub.' =';
-													/*--}}
+													/* --}}
 												@else
-													{{--*/ $packing = $opn_cost = $opn_qty_cur = $opn_qty = $sell_price = $wsale_price = $min_quantity = $reorder_level = $vat = $item_unit_id = $base = $sub = ''; /*--}}
+													{{-- */ $packing = $opn_cost = $opn_qty_cur = $opn_qty = $sell_price = $wsale_price = $min_quantity = $reorder_level = $vat = $item_unit_id = $base = $sub = ''; /* --}}
 												@endif
 												<input type="hidden" name="item_unit_id[]" id="item_unit_id_3" class="form-control" value="{{ $item_unit_id }}"> 
 												<div><input type="text" name="pkno[]" id="pkno_23" {{($readonly)?'readonly':''}} value="{{$pkno}}" style="width:15%;float:left;" class="form-control"> <span id="title_2" style="float:left;"> {{$sub}}=</span><input type="text" name="packing[]" id="packing_23" {{($readonly)?'readonly':''}} value="{{ $packing }}" style="width:40%;float:left;" class="form-control" > <span id="title_13">{{$base}}</span></div>
@@ -670,14 +757,20 @@
 								<div class="form-group batch-entry">
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">
-                                        <input type="hidden" id="batchIds" name="batchIds" value="{{$batchitems['ids']}}">
-                                        <input type="hidden" id="batchNos" name="batchNos" value="{{$batchitems['batches']}}">
-                                        <input type="hidden" id="mfgDates" name="mfgDates" value="{{$batchitems['mfgs']}}">
-                                        <input type="hidden" id="expDates" name="expDates" value="{{$batchitems['exps']}}">
-                                        <input type="hidden" id="qtyBatchs" name="qtyBatchs" value="{{$batchitems['qtys']}}">
+                                        {{-- <input type="hidden" id="batchIds" name="batchIds" value="{{$batch_items['ids']}}">
+                                        <input type="hidden" id="batchNos" name="batchNos" value="{{$batch_items['batches']}}">
+                                        <input type="hidden" id="mfgDates" name="mfgDates" value="{{$batch_items['mfgs']}}">
+                                        <input type="hidden" id="expDates" name="expDates" value="{{$batch_items['exps']}}">
+                                        <input type="hidden" id="qtyBatchs" name="qtyBatchs" value="{{$batch_items['qtys']}}"> --}}
+										<input type="hidden" id="batchIds" name="batchIds" value="{{ $batch_items['ids'] ?? '' }}">
+										<input type="hidden" id="batchNos" name="batchNos" value="{{ $batch_items['batches'] ?? '' }}">
+										<input type="hidden" id="batchMfgs" name="batchMfgs" value="{{ $batch_items['mfgs'] ?? '' }}">
+										<input type="hidden" id="batchExps" name="batchExps" value="{{ $batch_items['exps'] ?? '' }}">
+										<input type="hidden" id="batchQtys" name="batchQtys" value="{{ $batch_items['qtys'] ?? '' }}">
                                         <input type="hidden" id="batchRem" name="batchRem">
                                     <button type="button" id="bth_add" class="btn btn-primary btn-xs batch-add"  data-toggle="modal" data-target="#batch_modal">Add Batch</button>
                                     <input type="text" id="batches" name="batches" style="border:none;color:#FFF;">
+									 <input type="text" name="batches" id="batches" value="{{ old('batches') }}" style="border:none;color:#FFF;">
                                     </div>
                                 </div>
 
@@ -716,15 +809,15 @@
 											/*--}}	
 											@endif
 									<div class="col-sm-10">
-                                        <label class="radio-inline iradio">
-                                            <input type="radio" id="inlineradio1" class="mfgItm" name="assembly" value="0" {{ $chk1 }}>
-                                            None
-                                        </label>
-                                        <label class="radio-inline iradio">
-                                            <input type="radio" id="inlineradio2" class="mfgItm" name="assembly" value="1" {{ $chk2 }}>
-                                            Mfg. Item
-                                        </label>
-                                    </div>
+										<label class="radio-inline iradio">
+											<input type="radio" id="inlineradio1" class="mfgItm" name="assembly" value="0" {{ $itemrow->assembly == 0 ? 'checked' : '' }}>
+											None
+										</label>
+										<label class="radio-inline iradio">
+											<input type="radio" id="inlineradio2" class="mfgItm" name="assembly" value="1" {{ $itemrow->assembly == 1 ? 'checked' : '' }}>
+											Mfg. Item
+										</label>
+									</div>
                                 </div>
 								<?php } else { ?>
 								<input type="hidden" name="assembly" id="assembly">
@@ -1097,55 +1190,185 @@ $(document).ready(function () {
 	
 	var urlcode = "{{ url('itemmaster/checkcode/') }}";
 	var urldesc = "{{ url('itemmaster/checkdesc/') }}";
-    $('#frmItem').bootstrapValidator({
-        fields: {
-            item_code: { validators: { 
-					notEmpty: { message: 'The item code is required and cannot be empty!' },
-					remote: { url: urlcode,
-							  data: function(validator) {
-								return { item_code: validator.getFieldElements('item_code').val(),
-										 id: validator.getFieldElements('item_id').val() };
-							  },
-							  message: 'The item code is not available'
-                    }
-                }
-            },
-			description: { validators: { notEmpty: { message: 'The description is required and cannot be empty!' },
-										/*  remote: { url: urldesc,
-												  data: function(validator) {
-													return { description: validator.getFieldElements('description').val(),
-															 id: validator.getFieldElements('item_id').val()
-															};
-												  },
-												  message: 'The item description is not available'
-										} */
-							} 
-			},
-			item_class: { validators: { notEmpty: { message: 'The item class is required and cannot be empty!' } } },
-			//group_id: { validators: { notEmpty: { message: 'The group name is required and cannot be empty!' } } },
-			//category_id: { validators: { notEmpty: { message: 'The category name is required and cannot be empty!' } } },
-			unit_1: { validators: { notEmpty: { message: 'The unit is required and cannot be empty!' } } },
-			//batches: { validators: { notEmpty: { message: 'Batch No. is required and cannot be empty!' } } }, 
-			image: { validators: {
-						file: {
-							  extension: 'jpg,jpeg,png,gif',
-							  type: 'image/jpg,image/jpeg,image/png,image/gif',
-							  maxSize: 5*1024*1024,   // 5 MB
-							  message: 'The selected file is not valid, it should be (jpg,jpeg,png,gif) and 5 MB at maximum.'
-						}
-					}
-			}
+    // $('#frmItem').bootstrapValidator({
+    //     fields: {
+    //         item_code: { validators: { 
+	// 				notEmpty: { message: 'The item code is required and cannot be empty!' },
+	// 				// remote: { url: urlcode,
+	// 				// 		  data: function(validator) {
+	// 				// 			return { item_code: validator.getFieldElements('item_code').val(),
+	// 				// 					 id: validator.getFieldElements('item_id').val() };
+	// 				// 		  },
+	// 				// 		  message: 'The item code is not available'
+    //                 // }
+	// 				remote: {
+	// 					url: urlcode,
+	// 					type: 'GET',
+	// 					dataType: 'json',
+	// 					delay: 300,
+	// 					data: function(validator) {
+	// 						return {
+	// 							item_code: validator.getFieldElements('item_code').val(),
+	// 							id: validator.getFieldElements('item_id').val()
+	// 						};
+	// 					},
+	// 					message: 'The item code is not available'
+	// 				}
+
+    //             }
+    //         },
+	// 		description: { validators: { notEmpty: { message: 'The description is required and cannot be empty!' },
+	// 									/*  remote: { url: urldesc,
+	// 											  data: function(validator) {
+	// 												return { description: validator.getFieldElements('description').val(),
+	// 														 id: validator.getFieldElements('item_id').val()
+	// 														};
+	// 											  },
+	// 											  message: 'The item description is not available'
+	// 									} */
+	// 						} 
+	// 		},
+	// 		item_class: { validators: { notEmpty: { message: 'The item class is required and cannot be empty!' } } },
+	// 		//group_id: { validators: { notEmpty: { message: 'The group name is required and cannot be empty!' } } },
+	// 		//category_id: { validators: { notEmpty: { message: 'The category name is required and cannot be empty!' } } },
+	// 		unit_1: { validators: { notEmpty: { message: 'The unit is required and cannot be empty!' } } },
+	// 		//batches: { validators: { notEmpty: { message: 'Batch No. is required and cannot be empty!' } } }, 
+	// 		image: { validators: {
+	// 					file: {
+	// 						  extension: 'jpg,jpeg,png,gif',
+	// 						  type: 'image/jpg,image/jpeg,image/png,image/gif',
+	// 						  maxSize: 5*1024*1024,   // 5 MB
+	// 						  message: 'The selected file is not valid, it should be (jpg,jpeg,png,gif) and 5 MB at maximum.'
+	// 					}
+	// 				}
+	// 		}
           
-        }
+    //     }
         
-    }).on('reset', function (event) {
-        $('#frmItem').data('bootstrapValidator').resetForm();
-    });
+    // })
+	// .on('reset', function (event) {
+    //     $('#frmItem').data('bootstrapValidator').resetForm();
+    // });
+
+
+		$('#frmItem').bootstrapValidator({
+		 excluded: [':disabled', ':hidden:not(.required)', '[name*="min_quantity"]', '[name*="reorder_level"]'], // Exclude array fields
+		feedbackIcons: {
+			valid: 'glyphicon glyphicon-ok',
+			invalid: 'glyphicon glyphicon-remove',
+			validating: 'glyphicon glyphicon-refresh'
+		},
+		fields: {
+			item_code: { 
+				validators: { 
+					notEmpty: { 
+						message: 'The item code is required and cannot be empty!' 
+					},
+					remote: {
+						url: urlcode,
+						type: 'GET',
+						dataType: 'json',
+						delay: 300,
+						data: function(validator) {
+							return {
+								item_code: validator.getFieldElements('item_code').val(),
+								id: validator.getFieldElements('item_id').val()
+							};
+						},
+						message: 'The item code is not available'
+					}
+				}
+			},
+			description: { 
+				validators: { 
+					notEmpty: { 
+						message: 'The description is required and cannot be empty!' 
+					}
+				} 
+			},
+			item_class: { 
+				validators: { 
+					notEmpty: { 
+						message: 'The item class is required and cannot be empty!' 
+					} 
+				} 
+			},
+			unit_1: { 
+				validators: { 
+					notEmpty: { 
+						message: 'The unit is required and cannot be empty!' 
+					} 
+				} 
+			},
+			image: { 
+				validators: {
+					file: {
+						extension: 'jpg,jpeg,png,gif',
+						type: 'image/jpg,image/jpeg,image/png,image/gif',
+						maxSize: 5*1024*1024,
+						message: 'The selected file is not valid, it should be (jpg,jpeg,png,gif) and 5 MB at maximum.'
+					}
+				}
+			}
+		}
+	})
+	.on('success.form.bv', function(e) {
+		// Prevent default form submission
+		// This event is triggered when the form is valid
+		console.log('Form is valid, submitting...');
+		// Let the form submit normally
+	})
+	.on('error.form.bv', function(e) {
+		// This event is triggered when the form is invalid
+		console.log('Form has errors');
+		e.preventDefault();
+	});
 });
 
 $(function() {
+// --------------------------------error check---------------------------------------------
+	$(document).on('change', '#batch_req', function(e) { 
+		var bv = $('#frmItem').data('bootstrapValidator');
+		
+		if($('#opn_qty_1').val() != '' && this.value == 1) {
+			// Check if field already exists before adding
+			if (!bv.getOptions('batches')) {
+				bv.addField('batches', {
+					validators: {
+						notEmpty: {
+							message: 'Batch no is required!'
+						}
+					}
+				});
+			}
+		} else {
+			// Remove the field if batch is not required
+			if (bv.getOptions('batches')) {
+				bv.removeField('batches');
+			}
+		}
+	});
     
-    
+    $('#frmItem').on('submit', function(e) {
+		console.log('Form submit triggered');
+		var bv = $(this).data('bootstrapValidator');
+		console.log('Validator status:', bv.isValid());
+		
+		// If not valid, show which fields are invalid
+		if (!bv.isValid()) {
+			e.preventDefault();
+			var invalidFields = [];
+			bv.getInvalidFields().each(function() {
+				invalidFields.push($(this).attr('name'));
+			});
+			console.log('Invalid fields:', invalidFields);
+			alert('Please fix these fields: ' + invalidFields.join(', '));
+			return false;
+		}
+	});
+// ----------------------------------error check end-------------------------------------------
+
+
     $(document).on('change', '#batch_req', function(e) { 
 		  if($('#opn_qty_1').val()!='' && this.value==1) {
 		  

@@ -65,7 +65,7 @@
                         <h3 class="panel-title pull-left m-t-6">
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Return
                         </h3>
-                        <div class="pull-right">
+                        {{-- <div class="pull-right">
 							@permission('pr-create')
                              <a href="{{ url('purchase_return/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
@@ -73,7 +73,19 @@
 								</span> Add New
 							</a>
 							@endpermission
-                        </div>
+                        </div> --}}
+
+						<div class="pull-right">
+							@can('pr-create')
+								<a href="{{ url('purchase_return/add') }}" class="btn btn-primary btn-sm">
+									<span class="btn-label">
+										<i class="glyphicon glyphicon-plus"></i>
+									</span>
+									Add New
+								</a>
+							@endcan
+						</div>
+
                     </div>
                     <div class="panel-body">
 						 <div class="row">
