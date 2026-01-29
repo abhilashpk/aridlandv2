@@ -1191,7 +1191,7 @@ $(document).ready(function () {
 		$('#locationRadio').show();
     
 
-	   let locID   = {{$interid}};
+	    let locID  =" {{$interid}}";
         let locCode = "{{$intercode}}";
 		let prefix ='IPO';
 		let newPrefix = prefix + locCode; 
@@ -1807,14 +1807,12 @@ $(function() {
             .removeClass('btn-default').addClass('btn-danger')
             .removeClass('btn-add-oc').addClass('btn-remove-oc')
             .html('<span class="glyphicon glyphicon-minus" aria-hidden="true"></span> ');
-    }).on('click', '.btn-remove-oc', function(e)
-    { 
-		$(this).parents('.OCdivChld:first').remove();
-		
+    })
+	.on('click', '.btn-remove-oc', function(e) { 
 		e.preventDefault();
+		$(this).parents('.OCdivChld:first').remove();
 		return false;
-	});
-	
+	});	
 	
 	var joburl = "{{ url('jobmaster/job_data/') }}";
 	$('#jobname').click(function() {
@@ -1970,6 +1968,7 @@ $(function() {
 	//new change............
 	var itmurl = "{{ url('itemmaster/item_data/') }}";
 	$(document).on('click', 'input[name="item_code[]"]', function(e) {
+		console.log('clicked');
 		var res = this.id.split('_');
 		var curNum = res[1]; 
 		$('#item_data').load(itmurl+'/'+curNum, function(result){ 

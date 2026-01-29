@@ -364,45 +364,116 @@ class ItemmasterController extends Controller
 	
 	
 	
-	public function getGroupCategory() {
+	// public function getGroupCategory() {
 		
+	// 	$arrData = array();
+	// 	$result = $this->group->activeGroupList();
+	// 	$arrData['groups'] = array_filter( array_map( function($result) {
+	// 							if($result['parent_id']==0) {
+	// 								$groups['id'] = $result['id'];
+	// 								$groups['name'] = $result['group_name'];
+	// 								return $groups;
+	// 							} 
+	// 						}, $result));
+	// 	$arrData['subgroups'] = array_filter( array_map( function($result) {
+	// 							if($result['parent_id']==1) {
+	// 								$groups['id'] = $result['id'];
+	// 								$groups['name'] = $result['group_name'];
+	// 								return $groups;
+	// 							} 
+	// 						}, $result));
+							
+	// 	$catresult = $this->category->activeCategoryList(); 
+	// 	$arrData['category'] = array_filter( array_map( function($result) {
+	// 							if($result['parent_id']==0) {
+	// 								$category['id'] = $result['id'];
+	// 								$category['name'] = $result['category_name'];
+	// 								return $category;
+	// 							} 
+	// 						}, $catresult));
+	// 	$arrData['subcategory'] = array_filter( array_map( function($result) {
+	// 							if($result['parent_id']==1) {
+	// 								$category['id'] = $result['id'];
+	// 								$category['name'] = $result['category_name'];
+	// 								return $category;
+	// 							} 
+	// 						}, $catresult));
+							
+	// 	$arrData['units'] = $this->unit->activeUnitList();
+		
+	// 	return $arrData;
+		
+	// }
+
+
+	public function getGroupCategory() 
+	{
 		$arrData = array();
+		
 		$result = $this->group->activeGroupList();
-		$arrData['groups'] = array_filter( array_map( function($result) {
-								if($result['parent_id']==0) {
-									$groups['id'] = $result['id'];
-									$groups['name'] = $result['group_name'];
-									return $groups;
-								} 
-							}, $result));
-		$arrData['subgroups'] = array_filter( array_map( function($result) {
-								if($result['parent_id']==1) {
-									$groups['id'] = $result['id'];
-									$groups['name'] = $result['group_name'];
-									return $groups;
-								} 
-							}, $result));
-							
-		$catresult = $this->category->activeCategoryList(); 
-		$arrData['category'] = array_filter( array_map( function($result) {
-								if($result['parent_id']==0) {
-									$category['id'] = $result['id'];
-									$category['name'] = $result['category_name'];
-									return $category;
-								} 
-							}, $catresult));
-		$arrData['subcategory'] = array_filter( array_map( function($result) {
-								if($result['parent_id']==1) {
-									$category['id'] = $result['id'];
-									$category['name'] = $result['category_name'];
-									return $category;
-								} 
-							}, $catresult));
-							
+		
+		// Groups (parent_id = 0)
+		$arrData['groups'] = [];
+		if ($result) {
+			$arrData['groups'] = array_values(array_filter(array_map(function($result) {
+				if (isset($result['parent_id']) && $result['parent_id'] == 0) {
+					return [
+						'id' => $result['id'],
+						'name' => $result['group_name']
+					];
+				}
+				return null;
+			}, $result)));
+		}
+		
+		// Subgroups (parent_id = 1)
+		$arrData['subgroups'] = [];
+		if ($result) {
+			$arrData['subgroups'] = array_values(array_filter(array_map(function($result) {
+				if (isset($result['parent_id']) && $result['parent_id'] == 1) {
+					return [
+						'id' => $result['id'],
+						'name' => $result['group_name']
+					];
+				}
+				return null;
+			}, $result)));
+		}
+		
+		// Categories
+		$catresult = $this->category->activeCategoryList();
+		
+		$arrData['category'] = [];
+		if ($catresult) {
+			$arrData['category'] = array_values(array_filter(array_map(function($result) {
+				if (isset($result['parent_id']) && $result['parent_id'] == 0) {
+					return [
+						'id' => $result['id'],
+						'name' => $result['category_name']
+					];
+				}
+				return null;
+			}, $catresult)));
+		}
+		
+		// Subcategories
+		$arrData['subcategory'] = [];
+		if ($catresult) {
+			$arrData['subcategory'] = array_values(array_filter(array_map(function($result) {
+				if (isset($result['parent_id']) && $result['parent_id'] == 1) {
+					return [
+						'id' => $result['id'],
+						'name' => $result['category_name']
+					];
+				}
+				return null;
+			}, $catresult)));
+		}
+		
+		// Units
 		$arrData['units'] = $this->unit->activeUnitList();
 		
 		return $arrData;
-		
 	}
 
 	// public function getGroupCategory()
@@ -907,22 +978,40 @@ class ItemmasterController extends Controller
 			echo '';
 	}
 	
-	public function getItem($num,$mod=null)
+	// public function getItem($num,$mod=null)
+	// {
+	// 	$data = array();
+	// 	$itemmaster = [];//$this->itemmaster->getActiveItemmasterList($mod);
+	// 	$arrData = $this->getGroupCategory();
+	// 	$vats = $this->vatmaster->activeVatMasterList();
+	// 	$view = ($mod=='ser')?'service':'item';
+		
+	// 	return view('body.itemmaster.'.$view)
+	// 				->withItems($itemmaster)
+	// 				->withNum($num)
+	// 				->withUnits($arrData['units'])
+	// 				->withVats($vats)
+	// 				->withMod($mod)
+	// 				->withData($data);
+	// }
+
+	public function getItem($num, $mod = null)
 	{
-		$data = array();
-		$itemmaster = [];//$this->itemmaster->getActiveItemmasterList($mod);
+		$data = [];
+		$itemmaster = $this->itemmaster->getActiveItemmasterList($mod);
 		$arrData = $this->getGroupCategory();
 		$vats = $this->vatmaster->activeVatMasterList();
-		$view = ($mod=='ser')?'service':'item';
-		
-		return view('body.itemmaster.'.$view)
-					->withItems($itemmaster)
-					->withNum($num)
-					->withUnits($arrData['units'])
-					->withVats($vats)
-					->withMod($mod)
-					->withData($data);
+		$view = ($mod == 'ser') ? 'service' : 'item';
+
+		return view('body.itemmaster.' . $view)
+			->withItems($itemmaster)
+			->withNum($num)
+			->withUnits($arrData['units'])
+			->withVats($vats)
+			->withMod($mod)
+			->withData($data);
 	}
+
 	
 	public function getItemRm($num,$mod=null)
 	{
