@@ -384,6 +384,7 @@ Route::get('/itemmaster/get_info/{id}', [ItemmasterController::class, 'getInfo']
 Route::get('/itemmaster/get_purchase_cost', [ItemmasterController::class, 'getPurchaseCost']);
 Route::get('/itemmaster/get_sale_cost', [ItemmasterController::class, 'getSaleCost']);
 Route::get('/itemmaster/item_data/{n}', [ItemmasterController::class, 'getItem']);
+Route::get('/itemmaster/item_data/{num}/{mod?}', [ItemMasterController::class, 'getItem']);
 Route::get('/itemmaster/get_cost_avg', [ItemmasterController::class, 'getCostAvg']);
 Route::get('/itemmaster/get_cost_sale', [ItemmasterController::class, 'getCostSale']);
 Route::get('/itemmaster/ajax_create', [ItemmasterController::class, 'ajaxSave']);
