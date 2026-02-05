@@ -1722,20 +1722,12 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	//JAN20
 	public function getCustomerList($deptid=null)
 	{
-		$query = DB::table('account_master')->where('account_master.status',1)
+		$query = DB::table('account_master')->where('account_master.status',1)->where('account_master.department_id',env('DEPARTMENT_ID'))
 		            ->where(function ($q) {
                         $q->whereNull('account_master.deleted_at')
                           ->orWhere('account_master.deleted_at', '0000-00-00 00:00:00');
                     });
 		
-		//CHECK DEPARTMENT.......
-		if(Session::get('department')==1) { //if active...
-			if(Auth::user()->department_id!=0)
-				$query->where('department_id', Auth::user()->department_id);
-		}
-		
-		if($deptid)
-			$query->where('department_id', $deptid);
 		
 		return $query->join('account_group AS ag', function($join) {
 							$join->on('ag.id','=','account_master.account_group_id');

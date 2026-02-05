@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\PaymentVoucher;
+<?php namespace App\Repositories\PaymentVoucher;
 
 use App\Models\PaymentVoucher;
 use App\Models\PaymentVoucherEntry;
@@ -13,7 +11,7 @@ use App\Models\JournalEntry;
 use App\Models\Journal;
 
 use Config;
-use Illuminate\Support\Facades\DB;
+use DB;
 use Auth;
 
 class PaymentVoucherRepository extends AbstractValidator implements PaymentVoucherInterface {
@@ -60,6 +58,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	//set input fields values
 	private function setInputValue($attributes)
 	{
+	    //echo '<pre>';print_r($attributes);exit;
 		//echo $this->getVoucherType( $attributes['voucher_type'] );
 		if($attributes['voucher_type']==10) {
 			$voucher_type = ($attributes['chktype']!='')?$attributes['chktype']:$attributes['voucher_type'];
@@ -77,15 +76,15 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		$this->payment_voucher->department_id  = (isset($attributes['department_id']))?$attributes['department_id']:'';
 		//MR12
 		$this->payment_voucher->is_fc = isset($attributes['is_fc'])?1:0;
-		$this->payment_voucher->currency_id = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
+	//	$this->payment_voucher->currency_id = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
 		$this->payment_voucher->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
 		$this->payment_voucher->fc_amount = (isset($attributes['fc_amount']))?$attributes['fc_amount']:'';
-		
+		$this->payment_voucher->purchase_invoice_id  = isset($attributes['purchase_invoice_id'][0])?$attributes['purchase_invoice_id'][0]:'';
 		if($attributes['from_jv']==1) {
 			$this->payment_voucher->tr_description  = '';
 			$this->payment_voucher->group_id = $attributes['group_id'][0];
 		} else
-			$this->payment_voucher->tr_description  = ($attributes['tr_description']=='')?$attributes['description']:$attributes['tr_description'];
+			$this->payment_voucher->tr_description  = (isset($attributes['tr_description']) && $attributes['tr_description']!='')?$attributes['tr_description']:$attributes['description'];
 		
 		
 		return true;
@@ -106,7 +105,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			if($ar==1) {
 				$account_id = $attributes['cr_account_id'];
 				$description = $attributes['supplier_account'];
-				$reference = $refno;
+				$reference = ($refno=='')?(isset($attributes['is_onaccount'])?'ADV':$refno):$refno;
 				$trtype = 'Cr';
 				$amount = $attributes['amount'];
 				$jobid = isset($attributes['job_id'])?$attributes['job_id']:'';
@@ -139,7 +138,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$account_id = $attributes['supplier_id'];
 				$description = $attributes['supplier_account'];
 				$reference = $attributes['refno'][$key];
-				$trtype = 'Dr';
+				$trtype = 'Cr';
 				$amount = $attributes['line_amount'][$key];
 				$jobid = $attributes['job_id'];
 				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
@@ -161,6 +160,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			if($ar==4) {
 				$paymentVoucherEntry->is_onaccount = isset($attributes['is_onaccount'])?1:0;
 				$paymentVoucherEntry->amount = isset($attributes['is_onaccount'])?$attributes['on_amount']:$amount;
+				$paymentVoucherEntry->reference = 'ADV';
 			}
 			return true;
 			
@@ -178,10 +178,16 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			$paymentVoucherEntry->reference = $attributes['reference'][$key];
 			$paymentVoucherEntry->entry_type = $attributes['account_type'][$key];
 			$paymentVoucherEntry->amount = $attributes['line_amount'][$key];
-			$paymentVoucherEntry->job_id = $attributes['job_id'][$key];
+			$paymentVoucherEntry->job_id = isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
+			$paymentVoucherEntry->currency_id = isset($attributes['currency_id'][$key])?$attributes['currency_id'][$key]:'';
 			$paymentVoucherEntry->department_id  = isset($attributes['department'][$key])?$attributes['department'][$key]:'';
+		    /*if($attributes['group_id'][$key]=='BANK') {
+				$paymentVoucherEntry->cheque_no = isset($attributes['chq_no'])?$attributes['chq_no']:'';
+				$paymentVoucherEntry->cheque_date =  ($attributes['chq_date']!='')?date('Y-m-d', strtotime($attributes['chq_date'])):'';
+			} else {*/
 			$paymentVoucherEntry->cheque_no = isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
-			$paymentVoucherEntry->cheque_date =  ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
+			$paymentVoucherEntry->cheque_date =  (isset($attributes['cheque_date'][$key]) && $attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
+			//} 
 			$paymentVoucherEntry->bank_id  = isset($attributes['bank_id'][$key])?$attributes['bank_id'][$key]:'';
 			$paymentVoucherEntry->party_account_id   = isset($attributes['partyac_id'][$key])?$attributes['partyac_id'][$key]:'';
 			
@@ -190,7 +196,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				
 				if(strpos(strtoupper($attributes['description'][$key]), 'ADVANCE') !== false) {
 					$paymentVoucherEntry->is_onaccount = 1;
-					$paymentVoucherEntry->reference = ($attributes['reference'][$key]=='')?'Adv.':$attributes['reference'][$key];
+					$paymentVoucherEntry->reference = ($attributes['reference'][$key]=='')?'ADV':$attributes['reference'][$key];
 				} else {
 					$paymentVoucherEntry->is_onaccount = isset($attributes['is_onaccount'])?1:0;
 				}
@@ -240,18 +246,20 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	{
 		
 		DB::table('account_transaction')
-				->where('voucher_type', 'PV')
-				->where('voucher_type_id', $payment_voucher_id)
-				->update([ 'account_master_id' => $attributes['account_id'][$key],
+				->insert([  'voucher_type'		=> 'PV',
+							'voucher_type_id'   =>  $payment_voucher_id,
+							'account_master_id' => $attributes['account_id'][$key],
 							'transaction_type'  => $attributes['account_type'][$key],
 							'amount'   			=> $attributes['line_amount'][$key],
-							'modify_at' 		=> now(),
+							'status'			=> 1,
+							'modify_at' 		=> date('Y-m-d H:i:s'),
 							'modify_by' 		=> Auth::User()->id,
 							'description' 		=> $attributes['description'][$key],
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
-							'department_id'		=> isset($attributes['department'][$key])?$attributes['department'][$key]:''
+							'department_id'		=> isset($attributes['department'][$key])?$attributes['department'][$key]:'',
+							'version_no'		=> $attributes['version_no']
 							]);
 		
 		return true;
@@ -264,7 +272,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				->where('voucher_type', 'PV')
 				->where('voucher_type_id', $payment_voucher_id)
 				->update([ 'status' 		=> 0,
-						   'deleted_at' 	=> now(),
+						   'deleted_at' 	=> date('Y-m-d H:i:s'),
 						   'deleted_by'		=> Auth::User()->id ]);
 		
 		return true;
@@ -441,7 +449,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							//update as partially paid.
 							DB::table('purchase_invoice')
 										->where('id', $attributes['inv_id'][$key])
-										->update(['balance_amount' => $balance_amount, 'amount_transfer' => 2, 'is_editable' => 1]);
+										->update(['balance_amount' => $balance_amount, 'amount_transfer' => 2]);// 'is_editable' => 1
 										
 							//check if bll is cleared or not...
 							$bal = DB::table('purchase_invoice')->where('id', $attributes['inv_id'][$key])->select('balance_amount')->first();
@@ -786,7 +794,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				
 			} else {
 				//LINE CR AMOUNT TRANSACTION...(CHECK LINE AMOUNT IS OR NOT)
-				if($key) {
+				if ($key !== null) {
 					$amount = $attributes['line_amount'][$key];
 					$account_master_id = $attributes['supplier_id'];
 					$referencefrm = $attributes['refno'][$key];
@@ -812,19 +820,20 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								'transaction_type'  => $type,
 								'amount'   			=> $amount,
 								'status' 			=> $status,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> (isset($attributes['is_onaccount']))?'Advance Amount':$attributes['description'],
-								'reference'			=> $attributes['voucher_no'], //(isset($attributes['is_onaccount']))?'Adv.':
+								'reference'			=> $attributes['voucher_no'], //(isset($attributes['is_onaccount']))?'ADV':
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-								'reference_from'	=> (isset($attributes['is_onaccount']))?'Adv.':$referencefrm,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+								'reference_from'	=> (isset($attributes['is_onaccount']))?'ADV':$referencefrm,
+								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'version_no'		=> $attributes['version_no']
 							]);
 								
 		} else {
 			
-			$status = $attributes['status'];
-			if($attributes['status']==0) {
+			$status = isset($attributes['status'])?$attributes['status']:1;
+			if(isset($attributes['status']) && $attributes['status']==0) {
 				if($attributes['debit'] > 25000) {
 					$status = 0;
 				} else
@@ -838,13 +847,14 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								'transaction_type'  => $attributes['account_type'][$key],
 								'amount'   			=> $attributes['line_amount'][$key],
 								'status' 			=> $status,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'][$key],
 								'reference'			=> $attributes['voucher_no'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $attributes['reference'][$key],
-								'department_id'		=> (isset($attributes['department'][$key]))?$attributes['department'][$key]:''
+								'department_id'		=> (isset($attributes['department'][$key]))?$attributes['department'][$key]:'',
+								'version_no'		=> $attributes['version_no']
 								]);
 		}
 		
@@ -877,7 +887,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					->where('account_master_id', $account_master_id)
 					->where('transaction_type', $type)
 					->update([  'amount'   			=> $amount,
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'],
 								'reference'			=> $attributes['voucher_no'],
@@ -893,7 +903,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					->where('account_master_id', $attributes['account_id'][$key])
 					->where('transaction_type', $type)
 					->update([  'amount'   			=> $attributes['line_amount'][$key],
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'][$key],
 								'reference'			=> $attributes['voucher_no'],
@@ -916,34 +926,170 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 						->where('account_master_id', $account_master_id)
 						->where('reference_from', $attributes['refno'][$key])
 						->update([ 'status' 		=> 0,
-								   'deleted_at' 	=> now(),
+								   'deleted_at' 	=> date('Y-m-d H:i:s'),
 								   'deleted_by' 	=> Auth::User()->id ]);
 	}
 	
-	private function voucherNoGenerate($attributes) {
-	    
-        $voucher = ($attributes['from_jv']==1)?10:$attributes['voucher'];
+		
+	
+	protected function settleAdvancesWithInvoices($attributes, $payment_voucher_id)
+    {
+        if (empty($attributes['is_advNcash'])) return;
+    
+        $advances = [];
+        $invoices = [];
+    
+        foreach ($attributes['tag'] as $k => $key) {
+            $billType = $attributes['bill_type'][$key];
+            $docId = $attributes['purchase_invoice_id'][$key];
+            $amount = (float) $attributes['line_amount'][$key];
+    
+            if (in_array($billType, ['OBD', 'PV'])) {
+                $advances[] = [
+                    'bill_type' => $billType,
+                    'doc_id' => $docId,
+                    'remaining' => $amount,
+                ];
+            }
+    
+            if ($billType === 'PI') {
+                $invoices[] = [
+                    'invoice_id' => $docId,
+                    'amount' => $amount,
+                ];
+            }
+        }
+    
+        // Begin settlement
+        foreach ($invoices as $invoice) {
+            $invoiceId = $invoice['invoice_id'];
+            $amountToSettle = $invoice['amount'];
+    
+            foreach ($advances as &$adv) {
+                if ($amountToSettle <= 0) break;
+    
+                if ($adv['remaining'] > 0) {
+                    $used = min($amountToSettle, $adv['remaining']);
+                    $adv['remaining'] -= $used;
+                    $amountToSettle -= $used;
+    
+                    // Update account_transaction - split Cr entry
+                    DB::table('account_transaction')->insert([
+                        'voucher_type' => $adv['bill_type'],
+                        'voucher_type_id' => $adv['doc_id'],
+                        'account_master_id' => $attributes['supplier_id'],
+                        'transaction_type' => 'Cr',
+                        'amount' => $used,
+                        'status' => 1,
+                        'created_at' => date('Y-m-d h:i:s'),
+                        'created_by' => Auth::id(),
+                        'modify_at' => date('Y-m-d h:i:s'),
+                        'modify_by' => Auth::id(),
+                        'description' => 'Advance Settlement for Invoice ID ' . $invoiceId,
+                        'reference_from' => 'PI-' . $invoiceId,
+                        'invoice_date' => date('Y-m-d'),
+                        'is_paid' => 0,
+                        'reference' => '',
+                        'tr_for' => 0,
+                        'fc_amount' => 0,
+                        'other_type' => '',
+                        'is_fc' => 0,
+                        'department_id' => 0,
+                        'job_id' => 0,
+                        'other_info' => ''
+                    ]);
+    
+                    // Log in advance settlement history
+                    DB::table('advance_settlement')->insert([
+                        'advance_voucher_type' => $adv['bill_type'],
+                        'advance_voucher_id' => $adv['doc_id'],
+                        'invoice_id' => $invoiceId,
+                        'settled_amount' => $used,
+                        'created_at' => date('Y-m-d h:i:s')
+                    ]);
+                }
+            }
+    
+            // If still amount to settle, post new PV entry
+            if ($amountToSettle > 0) {
+                // Add cash payment entry - logic depends on your existing PV entry method
+                $newPVEntry = new PaymentVoucherEntry();
+                $newPVEntry->payment_voucher_id = $payment_voucher_id;
+                $newPVEntry->account_id = $attributes['cr_account_id'];
+                $newPVEntry->description = 'Cash payment for Invoice ID ' . $invoiceId;
+                $newPVEntry->reference = '';
+                $newPVEntry->amount = $amountToSettle;
+                $newPVEntry->entry_type = 'Cr';
+                $newPVEntry->job_id = 0;
+                $newPVEntry->department_id = 0;
+                $newPVEntry->is_fc = 0;
+                $newPVEntry->currency_id = 0;
+                $newPVEntry->currency_rate = 1;
+                $newPVEntry->amount_fc = 0;
+                $newPVEntry->cheque_no = '';
+                $newPVEntry->cheque_date = null;
+                $newPVEntry->bank_id = 0;
+                $newPVEntry->status = 1;
+                $newPVEntry->deleted_at = null;
+                $newPVEntry->is_onaccount = 0;
+                $newPVEntry->amount_transfer = 0;
+                $newPVEntry->balance_amount = 0;
+                $newPVEntry->party_account_id = $attributes['supplier_id'];
+                $newPVEntry->save();
+    
+                // Update account transaction for this cash
+                $this->setAccountTransactionPV($attributes, $newPVEntry->id, 'Dr');
+            }
+        }
+    }
+    
+	
+	private function getVoucherNoGenerate($attributes)
+	{
 		$cnt = 0;
+		$voucher = ($attributes['from_jv'] == 1) ? 10 : $attributes['voucher'];
+
+		// Fetch base prefix and number from account_setting
+		$jvset = DB::table('account_setting')
+			->where('voucher_type_id', $voucher)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->select('prefix', 'is_prefix', 'voucher_no')
+			->first();
+
+		if (!$jvset) {
+			// Fallback if no account_setting found
+			return [
+				'voucher_no' => 'RV' . date('ym') . '000001',
+				'vno'        => 1,
+				'curno'      => 'RV' . date('ym') . '000001'
+			];
+		}
+
 		do {
-			$jvset = DB::table('account_setting')->where('voucher_type_id', $voucher)->select('prefix','is_prefix','voucher_no')->first();
-			if($jvset) {
-				if($jvset->is_prefix==0) {
-					$newattributes['voucher_no'] = $jvset->voucher_no + $cnt;
-					$newattributes['vno'] = $jvset->voucher_no + $cnt;
-				} else {
-					$newattributes['voucher_no'] = $jvset->prefix.($jvset->voucher_no + $cnt);
-					$newattributes['vno'] = $jvset->voucher_no + $cnt;
-				}
-				$newattributes['curno'] = $newattributes['voucher_no'];
+			// Generate candidate number
+			if ($jvset->is_prefix == 0) {
+				$newattributes['voucher_no'] = $jvset->voucher_no + $cnt;
+				$newattributes['vno']        = $jvset->voucher_no + $cnt;
+			} else {
+				$newattributes['voucher_no'] = $jvset->prefix . ($jvset->voucher_no + $cnt);
+				$newattributes['vno']        = $jvset->voucher_no + $cnt;
+			}
+			$newattributes['curno'] = $newattributes['voucher_no'];
+
+			// Check if this voucher_no already exists (ignore soft-deleted)
+			$query = DB::table('payment_voucher')
+				->where('voucher_no', $newattributes['voucher_no'])
+				->where('status', 1)
+				->where('deleted_at','0000-00-00 00:00:00'); // ✅ important
+
+			if (isset($attributes['department_id']) && Session::get('department') == 1) {
+				$query->where('department_id', $attributes['department_id']);
 			}
 
-			if(isset($attributes['department_id']) && Session::get('department')==1)
-				$inv = DB::table('payment_voucher')->where('id','!=',$attributes['rowid'])->where('voucher_no',$attributes['voucher_no'])->where('department_id', $attributes['department_id'])->where('status',1)->whereNull('deleted_at')->count();
-			else
-				$inv = DB::table('payment_voucher')->where('id','!=',$attributes['rowid'])->where('voucher_no',$attributes['voucher_no'])->where('status',1)->whereNull('deleted_at')->count();
-//echo '<pre>';print_r($newattributes); exit;
-			$cnt++;
-		} while ($inv!=0);
+			$inv = $query->count(); //echo $inv;exit;
+			$cnt++; // increment counter and loop until unique number found
+		} while ($inv != 0);
 
 		return $newattributes;
 	}
@@ -954,569 +1100,387 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			
 			DB::beginTransaction();
 			try {
-				
-				
-
-				if($this->setInputValue($attributes)) {
-					//$this->payment_voucher->status = 1;
-					$this->payment_voucher->created_at = now();
-					$this->payment_voucher->created_by = Auth::User()->id;
-					$this->payment_voucher->fill($attributes)->save();
-					$payment_voucher_id = $this->payment_voucher->id;
+				$attributes['version_no'] = 1;
+				//ADV BILL SETTLEMENT...
+			    $continue = true;
+				//ADV BILL SETTLE: IF THE ADV NOT SUFFICIENT AMOUNT THEN ADD EXCESS AMOUNT AND SETTLE...
+				if(isset($attributes['is_advNcash']) && $attributes['is_advNcash']==1 && $attributes['amount'] > 0) { 
+				    
+				    $trefnos = [];         // Array of trefno (ref no of each SI)
+                    $allref = '';          // Comma-separated trefnos
+                    $siEntries = [];       // To hold multiple SI entries
+                    $rvEntries = [];       // To process RV after knowing SIs
+                    $rvObEntries = [];
+                    
+                    // Step 1: Separate SI and RV entries based on tag indexes
+                    foreach($attributes['tag'] as $tval) {
+                    
+                        $billType = $attributes['bill_type'][$tval];
+                    
+                        if ($billType === 'PI' || ($billType === 'OBD' && $attributes['acnttype'][$tval]=='Cr') ) {
+                            $refno = $attributes['refno'][$tval];
+                            $trefnos[] = $refno;
+                            $siEntries[] = [
+                                'refno' => $refno,
+                                'amount' => $attributes['line_amount'][$tval],
+                                'purchase_invoice_id' => $attributes['purchase_invoice_id'][$tval],
+                                'tag_index' => $tval
+                            ];
+                            
+                        } else if ($billType === 'OBD' && $attributes['acnttype'][$tval]=='Cr') {
+                            $refno = $attributes['refno'][$tval];
+                            $trefnos[] = $refno;
+                            $siEntries[] = [
+                                'refno' => $refno,
+                                'amount' => $attributes['line_amount'][$tval],
+                                'purchase_invoice_id' => $attributes['purchase_invoice_id'][$tval],
+                                'tag_index' => $tval
+                            ];
+                            
+                        }  elseif ($billType === 'PV') {
+                            $rvEntries = [
+                                'refno' => $attributes['refno'][$tval],
+                                'amount' => $attributes['line_amount'][$tval],
+                                'purchase_invoice_id' => $attributes['purchase_invoice_id'][$tval],
+                                'tag_index' => $tval
+                            ];
+                        }
+                        
+                        if ($billType === 'OBD' && $attributes['acnttype'][$tval]=='Dr') { //OBD Advance
+                            //$continue = true;
+                            $refno = $attributes['refno'][$tval];
+                            $trefnos[] = $refno;
+                            $rvObEntries[] = [
+                                'refno' => $refno,
+                                'amount' => $attributes['line_amount'][$tval],
+                                'purchase_invoice_id' => $attributes['purchase_invoice_id'][$tval],
+                                'tag_index' => $tval
+                            ];
+                            
+                        }
+                    }
 				}
-				
-				//transactions insert
-				if($this->payment_voucher->id && $attributes['from_jv']==0) { //from PV....
-				
-					$arr = [1,2]; $crv_entry_id = '';
-					foreach($arr as $ar) {
-						
-						//update account Cr transactions...
-						if($ar==1) {
-							$cr_amount = $dr_amount = $attributes['amount']; $difference = 0;
-							$paymentVoucherEntry = new PaymentVoucherEntry();
-							$this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar, null);
-							$paymentVoucherEntry->status = 1;
-							$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-							$crv_entry_id = $pv_entry_id = $paymentVoucherEntry->id;
-							$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Cr');
-							
-						} else {
-							
-							if( isset($attributes['is_onaccount']) ) {
-								
-								$cr_amount = $dr_amount = $attributes['amount']; $difference = 0;
-								$paymentVoucherEntry = new PaymentVoucherEntry();
-								$this->setEntryInputValue($attributes, $paymentVoucherEntry, 4, null);
-								$paymentVoucherEntry->status = 1;
-								$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-								$pv_entry_id = $paymentVoucherEntry->id;
-							
-								//update account Dr transactions...
-								$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Dr', $key=null);
-								//update closing balance of debitor account
-								if($this->updateClosingBalance($attributes['supplier_id'], $attributes['amount'], 'Cr',$attributes['voucher_type'])) {
-									//update closing balance of debitor account
-									$this->updateClosingBalance($attributes['cr_account_id'], $attributes['amount'], 'Dr');
-								}
-								
-							} else {
-								$cr_amount = 0; $dr_amount = 0; $difference = 0;
-								foreach($attributes['tag'] as $k => $key) { 
-									
-									//CHECK IF DR TRANSACTION IS THERE AND CR TRANSACTION ALSO DO..
-									if($attributes['acnttype'][$key]=='Dr') {
-										$paymentVoucherEntry = new PaymentVoucherEntry();
-										$this->setEntryInputValue($attributes, $paymentVoucherEntry, 5, $key);
-										$paymentVoucherEntry->status = 1;
-										$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-										$pv_entry_id = $paymentVoucherEntry->id;
-										
-										//update account Dr transactions...
-										$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Cr', $key);
-										
-									} else {
-										
-										$paymentVoucherEntry = new PaymentVoucherEntry();
-										$arrResult = $this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar, $key);
-										if($arrResult) {
-											$cr_amount += $arrResult['cr_amount'];
-											$dr_amount += $arrResult['dr_amount'];
-											$paymentVoucherEntry->status = 1;
-											$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-											$pv_entry_id = $paymentVoucherEntry->id;
-											
-											//PV transaction entry..........
-											$paymentVoucherTr = new PaymentVoucherTr();
-											$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
-											$paymentVoucherTr->purchase_invoice_id = $attributes['purchase_invoice_id'][$key]; //[$key]
-											$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
-											$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
-											$paymentVoucherTr->status = 1;
-											$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
-											
-											//update sales invoice transaction status...
-											$this->setTransactionStatus($attributes, $key, $pv_entry_id); //May 15
-											
-											//update account Cr transactions...
-											$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Dr', $key);
-										}
-									}
-								}
-								
-								//update closing balance of debitor account
-								if($this->updateClosingBalance($attributes['supplier_id'], $attributes['amount'], 'Dr',$attributes['voucher_type'])) {
-									//update closing balance of debitor account
-									$this->updateClosingBalance($attributes['cr_account_id'], $attributes['amount'], 'Cr');
-								}
-							}
-						}
-						
-					}
-					
-					//check discount received...
-					if( isset($attributes['is_debit']) ) {
-						
-						$paymentVoucherEntry = new PaymentVoucherEntry();
-						$this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar=3, null);
-						$paymentVoucherEntry->status = 1;
-						$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-						$dscnt_pv_entry_id = $paymentVoucherEntry->id;
-						
-						$this->setAccountTransactionPV($attributes, $dscnt_pv_entry_id, 'Ds');
-						$this->updateClosingBalance($attributes['dr_entry_ac_id'], $attributes['dr_entry_amount'], 'Cr');
-						
 
-					}
-					
-					
-					//cheque no insert...
-					if(isset($attributes['cheque_no']) && $attributes['cheque_no']!='' ){
-						DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'], 'bank_id' => $attributes['bank_id'],'account_id' => $attributes['supplier_id'] ]);
-					}
-					
-				} else if($this->payment_voucher->id && $attributes['from_jv']==1) { //from JV....
-					
-					$cr_amount = 0; $dr_amount = 0;
-					foreach($attributes['line_amount'] as $key => $value) {
-						if($value!='' && $value!=0 && $attributes['account_id'][$key]!='' && $attributes['account_id'][$key]!=0) { //JN1
-							$paymentVoucherEntry = new PaymentVoucherEntry();
-							$arrResult = $this->setEntryInputValue($attributes, $paymentVoucherEntry, null, $key);
-							
-							if($arrResult) {
-								$cr_amount += $arrResult['cr_amount'];
-								$dr_amount += $arrResult['dr_amount'];
-								$paymentVoucherEntry->status = 1;
-								$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-								$pv_entry_id = $paymentVoucherEntry->id;
+				if($continue) {
 
-								//PDCI list inserting....
-								if($attributes['group_id'][$key]=='PDCI') {
-									
-									$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
-									if($attributes['partyac_id'][$key]=='') {
-										$party_id = '';
-										$ctrow = DB::table('payment_voucher_entry')->where('payment_voucher_id',$this->payment_voucher->id)
-														->where('entry_type','Dr')->where('status',1)
-														->whereNull('deleted_at')
-														->select('account_id')->first();
-										if($ctrow) {
-											$party_id = $ctrow->account_id;
-										}
-									} else
-										$party_id = $attributes['partyac_id'][$key];
-									
-									DB::table('pdc_issued')
-											->insert([ 'voucher_id' 	=>  $this->payment_voucher->id,
-														'voucher_type'   => 'CB',
-														'cr_account_id' => $acrow->id,
-														'dr_account_id' => $attributes['account_id'][$key],
-														'reference'  => $attributes['reference'][$key],
-														'amount'   			=> $attributes['line_amount'][$key],
-														'status' 			=> 0,
-														'created_at' 		=> now(),
-														'created_by' 		=> Auth::User()->id,
-														'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
-														'supplier_id' => $attributes['partyac_id'][$key],
-														'cheque_no' => $attributes['cheque_no'][$key],
-														'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
-														'voucher_no' => $attributes['voucher_no'],
-														'description' => $attributes['description'][$key],
-														'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
-														'entry_id' => $pv_entry_id,
-														'entry_type' => 'PV'
-													]);
-								}
-								
-								if(($attributes['account_type'][$key]=='Dr') && ($attributes['sales_invoice_id'][$key]!='')) {
-									//PV transaction entry..........
-									$paymentVoucherTr = new PaymentVoucherTr();
-									$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
-									$paymentVoucherTr->purchase_invoice_id = $attributes['sales_invoice_id'][$key]; //actually purchase invoice id...
-									$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
-									$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
-									$paymentVoucherTr->status = 1;
-									$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
-								}
-							}
-							
-							//update invoice transaction status...
-							$this->setTransactionStatus($attributes, $key, $paymentVoucherEntry->id); //May 15
-							
-							$this->setAccountTransactionPV($attributes, $paymentVoucherEntry->id, 'X', $key);
-								
-							//update closing balance of debitor/creditor account
-							$this->updateClosingBalanceJV($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
-							
-							//cheque no insert...
-							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id' => $attributes['account_id'][$key] ]);
-							}
-						}
-					}
+					//VOUCHER NO LOGIC.....................
+					// 2️⃣ Get the highest numeric part from voucher_master
+					$maxNumeric = DB::table('payment_voucher')
+						->where('deleted_at', '0000-00-00 00:00:00')
+						//->where('department_id', $departmentId)
+						->where('status', 1)
+						->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+						->value('max_no');
 					
-					$difference = (int)($dr_amount - $cr_amount);
-					if($difference!=0.00) { //JN1	
-						throw new ValidationException('Payment entry validation error! Please try again.',$this->getErrors());
-					}		
-				}
-				
-				
-				//VOUCHER NO INCREMENT LOGIC//
-				if( $attributes['curno'] == $attributes['voucher_no'] ) {
-					$attributes['rowid'] = $this->payment_voucher->id; 
-					$newattributes = $this->voucherNoGenerate($attributes);
-					$attributes['voucher_no'] = $newattributes['voucher_no'];
-					$attributes['vno'] = $newattributes['vno'];
-					$attributes['curno'] = $newattributes['curno'];
-				} 
-				//VOUCHER NO INCREMENT LOGIC//
-				
-				//update debit, credit, difference amount
-				DB::table('payment_voucher')
-							->where('id', $this->payment_voucher->id)
-							->update(['voucher_no'	  => $attributes['voucher_no'], 
-							            'debit'     => $attributes['debit'],
-									  'credit' 	  => $attributes['credit'],
-									  'difference' => $difference ]);
-				
-				//PDCI list table insert..........
-				if($attributes['from_jv']==0) {
-					if($attributes['voucher_type']=='PDCI') {
-						
-						$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
-						
-						DB::table('pdc_issued')
-								->insert([ 'voucher_id' 	=> $this->payment_voucher->id,
-											'voucher_type'   => 'CB',
-											'cr_account_id' => $acrow->id,
-											'dr_account_id' => $attributes['cr_account_id'],
-											'reference'  => $attributes['reference'],
-											'amount'   			=> $attributes['amount'],
-											'status' 			=> 0,
-											'created_at' 		=> now(),
-											'created_by' 		=> Auth::User()->id,
-											'voucher_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-											'supplier_id' => $attributes['supplier_id'],
-											'cheque_no' => $attributes['cheque_no'],
-											'cheque_date' => ($attributes['cheque_date']!='')?date('Y-m-d', strtotime($attributes['cheque_date'])):date('Y-m-d'),
-											'voucher_no' => $attributes['voucher_no'],
-											'description' => $attributes['supplier_account'],
-											'bank_id' => (isset($attributes['bank_id']) && $attributes['bank_id']!='')?$attributes['bank_id']:1,
-											'entry_id' => $crv_entry_id,
-											'entry_type' => 'PV'
-										]);
-					}
-				} 
-				
-				
-				//update voucher no........
-				$voucher = ($attributes['from_jv']==1)?10:$attributes['voucher'];
-				
-				if( ($this->payment_voucher->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) { 
-					DB::table('account_setting')
-							->where('voucher_type_id', $voucher)
-							->update(['voucher_no' => DB::raw('voucher_no + 1')]); //$attributes['voucher_no'] + 1
-				}
-				
-				DB::commit();
-				return $this->payment_voucher->id;
-				
-			} catch (\Exception $e) {
-			  
-			  DB::rollback(); echo $e->getLine().' '.$e->getMessage();exit;
-			  return false;
-		    }
-		}
-		//throw new ValidationException('payment_voucher validation error12!', $this->getErrors());
-	}
-
-	
-	public function createOld($attributes)
-	{ //echo '<pre>';print_r($attributes);exit;
-		if($this->isValid($attributes)) {
-			
-			DB::beginTransaction();
-			try {
-				
-				//VOUCHER NO INCREMENT LOGIC//
-			if( $attributes['curno'] == $attributes['voucher_no'] ) {
-				$cnt = 0;
-				do {
-					$jvset = DB::table('account_setting')->where('id', $attributes['voucher'])->select('prefix','is_prefix','voucher_no')->first();
-					
-					if($jvset) {
-						if($jvset->is_prefix==0) {
-							$attributes['voucher_no'] = $jvset->voucher_no + $cnt;
-							$attributes['vno'] = $jvset->voucher_no + $cnt;
-						} else {
-							$attributes['voucher_no'] = $jvset->prefix.($jvset->voucher_no + $cnt);
-							$attributes['vno'] = $jvset->voucher_no + $cnt;
-						}
-						$attributes['curno'] = $attributes['voucher_no'];
-					}
-					if(isset($attributes['department_id']) && Session::get('department')==1)
-						$inv = DB::table('payment_voucher')->where('voucher_no',$attributes['voucher_no'])->where('department_id', $attributes['department_id'])->where('status',1)->whereNull('deleted_at')->count();
+					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+					if($attributes['from_jv']==0)
+						$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
 					else
-						$inv = DB::table('payment_voucher')->where('voucher_no',$attributes['voucher_no'])->where('status',1)->whereNull('deleted_at')->count();
+						$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();//echo '<pre>';print_r($accset);
+					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+					//VOUCHER NO LOGIC.....................
+					//exit;
+					$maxRetries = 5; // prevent infinite loop
+					$retryCount = 0;
+					$saved = false;
 
-					$cnt++;
-				} while ($inv!=0);
-			} 
-			//VOUCHER NO INCREMENT LOGIC//
+					while (!$saved && $retryCount < $maxRetries) {
+						try {
+							if ($this->setInputValue($attributes)) {
 
-				if($this->setInputValue($attributes)) {
-					//$this->payment_voucher->status = 1;
-					$this->payment_voucher->created_at = now();
-					$this->payment_voucher->created_by = Auth::User()->id;
-					$this->payment_voucher->fill($attributes)->save();
-					$payment_voucher_id = $this->payment_voucher->id;
-				}
-				
-				//transactions insert
-				if($this->payment_voucher->id && $attributes['from_jv']==0) { //from PV....
-				
-					$arr = [1,2]; $crv_entry_id = '';
-					foreach($arr as $ar) {
-						
-						//update account Cr transactions...
-						if($ar==1) {
-							$cr_amount = $dr_amount = $attributes['amount']; $difference = 0;
-							$paymentVoucherEntry = new PaymentVoucherEntry();
-							$this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar, null);
-							$paymentVoucherEntry->status = 1;
-							$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-							$crv_entry_id = $pv_entry_id = $paymentVoucherEntry->id;
-							$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Cr');
-							
-						} else {
-							
-							if( isset($attributes['is_onaccount']) ) {
+								$this->payment_voucher->status = 1;
+								$this->payment_voucher->created_at = date('Y-m-d H:i:s');
+								$this->payment_voucher->created_by = Auth::User()->id;
+								$this->payment_voucher->fill($attributes)->save();
+								$payment_voucher_id = $this->payment_voucher->id;
+
+								$saved = true; // success ✅
+
+							}	
+						} catch (\Illuminate\Database\QueryException $ex) {
+
+							// Check if it's a duplicate voucher number error
+							if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+								strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+								$maxNumeric = DB::table('payment_voucher')
+									->where('deleted_at', '0000-00-00 00:00:00')
+									//->where('department_id', $departmentId)
+									->where('status', 1)
+									->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+									->value('max_no');
 								
-								$cr_amount = $dr_amount = $attributes['amount']; $difference = 0;
-								$paymentVoucherEntry = new PaymentVoucherEntry();
-								$this->setEntryInputValue($attributes, $paymentVoucherEntry, 4, null);
-								$paymentVoucherEntry->status = 1;
-								$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-								$pv_entry_id = $paymentVoucherEntry->id;
-							
-								//update account Dr transactions...
-								$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Dr', $key=null);
-								//update closing balance of debitor account
-								if($this->updateClosingBalance($attributes['supplier_id'], $attributes['amount'], 'Cr',$attributes['voucher_type'])) {
-									//update closing balance of debitor account
-									$this->updateClosingBalance($attributes['cr_account_id'], $attributes['amount'], 'Dr');
-								}
-								
+								$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+								if($attributes['from_jv']==0)
+									$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
+								else
+									$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();//echo '<pre>';print_r($accset);
+								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+
+								$retryCount++;
 							} else {
-								$cr_amount = 0; $dr_amount = 0; $difference = 0;
-								foreach($attributes['tag'] as $k => $key) { 
+								throw $ex; //echo $ex;exit;// rethrow if different DB error
+							}
+						}
+					}
+										
+						//transactions insert
+						if($this->payment_voucher->id && $attributes['from_jv']==0) { //from PV....
+							
+							$arr = [1,2]; $crv_entry_id = '';
+							foreach($arr as $ar) {
+								
+								//update account Cr transactions...
+								if($ar==1) {
+									$cr_amount = $dr_amount = $attributes['amount']; $difference = 0;
+									$paymentVoucherEntry = new PaymentVoucherEntry();
+									$this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar, null);
+									$paymentVoucherEntry->status = 1;
+									$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
+									$crv_entry_id = $pv_entry_id = $paymentVoucherEntry->id;
+			
+									$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Cr');
 									
-									//CHECK IF DR TRANSACTION IS THERE AND CR TRANSACTION ALSO DO..
-									if($attributes['acnttype'][$key]=='Dr') {
+								} else {
+									
+									if( isset($attributes['is_onaccount']) ) {
+										
+										$cr_amount = $dr_amount = $attributes['amount']; $difference = 0;
 										$paymentVoucherEntry = new PaymentVoucherEntry();
-										$this->setEntryInputValue($attributes, $paymentVoucherEntry, 5, $key);
+										$this->setEntryInputValue($attributes, $paymentVoucherEntry, 4, null);
 										$paymentVoucherEntry->status = 1;
 										$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
 										$pv_entry_id = $paymentVoucherEntry->id;
-										
+									
 										//update account Dr transactions...
-										$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Cr', $key);
+										$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Dr', $key=null);
+										//update closing balance of debitor account
+										if($this->updateClosingBalance($attributes['supplier_id'], $attributes['amount'], 'Cr',$attributes['voucher_type'])) {
+											//update closing balance of debitor account
+											$this->updateClosingBalance($attributes['cr_account_id'], $attributes['amount'], 'Dr');
+										}
 										
 									} else {
+										$cr_amount = 0; $dr_amount = 0; $difference = 0;
+										foreach($attributes['tag'] as $k => $key) { 
+											
+											//CHECK IF DR TRANSACTION IS THERE AND CR TRANSACTION ALSO DO..
+											if($attributes['acnttype'][$key]=='Dr') {
+												$paymentVoucherEntry = new PaymentVoucherEntry();
+												$this->setEntryInputValue($attributes, $paymentVoucherEntry, 5, $key);
+												$paymentVoucherEntry->status = 1;
+												$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
+												$pv_entry_id = $paymentVoucherEntry->id;
+												
+												//update account Dr transactions...
+												$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Cr', $key);
+												
+											} else {
+												
+												$paymentVoucherEntry = new PaymentVoucherEntry();
+												$arrResult = $this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar, $key);
+												if($arrResult) {
+													$cr_amount += $arrResult['cr_amount'];
+													$dr_amount += $arrResult['dr_amount'];
+													$paymentVoucherEntry->status = 1;
+													$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
+													$pv_entry_id = $paymentVoucherEntry->id;
+													
+													//PV transaction entry..........
+													$paymentVoucherTr = new PaymentVoucherTr();
+													$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
+													$paymentVoucherTr->purchase_invoice_id = $attributes['purchase_invoice_id'][$key]; //[$key]
+													$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
+													$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
+													$paymentVoucherTr->status = 1;
+													$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
+													
+													//update sales invoice transaction status...
+													$this->setTransactionStatus($attributes, $key, $pv_entry_id); //May 15
+													
+													//update account Cr transactions...
+													$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Dr', $key);
+												}
+											}
+										}
 										
-										$paymentVoucherEntry = new PaymentVoucherEntry();
-										$arrResult = $this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar, $key);
-										if($arrResult) {
-											$cr_amount += $arrResult['cr_amount'];
-											$dr_amount += $arrResult['dr_amount'];
-											$paymentVoucherEntry->status = 1;
-											$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-											$pv_entry_id = $paymentVoucherEntry->id;
-											
-											//PV transaction entry..........
-											$paymentVoucherTr = new PaymentVoucherTr();
-											$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
-											$paymentVoucherTr->purchase_invoice_id = $attributes['purchase_invoice_id'][$key]; //[$key]
-											$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
-											$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
-											$paymentVoucherTr->status = 1;
-											$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
-											
-											//update sales invoice transaction status...
-											$this->setTransactionStatus($attributes, $key, $pv_entry_id); //May 15
-											
-											//update account Cr transactions...
-											$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Dr', $key);
+										//update closing balance of debitor account
+										if($this->updateClosingBalance($attributes['supplier_id'], $attributes['amount'], 'Dr',$attributes['voucher_type'])) {
+											//update closing balance of debitor account
+											$this->updateClosingBalance($attributes['cr_account_id'], $attributes['amount'], 'Cr');
 										}
 									}
 								}
 								
-								//update closing balance of debitor account
-								if($this->updateClosingBalance($attributes['supplier_id'], $attributes['amount'], 'Dr',$attributes['voucher_type'])) {
-									//update closing balance of debitor account
-									$this->updateClosingBalance($attributes['cr_account_id'], $attributes['amount'], 'Cr');
-								}
+								
 							}
-						}
-						
-					}
-					
-					//check discount received...
-					if( isset($attributes['is_debit']) ) {
-						
-						$paymentVoucherEntry = new PaymentVoucherEntry();
-						$this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar=3, null);
-						$paymentVoucherEntry->status = 1;
-						$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-						$dscnt_pv_entry_id = $paymentVoucherEntry->id;
-						
-						$this->setAccountTransactionPV($attributes, $dscnt_pv_entry_id, 'Ds');
-						$this->updateClosingBalance($attributes['dr_entry_ac_id'], $attributes['dr_entry_amount'], 'Cr');
-						
-
-					}
-					
-					
-					//cheque no insert...
-					if(isset($attributes['cheque_no']) && $attributes['cheque_no']!='' ){
-						DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'], 'bank_id' => $attributes['bank_id'],'account_id' => $attributes['supplier_id'] ]);
-					}
-					
-				} else if($this->payment_voucher->id && $attributes['from_jv']==1) { //from JV....
-					
-					$cr_amount = 0; $dr_amount = 0;
-					foreach($attributes['line_amount'] as $key => $value) {
-						if($value!='' && $value!=0 && $attributes['account_id'][$key]!='' && $attributes['account_id'][$key]!=0) { //JN1
-							$paymentVoucherEntry = new PaymentVoucherEntry();
-							$arrResult = $this->setEntryInputValue($attributes, $paymentVoucherEntry, null, $key);
 							
-							if($arrResult) {
-								$cr_amount += $arrResult['cr_amount'];
-								$dr_amount += $arrResult['dr_amount'];
+							//check discount received...
+							if( isset($attributes['is_debit']) ) {
+								
+								$paymentVoucherEntry = new PaymentVoucherEntry();
+								$this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar=3, null);
 								$paymentVoucherEntry->status = 1;
 								$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
-								$pv_entry_id = $paymentVoucherEntry->id;
-
-								//PDCI list inserting....
-								if($attributes['group_id'][$key]=='PDCI') {
-									
-									$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
-									if($attributes['partyac_id'][$key]=='') {
-										$party_id = '';
-										$ctrow = DB::table('payment_voucher_entry')->where('payment_voucher_id',$this->payment_voucher->id)
-														->where('entry_type','Dr')->where('status',1)
-														->whereNull('deleted_at')
-														->select('account_id')->first();
-										if($ctrow) {
-											$party_id = $ctrow->account_id;
-										}
-									} else
-										$party_id = $attributes['partyac_id'][$key];
-									
-									DB::table('pdc_issued')
-											->insert([ 'voucher_id' 	=>  $this->payment_voucher->id,
-														'voucher_type'   => 'CB',
-														'cr_account_id' => $acrow->id,
-														'dr_account_id' => $attributes['account_id'][$key],
-														'reference'  => $attributes['reference'][$key],
-														'amount'   			=> $attributes['line_amount'][$key],
-														'status' 			=> 0,
-														'created_at' 		=> now(),
-														'created_by' 		=> Auth::User()->id,
-														'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
-														'supplier_id' => $attributes['partyac_id'][$key],
-														'cheque_no' => $attributes['cheque_no'][$key],
-														'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
-														'voucher_no' => $attributes['voucher_no'],
-														'description' => $attributes['description'][$key],
-														'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
-														'entry_id' => $pv_entry_id,
-														'entry_type' => 'PV'
-													]);
-								}
+								$dscnt_pv_entry_id = $paymentVoucherEntry->id;
 								
-								if(($attributes['account_type'][$key]=='Dr') && ($attributes['sales_invoice_id'][$key]!='')) {
-									//PV transaction entry..........
-									$paymentVoucherTr = new PaymentVoucherTr();
-									$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
-									$paymentVoucherTr->purchase_invoice_id = $attributes['sales_invoice_id'][$key]; //actually purchase invoice id...
-									$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
-									$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
-									$paymentVoucherTr->status = 1;
-									$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
-								}
+								$this->setAccountTransactionPV($attributes, $dscnt_pv_entry_id, 'Ds');
+								$this->updateClosingBalance($attributes['dr_entry_ac_id'], $attributes['dr_entry_amount'], 'Cr');
+								
+
 							}
 							
-							//update invoice transaction status...
-							$this->setTransactionStatus($attributes, $key, $paymentVoucherEntry->id); //May 15
-							
-							$this->setAccountTransactionPV($attributes, $paymentVoucherEntry->id, 'X', $key);
-								
-							//update closing balance of debitor/creditor account
-							$this->updateClosingBalanceJV($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
 							
 							//cheque no insert...
-							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id' => $attributes['account_id'][$key] ]);
+							if(isset($attributes['cheque_no']) && $attributes['cheque_no']!='' ){
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'], 'bank_id' => $attributes['bank_id'],'account_id' => '','ctype' => 1 ]);
 							}
+							
+						} else if($this->payment_voucher->id && $attributes['from_jv']==1) { //from JV....
+							
+							$cr_amount = 0; $dr_amount = 0;
+							foreach($attributes['line_amount'] as $key => $value) {
+								if($value!='' && $value!=0 && $attributes['account_id'][$key]!='' && $attributes['account_id'][$key]!=0) { //JN1
+									$paymentVoucherEntry = new PaymentVoucherEntry();
+									$arrResult = $this->setEntryInputValue($attributes, $paymentVoucherEntry, null, $key);
+									
+									if($arrResult) {
+										$cr_amount += $arrResult['cr_amount'];
+										$dr_amount += $arrResult['dr_amount'];
+										$paymentVoucherEntry->status = 1;
+										$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
+										$pv_entry_id = $paymentVoucherEntry->id;
+
+										//PDCI list inserting....
+										if($attributes['group_id'][$key]=='PDCI') {
+											
+											$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+											if(isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]=='') {
+												$party_id = '';
+												$ctrow = DB::table('payment_voucher_entry')->where('payment_voucher_id',$this->payment_voucher->id)
+																->where('entry_type','Dr')->where('status',1)
+																->where('deleted_at','0000-00-00 00:00:00')
+																->select('account_id')->first();
+												if($ctrow) {
+													$party_id = $ctrow->account_id;
+												}
+											} else
+												$party_id = $attributes['partyac_id'][$key];
+											
+											$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cr_account_master_id')->first();
+											
+											DB::table('pdc_issued')
+													->insert([ 'voucher_id' 	=>  $this->payment_voucher->id,
+																'voucher_type'   => 'CB',
+																'cr_account_id' => ($acrow)?$acrow->id:0,
+																'dr_account_id' => $attributes['account_id'][$key],
+																'reference'  => $attributes['reference'][$key],
+																'amount'   			=> $attributes['line_amount'][$key],
+																'status' 			=> 0,
+																'created_at' 		=> date('Y-m-d H:i:s'),
+																'created_by' 		=> Auth::User()->id,
+																'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
+																'supplier_id' => $party_id,
+																'cheque_no' => $attributes['cheque_no'][$key],
+																'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
+																'voucher_no' => $attributes['voucher_no'],
+																'description' => $attributes['description'][$key],
+																'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
+																'entry_id' => $pv_entry_id,
+																'entry_type' => 'PV',
+																'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
+															]);
+										}
+										
+										if((isset($attributes['sales_invoice_id'][$key]) && ($attributes['account_type'][$key]=='Dr') && ($attributes['sales_invoice_id'][$key]!=''))) {
+											//PV transaction entry..........
+											$paymentVoucherTr = new PaymentVoucherTr();
+											$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
+											$paymentVoucherTr->purchase_invoice_id = $attributes['sales_invoice_id'][$key]; //actually purchase invoice id...
+											$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
+											$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
+											$paymentVoucherTr->status = 1;
+											$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
+										}
+									}
+									
+									//update invoice transaction status...
+									$this->setTransactionStatus($attributes, $key, $paymentVoucherEntry->id); //May 15
+									
+									$this->setAccountTransactionPV($attributes, $paymentVoucherEntry->id, 'X', $key);
+										
+									//update closing balance of debitor/creditor account
+									$this->updateClosingBalanceJV($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
+									
+									//cheque no insert...
+									if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
+										DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 
+										'bank_id' => isset($attributes['bank_id'][$key])?$attributes['bank_id'][$key]:'',
+										'account_id' => '','ctype' => 1 ]);
+									}
+								}
+							}
+
+							$difference = round($dr_amount - $cr_amount, 2);
+							if(bccomp($difference, '0.00', 2) != 0) { 	
+								Session::flash('error', 'Debit and Credit totals must be equal before saving this voucher.');
+								return false;
+								//throw new ValidationException('Receipt entry validation error! Please try again.',$this->getErrors());
+							}
+									
 						}
-					}
-					
-					$difference = $dr_amount - $cr_amount;
-					if($difference!=0.00) { //JN1	
-						throw new ValidationException('Payment entry validation error! Please try again.');
-					}		
-				}
-				
-				//update debit, credit, difference amount
-				DB::table('payment_voucher')
-							->where('id', $this->payment_voucher->id)
-							->update(['debit'     => $attributes['debit'],
-									  'credit' 	  => $attributes['credit'],
-									  'difference' => $difference ]);
-				
-				//PDCI list table insert..........
-				if($attributes['from_jv']==0) {
-					if($attributes['voucher_type']=='PDCI') {
 						
-						$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
+
+						if($this->payment_voucher->id) {
+							//update debit, credit, difference amount
+							DB::table('payment_voucher')
+										->where('id', $this->payment_voucher->id)
+										->update([//'voucher_no'	  => $attributes['voucher_no'], 
+													'debit'     => $attributes['debit'],
+												'credit' 	  => $attributes['credit'],
+												'difference' => $difference ]);
+						}
+
 						
-						DB::table('pdc_issued')
-								->insert([ 'voucher_id' 	=> $this->payment_voucher->id,
-											'voucher_type'   => 'CB',
-											'cr_account_id' => $acrow->id,
-											'dr_account_id' => $attributes['cr_account_id'],
-											'reference'  => $attributes['reference'],
-											'amount'   			=> $attributes['amount'],
-											'status' 			=> $attributes['status'],
-											'created_at' 		=> now(),
-											'created_by' 		=> Auth::User()->id,
-											'voucher_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-											'supplier_id' => $attributes['supplier_id'],
-											'cheque_no' => $attributes['cheque_no'],
-											'cheque_date' => ($attributes['cheque_date']!='')?date('Y-m-d', strtotime($attributes['cheque_date'])):date('Y-m-d'),
-											'voucher_no' => $attributes['voucher_no'],
-											'description' => $attributes['supplier_account'],
-											'bank_id' => (isset($attributes['bank_id']) && $attributes['bank_id']!='')?$attributes['bank_id']:1,
-											'entry_id' => $crv_entry_id,
-											'entry_type' => 'PV'
-										]);
-					}
-				} 
-				
-				
-				//update voucher no........
-				$voucher = ($attributes['from_jv']==1)?10:$attributes['voucher'];
-				
-				if( ($this->payment_voucher->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) { 
-					DB::table('account_setting')
-							->where('voucher_type_id', $voucher)
-							->update(['voucher_no' => DB::raw('voucher_no + 1')]); //$attributes['voucher_no'] + 1
+
+						//PDCI list table insert..........
+						if($attributes['from_jv']==0) {
+							if($attributes['voucher_type']=='PDCI') {
+								
+								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cr_account_master_id')->first();
+														
+								DB::table('pdc_issued')
+										->insert([ 'voucher_id' 	=> $this->payment_voucher->id,
+													'voucher_type'   => 'CB',
+													'cr_account_id' => ($acrow)?$acrow->id:0,
+													'dr_account_id' => $attributes['cr_account_id'],
+													'reference'  => $attributes['reference'],
+													'amount'   			=> $attributes['amount'],
+													'status' 			=> 0,
+													'created_at' 		=> date('Y-m-d H:i:s'),
+													'created_by' 		=> Auth::User()->id,
+													'voucher_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+													'supplier_id' => $attributes['supplier_id'],
+													'cheque_no' => $attributes['cheque_no'],
+													'cheque_date' => ($attributes['cheque_date']!='')?date('Y-m-d', strtotime($attributes['cheque_date'])):date('Y-m-d'),
+													'voucher_no' => $attributes['voucher_no'],
+													'description' => $attributes['supplier_account'],
+													'bank_id' => (isset($attributes['bank_id'])&&$attributes['bank_id']!='')?$attributes['bank_id']:1,
+													'entry_id' => $crv_entry_id,
+													'entry_type' => 'PV',
+													'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
+												]);
+							}
+						} 
+						
+						//update voucher no........
+						$voucher = ($attributes['from_jv']==1)?10:$attributes['voucher'];
+						
 				}
-				
 				DB::commit();
 				return $this->payment_voucher->id;
+				//abi-----------
 				
 			} catch (\Exception $e) {
 			  
@@ -1526,6 +1490,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		}
 		//throw new ValidationException('payment_voucher validation error12!', $this->getErrors());
 	}
+
 	
 	public function update($id, $attributes)
 	{	//echo '<pre>';print_r($attributes);exit;
@@ -1534,96 +1499,26 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		DB::beginTransaction();
 		try {
 			$voucher_type = $this->payment_voucher->voucher_type;
-			if($this->payment_voucher->id && $attributes['from_jv']==0) { //from PV....
-				$cr_amount = $dr_amount = $attributes['amount']; $difference = 0;
-				$key = 1;
-				foreach($attributes['pventry_id'] as $pvrow) {
-					$paymentVoucherEntry = PaymentVoucherEntry::find($pvrow);
-					
-					$pvEntry['account_id'] = ($key==1)?$attributes['cr_account_id']:$attributes['supplier_id'];
-					$pvEntry['description'] = $attributes['description'];
-					$pvEntry['reference'] = $attributes['reference'];
-					$pvEntry['amount'] = $attributes['amount'];
-					$pvEntry['job_id'] = $attributes['job_id'];
-					$pvEntry['department_id'] = $attributes['department_id'];
-					$pvEntry['cheque_no'] = isset($attributes['cheque_no'])?$attributes['cheque_no']:'';
-					$pvEntry['cheque_date'] = ($attributes['cheque_date']!='')?date('Y-m-d', strtotime($attributes['cheque_date'])):'';
-					$pvEntry['bank_id'] = isset($attributes['bank_id'])?$attributes['bank_id']:'';
-					$pvEntry['party_account_id'] = isset($attributes['supplier_id'])?$attributes['supplier_id']:'';
-					
-					if($key==2) {
-						$pvEntry['is_onaccount'] = isset($attributes['is_onaccount'])?1:0;
-						$pvEntry['amount'] = $attributes['on_amount'];
-					}
-					$paymentVoucherEntry->update($pvEntry);
-					
-					//update account Cr transactions...
-					if($key==1)
-						$this->setAccountTransactionPVUpdate($attributes, $pvrow, 'Cr');
-						
-					$key++;
-					$pv_entry_id = $pvrow;
-				}
-				
-				//check on account or not....
-				if( isset($attributes['is_onaccount']) ) {
-					
-					//update account Cr transactions...
-					$this->setAccountTransactionPVUpdate($attributes, $pv_entry_id, 'Dr', $key=null);
-					
-				} else {
-					
-					foreach($attributes['tag'] as $k => $key) { 
-					
-						if($attributes['id'][$key]!='') {
-							$paymentVoucherTr = PaymentVoucherTr::find($attributes['id'][$key]);
-							$invrow['assign_amount'] = $attributes['line_amount'][$key];
-							$invrow['purchase_invoice_id'] = $attributes['purchase_invoice_id'][$key];
-							$paymentVoucherTr->update($invrow);
-							
-							//update sales invoice transaction status...
-							$this->setTransactionStatus($attributes, $key, $pv_entry_id); //May 15
-							
-							//update account transactions...
-							$this->setAccountTransactionPVUpdate($attributes, $pv_entry_id, 'Dr', $key);
-								
-							
-						} else {
-							
-							//new entry.....
-							$paymentVoucherTr = new PaymentVoucherTr();
-								
-							$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
-							$paymentVoucherTr->purchase_invoice_id = $attributes['purchase_invoice_id'][$key];
-							$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
-							$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
-							$paymentVoucherTr->status = 1;
-							$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
-							$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
-								
-							//update sales invoice transaction status...
-							$this->setTransactionStatus($attributes, $key, $pv_entry_id);//May 15
-							
-							//update account Cr transactions...
-								$this->setAccountTransactionPV($attributes, $pv_entry_id, 'Dr', $key);
-						}
-						
-					}
-				}
-				
-				//update closing balance of debitor account
-				if($this->updateClosingBalance($attributes['cr_account_id'], $attributes['amount'], 'Cr')) {
-					//update closing balance of debitor account
-					$this->updateClosingBalance($attributes['supplier_id'], $attributes['amount'], 'Dr', $attributes['voucher_type']);
-				}
-				
-				
-			} else if($this->payment_voucher->id && $attributes['from_jv']==1) { //from JV.... 
+			if($this->payment_voucher->id && $attributes['from_jv']==1) { //from JV.... 
 				
 				$cr_amount = 0; $dr_amount = 0; $refs = '';
 				foreach($attributes['line_amount'] as $key => $value) {
 					
 					if($attributes['je_id'][$key]!='') {
+
+						//FIND CURRENT VERSION	 
+						$currentVersion = DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id', $attributes['je_id'][$key])->max('version_no');
+						$newVersion = $currentVersion + 1;
+						$attributes['version_no'] = $newVersion;
+
+						//SOFT DELETE OLD VERSION
+						DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id', $attributes['je_id'][$key])
+									->update([
+												'status' => 0,
+												'deleted_at' => date('Y-m-d h:i:s'),
+												'deleted_by'  => Auth::User()->id,
+											]);
+
 						if($attributes['account_id'][$key]!='' && $attributes['account_id'][$key]!=0) {
 							$paymentVoucherEntry = PaymentVoucherEntry::find($attributes['je_id'][$key]);
 							
@@ -1637,17 +1532,18 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							$jerow['reference']    		= $attributes['reference'][$key];
 							$jerow['entry_type']    		= $attributes['account_type'][$key];
 							$jerow['amount']    		= $attributes['line_amount'][$key];
-							$jerow['job_id']    		= $attributes['job_id'][$key];
+							$jerow['job_id']    		= isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
 							$jerow['department_id']    		= isset($attributes['department'][$key])?$attributes['department'][$key]:'';
 							$jerow['cheque_no']   		= isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
-							$jerow['cheque_date']    		=  ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
+							$jerow['cheque_date']    		=  (isset($attributes['cheque_date'][$key]) && $attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
 							$jerow['bank_id']   		= isset($attributes['bank_id'][$key])?$attributes['bank_id'][$key]:'';
 							$jerow['party_account_id']  = isset($attributes['partyac_id'][$key])?$attributes['partyac_id'][$key]:'';
-							
+							$jerow['currency_id']    		= isset($attributes['currency_id'][$key])?$attributes['currency_id'][$key]:'';
 							$paymentVoucherEntry->update($jerow);
 							
 							if($value=='' || $value==0) {
-								DB::table('payment_voucher_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => now()]);
+								DB::table('payment_voucher_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+								DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id', $attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d h:i:s')]);
 							}
 							
 							if($attributes['account_type'][$key]=='Cr') {
@@ -1675,37 +1571,39 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							if($attributes['group_id'][$key]=='PDCI') {
 
 								//UPDATE PDC...
-								$pdcrow = DB::table('pdc_issued')
-												->where('entry_id', $attributes['je_id'][$key])
-												->where('entry_type','PV')
-												->select('id')->first();
-								
+								$pdcrow = DB::table('pdc_issued')->where('entry_id', $attributes['je_id'][$key])->where('entry_type','PV')->select('id')->first();
+												
+								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cr_account_master_id')->first();
+
 								if($pdcrow)	{	
 									DB::table('pdc_issued')
-												->where('voucher_id', $this->payment_voucher->id)
-												->where('supplier_id', $attributes['partyac_id'][$key])
-												->where('dr_account_id', $attributes['account_id'][$key])
-												->update([ 	'reference'  => $attributes['reference'][$key],
+									            ->where('id', $pdcrow->id)
+												->update([ 	'cr_account_id' => ($acrow)?$acrow->id:0,
+															'dr_account_id' => $attributes['account_id'][$key],
+															'reference'  => $attributes['reference'][$key],
 															'amount'   			=> $attributes['line_amount'][$key],
-															'voucher_date'		=> date('Y-m-d', strtotime($attributes['voucher_date'])),
+															'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 															'supplier_id' => $attributes['partyac_id'][$key],
 															'cheque_no' => $attributes['cheque_no'][$key],
 															'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
 															'voucher_no' => $attributes['voucher_no'],
-															'description' => $attributes['description'][$key]
+															'description' => $attributes['description'][$key],
+															'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
+															'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0,
+															'deleted_at' => '0000-00-00 00:00:00',
 														]);
 								} else {
-									//INSERT NEW PDC....
-									$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
+									
 									DB::table('pdc_issued')
 										->insert([ 'voucher_id' 	=> $this->payment_voucher->id,
 													'voucher_type'   => 'CB',
-													'cr_account_id' => $acrow->id,
+													'cr_account_id' => ($acrow)?$acrow->id:0,
 													'dr_account_id' => $attributes['account_id'][$key],
 													'reference'  => $attributes['reference'][$key],
 													'amount'   			=> $attributes['line_amount'][$key],
 													'status' 			=> 0,
-													'created_at' 		=> now(),
+													'created_at' 		=> date('Y-m-d H:i:s'),
 													'created_by' 		=> Auth::User()->id,
 													'voucher_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 													'supplier_id' => $attributes['partyac_id'][$key],
@@ -1715,7 +1613,8 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 													'description' => $attributes['description'][$key],
 													'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 													'entry_id' => $attributes['je_id'][$key],
-													'entry_type' => 'PV'
+													'entry_type' => 'PV',
+													'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
 												]);
 								}
 							} else { //CHECKING FOR PDC ALREDY EXIST BUT VOUCHER TYPE IS NOT PDCR...
@@ -1723,14 +1622,14 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 									DB::table('pdc_issued')
 													->where('entry_id', $attributes['je_id'][$key])
 													->where('entry_type','PV')
-													->update([ 	'deleted_at'  => now() ]);
+													->update([ 	'deleted_at'  => date('Y-m-d H:i:s') ]);
 								
 							}
 							
-							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key],'bank_id' => $attributes['bank_id'][$key],'account_id' => $attributes['account_id'][$key] ]);
+							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!='' && $attributes['group_id'][$key]=='PDCI'){
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key],'bank_id' => $attributes['bank_id'][$key],'account_id' => '','ctype' => 1 ]);
 							}
-						}
+						} 
 					} else {
 						
 						//new entry....
@@ -1745,17 +1644,57 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								$paymentVoucherEntry->status = 1;
 								$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
 								$pv_entry_id = $paymentVoucherEntry->id;
+
+								//PDCI list inserting....
+								if($attributes['group_id'][$key]=='PDCI') {
+									
+									$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+									if($attributes['partyac_id'][$key]=='') {
+										$party_id = '';
+										$ctrow = DB::table('payment_voucher_entry')->where('payment_voucher_id',$this->payment_voucher->id)
+														->where('entry_type','Dr')->where('status',1)
+														->where('deleted_at','0000-00-00 00:00:00')
+														->select('account_id')->first();
+										if($ctrow) {
+											$party_id = $ctrow->account_id;
+										}
+									} else
+										$party_id = $attributes['partyac_id'][$key];
+
+									$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cr_account_master_id')->first();
+									DB::table('pdc_issued')
+											->insert([ 'voucher_id' 	=>  $this->payment_voucher->id,
+														'voucher_type'   => 'CB',
+														'cr_account_id' => ($acrow)?$acrow->id:0,
+														'dr_account_id' => $attributes['account_id'][$key],
+														'reference'  => $attributes['reference'][$key],
+														'amount'   			=> $attributes['line_amount'][$key],
+														'status' 			=> 0,
+														'created_at' 		=> date('Y-m-d H:i:s'),
+														'created_by' 		=> Auth::User()->id,
+														'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
+														'supplier_id' => $party_id,
+														'cheque_no' => $attributes['cheque_no'][$key],
+														'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
+														'voucher_no' => $attributes['voucher_no'],
+														'description' => $attributes['description'][$key],
+														'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
+														'entry_id' => $pv_entry_id,
+														'entry_type' => 'PV',
+														'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
+													]);
+								}
 							}
 							
 							//transactions insert................
-							if($attributes['purchase_invoice_id'][$key]!='')
+							if(isset($attributes['purchase_invoice_id'][$key]) && $attributes['purchase_invoice_id'][$key]!='')
 							{
 								$paymentVoucherTr = new PaymentVoucherTr();
 								
 								$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
-								$paymentVoucherTr->purchase_invoice_id = $attributes['purchase_invoice_id'][$key];
-								$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
-								$paymentVoucherTr->bill_type = $attributes['bill_type'][$key];
+								$paymentVoucherTr->purchase_invoice_id = isset($attributes['purchase_invoice_id'][$key])?$attributes['purchase_invoice_id'][$key]:'';
+								$paymentVoucherTr->assign_amount = isset($attributes['line_amount'][$key])?$attributes['line_amount'][$key]:'';
+								$paymentVoucherTr->bill_type = isset($attributes['bill_type'][$key])?$attributes['bill_type'][$key]:'';
 								$paymentVoucherTr->status = 1;
 								$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
 
@@ -1770,16 +1709,16 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
 							
 							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id' => $attributes['account_id'][$key] ]);
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,'account_id'=> '','ctype' => 1 ]);
 							}
 						}
 					}
 				}
 				
-				DB::table('payment_voucher_entry')
+				/*DB::table('payment_voucher_entry')
 							->where('payment_voucher_id', $id)
 							->where('entry_type','Cr')
-							->update(['reference' => $refs]);
+							->update(['reference' => $refs]);*/
 							
 				//manage removed items...
 				if($attributes['remove_item']!='')
@@ -1789,12 +1728,14 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					foreach($arrids as $id) {
 						$row = DB::table('payment_voucher_entry')->where('id', $id)->first();
 						if($row) {
-							DB::table('payment_voucher_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => now()]);
+							DB::table('payment_voucher_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+							DB::table('pdc_issued')->where('entry_id',$id)->where('entry_type','PV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 							
 							//clear purchase invoice bills...
 							$invs = DB::table('payment_voucher_tr')->where('payment_voucher_entry_id', $id)->select('id','purchase_invoice_id','assign_amount','bill_type')->get();
 							if($invs) {
-								DB::table('payment_voucher_tr')->where('payment_voucher_entry_id',$id)->update(['status' => 0, 'deleted_at' => now()]);
+								DB::table('payment_voucher_tr')->where('payment_voucher_entry_id',$id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+								
 								foreach($invs as $inv) {
 									if($inv->bill_type=='PI')
 										DB::table('purchase_invoice')->where('id',$inv->purchase_invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$inv->assign_amount) ]);
@@ -1812,7 +1753,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							
 							//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
 							if($row->bank_id!=0 && $row->cheque_no!='') {
-								DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('account_id', $row->account_id)->delete();
+								DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('ctype', 1)->delete();
 							}
 						}
 			
@@ -1820,21 +1761,59 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				}
 			}
 			
-			$difference = $dr_amount - $cr_amount;
-			if($difference==0.00) { //JN1
+			$difference = round($dr_amount - $cr_amount, 2);
+			if($difference==0) { //JN1
 				$this->payment_voucher->voucher_date  = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 				$this->payment_voucher->voucher_type = $voucher_type;
 				$this->payment_voucher->debit = $attributes['debit'];//$dr_amount;
 				$this->payment_voucher->credit = $attributes['credit'];//$cr_amount;
 				$this->payment_voucher->difference = $difference;
-				$this->payment_voucher->modify_at = now();
+				$this->payment_voucher->modify_at = date('Y-m-d H:i:s');
 				$this->payment_voucher->modify_by = Auth::User()->id;
 				$this->payment_voucher->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
 				$this->payment_voucher->trn_no = isset($attributes['trn_no'])?$attributes['trn_no']:'';
 				$this->payment_voucher->fill($attributes)->save();
 			} 
 			else {
-				throw new ValidationException('Payment entry validation error! Please try again.');
+				// Fetch all valid (non-deleted) entries
+				$entries = DB::table('payment_voucher_entry')
+					->where('payment_voucher_id', $id)
+					->where('status', 1)
+					->where('deleted_at', '0000-00-00 00:00:00')
+					->get();
+
+				foreach ($entries as $row) {
+					// check if account_transaction exists
+					$exists = DB::table('account_transaction')
+						->where('voucher_type', 'PV')
+						->where('voucher_type_id', $row->id)
+						->exists();
+
+					$data = [
+						'account_master_id' => $row->account_id,
+						'transaction_type'  => $row->entry_type,
+						'amount'            => round($row->amount, 2),
+						'description'       => $row->description,
+						'reference'         => $this->payment_voucher->voucher_no,
+						'reference_from'    => $row->reference,
+						'invoice_date'      => $this->payment_voucher->voucher_date,
+						'department_id'     => $row->department_id ?? null,
+						'status'            => 1,
+						'deleted_at'        => '0000-00-00 00:00:00',
+						'modify_at'         => date('Y-m-d H:i:s'),
+						'modify_by'         => Auth::user()->id,
+					];
+
+					if (!$exists) {
+						DB::table('account_transaction')->insert(array_merge($data, [
+							'voucher_type'    => 'PV',
+							'voucher_type_id' => $row->id,
+							'created_at'      => date('Y-m-d H:i:s'),
+							'created_by'      => Auth::user()->id,
+							'version_no'	  => $attributes['version_no']
+						]));
+					} 
+				}
 			}
 		
 			DB::commit();
@@ -1860,12 +1839,16 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				{
 					if($row->entry_type=='Cr') {
 						$account_id = $row->account_id; $amount = $row->amount;
-						
-						
-						if($this->payment_voucher->voucher_type=='PDCI')
+						if($this->payment_voucher->voucher_type=='PDCI') {
+							DB::table('pdc_issued')->where('entry_id',$row->id)->where('entry_type','PV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 							DB::table('account_master')->where('id', $row->account_id)
 													   ->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')'), 'pdc_amount' => DB::raw('IF(pdc_amount < 0, pdc_amount + '.$row->amount.', pdc_amount - '.$row->amount.')')]);
-						else
+							
+							//DELETE CHEQUE NO...
+							if($row->cheque_no!='' && $row->bank_id!='' && $row->account_id!='') {
+								DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('ctype',1)->delete();
+							}
+						} else
 							DB::table('account_master')->where('id', $row->account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$row->amount)]);
 						
 					} else
@@ -1874,7 +1857,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					
 					//ED12
 					//update sales invoice entry....
-					$entry = DB::table('payment_voucher_tr')->where('payment_voucher_entry_id', $row->id)->where('status',1)->whereNull('deleted_at')->get();
+					$entry = DB::table('payment_voucher_tr')->where('payment_voucher_entry_id', $row->id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
 				   
 					if($entry) {
 						foreach($entry as $ent) {
@@ -1884,25 +1867,23 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								DB::table('opening_balance_tr')->where('id', $ent->purchase_invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
 							else if($ent->bill_type=='PIN')
 								DB::table('journal')->where('id', $ent->purchase_invoice_id)->update(['is_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-							
 							else if($ent->bill_type=='OC')
 								DB::table('pi_other_cost')->where('id', $ent->purchase_invoice_id)->update(['is_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-							
 							else if($ent->bill_type=='PS')
 								DB::table('purchase_split')->where('id', $ent->purchase_invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
 							
-							DB::table('payment_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => now() ]);
+							DB::table('payment_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
 						}
 					}
 					
-					 DB::table('payment_voucher_entry')->where('id', $row->id)->update(['status' => 0,'deleted_at' => now() ]);
+					 DB::table('payment_voucher_entry')->where('id', $row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id]);
 					 
 					//Transaction update....
-					DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => now(), 'deleted_by' => Auth::User()->id  ]);
+					DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::User()->id  ]);
 					
 					//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
 					if($row->bank_id!=0 && $row->cheque_no!='') {
-						DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('account_id',$row->account_id)->delete();
+						DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('ctype',1)->delete();
 					}
 				}
 			}
@@ -1911,90 +1892,16 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			if($this->payment_voucher->opening_balance_id > 0) {
 				
 				DB::table('opening_balance_tr')->where('id', $this->payment_voucher->opening_balance_id)->update(['status' => 0, 'deleted_at' => '0000-00-00 00:00:00']);
-				DB::table('account_transaction')->where('voucher_type', 'OBD')->where('voucher_type_id', $this->payment_voucher->opening_balance_id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id ]);
+				DB::table('account_transaction')->where('voucher_type', 'OBD')->where('voucher_type_id', $this->payment_voucher->opening_balance_id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 				
 				DB::table('account_master')->where('id', $account_id)->update(['cl_balance' => DB::raw('op_balance - '.$amount), 'op_balance' => DB::raw('op_balance - '.$amount)]);
 				
 				DB::table('account_transaction')->where('voucher_type', 'OB')->where('voucher_type_id', $account_id)->where('account_master_id',$account_id)->update(['amount' => 0]);
 			}
 					
-			
+			DB::table('payment_voucher')->where('id', $id)->update(['deleted_by' => Auth::User()->id   ]);
 			$this->payment_voucher->delete();
 		
-			DB::commit();
-			return true;
-			
-		} catch (\Exception $e) {
-			DB::rollback();
-			return false;
-		}
-		
-	}
-	public function deleteold($id)
-	{
-		$this->payment_voucher = $this->payment_voucher->find($id);
-		
-		DB::beginTransaction();
-		try {
-			$rows = DB::table('payment_voucher_entry')->where('payment_voucher_id', $id)->where('status',1)->get();
-			if($rows) {
-				foreach($rows as $row)
-				{
-					if($row->entry_type=='Cr') {
-						$account_id = $row->account_id; $amount = $row->amount;
-						if($this->payment_voucher->voucher_type=='PDCI')
-							DB::table('account_master')->where('id', $row->account_id)
-													   ->update(['cl_balance' => DB::raw('cl_balance + '.$row->amount), 'pdc_amount' => DB::raw('pdc_amount - '.$row->amount)]);
-						else
-							DB::table('account_master')->where('id', $row->account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$row->amount)]);
-					} else 
-						DB::table('account_master')->where('id', $row->account_id)->update(['cl_balance' => DB::raw('cl_balance + '.$row->amount)]);
-					
-						
-					//update sales invoice entry....
-					$entry = DB::table('payment_voucher_tr')->where('payment_voucher_entry_id', $row->id)->where('status',1)->get();
-					if($entry) {
-						foreach($entry as $ent) {
-							if($ent->bill_type=='PI')
-								DB::table('purchase_invoice')->where('id', $ent->purchase_invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-							else if($ent->bill_type=='OB')
-								DB::table('opening_balance_tr')->where('id', $ent->purchase_invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-							else if($ent->bill_type=='PIN')
-								DB::table('journal')->where('id', $ent->purchase_invoice_id)->update(['is_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-							else if($ent->bill_type=='OC')
-								DB::table('pi_other_cost')->where('id', $ent->purchase_invoice_id)->update(['is_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-							else if($ent->bill_type=='PS')
-								DB::table('purchase_split')->where('id', $ent->purchase_invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-							
-							DB::table('payment_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => now() ]);
-						}
-					}
-					
-					DB::table('payment_voucher_entry')->where('payment_voucher_id', $row->id)->update(['status' => 0,'deleted_at' => now() ]);
-					
-					//Transaction update....
-					DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id ]);
-					
-					//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
-					if($row->bank_id!=0 && $row->cheque_no!='') {
-						DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('account_id',$row->account_id)->delete();
-					}
-				}
-			}
-			
-			//clear opening balanace transaction details table.....
-			if($this->payment_voucher->opening_balance_id > 0) {
-				
-				DB::table('opening_balance_tr')->where('id', $this->payment_voucher->opening_balance_id)->update(['status' => 0, 'deleted_at' => '0000-00-00 00:00:00']);
-				DB::table('account_transaction')->where('voucher_type', 'OBD')->where('voucher_type_id', $this->payment_voucher->opening_balance_id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id ]);
-				
-				DB::table('account_master')->where('id', $account_id)->update(['op_balance' => DB::raw('op_balance + '.$amount)]);
-				
-				DB::table('account_transaction')->where('voucher_type', 'OB')->where('voucher_type_id', $account_id)->where('account_master_id',$account_id)->update(['amount' => 0]);
-			}
-			
-			$this->payment_voucher->delete();
-			
 			DB::commit();
 			return true;
 			
@@ -2220,6 +2127,18 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
 			$query = $this->payment_voucher->where('payment_voucher.status',1)->where('payment_voucher.opening_balance_id',0);
+			
+			if( $date_from!='' && $date_to!='' ) { 
+					$query->whereBetween('payment_voucher.voucher_date', array($date_from, $date_to));
+				}
+				if(isset($attributes['dept_id']) && $attributes['dept_id']!=''){
+				$query->where('payment_voucher.department_id', $attributes['dept_id']);
+				}
+				
+				
+				if(isset($attributes['voucher_type']) && $attributes['voucher_type']!='') { 
+					$query->where('payment_voucher.voucher_type', $attributes['voucher_type']);
+				}
 				$query->select('payment_voucher.id','payment_voucher.voucher_no','payment_voucher.voucher_date','payment_voucher.tr_description',
 									 'payment_voucher.debit AS amount','payment_voucher.from_jv','payment_voucher.voucher_type',
 									 DB::raw("(SELECT account_master.master_name FROM payment_voucher_entry 
@@ -2237,15 +2156,200 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					->where('account_master_id', $attributes['account_id'])
 					->where('transaction_type', $actype)
 					->update([  'amount'   			=> $entry['amount'],
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'reference'			=> $attributes['voucher_no'],
-								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
+								//'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $attributes['refno'][$key]
 							]);
 	}
 	
 	public function advance_set($attributes)
+	{
+		DB::beginTransaction(); //balance_amount  purchase_invoice
+		try {
+			//echo '<pre>';print_r($attributes);exit;
+			foreach($attributes['tagadv'] as $row => $val)
+			{
+				$ar =1;
+				foreach($attributes['tag'] as $k => $key) { 
+					
+					if($ar==1) {
+						
+						$pv_entry_id = isset($attributes['doc_id'][$val])?$attributes['doc_id'][$val]:'';  //$attributes['payment_voucher_entry_id'][$row];
+						$doc_type = isset($attributes['type'][$val])?$attributes['type'][$val]:''; 
+						if($attributes['bill_type'][$val]=='OB') {
+
+							if($attributes['type'][$val]=='PV') {
+								$paymentVoucherEntry = PaymentVoucherEntry::find( $pv_entry_id );
+								$this->payment_voucher = PaymentVoucher::find( $paymentVoucherEntry->payment_voucher_id ); 
+								
+								$rvEntry['reference'] = $attributes['refno'][$key];
+								$rvEntry['amount'] = ($paymentVoucherEntry->amount < $attributes['line_amount'][$key])?$paymentVoucherEntry->amount:$attributes['line_amount'][$key];
+								$rvEntry['is_onaccount'] = 0;
+								$paymentVoucherEntry->update($rvEntry);
+								
+								$attributes['voucher_no'] = $this->payment_voucher->voucher_no;
+								$attributes['voucher_date'] = $this->payment_voucher->voucher_date;
+								$attributes['account_id'] = $paymentVoucherEntry->account_id;
+								//update account Dr transactions...
+								$this->setAccountTransactionAdvSetUpdate($attributes, $paymentVoucherEntry->id, 'PV', 'Dr', $key, $rvEntry);
+
+							} else if($attributes['type'][$val]=='JV' || $attributes['type'][$val]=='PIN') {
+								
+								$journalEntry = JournalEntry::find( $pv_entry_id );
+								$this->journal = Journal::find( $journalEntry->journal_id ); 
+								
+								$jvEntry['reference'] = $attributes['refno'][$key];
+								$jvEntry['amount'] = $attributes['line_amount'][$key];
+								$jvEntry['is_onaccount'] = 0;
+								$journalEntry->update($jvEntry);
+								$attributes['voucher_no'] = $this->journal->voucher_no;
+								$attributes['voucher_date'] = $this->journal->voucher_date;
+								$attributes['account_id'] = $this->journal->account_id;
+								//update account Dr transactions...
+								$this->setAccountTransactionAdvSetUpdate($attributes, $journalEntry->id, $attributes['type'][$val], 'Dr', $key, $jvEntry);
+								
+							} else if($attributes['type'][$val]=='OBD') {
+							    
+							    $obtr = DB::table('opening_balance_tr')->find($pv_entry_id);
+								DB::table('opening_balance_tr')
+												->where('id', $obtr->id)
+												->update(['reference_no' => $attributes['refno'][$key], 'amount_transfer' => 1, 'balance_amount' => 0]);
+												
+									DB::table('account_transaction')
+												->where('voucher_type','OBD')
+												->where('voucher_type_id',$obtr->id)
+												->where('account_master_id',$obtr->account_master_id)
+												//->where('reference', $obtr->reference_no)
+												->update(['reference_from' => $attributes['refno'][$key]]);
+							}
+							
+							$this->setTransactionStatusAdvSet($attributes, $row, $key, $val);
+							
+						} else if($attributes['bill_type'][$val]=='PR') { //JN23
+							
+							if($attributes['actual_amountadv'][$k]==$attributes['advance_amount'][$k]) { 
+								
+								$srrow = DB::table('purchase_return')->where('id',$attributes['purchase_return_id'][$k])
+													->select('supplier_id','voucher_no')->first();
+								DB::table('purchase_return')
+											->where('id', $attributes['purchase_return_id'][$k])
+											->update(['balance_amount' => 0, 'amount_transfer' => 1]);
+											
+								DB::table('account_transaction')
+												->where('voucher_type','SR')
+												->where('account_master_id',$srrow->supplier_id)
+												->where('reference', $srrow->voucher_no)
+												->update(['reference_from' => $attributes['refno'][$key] ]);
+							}
+							
+							$this->setTransactionStatusAdvSet($attributes, $row, $key, $val);
+						}
+						
+
+					} else { //else $ar==2
+						
+						//if($attributes['line_amount'][$key] < $attributes['advance_amount'][$row]) {
+							
+							if($attributes['type'][$val]=='PV') {
+								
+								$paymentVoucherEntry = new PaymentVoucherEntry();
+								$arrResult = $this->setEntryInputValue($attributes, $paymentVoucherEntry, $ar, $key);
+								$paymentVoucherEntry->status = 1;
+								$this->payment_voucher->PaymentVoucherAdd()->save($paymentVoucherEntry);
+								$pv_entry_id = $paymentVoucherEntry->id;
+								
+								$status = 1;//$attributes['status'];
+								/*if($attributes['status']==0) {
+									if($attributes['debit'] > 25000) {
+										$status = 0;
+									} else
+										$status = 1;
+								}*/
+
+								//update account Dr transactions...
+								DB::table('account_transaction')
+									->insert([  'voucher_type' 		=> $attributes['type'][$val],
+												'voucher_type_id'   => $pv_entry_id,
+												'account_master_id' => $attributes['supplier_id'],
+												'transaction_type'  => 'Dr',
+												'amount'   			=> $attributes['line_amount'][$key],
+												'status' 			=> $status,
+												'created_at' 		=> date('Y-m-d H:i:s'),
+												'created_by' 		=> Auth::User()->id,
+												'reference'			=> $this->payment_voucher->voucher_no,
+												'invoice_date'		=> $this->payment_voucher->voucher_date,
+												'reference_from'	=> $attributes['refno'][$key],
+												'version_no'		=> $attributes['version_no']
+											]);
+											
+								$paymentVoucherTr = new PaymentVoucherTr();
+								$paymentVoucherTr->payment_voucher_entry_id = $pv_entry_id;
+								$paymentVoucherTr->purchase_invoice_id = $attributes['purchase_invoice_id'][$key];
+								$paymentVoucherTr->assign_amount = $attributes['line_amount'][$key];
+								$paymentVoucherTr->bill_type = $attributes['bill_type'][$val];
+								$paymentVoucherTr->status = 1;
+								$paymentVoucherEntry->PaymentVoucherTrAdd()->save($paymentVoucherTr);
+								
+							} else if($attributes['type'][$val]=='JV' || $attributes['type'][$val]=='PIN') {
+								
+								$journalEntry = new JournalEntry();
+								$this->setTrInputValue($attributes, $journalEntry, $key);
+								$journalEntry->status = 1;
+								$this->journal->JournalAdd()->save($journalEntry);
+								$jv_entry_id = $journalEntry->id;
+								
+								$status = 1;//$attributes['status'];
+								/*if($attributes['status']==0) {
+									if($attributes['debit'] > 25000) {
+										$status = 0;
+									} else
+										$status = 1;
+								}*/
+
+								//update account Dr transactions...
+								DB::table('account_transaction')
+									->insert([  'voucher_type' 		=> $attributes['type'][$val],
+												'voucher_type_id'   => $jv_entry_id,
+												'account_master_id' => $attributes['supplier_id'],
+												'transaction_type'  => 'Dr',
+												'amount'   			=> $attributes['line_amount'][$key],
+												'status' 			=> $status,
+												'created_at' 		=> date('Y-m-d H:i:s'),
+												'created_by' 		=> Auth::User()->id,
+												'reference'			=> $this->journal->voucher_no,
+												'invoice_date'		=> $this->journal->voucher_date,
+												'reference_from'	=> $attributes['refno'][$key],
+												'version_no'		=> $attributes['version_no']
+											]);
+											
+							}
+							
+							$this->setTransactionStatusAdvSet($attributes, $row, $key, $val);
+						//}
+						
+						
+					}
+					
+					/* if($attributes['tr_type'][$val]=='Dr')		
+						$this->setTransactionStatusAdvSetOB($attributes, $row, $key, $val); */
+					
+					$ar = 2;
+				}
+				
+			}
+			
+			DB::commit();
+			return true;
+		} catch (\Exception $e) {
+		  
+		  DB::rollback(); echo $e->getLine().' '.$e->getMessage();exit;
+		  return false;
+		}
+	}
+	
+	public function advance_set2($attributes)
 	{
 		DB::beginTransaction(); //balance_amount  purchase_invoice
 		try {
@@ -2353,11 +2457,12 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 												'transaction_type'  => 'Dr',
 												'amount'   			=> $attributes['line_amount'][$key],
 												'status' 			=> $status,
-												'created_at' 		=> now(),
+												'created_at' 		=> date('Y-m-d H:i:s'),
 												'created_by' 		=> Auth::User()->id,
 												'reference'			=> $this->payment_voucher->voucher_no,
 												'invoice_date'		=> $this->payment_voucher->voucher_date,
-												'reference_from'	=> $attributes['refno'][$key]
+												'reference_from'	=> $attributes['refno'][$key],
+												'version_no'		=> $attributes['version_no']
 											]);
 											
 								$receiptVoucherTr = new PaymentVoucherTr();
@@ -2392,11 +2497,12 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 												'transaction_type'  => 'Dr',
 												'amount'   			=> $attributes['line_amount'][$key],
 												'status' 			=> $status,
-												'created_at' 		=> now(),
+												'created_at' 		=> date('Y-m-d H:i:s'),
 												'created_by' 		=> Auth::User()->id,
 												'reference'			=> $this->journal->voucher_no,
 												'invoice_date'		=> $this->journal->voucher_date,
-												'reference_from'	=> $attributes['refno'][$key]
+												'reference_from'	=> $attributes['refno'][$key],
+												'version_no'		=> $attributes['version_no']
 											]);
 											
 							}
@@ -2553,13 +2659,13 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			$id = null;
 			if($pdcs) {
 				$id = $pdcs->id;
-				DB::table('pdc_issued')->where('id',$id)->update(['status' => 1,'dr_bank_id' => $trnarr['crid'][$key] ]); //JL27
+				DB::table('pdc_issued')->where('id',$id)->update(['status' => 1,'dr_bank_id' => $trnarr['crid'][$key], 'voucher_date' => date('Y-m-d', strtotime($trnarr['vdate'])) ]); //JL27
 				
 				$trans = DB::table('account_transaction')
 									->where('voucher_type', 'CB')
 									->where('voucher_type_id', $id)
 									->where('status',1)
-									->whereNull('deleted_at')
+									->where('deleted_at','0000-00-00 00:00:00')
 									->get();
 				if($trans) {
 					if($this->setAccountTransactionReSubmit($id, $trnarr, 'Cr', $key))
@@ -2612,9 +2718,9 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 									'reference'  => $attributes['reference'][$key],
 									'amount'   	=> $attributes['amount'][$key],
 									'status' 	=> 1,
-									'created_at' => now(),
+									'created_at' => date('Y-m-d H:i:s'),
 									'created_by' => Auth::User()->id,
-									'voucher_date'	=> date('Y-m-d', strtotime($attributes['voucher_date'])),
+									'voucher_date'	=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 									'supplier_id' => $attributes['supplier_id'][$key]
 									]);
 								
@@ -2660,8 +2766,8 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		$account_master_id = ($type=='Cr')?$trans['crid'][$key]:$trans['drid'][$key];
 		$description = ($type=='Dr')?$trans['cname'][$key]:'';
 		
-		$status = $trans['status'];
-		if($trans['status']==0) {
+		$status = (isset($trans['status']))?$trans['status']:1;
+		if(isset($trans['status']) && $trans['status']==0) {
 			if($trans['debit'] > 25000) {
 				$status = 0;
 			} else 
@@ -2675,12 +2781,13 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							'transaction_type'  => $type,
 							'amount'   			=> $trans['amt'][$key],
 							'status' 			=> $status,
-							'created_at' 		=> now(),
+							'created_at' 		=> date('Y-m-d H:i:s'),
 							'created_by' 		=> Auth::User()->id,
 							'description'		=> $description,
 							'reference'			=> $trans['id'][$key],
 							'invoice_date'		=> date('Y-m-d', strtotime($trans['vdate'])),
-							'reference_from'	=> $trans['ref'][$key] 
+							'reference_from'	=> $trans['ref'][$key],
+							'version_no'		=> $attributes['version_no']
 						]);
 						
 		if($type=='Dr') {
@@ -2714,11 +2821,12 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							'transaction_type'  => $type,
 							'amount'   			=> $attributes['amount'][$key],
 							'status' 			=> $status,
-							'created_at' 		=> now(),
+							'created_at' 		=> date('Y-m-d H:i:s'),
 							'created_by' 		=> Auth::User()->id,
 							'reference'			=> $attributes['id'][$key],
 							'invoice_date'		=> date('Y-m-d', strtotime($attributes['voucher_date'])),
-							'reference_from'	=> $attributes['reference'][$key] 
+							'reference_from'	=> $attributes['reference'][$key],
+							'version_no'		=> $attributes['version_no']
 						]);
 						
 		if($type=='Cr') {
@@ -2737,8 +2845,8 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		$account_master_id = ($type=='Cr')?$trnarr['crid'][$key]:$trnarr['drid'][$key];
 		$description = ($type=='Dr')?$trnarr['cname'][$key]:'';
 		
-		$status = $attributes['status'];
-		if($attributes['status']==0) {
+		$status = (isset($trans['status']))?$trans['status']:1;
+		if(isset($trans['status']) && $trans['status']==0) {
 			if($attributes['debit'] > 25000) {
 				$status = 0;
 			} else
@@ -2750,7 +2858,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 										->update([  'transaction_type'  => $type,
 													'amount'   			=> $trnarr['amt'][$key],
 													'status'			=> $status,
-													'modify_at' 		=> now(),
+													'modify_at' 		=> date('Y-m-d H:i:s'),
 													'modify_by' 		=> Auth::User()->id,
 													'deleted_at'		=> '0000-00-00 00:00:00',
 													'description'		=> $description,
@@ -2787,7 +2895,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 										->update([  'transaction_type'  => $type,
 													'amount'   			=> $attributes['amount'][$key],
 													'status'			=> $status,
-													'modify_at' 		=> now(),
+													'modify_at' 		=> date('Y-m-d H:i:s'),
 													'modify_by' 		=> Auth::User()->id,
 													'deleted_at'		=> '0000-00-00 00:00:00',
 													'reference'			=> $attributes['id'][$key],
@@ -2818,9 +2926,9 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				
 				DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $attributes['id'][$val])
 													->update([  'status' 			=> 0,
-																'modify_at'			=> now(),
-																'deleted_at' 		=> now(),
-																'other_info'        => now()
+																'modify_at'			=> date('Y-m-d H:i:s'),
+																'deleted_at' 		=> date('Y-m-d H:i:s'),
+																'other_info'        => date('Y-m-d H:i:s')
 															]);
 															
 				$rvEntry = DB::table('payment_voucher_entry')->where('payment_voucher_id',$attributes['id'][$val])->get();
@@ -2845,14 +2953,14 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					}
 					
 					DB::table('journal_entry')->where('id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 								
 					DB::table('account_transaction')->where('voucher_type',"JV")->where('voucher_type_id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 				} 
 				
 				DB::table('journal')->where('id',$attributes['id'][$val])
-							->update(['status' => 0, 'deleted_at' => now()]);
+							->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 							
 			} else if($attributes['voucher_type'][$val]=="PC") {
 				
@@ -2870,14 +2978,14 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					}
 					
 					DB::table('petty_cash_entry')->where('id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 								
 					DB::table('account_transaction')->where('voucher_type',"PC")->where('voucher_type_id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 				} 
 				
 				DB::table('petty_cash')->where('id',$attributes['id'][$val])
-							->update(['status' => 0, 'deleted_at' => now()]);
+							->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 							
 			} 
 			
@@ -2902,11 +3010,30 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 						->join('account_master', 'account_master.id', '=', 'payment_voucher_entry.account_id')
 						->leftJoin('account_master AS AM', 'AM.id', '=', 'payment_voucher_entry.party_account_id')
 						->leftJoin('payment_voucher_tr AS PVT', 'PVT.payment_voucher_entry_id', '=', 'payment_voucher_entry.id')
+						->leftJoin('jobmaster AS J', 'J.id', '=', 'payment_voucher_entry.job_id')
 						->where('payment_voucher_entry.status', 1)
 						->orderBy('payment_voucher_entry.id', 'ASC')
 						->select('payment_voucher_entry.*','account_master.master_name','account_master.category','AM.master_name AS party_name',
-								 'AM.id AS party_id','PVT.purchase_invoice_id','PVT.id AS tr_entry_id','PVT.bill_type')->get();
+								 'AM.id AS party_id','PVT.purchase_invoice_id','PVT.id AS tr_entry_id','PVT.bill_type','J.code')->get();
 						
+		
+	}
+	
+		public function getapprovalList()
+	{
+		return $query = $this->payment_voucher->where('payment_voucher.status',1)->where('payment_voucher.opening_balance_id',0)->where('payment_voucher.approval_status',0)
+							->select('payment_voucher.id','payment_voucher.voucher_no','payment_voucher.voucher_date','payment_voucher.tr_description',
+									 'payment_voucher.debit AS amount','payment_voucher.from_jv','payment_voucher.voucher_type',
+									 DB::raw("(SELECT account_master.master_name FROM payment_voucher_entry 
+											   JOIN account_master ON(account_master.id = payment_voucher_entry.account_id)
+											   WHERE payment_voucher_entry.payment_voucher_id=payment_voucher.id 
+											   AND payment_voucher_entry.entry_type='Dr' LIMIT 0,1) AS debitor"),
+									 DB::raw("(SELECT account_master.master_name FROM payment_voucher_entry 
+											   JOIN account_master ON(account_master.id = payment_voucher_entry.account_id)
+											   WHERE payment_voucher_entry.payment_voucher_id=payment_voucher.id 
+											   AND payment_voucher_entry.entry_type='Cr' LIMIT 0,1) AS creditor"),'payment_voucher.is_transfer')
+									->orderBy('payment_voucher.id','DESC')
+									->get();
 		
 	}
 	
@@ -2941,19 +3068,25 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 									if($search) {
 										$query->where(function($query) use ($search){
 											 $query->where('AM.master_name','LIKE',"%{$search}%")
-												   ->orWhere('payment_voucher.voucher_no', 'LIKE',"%{$search}%");
+												   ->orWhere('payment_voucher.voucher_no', 'LIKE',"%{$search}%")
+												   ->orWhere('PE.description', 'LIKE',"%{$search}%")
+												   ->orWhere('PE.reference', 'LIKE',"%{$search}%");
 										});
 										
 										/* $query->where('payment_voucher.voucher_no','LIKE',"%{$search}%")
 											  ->orWhere('payment_voucher.voucher_date', 'LIKE',"%{$search}%"); */
 									}
 									
-							$query->select('payment_voucher.id','payment_voucher.voucher_no','payment_voucher.voucher_date','payment_voucher.tr_description',
-									 'payment_voucher.debit AS amount','payment_voucher.from_jv','payment_voucher.voucher_type',
+							$query->select('payment_voucher.id','payment_voucher.voucher_no','payment_voucher.voucher_date','payment_voucher.tr_description','payment_voucher.approval_status',
+									 'payment_voucher.debit AS amount','payment_voucher.from_jv','payment_voucher.voucher_type','PE.description','PE.reference',
 									 DB::raw("(SELECT account_master.master_name FROM payment_voucher_entry 
 											   JOIN account_master ON(account_master.id = payment_voucher_entry.account_id)
 											   WHERE payment_voucher_entry.payment_voucher_id=payment_voucher.id 
-											   AND payment_voucher_entry.entry_type='Dr' AND account_master.category='SUPPLIER' LIMIT 0,1) AS debitor"),
+											   AND payment_voucher_entry.entry_type='Dr' AND account_master.category IN('SUPPLIER','CASH','BANK') LIMIT 0,1) AS debitor"), //AND account_master.category='SUPPLIER'
+									DB::raw("(SELECT account_master.master_name FROM payment_voucher_entry 
+											   JOIN account_master ON(account_master.id = payment_voucher_entry.account_id)
+											   WHERE payment_voucher_entry.payment_voucher_id=payment_voucher.id 
+											   AND payment_voucher_entry.entry_type='Dr' LIMIT 0,1) AS debitor2"),
 									 DB::raw("(SELECT account_master.master_name FROM payment_voucher_entry 
 											   JOIN account_master ON(account_master.id = payment_voucher_entry.account_id)
 											   WHERE payment_voucher_entry.payment_voucher_id=payment_voucher.id 
@@ -2968,6 +3101,38 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 									else
 										return $query->count();
 		
+	}
+	
+	private function setTrInputValue($attributes, $journalEntryTr, $key) 
+	{
+				
+		$journalEntryTr->journal_id = $this->journal->id;
+		$journalEntryTr->account_id = $attributes['customer_id'];;
+		$journalEntryTr->description  = $attributes['customer_account'];
+		$journalEntryTr->reference  = $attributes['refno'][$key];
+		$journalEntryTr->entry_type  ='Cr';
+		$journalEntryTr->amount = $attributes['line_amount'][$key];
+			
+	}
+	
+	public function PdcIssuedDelete($id)
+	{
+        $pdcrow = DB::table('pdc_issued')->where('id', $id)->first();
+        if($pdcrow) {
+            DB::table('pdc_issued')->where('id', $id)->update(['status' => 0]);
+            //DB::table('account_transaction')->where('voucher_type', 'DB')->where('voucher_type_id', $id)->update(['status' => 0]);
+            //DB::table('pdc_issued')->where('id', $id)->delete();
+            DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $id)->delete();
+													
+			if($pdcrow->entry_type=='PV') {
+			    $rvEntry = DB::table('payment_voucher_entry')->where('id', $pdcrow->entry_id)->first();
+			    DB::table('payment_voucher')->where('id', $rvEntry->payment_voucher_id)->update(['is_transfer' => 0]);
+			    
+			} else if($pdcrow->entry_type=='JV') {
+			    $rvEntry = DB::table('journal_entry')->where('id', $pdcrow->entry_id)->first();
+			    DB::table('journal')->where('id', $rvEntry->journal_id)->update(['is_transfer' => 0]);
+			}
+        }
 	}
 	
 }

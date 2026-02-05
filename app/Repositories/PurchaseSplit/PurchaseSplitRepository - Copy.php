@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\PurchaseSplit;
+<?php namespace App\Repositories\PurchaseSplit;
 
 use App\Models\PurchaseSplit;
 use App\Models\PurchaseSplitItem;
@@ -10,10 +8,11 @@ use App\Exceptions\Validation\ValidationException;
 use App\Repositories\UpdateUtility;
 
 use Config;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
+use DB;
+use Session;
 use Auth;
 use Storage;
+
 
 class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplitInterface {
 	
@@ -51,7 +50,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		$this->purchase_split->is_fc = isset($attributes['is_fc'])?1:0;
 		$this->purchase_split->currency_id = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
 		$this->purchase_split->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
-		$this->purchase_split->department_id   = isset($attributes['department_id'])?$attributes['department_id']:'';
+		$this->purchase_split->department_id   = env('DEPARTMENT_ID');//isset($attributes['department_id'])?$attributes['department_id']:'';
 		$this->purchase_split->is_pettycash   = isset($attributes['is_pettycash'])?$attributes['is_pettycash']:'';
 		$this->purchase_split->foot_description   =(isset($attributes['foot_description']))?$attributes['foot_description']:'';
 		
@@ -156,7 +155,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		$amount = ($type=='LINE')?$attributes['line_total'][$key]:$arrResult['tax_total'];
 	//	echo '<pre>';print_r($amount);exit;
 		if($type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); 
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?env('DEPARTMENT_ID'):null); 
 			if($vatrow) {
 				$dr_acnt_id = $vatrow->collection_account;
 				$itemid = $itemid->id.'VAT'; 
@@ -173,7 +172,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								'transaction_type'  => 'Dr',
 								'amount'   			=> $amount,
 								'status' 			=> 1,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['item_description'][$key],
 								'reference'			=> $attributes['voucher_no'],
@@ -181,7 +180,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> $attributes['jobid'][$key],
 								'other_info'		=> $itemid,
 							]);
@@ -194,7 +193,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 	private function SetItemAccountTransactionUpdate($itemid, $amount, $key, $attributes, $type) {
 		
 		if($type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); 
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?env('DEPARTMENT_ID'):null); 
 			if($vatrow) {
 				$dr_acnt_id = $vatrow->collection_account;
 				$itemid = $itemid.'VAT';
@@ -216,7 +215,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> $attributes['jobid'][$key]
 							]);
 								
@@ -263,7 +262,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		if($amount!=0) {
 			
 			if($amount_type=='VAT') {
-				$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); 
+				$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?env('DEPARTMENT_ID'):null); 
 				
 				if($vatrow) {
 					$dr_acnt_id = $vatrow->collection_account;
@@ -273,7 +272,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 				$cr_acnt_id = $attributes['supplier_id'];
 			} else if($amount_type == 'DIS') {
 				if(Session::get('department')==1) { 
-					$vatrow = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('purdis_acid')->first();
+					$vatrow = DB::table('department_accounts')->where('department_id', env('DEPARTMENT_ID'))->select('purdis_acid')->first();
 					$cr_acnt_id = $vatrow->purdis_acid;
 				} else {
 					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Purchase')->where('status', 1)->first();
@@ -290,7 +289,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								'transaction_type'  => $type,
 								'amount'   			=> $amount,
 								'status' 			=> 1,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'],
 								'reference'			=> $attributes['voucher_no'],
@@ -298,7 +297,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> $fc_amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> (isset($attributes['job_id']))?$attributes['job_id']:''
 							]);
 			
@@ -313,7 +312,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 	private function setAccountTransactionUpdate($attributes, $amount, $voucher_id, $type, $amount_type=null, $key=null)
 	{
 		$cr_acnt_id = $dr_acnt_id = '';
-		$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null);
+		$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?env('DEPARTMENT_ID'):null);
 		if($amount!=0) {
 			if($amount_type=='VAT') {
 					//TAx code change..... account_id
@@ -328,7 +327,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 											'transaction_type'  => 'Dr',
 											'amount'   			=> $amount,
 											'status' 			=> 1,
-											'created_at' 		=> now(),
+											'created_at' 		=> date('Y-m-d H:i:s'),
 											'created_by' 		=> Auth::User()->id,
 											'description' 		=> $attributes['description'],
 											'reference'			=> $attributes['voucher_no'],
@@ -336,7 +335,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+											'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:''
 											]);
 											
 							$dr_acnt_id = $account_id = $vatrow->collection_account;
@@ -361,7 +360,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 											'transaction_type'  => 'Cr',
 											'amount'   			=> $amount,
 											'status' 			=> 1,
-											'created_at' 		=> now(),
+											'created_at' 		=> date('Y-m-d H:i:s'),
 											'created_by' 		=> Auth::User()->id,
 											'description' 		=> $attributes['description'],
 											'reference'			=> $attributes['voucher_no'],
@@ -369,7 +368,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+											'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:''
 											]);
 											
 							
@@ -404,7 +403,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 				
 			} else if($amount_type == 'DIS') {
 				if(Session::get('department')==1) { 
-					$vatrow = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('purdis_acid')->first();
+					$vatrow = DB::table('department_accounts')->where('department_id', env('DEPARTMENT_ID'))->select('purdis_acid')->first();
 					$cr_acnt_id = $vatrow->purdis_acid;
 				} else {
 					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Purchase')->where('status', 1)->first();
@@ -418,7 +417,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 					->where('voucher_type', 'PS')					
 					->update([  'account_master_id' => $account_id,
 								'amount'   			=> $amount,
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'],
 								'reference'			=> $attributes['voucher_no'],
@@ -426,7 +425,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:''
 								]);
 								
 			$this->objUtility->tallyClosingBalance(($type=='Cr')?$cr_acnt_id:$dr_acnt_id);
@@ -440,7 +439,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 					->where('account_master_id', $vatrow->collection_account)
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'PS')					
-						->update(['status' => 0, 'deleted_at' => now()]);
+						->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 						
 				$this->objUtility->tallyClosingBalance($vatrow->collection_account);
 						
@@ -450,7 +449,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 					->where('account_master_id', $vatrow->vatoutput_import)
 					->where('transaction_type' , 'Cr')
 					->where('voucher_type', 'PS')					
-						->update(['status' => 0, 'deleted_at' => now()]);
+						->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 								
 				$this->objUtility->tallyClosingBalance($vatrow->vatoutput_import);
 				
@@ -460,7 +459,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 					->where('account_master_id', $vatrow->vatinput_import)
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'PS')					
-						->update(['status' => 0, 'deleted_at' => now()]);
+						->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 								
 				$this->objUtility->tallyClosingBalance($vatrow->vatinput_import);
 						
@@ -489,12 +488,60 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		 DB::beginTransaction();
 		 try {
 			
-			if($this->setInputValue($attributes)) {
-				$this->purchase_split->status = 1;
-				$this->purchase_split->created_at = now();
-				$this->purchase_split->created_by = 1;
-				$this->purchase_split->fill($attributes)->save();
+						
+			//VOUCHER NO LOGIC.....................
+			// 2️⃣ Get the highest numeric part from voucher_master
+			$maxNumeric = DB::table('purchase_split')
+				->where('deleted_at', '0000-00-00 00:0:00')
+				->where('department_id', env('DEPARTMENT_ID'))
+				->where('status', 1)
+				->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+				->value('max_no');
+			
+			$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+			$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id', env('DEPARTMENT_ID'))->first();//echo '<pre>';print_r($accset);
+			$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+			//VOUCHER NO LOGIC.....................
+			//exit;
+			$maxRetries = 5; // prevent infinite loop
+			$retryCount = 0;
+			$saved = false;
+
+			while (!$saved && $retryCount < $maxRetries) {
+				try {
+					if ($this->setInputValue($attributes)) {
+
+						$this->purchase_split->status = 1;
+						$this->purchase_split->created_at = date('Y-m-d H:i:s');
+						$this->purchase_split->created_by = 1;
+						$this->purchase_split->fill($attributes)->save();
+						$saved = true; // success ✅
+
+					}	
+				} catch (\Illuminate\Database\QueryException $ex) {
+
+					// Check if it's a duplicate voucher number error
+					if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+						strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+						$maxNumeric = DB::table('purchase_split')
+							->where('deleted_at', '0000-00-00 00:0:00')
+							->where('department_id', env('DEPARTMENT_ID'))
+							->where('status', 1)
+							->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+							->value('max_no');
+						
+						$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+						$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id', env('DEPARTMENT_ID'))->first();
+						$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'], $attributes['prefix']);
+
+						$retryCount++;
+					} else {
+						throw $ex; //echo $ex;exit;// rethrow if different DB error
+					}
+				}
 			}
+			
 			
 			//invoice items insert
 			if($this->purchase_split->id && !empty( array_filter($attributes['account_id']))) { 
@@ -566,20 +613,6 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 				
 				
 				//update voucher no........
-				if( ($this->purchase_split->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) {  
-					//Update voucher no based on department or not...
-					if(Session::get('department')==1) { //if dept active...
-						 DB::table('account_setting')
-							->where('voucher_type_id', 23) 
-							->where('department_id', $attributes['department_id'])
-							->update(['voucher_no' => $attributes['voucher_no'] + 1]);
-					 } else {
-						 DB::table('account_setting')
-							->where('voucher_type_id', 23)
-							->update(['voucher_no' => $attributes['voucher_no'] + 1 ]); //DB::raw('voucher_no + 1')
-					 }
-					 
-				}
 				
 			}
 			
@@ -633,35 +666,35 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 						
 						if( isset($attributes['is_fc']) ) {
 							
-							$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) * $attributes['currency_rate'];
+							$linetotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) * (float)$attributes['currency_rate'];
 							
 							if($tax_code=="ZR") {
 								$tax        = 0;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key] * $attributes['currency_rate']) - $attributes['line_discount'][$key];
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key] * (float)$attributes['currency_rate']) - (float)$attributes['line_discount'][$key];
 								$taxtotal  = round($tax * $attributes['quantity'][$key] * $attributes['currency_rate'],2);
 								
 							} else {
-								$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+								$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 								$taxtotal  = round($tax * $attributes['quantity'][$key] * $attributes['currency_rate'], 2);
 							}
 							
 						} else {
 							
-							$linetotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]);
+							$linetotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]);
 							
 							if($tax_code=="ZR") {
 								$tax        = 0;
-								$itemtotal = ((int)$attributes['cost'][$key] * (int)$attributes['quantity'][$key]) -(int) $attributes['line_discount'][$key];
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) -(float) $attributes['line_discount'][$key];
 								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
 							} else {
-								$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
+								$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
+								$itemtotal = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (float)$attributes['line_discount'][$key];
 								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
 							}
 						}
 						
-						$discount = (isset($attributes['discount']))?$attributes['discount']:0;
+						$discount = (isset($attributes['discount']))?(float)$attributes['discount']:0;
 						
 						$vatPlus = 100;
 						$total = $attributes['line_total'][$key];
@@ -752,7 +785,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 				$remline_total = $remtax_total = 0;
 				foreach($arrids as $row) {
 					$itm = DB::table('purchase_split_item')->where('id', $row)->select('id','purchase_split_id','account_id')->first();
-					DB::table('purchase_split_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => now()]);
+					DB::table('purchase_split_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					
 					//REMOVE FROM TRANSACTION TABLE..
 					DB::table('account_transaction')->where('voucher_type','PS')->where('voucher_type_id',$itm->purchase_split_id)->where('account_master_id',$itm->account_id)
@@ -766,7 +799,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 			
 			if($this->setInputValue($attributes)) {
 				
-				$this->purchase_split->modify_at = now();
+				$this->purchase_split->modify_at = date('Y-m-d H:i:s');
 				$this->purchase_split->modify_by = 1;
 				$this->purchase_split->fill($attributes)->save();
 				
@@ -828,7 +861,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		try {
 			
 			//Transaction update....
-			DB::table('account_transaction')->where('voucher_type', 'PS')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id ]);
+			DB::table('account_transaction')->where('voucher_type', 'PS')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			
 			$this->objUtility->tallyClosingBalance( $this->purchase_split->supplier_id );
 			
@@ -837,7 +870,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 				$this->objUtility->tallyClosingBalance( $row->account_id );
 			}
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?env('DEPARTMENT_ID'):null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
 			if($vatrow) {
 				$this->objUtility->tallyClosingBalance($vatrow->collection_account);
 			}
@@ -876,8 +909,8 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 	public function getPIdata($did=null)
 	{
 		$query = $this->purchase_split->where('purchase_split.status',1);
-		if($did)
-			$query->where('purchase_split.department_id', $did);
+		//if($did)
+			$query->where('purchase_split.department_id', env('DEPARTMENT_ID'));
 				
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_split.supplier_id');
@@ -891,8 +924,8 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		public function getPSRdata($did=null)
 	{
 		$query = $this->purchase_split->where('purchase_split.status',1)->where('purchase_split.is_transfer',0);
-		if($did)
-			$query->where('purchase_split.department_id', $did);
+		//if($did)
+			$query->where('purchase_split.department_id',env('DEPARTMENT_ID'));
 				
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_split.supplier_id');
@@ -942,7 +975,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								   ->where('status',1)
 								   ->where('account_master_id', $supplier_id)
 								   ->where('amount','>',0)
-								   ->whereNull('deleted_at')
+								   ->where('deleted_at','0000-00-00 00:00:00')
 								   ->whereIn('amount_transfer',$arr)
 								   ->orderBY('tr_date', 'ASC')
 								   ->select('*','amount AS net_amount')
@@ -998,7 +1031,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		$arr = ($mod)?[0,1,2]:[0,2];
 		return DB::table('other_voucher_tr')->where('account_master_id', $supplier_id)
 										 ->whereIn('amount_transfer', $arr)
-										 ->where('status',1)->whereNull('deleted_at')
+										 ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 										 ->get();
 		
 	} //......May 15
@@ -1224,7 +1257,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
 		$invoice_from =(isset($attributes['invoice_from']))?$attributes['invoice_from']:'';	
 		$invoice_to = (isset($attributes['invoice_to']))?$attributes['invoice_to']:'';	
-		$department_id = (isset($attributes['department_id']))?$attributes['department_id']:'';	
+		$department_id = env('DEPARTMENT_ID');//(isset($attributes['department_id']))?$attributes['department_id']:'';	
 		$query = $this->purchase_split
 					->join('purchase_split_item AS POI', function($join) {
 							$join->on('POI.purchase_split_id','=','purchase_split.id');
@@ -1237,6 +1270,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 						->leftJoin('jobmaster AS J', function($join) {
 		 					$join->on('J.id','=','purchase_split.job_id');
 						 })
+						 ->where('purchase_split.department_id',env('DEPARTMENT_ID'))
 	 					->where('POI.status',1);
 									
 		if( $date_from!='' && $date_to!='' ) { 
@@ -1317,7 +1351,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 	
 	public function getItemLocation($id) {
 		
-		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->whereNull('deleted_at')->get();
+		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
 	}
 	
 	
@@ -1401,8 +1435,8 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
 		
 		$query = $this->purchase_split->where('purchase_split.status',1);
-		if($deptid!=0)
-			$query->where('purchase_split.department_id', $deptid);
+		//if($deptid!=0)
+			$query->where('purchase_split.department_id', env('DEPARTMENT_ID'));
 			
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_split.supplier_id');
@@ -1415,17 +1449,17 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		//CHECK DEPARTMENT.......
 		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
 		
-		$query = $this->purchase_split->where('purchase_split.status',1)
+		$query = $this->purchase_split->where('purchase_split.status',1)->where('purchase_split.department_id',env('DEPARTMENT_ID'))
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_split.supplier_id');
 						})
 						->leftjoin('jobmaster','jobmaster.id','=','purchase_split.job_id');
 						
 				if($deptid!=0) //dept chk
-					$query->where('purchase_split.department_id', $deptid);
+					$query->where('purchase_split.department_id', env('DEPARTMENT_ID'));
 				else {
 					if($dept!='' && $dept!=0) {
-						$query->where('purchase_split.department_id', $dept);
+						$query->where('purchase_split.department_id', env('DEPARTMENT_ID'));
 					}
 				}
 					
@@ -1518,9 +1552,9 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 	private function getVatAccounts($department_id=null) {
 		
 		if(Session::get('department')==1 && $department_id!=null) {
-			return DB::table('vat_department')->where('department_id', $department_id)->first();
+			return DB::table('vat_department')->where('department_id', env('DEPARTMENT_ID'))->first();
 		} else {
-			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
+			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		}
 	}
 	

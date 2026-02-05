@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\ReceiptVoucher;
+<?php namespace App\Repositories\ReceiptVoucher;
 
 use App\Models\ReceiptVoucher;
 use App\Models\ReceiptVoucherEntry;
@@ -13,9 +11,10 @@ use App\Exceptions\Validation\ValidationException;
 use App\Repositories\UpdateUtility;
 
 use Config;
-use Illuminate\Support\Facades\DB;
+use DB;
 use Auth;
-use Illuminate\Support\Facades\Session;
+use Session;
+
 
 class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVoucherInterface {
 	
@@ -75,9 +74,9 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 		$this->receipt_voucher->voucher_type  = $voucher_type;
 		$this->receipt_voucher->voucher_date  = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])); //date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->receipt_voucher->voucher_no  = $attributes['voucher_no'];
-		$this->receipt_voucher->depositor  = (isset($attributes['depositor']))?$attributes['depositor']:'';
-		$this->receipt_voucher->department_id  = (isset($attributes['department_id']))?$attributes['department_id']:'';
-		$this->receipt_voucher->salesman_id  = (isset($attributes['salesman_id']))?$attributes['salesman_id']:'';
+		$this->receipt_voucher->depositor  = (isset($attributes['depositor']))?$attributes['depositor'] ?? 0:'';
+		$this->receipt_voucher->department_id  = (isset($attributes['department_id']))?$attributes['department_id'] ?? 0:'';
+		$this->receipt_voucher->salesman_id  = (isset($attributes['salesman_id']))?$attributes['salesman_id'] ?? 0:'';
 		$this->receipt_voucher->sales_invoice_id  = isset($attributes['sales_invoice_id'][0])?$attributes['sales_invoice_id'][0]:'';
 		//echo '<pre>';print_r($attributes);exit; 
 		if($attributes['from_jv']==1)
@@ -105,10 +104,10 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			if($ar==1) {
 				$account_id = $attributes['dr_account_id'];
 				$description = $attributes['customer_account'];
-				$reference = ($refno=='')?(isset($attributes['is_onaccount'])?'Adv.':$refno):$refno;
+				$reference = ($refno=='')?(isset($attributes['is_onaccount'])?'ADV':$refno):$refno;
 				$trtype = 'Dr';
 				$amount = $attributes['amount'];
-				$jobid = $attributes['job_id'];
+				$jobid = $attributes['job_id'] ?? 0;
 				//$salesmanid = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
 				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
 			} else if($ar==2) {
@@ -117,7 +116,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				$reference = $attributes['refno'][$key];
 				$trtype = 'Cr'; //$attributes['acnttype'][$key];
 				$amount = $attributes['line_amount'][$key];
-				$jobid = $attributes['job_id'];
+				$jobid = $attributes['job_id'] ?? 0;
 				//$salesmanid = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
 				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
 			} else if($ar==3) {
@@ -135,7 +134,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				$reference = $refno;
 				$trtype = 'Cr';
 				$amount = $attributes['credit'];
-				$jobid = $attributes['job_id'];
+				$jobid = $attributes['job_id'] ?? 0;
 				//$salesmanid = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
 				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
 			} else if($ar==5) {
@@ -144,7 +143,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				$reference = $attributes['refno'][$key];
 				$trtype = 'Dr';
 				$amount = $attributes['line_amount'][$key];
-				$jobid = $attributes['job_id'];
+				$jobid = $attributes['job_id'] ?? 0;
 				//$salesmanid = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
 				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
 			}
@@ -161,12 +160,12 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			$receiptVoucherEntry->cheque_no = isset($attributes['cheque_no'])?$attributes['cheque_no']:'';
 			$receiptVoucherEntry->cheque_date = ($attributes['cheque_date']!='')?date('Y-m-d', strtotime($attributes['cheque_date'])):'';
 			$receiptVoucherEntry->bank_id = (isset($attributes['bank_id']) && $attributes['bank_id']!='')?$attributes['bank_id']:'';
-			$receiptVoucherEntry->party_account_id = isset($attributes['customer_id'])?$attributes['customer_id']:'';
+			$receiptVoucherEntry->party_account_id = isset($attributes['customer_id'])?$attributes['customer_id'] ?? 0:'';
 			
 			if($ar==4) {
 				$receiptVoucherEntry->is_onaccount = isset($attributes['is_onaccount'])?1:0;
 				$receiptVoucherEntry->amount = isset($attributes['is_onaccount'])?$attributes['on_amount']:$amount;
-				$receiptVoucherEntry->reference = 'Adv.';
+				$receiptVoucherEntry->reference = 'ADV';
 			}
 			return true;
 			
@@ -185,11 +184,11 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			$receiptVoucherEntry->reference = $attributes['reference'][$key];
 			$receiptVoucherEntry->entry_type = $attributes['account_type'][$key];
 			$receiptVoucherEntry->amount = $attributes['line_amount'][$key];
-			$receiptVoucherEntry->job_id = isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
-			$receiptVoucherEntry->salesman_id = isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key]:'';
-			$receiptVoucherEntry->department_id  = isset($attributes['department'][$key])?$attributes['department'][$key]:'';
+			$receiptVoucherEntry->job_id = isset($attributes['job_id'][$key])?$attributes['job_id'][$key] ?? 0:'';
+			$receiptVoucherEntry->salesman_id = isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key] ?? 0:'';
+			$receiptVoucherEntry->department_id  = isset($attributes['department'][$key])?$attributes['department'][$key] ?? 0:'';
 			$receiptVoucherEntry->is_fc = isset($attributes['is_fc'][$key])?$attributes['is_fc'][$key]:'';
-			$receiptVoucherEntry->currency_id = isset($attributes['currency_id'][$key])?$attributes['currency_id'][$key]:'';
+			$receiptVoucherEntry->currency_id = isset($attributes['currency_id'][$key])?$attributes['currency_id'][$key] ?? 0:'';
 			$receiptVoucherEntry->cheque_no = isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
 			$receiptVoucherEntry->cheque_date = (isset($attributes['cheque_date'][$key]) && $attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):''; //(isset($attributes['cheque_date'][$key]))?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
 			$receiptVoucherEntry->bank_id  = isset($attributes['bank_id'][$key])?$attributes['bank_id'][$key]:'';
@@ -200,7 +199,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				
 				if(strpos(strtoupper($attributes['description'][$key]), 'ADVANCE') !== false) {
 					$receiptVoucherEntry->is_onaccount = 1;
-					$receiptVoucherEntry->reference = ($attributes['reference'][$key]=='')?'Adv.':$attributes['reference'][$key];
+					$receiptVoucherEntry->reference = ($attributes['reference'][$key]=='')?'ADV':$attributes['reference'][$key];
 				} else {
 					$receiptVoucherEntry->is_onaccount = isset($attributes['is_onaccount'])?1:0;
 				}
@@ -353,19 +352,21 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 	{
 		
 		DB::table('account_transaction')
-				->where('voucher_type', 'RV')
-				->where('voucher_type_id', $receipt_voucher_id)
-				->update([ 'account_master_id' => $attributes['account_id'][$key],
+				->insert([ 'voucher_type' => 'RV',
+							'voucher_type_id' => $receipt_voucher_id,
+							'account_master_id' => $attributes['account_id'][$key],
 							'transaction_type'  => $attributes['account_type'][$key],
 							'amount'   			=> $attributes['line_amount'][$key],
-							'modify_at' 		=> now(),
-							'modify_by' 		=> Auth::User()->id,
+							'status'			=> 1,
+							'created_at' 		=> date('Y-m-d H:i:s'),
+							'created_by' 		=> Auth::User()->id,
 							'description' 		=> $attributes['description'][$key],
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
 							'department_id'		=> isset($attributes['department'][$key])?$attributes['department'][$key]:'',
-							'salesman_id'       => isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key]:''
+							'salesman_id'       => isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key]:'',
+							'version_no'		=> $attributes['version_no']
 							]);
 		
 		return true;
@@ -378,7 +379,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				->where('voucher_type', 'RV')
 				->where('voucher_type_id', $receipt_voucher_id)
 				->update([ 'status' 		=> 0,
-						   'deleted_at' 	=> now(),
+						   'deleted_at' 	=> date('Y-m-d H:i:s'),
 						   'deleted_by' => Auth::User()->id ]);
 		
 		return true;
@@ -901,14 +902,15 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 								'transaction_type'  => $type,
 								'amount'   			=> $amount,
 								'status' 			=> 1,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> (isset($attributes['is_onaccount']))?'Advance Amount':$attributes['customer_account'].' '.$attributes['description'],
-								'reference'			=> $attributes['voucher_no'], //(isset($attributes['is_onaccount']))?'Adv.':
+								'reference'			=> $attributes['voucher_no'], //(isset($attributes['is_onaccount']))?'Adv':
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-								'reference_from'	=> (isset($attributes['is_onaccount']))?'Adv.':$referencefrm,
+								'reference_from'	=> (isset($attributes['is_onaccount']))?'ADV':$referencefrm,
 								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
-								'salesman_id'		=> (isset($attributes['salesman_id']))?$attributes['salesman_id']:''
+								'salesman_id'		=> (isset($attributes['salesman_id']))?$attributes['salesman_id']:'',
+								'version_no'		=> $attributes['version_no']
 							]);
 			
 		} else {
@@ -920,14 +922,15 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 								'transaction_type'  => $attributes['account_type'][$key],
 								'amount'   			=> $attributes['line_amount'][$key],
 								'status' 			=> 1,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'][$key],
 								'reference'			=> $attributes['voucher_no'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $attributes['reference'][$key],
 								'department_id'		=> (isset($attributes['department'][$key]))?$attributes['department'][$key]:'',
-								'salesman_id'		=> (isset($attributes['salesman_id']))?$attributes['salesman_id']:(isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key]:'')
+								'salesman_id'		=> (isset($attributes['salesman_id']))?$attributes['salesman_id']:(isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key]:''),
+								'version_no'		=> $attributes['version_no']
 								]);
 		}
 		
@@ -960,7 +963,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					->where('account_master_id', $account_master_id)
 					->where('transaction_type', $type)
 					->update([  'amount'   			=> $amount,
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'],
 								'reference'			=> $attributes['voucher_no'],
@@ -976,7 +979,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					->where('account_master_id', $attributes['account_id'][$key])
 					->where('transaction_type', $type)
 					->update([  'amount'   			=> $attributes['line_amount'][$key],
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'][$key],
 								'reference'			=> $attributes['voucher_no'],
@@ -1000,7 +1003,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 						->where('account_master_id', $account_master_id)
 						->where('reference_from', $attributes['refno'][$key])
 						->update([ 'status' 		=> 0,
-								   'deleted_at' 	=> now(),
+								   'deleted_at' 	=> date('Y-m-d H:i:s'),
 								   'modify_by'		=> Auth::User()->id ]);
 	}
 	
@@ -1009,7 +1012,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 		$cnt = 0;
 		$voucher = ($attributes['from_jv']==1)?9:$attributes['voucher'];
 		do {
-			$jvset = DB::table('account_setting')->where('voucher_type_id', $voucher)->where('status',1)->whereNull('deleted_at')->select('prefix','is_prefix','voucher_no')->first();//echo '<pre>';print_r($jvset);exit;
+			$jvset = DB::table('account_setting')->where('voucher_type_id', $voucher)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('prefix','is_prefix','voucher_no')->first();//echo '<pre>';print_r($jvset);exit;
 			if($jvset) {
 				if($jvset->is_prefix==0) {
 					$newattributes['voucher_no'] = $jvset->voucher_no + $cnt;
@@ -1022,9 +1025,9 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			}
             //JAN25
 			if(isset($attributes['department_id']) && Session::get('department')==1)
-				$inv = DB::table('receipt_voucher')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('department_id', $attributes['department_id'])->where('status',1)->whereNull('deleted_at')->count();
+				$inv = DB::table('receipt_voucher')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('department_id', $attributes['department_id'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 			else
-				$inv = DB::table('receipt_voucher')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('status',1)->whereNull('deleted_at')->count();
+				$inv = DB::table('receipt_voucher')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 
 			$cnt++;
 		} while ($inv!=0);
@@ -1069,7 +1072,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			$query = DB::table('receipt_voucher')
 				->where('voucher_no', $newattributes['voucher_no'])
 				->where('status', 1)
-				->whereNull('deleted_at'); // ✅ important
+				->where('deleted_at','0000-00-00 00:00:00'); // ✅ important
 
 			if (isset($attributes['department_id']) && Session::get('department') == 1) {
 				$query->where('department_id', $attributes['department_id']);
@@ -1094,7 +1097,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			//echo '<pre>';print_r($attributes);exit;
 			DB::beginTransaction();
 			try {
-			    
+			    $attributes['version_no'] = 1;
 			    //ADV BILL SETTLEMENT...
 			    $continue = true;
 				//ADV BILL SETTLE: IF THE ADV NOT SUFFICIENT AMOUNT THEN ADD EXCESS AMOUNT AND SETTLE...
@@ -1154,174 +1157,74 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
                         }
                     }
 				}
-				//echo '<pre>';print_r($attributes);exit;
-				//echo '<pre>';print_r($rvEntries);exit;
-				/*if (isset($attributes['is_advNcash']) && $attributes['is_advNcash'] == 1 && $attributes['amount'] > 0) {
-
-					$siTags = [];
-					$rvTags = [];
-
-					foreach ($attributes['tag'] as $t) {
-						if ($attributes['bill_type'][$t] === 'SI') {
-							$siTags[] = $t;
-						} elseif ($attributes['bill_type'][$t] === 'RV') {
-							$rvTags[] = $t;
-						}
-					}
-
-					if (empty($rvTags) || empty($siTags)) return;
-
-					$rvTagIdx     = $rvTags[0];
-					$rvCrEntryId  = (int)$attributes['sales_invoice_id'][$rvTagIdx];
-					$advanceAmt   = (float)$attributes['line_amount'][$rvTagIdx];
-					$customerId   = (int)$attributes['customer_id'];
-
-					DB::beginTransaction();
-					try {
-						$rvCrRow = DB::table('receipt_voucher_entry')
-							->where('id', $rvCrEntryId)
-							->select('id','receipt_voucher_id','amount')
-							->first();
-
-						if (!$rvCrRow) throw new \Exception('Advance RV Cr entry not found.');
-
-						$rvId = $rvCrRow->receipt_voucher_id;
-
-						$rvDrRow = DB::table('receipt_voucher_entry')
-							->where('receipt_voucher_id', $rvId)
-							->where('entry_type', 'Dr')
-							->select('id','account_id','amount')
-							->first();
-
-						if (!$rvDrRow) throw new \Exception('Advance RV Dr (cash/bank) entry not found.');
-
-						$cashAccountId = $rvDrRow->account_id;
-						$remainingAdvance = $advanceAmt;
-
-						foreach ($siTags as $idx) {
-							$refno  = trim($attributes['refno'][$idx]);
-							$amount = (float)$attributes['line_amount'][$idx];
-
-							$useAdvance = min($remainingAdvance, $amount);
-							$remainingAdvance -= $useAdvance;
-							$cashExtra = $amount - $useAdvance;
-
-							//--------------------------------
-							// (A) Add Customer Dr for advance portion
-							//--------------------------------
-							if ($useAdvance > 0) {
-								$custDrId = DB::table('receipt_voucher_entry')->insertGetId([
-									'receipt_voucher_id' => $rvId,
-									'account_id'         => $customerId,
-									'entry_type'         => 'Dr',
-									'reference'          => $refno,  // ✅ update reference to bill number
-									'amount'             => $useAdvance
-								]);
-
-								DB::table('account_transaction')->insert([
-									'voucher_type'      => 'RV',
-									'voucher_type_id'   => $custDrId,
-									'account_master_id' => $customerId,
-									'amount'            => $useAdvance,
-									'reference_from'    => $refno
-								]);
-							}
-
-							//--------------------------------
-							// (B) Modify existing Customer Cr entry
-							//--------------------------------
-							DB::table('receipt_voucher_entry')
-								->where('id', $rvCrEntryId)
-								->update([
-									'reference' => $refno,  // ✅ replace, not append
-									'amount'    => $amount
-								]);
-
-							DB::table('account_transaction')
-								->where('voucher_type', 'RV')
-								->where('voucher_type_id', $rvCrEntryId)
-								->update([
-									'account_master_id' => $customerId,
-									'amount'            => $amount,
-									'reference_from'    => $refno
-								]);
-
-							//--------------------------------
-							// (C) Modify existing Cash Dr entry
-							//--------------------------------
-							DB::table('receipt_voucher_entry')
-								->where('id', $rvDrRow->id)
-								->update([
-									'reference' => $refno,  // ✅ overwrite old reference, remove “Adv.”
-									'amount'    => $cashExtra
-								]);
-
-							DB::table('account_transaction')
-								->where('voucher_type', 'RV')
-								->where('voucher_type_id', $rvDrRow->id)
-								->update([
-									'account_master_id' => $cashAccountId,
-									'amount'            => $cashExtra,
-									'reference_from'    => $refno
-								]);
-						}
-
-						DB::commit();
-
-					} catch (\Exception $e) {
-						DB::rollback();
-						throw $e;
-					}
-				}*/
-
+				
 				//echo $continue.'<pre>';print_r($attributes);exit;  
 
 				if($continue) {
-						//VOUCHER NO INCREMENT LOGIC//
-						if( $attributes['curno'] == $attributes['voucher_no'] ) {
-							//$attributes['rowid'] = $receipt_voucher_id; 
-							$newattributes = $this->getVoucherNoGenerate($attributes);
-							$attributes['voucher_no'] = $newattributes['voucher_no'];
-							$attributes['vno'] = $newattributes['vno'];
-							$attributes['curno'] = $newattributes['curno'];
-						} 
-						//VOUCHER NO INCREMENT LOGIC//
+						
+					//VOUCHER NO LOGIC.....................
+					// 2️⃣ Get the highest numeric part from voucher_master
+					$maxNumeric = DB::table('receipt_voucher')
+						->where('deleted_at', '0000-00-00 00:0:00')
+						//->where('department_id', $departmentId)
+						->where('status', 1)
+						->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+						->value('max_no');
+					
+					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+					if($attributes['from_jv']==0)
+						$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
+					else
+						$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();//echo '<pre>';print_r($accset);
+					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+					
+					//VOUCHER NO LOGIC.....................
+					//exit;
+					$maxRetries = 5; // prevent infinite loop
+					$retryCount = 0;
+					$saved = false;
 
-						// ---- AUTO-INCREMENT HANDLER ON DUPLICATE ----
-						$maxRetries = 5; // prevent infinite loop
-						$retryCount = 0;
-						$saved = false;
+					while (!$saved && $retryCount < $maxRetries) {
+						try {
+							if ($this->setInputValue($attributes)) {
 
-						while (!$saved && $retryCount < $maxRetries) {
-							try {
-								if ($this->setInputValue($attributes)) {
+								$this->receipt_voucher->status = 1;
+								$this->receipt_voucher->created_at = date('Y-m-d H:i:s');
+								$this->receipt_voucher->created_by = Auth::User()->id;
+								$this->receipt_voucher->save();
 
-									$this->receipt_voucher->status = 1;
-									$this->receipt_voucher->created_at = now();
-									$this->receipt_voucher->created_by = Auth::User()->id;
-									$this->receipt_voucher->fill($attributes)->save();
+								$receipt_voucher_id = $this->receipt_voucher->id;
+								$saved = true; // success ✅
 
-									$receipt_voucher_id = $this->receipt_voucher->id;
-									$saved = true; // success ✅
-								}
-							} catch (\Illuminate\Database\QueryException $ex) {
+							}	
+						} catch (\Illuminate\Database\QueryException $ex) {
 
-								// Check if it's a duplicate voucher number error
-								if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
-									strpos($ex->getMessage(), 'duplicate key value') !== false) {
+							// Check if it's a duplicate voucher number error
+							if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+								strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-									// Generate next available number
-									$newattributes = $this->getVoucherNoGenerate($attributes);
-									$attributes['voucher_no'] = $newattributes['voucher_no'];
-									$attributes['vno']        = $newattributes['vno'];
-									$attributes['curno']      = $newattributes['curno'];
+								$maxNumeric = DB::table('receipt_voucher')
+									->where('deleted_at', '0000-00-00 00:0:00')
+									//->where('department_id', $departmentId)
+									->where('status', 1)
+									->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+									->value('max_no');
+								
+								$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+								if($attributes['from_jv']==0)
+									$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
+								else
+									$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();
+								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
 
-									$retryCount++;
-								} else {
-									throw $ex; // rethrow if different DB error
-								}
+								$retryCount++;
+							} else {
+								throw $ex; //echo $ex;exit;// rethrow if different DB error
 							}
 						}
+					}
+						
+												
 					
 					//echo '<pre>';print_r($attributes);exit; 
 					//transactions insert
@@ -1456,12 +1359,12 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 									//PDCR list inserting....
 									if($attributes['group_id'][$key]=='PDCR') {
 										
-										$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
+										$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
 										if(isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]=='') {
 											$party_id = '';
 											$ctrow = DB::table('receipt_voucher_entry')->where('receipt_voucher_id',$this->receipt_voucher->id)
 															->where('entry_type','Cr')->where('status',1)
-															->whereNull('deleted_at')
+															->where('deleted_at','0000-00-00 00:00:00')
 															->select('account_id')->first();
 											if($ctrow) {
 												$party_id = $ctrow->account_id;
@@ -1469,7 +1372,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 										} else
 											$party_id = $attributes['partyac_id'][$key];
 											
-										$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->whereNull('deleted_at')->select('dr_account_master_id')->first();
+										$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
 										
 										DB::table('pdc_received')
 												->insert([ 'voucher_id' 	=>  $this->receipt_voucher->id,
@@ -1479,7 +1382,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 															'reference'  => $attributes['reference'][$key],
 															'amount'   			=> $attributes['line_amount'][$key],
 															'status' 			=> 0,
-															'created_at' 		=> now(),
+															'created_at' 		=> date('Y-m-d H:i:s'),
 															'created_by' 		=> Auth::User()->id,
 															'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 															'customer_id' => $party_id,
@@ -1533,21 +1436,22 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 						}
 					}
 					
-					
-					//update debit, credit, difference amount
-					DB::table('receipt_voucher')
-								->where('id', $this->receipt_voucher->id)
-								->update([//'voucher_no'	  => $attributes['voucher_no'],
-										'debit'     => $attributes['debit'],
-										'credit' 	  => $attributes['credit'],
-										'difference' => $difference ]);
+					if($this->receipt_voucher->id) {
+						//update debit, credit, difference amount
+						DB::table('receipt_voucher')
+									->where('id', $this->receipt_voucher->id)
+									->update([//'voucher_no'	  => $attributes['voucher_no'],
+											'debit'     => $attributes['debit'],
+											'credit' 	  => $attributes['credit'],
+											'difference' => $difference ]);
+					}
 										
 					//PDCR list table insert..........
 					if($attributes['from_jv']==0) {
 						if($attributes['voucher_type']=='PDCR') {
 							
-							$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
-							$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->whereNull('deleted_at')->select('dr_account_master_id')->first();
+							$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+							$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
 							
 							DB::table('pdc_received')
 									->insert([ 'voucher_id' 	=> $this->receipt_voucher->id,
@@ -1557,7 +1461,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 												'reference'  => $attributes['reference'],
 												'amount'   			=> $attributes['amount'],
 												'status' 			=> 0,
-												'created_at' 		=> now(),
+												'created_at' 		=> date('Y-m-d H:i:s'),
 												'created_by' 		=> Auth::User()->id,
 												'voucher_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 												'customer_id' => $attributes['customer_id'],
@@ -1573,14 +1477,6 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 						}
 					} 
 											
-					//update voucher no........
-					$voucher = ($attributes['from_jv']==1)?9:$attributes['voucher'];
-					if( ($this->receipt_voucher->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) { 
-						DB::table('account_setting')
-								->where('voucher_type_id', $voucher)
-								->where('status',1)->whereNull('deleted_at')
-								->update(['voucher_no' => DB::raw('voucher_no + 1') ]); //$attributes['voucher_no'] + 1
-					}		
 					
 				
 				}		
@@ -1604,6 +1500,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 		DB::beginTransaction();
 		try {
 			
+			
 			$voucher_type = $this->receipt_voucher->voucher_type;
 			if($this->receipt_voucher->id && $attributes['from_jv']==1) { //from JV.... 
 				
@@ -1611,6 +1508,19 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				foreach($attributes['line_amount'] as $key => $value) {
 					
 					if($attributes['je_id'][$key]!='') {
+
+						//FIND CURRENT VERSION	 
+						$currentVersion = DB::table('account_transaction')->where('voucher_type', 'RV')->where('voucher_type_id', $attributes['je_id'][$key])->max('version_no');
+						$newVersion = $currentVersion + 1;
+						$attributes['version_no'] = $newVersion;
+
+						//SOFT DELETE OLD VERSION
+						DB::table('account_transaction')->where('voucher_type', 'RV')->where('voucher_type_id', $attributes['je_id'][$key])
+									->update([
+												'status' => 0,
+												'deleted_at' => date('Y-m-d h:i:s'),
+												'deleted_by'  => Auth::User()->id,
+											]);
 						
 						if($attributes['account_id'][$key]!='' && $attributes['account_id'][$key]!=0) {
 							$receiptVoucherEntry = ReceiptVoucherEntry::find($attributes['je_id'][$key]);
@@ -1637,8 +1547,8 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 							$receiptVoucherEntry->update($jerow);
 							
 							if($value=='' || $value==0) {
-								DB::table('receipt_voucher_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => now()]);
-								DB::table('account_transaction')->where('voucher_type', 'RV')->where('voucher_type_id', $attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => now()]);
+								DB::table('receipt_voucher_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+								DB::table('account_transaction')->where('voucher_type', 'RV')->where('voucher_type_id', $attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d h:i:s')]);
 							}
 							
 							if($attributes['account_type'][$key]=='Dr') {
@@ -1667,8 +1577,8 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 								//UPDATE PDC...
 								$pdcrow = DB::table('pdc_received')->where('entry_id', $attributes['je_id'][$key])->where('entry_type','RV')->select('id')->first();
 								
-								$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
-								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->whereNull('deleted_at')->select('dr_account_master_id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
 								
 								if($pdcrow)	{			
 									DB::table('pdc_received')
@@ -1698,7 +1608,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 																'reference'  => $attributes['reference'][$key],
 																'amount'   			=> $attributes['line_amount'][$key],
 																'status' 			=> 0,
-																'created_at' 		=> now(),
+																'created_at' 		=> date('Y-m-d H:i:s'),
 																'created_by' 		=> Auth::User()->id,
 																'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 																'customer_id' => $attributes['partyac_id'][$key],
@@ -1719,7 +1629,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 									DB::table('pdc_received')
 													->where('entry_id', $attributes['je_id'][$key])
 													->where('entry_type','RV')
-													->update([ 	'deleted_at'  => now() ]);
+													->update([ 	'deleted_at'  => date('Y-m-d H:i:s') ]);
 							}
 							
 							
@@ -1749,12 +1659,12 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 								//PDCR list inserting....
 								if($attributes['group_id'][$key]=='PDCR') {
 									
-									$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
+									$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
 									if($attributes['partyac_id'][$key]=='') {
 										$party_id = '';
 										$ctrow = DB::table('receipt_voucher_entry')->where('receipt_voucher_id',$this->receipt_voucher->id)
 														->where('entry_type','Cr')->where('status',1)
-														->whereNull('deleted_at')
+														->where('deleted_at','0000-00-00 00:00:00')
 														->select('account_id')->first();
 										if($ctrow) {
 											$party_id = $ctrow->account_id;
@@ -1762,7 +1672,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 									} else
 										$party_id = $attributes['partyac_id'][$key];
 										
-									$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->whereNull('deleted_at')->select('dr_account_master_id')->first();
+									$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
 									
 									DB::table('pdc_received')
 											->insert([ 'voucher_id' 	=>  $this->receipt_voucher->id,
@@ -1772,7 +1682,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 														'reference'  => $attributes['reference'][$key],
 														'amount'   			=> $attributes['line_amount'][$key],
 														'status' 			=> 0,
-														'created_at' 		=> now(),
+														'created_at' 		=> date('Y-m-d H:i:s'),
 														'created_by' 		=> Auth::User()->id,
 														'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 														'customer_id' => $party_id,
@@ -1835,13 +1745,13 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					foreach($arrids as $id) {
 						$row = DB::table('receipt_voucher_entry')->where('id', $id)->first();
 						if($row) {
-							DB::table('receipt_voucher_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => now()]);
-							DB::table('pdc_received')->where('entry_id',$id)->where('entry_type','RV')->where('status',0)->update(['deleted_at' => now()]);
+							DB::table('receipt_voucher_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+							DB::table('pdc_received')->where('entry_id',$id)->where('entry_type','RV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 							
 							//clear sales invoice bills...
 							$invs = DB::table('receipt_voucher_tr')->where('receipt_voucher_entry_id', $id)->select('id','sales_invoice_id','assign_amount','bill_type')->get();
 							if($invs) {
-								DB::table('receipt_voucher_tr')->where('receipt_voucher_entry_id',$id)->update(['status' => 0, 'deleted_at' => now()]);
+								DB::table('receipt_voucher_tr')->where('receipt_voucher_entry_id',$id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 								foreach($invs as $inv) {
 									
 									if($inv->bill_type=='SI')
@@ -1873,7 +1783,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				$this->receipt_voucher->debit = $attributes['debit'];
 				$this->receipt_voucher->credit = $attributes['credit'];
 				$this->receipt_voucher->difference = $difference;
-				$this->receipt_voucher->modify_at = now();
+				$this->receipt_voucher->modify_at = date('Y-m-d H:i:s');
 				$this->receipt_voucher->modify_by = Auth::User()->id;
 				$this->receipt_voucher->fill($attributes)->save();
 			} else {
@@ -1881,7 +1791,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				$entries = DB::table('receipt_voucher_entry')
 					->where('receipt_voucher_id', $id)
 					->where('status', 1)
-					->whereNull('deleted_at')
+					->where('deleted_at', '0000-00-00 00:00:00')
 					->get();
 
 				foreach ($entries as $row) {
@@ -1903,21 +1813,18 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 						'salesman_id'       => $row->salesman_id ?? null,
 						'status'            => 1,
 						'deleted_at'        => '0000-00-00 00:00:00',
-						'modify_at'         => now(),
-						'modify_by'         => Auth::user()->id,
+						'created_at'         => date('Y-m-d H:i:s'),
+						'created_by'         => Auth::user()->id,
 					];
 
-					if ($exists) {
-						DB::table('account_transaction')
-							->where('voucher_type', 'RV')
-							->where('voucher_type_id', $row->id)
-							->update($data);
-					} else {
+					if (!$exists) {
+						
 						DB::table('account_transaction')->insert(array_merge($data, [
 							'voucher_type'    => 'RV',
 							'voucher_type_id' => $row->id,
-							'created_at'      => now(),
+							'created_at'      => date('Y-m-d H:i:s'),
 							'created_by'      => Auth::user()->id,
+							'version_no'	  => $attributes['version_no']
 						]));
 					}
 				}
@@ -1958,7 +1865,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					if($row->entry_type=='Dr') {
 						$account_id = $row->account_id; $amount = $row->amount;
 						if($this->receipt_voucher->voucher_type=='PDCR') {
-							DB::table('pdc_received')->where('entry_id',$row->id)->where('entry_type','RV')->where('status',0)->update(['deleted_at' => now()]);
+							DB::table('pdc_received')->where('entry_id',$row->id)->where('entry_type','RV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 
 							DB::table('account_master')->where('id', $row->account_id)
 													   ->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')'), 'pdc_amount' => DB::raw('IF(pdc_amount < 0, pdc_amount + '.$row->amount.', pdc_amount - '.$row->amount.')')]);
@@ -1977,7 +1884,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					
 					//ED12
 					//update sales invoice entry....
-					$entry = DB::table('receipt_voucher_tr')->where('receipt_voucher_entry_id', $row->id)->where('status',1)->whereNull('deleted_at')->get();
+					$entry = DB::table('receipt_voucher_tr')->where('receipt_voucher_entry_id', $row->id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
 					// echo '<pre>';print_r($entry);exit;
 					if($entry) {
 						foreach($entry as $ent) {
@@ -1990,14 +1897,14 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 							else if($ent->bill_type=='SS')
 								DB::table('sales_split')->where('id', $ent->sales_invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
 							
-							DB::table('receipt_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => now() ]);
+							DB::table('receipt_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
 						}
 					}
 					
-					DB::table('receipt_voucher_entry')->where('id', $row->id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id  ]);
+					DB::table('receipt_voucher_entry')->where('id', $row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id  ]);
 					
 					//Transaction update....
-					DB::table('account_transaction')->where('voucher_type', 'RV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => now(), 'deleted_by' => Auth::User()->id  ]);
+					DB::table('account_transaction')->where('voucher_type', 'RV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::User()->id  ]);
 					
 					//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
 					if($row->bank_id!=0 && $row->cheque_no!='') {
@@ -2010,13 +1917,13 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			if($this->receipt_voucher->opening_balance_id > 0) {
 				
 				DB::table('opening_balance_tr')->where('id', $this->receipt_voucher->opening_balance_id)->update(['status' => 0, 'deleted_at' => '0000-00-00 00:00:00']);
-				DB::table('account_transaction')->where('voucher_type', 'OBD')->where('voucher_type_id', $this->receipt_voucher->opening_balance_id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id ]);
+				DB::table('account_transaction')->where('voucher_type', 'OBD')->where('voucher_type_id', $this->receipt_voucher->opening_balance_id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 				
 				DB::table('account_master')->where('id', $account_id)->update(['cl_balance' => DB::raw('op_balance - '.$amount), 'op_balance' => DB::raw('op_balance - '.$amount)]);
 				
 				DB::table('account_transaction')->where('voucher_type', 'OB')->where('voucher_type_id', $account_id)->where('account_master_id',$account_id)->update(['amount' => 0]);
 			}
-			DB::table('receipt_voucher')->where('id', $id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id  ]);
+			DB::table('receipt_voucher')->where('id', $id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id  ]);
 			$this->receipt_voucher->delete();
 		
 			DB::commit();
@@ -2218,7 +2125,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					->where('account_master_id', $attributes['account_id'])
 					->where('transaction_type', $actype)
 					->update([  'amount'   			=> $entry['amount'],
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'reference'			=> $attributes['voucher_no'],
 								//'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
@@ -2252,11 +2159,11 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					if($ar==1) {
 						
 						$rv_entry_id = isset($attributes['doc_id'][$val])?$attributes['doc_id'][$val]:''; 
+						$doc_type = isset($attributes['type'][$val])?$attributes['type'][$val]:''; 
 						if($attributes['bill_type'][$val]=='OB') {
 							
 							if($attributes['type'][$val]=='RV') {
-								
-								$receiptVoucherEntry = ReceiptVoucherEntry::find( $attributes['doc_id'][$val] );
+								$receiptVoucherEntry = ReceiptVoucherEntry::find( $rv_entry_id );
 								$this->receipt_voucher = ReceiptVoucher::find( $receiptVoucherEntry->receipt_voucher_id ); 
 								
 								$rvEntry['reference'] = $attributes['refno'][$key];
@@ -2270,9 +2177,9 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 								//update account Cr transactions...
 								$this->setAccountTransactionAdvSetUpdate($attributes, $receiptVoucherEntry->id, 'RV', 'Cr', $key, $rvEntry);
 
-							} else if($attributes['type'][$val]=='JV' || $attributes['type'][$val]=='SIN') { 
+							} else if($attributes['type'][$val]=='JV' || $attributes['type'][$val]=='MJV' || $attributes['type'][$val]=='SIN') { 
 								
-								$journalEntry = JournalEntry::find( $attributes['doc_id'][$val] );//echo '<pre>';print_r($journalEntry);exit;
+								$journalEntry = JournalEntry::find( $rv_entry_id );//echo '<pre>';print_r($journalEntry);exit;
 								$this->journal = Journal::find( $journalEntry->journal_id ); 
 								
 								$jvEntry['reference'] = $attributes['refno'][$key];
@@ -2284,19 +2191,19 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 								$attributes['account_id'] = $journalEntry->account_id;//echo '<pre>';print_r($attributes);exit;
 								//update account Cr transactions...
 								$this->setAccountTransactionAdvSetUpdate($attributes, $journalEntry->id, $attributes['type'][$val], 'Cr', $key, $jvEntry);
-								
 							
 							} else if($attributes['type'][$val]=='OBD') {
 							    
 							    $obtr = DB::table('opening_balance_tr')->find($rv_entry_id);
 								DB::table('opening_balance_tr')
 												->where('id', $obtr->id)
-												->update(['amount_transfer' => 1, 'balance_amount' => 0]);
+												->update(['reference_no' => $attributes['refno'][$key], 'amount_transfer' => 1, 'balance_amount' => 0]);
 												
 									DB::table('account_transaction')
 												->where('voucher_type','OBD')
+												->where('voucher_type_id',$obtr->id)
 												->where('account_master_id',$obtr->account_master_id)
-												->where('reference', $obtr->reference_no)
+												//->where('reference', $obtr->reference_no)
 												->update(['reference_from' => $attributes['refno'][$key]]);
 							}
 							
@@ -2329,40 +2236,38 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 							
 							if($attributes['type'][$val]=='RV') {
 								
-								$receiptVoucherEntry = ReceiptVoucherEntry::find( $attributes['receipt_voucher_entry_id'][$row] );
-								$this->receipt_voucher = ReceiptVoucher::find( $receiptVoucherEntry->receipt_voucher_id ); 
+									$receiptVoucherEntry = new ReceiptVoucherEntry();
+									$arrResult = $this->setEntryInputValue($attributes, $receiptVoucherEntry, $ar, $key);
+									$receiptVoucherEntry->status = 1;
+									$this->receipt_voucher->ReceiptVoucherAdd()->save($receiptVoucherEntry);
+									$rv_entry_id = $receiptVoucherEntry->id;
+									
+									//update account Cr transactions...
+									DB::table('account_transaction')
+										->insert([  'voucher_type' 		=> $attributes['type'][$val],
+													'voucher_type_id'   => $rv_entry_id,
+													'account_master_id' => $attributes['customer_id'],
+													'transaction_type'  => 'Cr',
+													'amount'   			=> $attributes['line_amount'][$key],
+													'status' 			=> 1,
+													'created_at' 		=> date('Y-m-d H:i:s'),
+													'created_by' 		=> Auth::User()->id,
+													'reference'			=> $this->receipt_voucher->voucher_no,
+													'invoice_date'		=> $this->receipt_voucher->voucher_date,
+													'reference_from'	=> $attributes['refno'][$key],
+													'salesman_id'       => isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key]:'',
+													'version_no'		=> $attributes['version_no']
+												]);
+												
+									$receiptVoucherTr = new ReceiptVoucherTr();
+									$receiptVoucherTr->receipt_voucher_entry_id = $rv_entry_id;
+									$receiptVoucherTr->sales_invoice_id = $attributes['sales_invoice_id'][$key];
+									$receiptVoucherTr->assign_amount = $attributes['line_amount'][$key];
+									$receiptVoucherTr->bill_type = $attributes['bill_type'][$val];
+									$receiptVoucherTr->status = 1;
+									$receiptVoucherEntry->ReceiptVoucherTrAdd()->save($receiptVoucherTr);
 								
-								//$receiptVoucherEntry = new ReceiptVoucherEntry();
-								$arrResult = $this->setEntryInputValue($attributes, $receiptVoucherEntry, $ar, $key);
-								$receiptVoucherEntry->status = 1;
-								$this->receipt_voucher->ReceiptVoucherAdd()->save($receiptVoucherEntry);
-								$rv_entry_id = $receiptVoucherEntry->id;
-								
-								//update account Cr transactions...
-								DB::table('account_transaction')
-									->insert([  'voucher_type' 		=> $attributes['type'][$val],
-												'voucher_type_id'   => $rv_entry_id,
-												'account_master_id' => $attributes['customer_id'],
-												'transaction_type'  => 'Cr',
-												'amount'   			=> $attributes['line_amount'][$key],
-												'status' 			=> 1,
-												'created_at' 		=> now(),
-												'created_by' 		=> Auth::User()->id,
-												'reference'			=> $this->receipt_voucher->voucher_no,
-												'invoice_date'		=> $this->receipt_voucher->voucher_date,
-												'reference_from'	=> $attributes['refno'][$key],
-												'salesman_id'       => isset($attributes['salesman_idd'][$key])?$attributes['salesman_idd'][$key]:''
-											]);
-											
-								$receiptVoucherTr = new ReceiptVoucherTr();
-								$receiptVoucherTr->receipt_voucher_entry_id = $rv_entry_id;
-								$receiptVoucherTr->sales_invoice_id = $attributes['sales_invoice_id'][$key];
-								$receiptVoucherTr->assign_amount = $attributes['line_amount'][$key];
-								$receiptVoucherTr->bill_type = $attributes['bill_type'][$val];
-								$receiptVoucherTr->status = 1;
-								$receiptVoucherEntry->ReceiptVoucherTrAdd()->save($receiptVoucherTr);
-								
-							} else if($attributes['type'][$val]=='JV') {
+							} else if($attributes['type'][$val]=='JV' || $attributes['type'][$val]=='MJV' || $attributes['type'][$val]=='SIN') {
 								
 								$journalEntry = new JournalEntry();
 								$this->setTrInputValue($attributes, $journalEntry, $key);
@@ -2378,12 +2283,12 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 												'transaction_type'  => 'Cr',
 												'amount'   			=> $attributes['line_amount'][$key],
 												'status' 			=> 1,
-												'created_at' 		=> now(),
+												'created_at' 		=> date('Y-m-d H:i:s'),
 												'created_by' 		=> Auth::User()->id,
 												'reference'			=> $this->journal->voucher_no,
 												'invoice_date'		=> $this->journal->voucher_date,
 												'reference_from'	=> $attributes['refno'][$key],
-												
+												'version_no'		=> $attributes['version_no']
 											]);
 											
 							}
@@ -2400,6 +2305,68 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					$ar = 2;
 				}
 				
+				//CHECK DR CR ETRY TALLY OR NOT..
+				/*if($doc_type=='RV') {
+
+					$balanced = DB::table('receipt_voucher_entry')
+									->select(
+										'receipt_voucher_id',
+										DB::raw("SUM(CASE WHEN entry_type = 'Dr' THEN amount ELSE 0 END) as total_dr"),
+										DB::raw("SUM(CASE WHEN entry_type = 'Cr' THEN amount ELSE 0 END) as total_cr")
+									)
+								->where('deleted_at', '0000-00-00 00:00:00')
+								->where('status',1)
+								->where('receipt_voucher_id', $rv_entry_id)
+								->groupBy('receipt_voucher_id')
+								->havingRaw('total_dr = total_cr')
+								->get();
+echo '<pre>';print_r($balanced);exit;
+					if (count($balanced) > 0) {
+
+							// 1️⃣ Get all receipt_voucher_entry.id for this RV
+							$entryIds = DB::table('receipt_voucher_entry')
+								->where('receipt_voucher_id', $rv_entry_id)
+								->where('deleted_at', '0000-00-00 00:00:00')
+								->where('status', 1)
+								->lists('id');  // Laravel 5.2
+
+							if (!empty($entryIds)) {
+
+								// 2️⃣ Check DR / CR in account_transaction for all these lines
+								$acc = DB::table('account_transaction')
+									->select(
+										DB::raw("SUM(CASE WHEN transaction_type = 'Dr' THEN amount ELSE 0 END) as acc_dr"),
+										DB::raw("SUM(CASE WHEN transaction_type = 'Cr' THEN amount ELSE 0 END) as acc_cr")
+									)
+									->where('voucher_type', 'RV')
+									->whereIn('voucher_type_id', $entryIds)
+									->where('status',1)
+									->where('deleted_at', '0000-00-00 00:00:00')
+									->first();
+
+								if ($acc && $acc->acc_dr == $acc->acc_cr) {
+									// ✅ RV entries balanced AND account_transaction balanced
+									// put your success code here
+								} else {
+									// ❌ Posting not balanced in account_transaction
+									throw new ValidationException('Something went wrong1! Please try again.',$this->getErrors());
+									Session::flash('error', 'Something went wrong1, Please try again!');
+									return redirect('advance_set/add');
+								}
+
+							} else {
+								// No entries found for this RV (weird case)
+							}
+
+					} else {
+						// ❌ RV entry table itself is not balanced
+						throw new ValidationException('Something went wrong2! Please try again.',$this->getErrors());
+						Session::flash('error', 'Something went wrong1.1, Please try again!');
+						return redirect('advance_set/add');
+					}
+
+
+				}*/
 			}
 			
 			DB::commit();
@@ -2431,12 +2398,13 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 							'transaction_type'  => $type,
 							'amount'   			=> $trans['amt'][$key],
 							'status' 			=> 1,
-							'created_at' 		=> now(),
+							'created_at' 		=> date('Y-m-d H:i:s'),
 							'created_by' 		=> Auth::User()->id,
 							'description'		=> $description,
 							'reference'			=> $trans['id'][$key],
 							'invoice_date'		=> date('Y-m-d', strtotime($trans['vdate'])),
-							'reference_from'	=> $trans['ref'][$key] 
+							'reference_from'	=> $trans['ref'][$key], 
+							'version_no'		=> $attributes['version_no']
 						]);
 						
 		if($type=='Dr') {
@@ -2460,7 +2428,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 										->update([  'transaction_type'  => $type,
 													'amount'   			=> $trnarr['amt'][$key],
 													'status'			=> 1,
-													'modify_at' 		=> now(),
+													'modify_at' 		=> date('Y-m-d H:i:s'),
 													'modify_by' 		=> Auth::User()->id,
 													'deleted_at'		=> '0000-00-00 00:00:00',
 													'description'		=> $description,
@@ -2494,7 +2462,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 										'reference'  => $attributes['reference'][$key],
 										'amount'   			=> $attributes['amount'][$key],
 										'status' 			=> 1,
-										'created_at' 		=> now(),
+										'created_at' 		=> date('Y-m-d H:i:s'),
 										'created_by' 		=> Auth::User()->id,
 										'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 										'customer_id' => $attributes['customer_id'][$key]
@@ -2566,7 +2534,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 									->where('voucher_type', 'DB')
 									->where('voucher_type_id', $id)
 									->where('status',1)
-									->whereNull('deleted_at')
+									->where('deleted_at','0000-00-00 00:00:00')
 									->get();
 				if($trans) {
 					if($this->setAccountTransactionReSubmit($id, $trnarr, 'Dr', $key))
@@ -2620,7 +2588,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 										'reference'  => $attributes['reference'][$key],
 										'amount'   			=> $attributes['amount'][$key],
 										'status' 			=> 1,
-										'created_at' 		=> now(),
+										'created_at' 		=> date('Y-m-d H:i:s'),
 										'created_by' 		=> Auth::User()->id,
 										'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 										'customer_id' => $attributes['customer_id'][$key]
@@ -2684,15 +2652,21 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 		foreach($attributes['tag'] as $key => $val) { 
 			
 			if($attributes['voucher_type'][$val]=="PDCR") {
-				
-				DB::table('pdc_received')->where('id', $attributes['id'][$val])
+
+				$rvrow = DB::table('receipt_voucher')->where('id', $attributes['rv_id'][$val])->select('id','voucher_date')->first();
+
+				if($rvrow)
+					DB::table('pdc_received')->where('id', $attributes['id'][$val])
+										 ->update(['status' => 0, 'voucher_date' => $rvrow->voucher_date]);
+				else
+					DB::table('pdc_received')->where('id', $attributes['id'][$val])
 										 ->update(['status' => 0]);
 				
 				DB::table('account_transaction')->where('voucher_type', 'DB')->where('voucher_type_id', $attributes['id'][$val])
 													->update([  'status' 			=> 0,
-																'modify_at'			=> now(),
-																'deleted_at' 		=> now(),
-																'other_info'        => now()
+																'modify_at'			=> date('Y-m-d H:i:s'),
+																'deleted_at' 		=> date('Y-m-d H:i:s'),
+																'other_info'        => date('Y-m-d H:i:s')
 															]);
 						
 				$rvEntry = DB::table('receipt_voucher_entry')->where('receipt_voucher_id',$attributes['id'][$val])->get();
@@ -2735,14 +2709,14 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					}
 					
 					DB::table('journal_entry')->where('id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 								
 					DB::table('account_transaction')->where('voucher_type',"JV")->where('voucher_type_id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 				} 
 				
 				DB::table('journal')->where('id',$attributes['id'][$val])
-							->update(['status' => 0, 'deleted_at' => now()]);
+							->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 							
 			}
 			
@@ -2787,11 +2761,15 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 	
 	public function CustomerReceiptListCount()
 	{
-		return $query = $this->receipt_voucher->where('receipt_voucher.status',1)->where('receipt_voucher.opening_balance_id',0)
+		return $query = DB::table('receipt_voucher')->where('receipt_voucher.status',1)->where('receipt_voucher.opening_balance_id',0)
+		->where(function ($q) {
+                        $q->whereNull('receipt_voucher.deleted_at')
+                          ->orWhere('receipt_voucher.deleted_at', '0000-00-00 00:00:00');
+                    })
 							->select('receipt_voucher.id','receipt_voucher.voucher_no','receipt_voucher.voucher_date','receipt_voucher.tr_description',
 									 'receipt_voucher.debit AS amount','receipt_voucher.from_jv','receipt_voucher.voucher_type','receipt_voucher.is_transfer',
 									 DB::raw("(SELECT account_master.master_name FROM receipt_voucher_entry 
-											   JOIN account_master ON(account_master.id = receipt_voucher_entry.account_id)
+											   JOIN account_master ON(account_m;ster.id = receipt_voucher_entry.account_id)
 											   WHERE receipt_voucher_entry.receipt_voucher_id=receipt_voucher.id 
 											   AND receipt_voucher_entry.entry_type='Dr' LIMIT 0,1) AS debiter"),
 									 DB::raw("(SELECT account_master.master_name FROM receipt_voucher_entry 
@@ -2803,10 +2781,21 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 	}
 	
 
+
+
+
 	
 	public function CustomerReceiptList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->receipt_voucher->where('receipt_voucher.status',1)->where('receipt_voucher.opening_balance_id',0);
+		$query = DB::table('receipt_voucher')->where('receipt_voucher.status',1)//->where('receipt_voucher.opening_balance_id',0)->orwhereNull('receipt_voucher.opening_balance_id')
+		            ->where(function ($q) {
+                        $q->whereNull('receipt_voucher.opening_balance_id')
+                          ->orWhere('receipt_voucher.opening_balance_id', '0');
+                    })
+		            ->where(function ($q1) {
+                        $q1->whereNull('receipt_voucher.deleted_at')
+                          ->orWhere('receipt_voucher.deleted_at', '0000-00-00 00:00:00');
+                    });
 									$query->join('receipt_voucher_entry AS RE', function($join) {
 											 $join->on('RE.receipt_voucher_id', '=', 'receipt_voucher.id');
 											  $join->where('RE.status','=',1);
@@ -2826,32 +2815,6 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 										});
 									 }
 									 
-									/* if($search) {
-										$query->join('receipt_voucher_entry AS JE', function($join) {
-											 $join->on('JE.receipt_voucher_id', '=', 'receipt_voucher.id');
-										 })
-										$query->where('receipt_voucher.voucher_no','LIKE',"%{$search}%")
-											  ->orWhere('receipt_voucher.voucher_date', 'LIKE',"%{$search}%");
-									} */
-									/* if($search) {
-										$query->where('receipt_voucher.voucher_no','LIKE',"%{$search}%")
-											  ->orWhere('receipt_voucher.voucher_date', 'LIKE',"%{$search}%");
-											  
-										$query->select('receipt_voucher.id','receipt_voucher.voucher_no','receipt_voucher.voucher_date','receipt_voucher.tr_description',
-										 'receipt_voucher.debit AS amount','receipt_voucher.from_jv','receipt_voucher.voucher_type','receipt_voucher.is_transfer',
-										 DB::raw("(SELECT account_master.master_name FROM receipt_voucher_entry 
-												   JOIN account_master ON(account_master.id = receipt_voucher_entry.account_id)
-												   WHERE receipt_voucher_entry.receipt_voucher_id=receipt_voucher.id 
-												   AND receipt_voucher_entry.entry_type='Dr' LIMIT 0,1) AS debiter"),
-										 DB::raw("(SELECT account_master.master_name FROM receipt_voucher_entry 
-												   JOIN account_master ON(account_master.id = receipt_voucher_entry.account_id)
-												   WHERE receipt_voucher_entry.receipt_voucher_id=receipt_voucher.id 
-												   AND receipt_voucher_entry.entry_type='Cr' AND account_master.master_name LIKE '%$search%'
-												   LIMIT 0,1) AS creditor"));
-												   
-										DB::raw("(SELECT sales_invoice.kilometer FROM sales_invoice JOIN vehicle ON(vehicle.id = sales_invoice.vehicle_id)
-										ORDER BY sales_invoice.id DESC LIMIT 0,1) AS kilometer")
-									} else { */
 									
 										$query->select('receipt_voucher.id','receipt_voucher.voucher_no','receipt_voucher.voucher_date','receipt_voucher.tr_description',
 										 'receipt_voucher.debit AS amount','receipt_voucher.from_jv','receipt_voucher.voucher_type','receipt_voucher.is_transfer','RE.description','RE.reference',
@@ -2879,6 +2842,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 										return $query->count();
 		
 	}
+																		
 	
 	
 	public function PdcReceivedDelete($id)
@@ -2923,14 +2887,14 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 					}
 					
 					DB::table('journal_entry')->where('id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 								
 					DB::table('account_transaction')->where('voucher_type',"JV")->where('voucher_type_id',$entry->id)
-								->update(['status' => 0, 'deleted_at' => now() ]);
+								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 				} 
 				
 				DB::table('journal')->where('id',$attributes['id'][$val])
-							->update(['status' => 0, 'deleted_at' => now()]);
+							->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 							
 			}*/
 			
@@ -2940,6 +2904,5 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 	
 	}
 	
-//SELECT vehicle.name AS vehicle,vehicle.chasis_no,vehicle.reg_no AS vehicle_no,quotation_sales.voucher_no,quotation_sales.reference_no,quotation_sales.voucher_date,quotation_sales.total,quotation_sales.vat_amount,quotation_sales.discount,quotation_sales.net_total,quotation_sales.subtotal,account_master.account_id,account_master.master_name,account_master.address,account_master.phone,account_master.vat_no,terms.description AS terms,salesman.name AS salesman,quotation_sales_item.item_name,quotation_sales_item.quantity,quotation_sales_item.unit_price,quotation_sales_item.vat,quotation_sales_item.vat_amount,quotation_sales_item.line_total,quotation_sales_item.tax_include,quotation_sales_item.item_total,itemmaster.item_code,units.unit_name,header.description AS header,footer.description AS footer FROM quotation_sales JOIN account_master ON(account_master.id=quotation_sales.customer_id) LEFT JOIN terms ON(terms.id=quotation_sales.terms_id) LEFT JOIN salesman ON(salesman.id=quotation_sales.salesman_id) JOIN quotation_sales_item ON(quotation_sales_item.quotation_sales_id=quotation_sales.id) JOIN itemmaster ON(itemmaster.id=quotation_sales_item.item_id) JOIN units ON(units.id=quotation_sales_item.unit_id) LEFT JOIN header_footer header ON(header.id=quotation_sales.header_id) LEFT JOIN header_footer footer ON(footer.id=quotation_sales.footer_id) JOIN vehicle ON(vehicle.id=quotation_sales.vehicle_id) WHERE quotation_sales_item.status=1 AND quotation_sales_item.deleted_at='0000-00-00 00:00:00' AND quotation_sales.id={id}
 
-//SELECT account_master.master_namear,account_master.address_ar,account_master.city_ar,account_master.state_ar,itemmaster.description_ar,purchase_invoice.voucher_no,purchase_invoice.reference_no,purchase_invoice.voucher_date,purchase_invoice.total,purchase_invoice.vat_amount AS total_vatt,purchase_invoice.discount,purchase_invoice.net_amount,purchase_invoice.subtotal,account_master.account_id,account_master.master_name,account_master.address,account_master.phone,account_master.vat_no,terms.description AS terms,purchase_invoice_item.item_name,purchase_invoice_item.quantity,purchase_invoice_item.unit_price,purchase_invoice_item.vat,purchase_invoice_item.vat_amount,purchase_invoice_item.total_price,purchase_invoice_item.tax_include,purchase_invoice_item.item_total,itemmaster.item_code,units.unit_name,department.name AS department FROM purchase_invoice JOIN account_master ON(account_master.id=purchase_invoice.supplier_id) LEFT JOIN terms ON(terms.id=purchase_invoice.terms_id) JOIN purchase_invoice_item ON(purchase_invoice_item.purchase_invoice_id=purchase_invoice.id) JOIN itemmaster ON(itemmaster.id=purchase_invoice_item.item_id) JOIN units ON(units.id=purchase_invoice_item.unit_id) LEFT JOIN department ON(department.id=purchase_invoice.department_id) WHERE purchase_invoice_item.status=1 AND purchase_invoice_item.deleted_at='0000-00-00 00:00:00' AND purchase_invoice.id={id}
+

@@ -101,13 +101,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('so-print')
+								@can('so-print')
 								 <a href="{{ url('sales_order/print/'.$printid.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
                         </div>
@@ -859,9 +859,9 @@
                                         <button type="button" value="button" name="btn" onclick="submitDraft()"class="btn btn-success">Draft</button>
 										<a href="{{ url('sales_order') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('sales_order/add') }}" class="btn btn-warning">Clear</a>
-										@permission('so-history')
+										@can('so-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endpermission
+										@endcan
                                     </div>
                                 </div>
                              

@@ -1526,7 +1526,11 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					 ->where('sales_order.customer_id', $customer_id)
 					 ->where('sales_order.is_settled',0)
 					 ->where('sales_order.department_id',env('DEPARTMENT_ID'))
-					 ->where('sales_order.is_transfer', 0);
+					 ->where('sales_order.is_transfer', 0)
+					 ->where(function ($q) {
+                              $q->whereNull('sales_order.deleted_at')
+                              ->orWhere('sales_order.deleted_at', '0000-00-00 00:00:00');
+                        });
 					
 					if($type) {
 						$query->where(function($qry) {

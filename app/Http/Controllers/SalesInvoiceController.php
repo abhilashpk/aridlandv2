@@ -115,7 +115,7 @@ class SalesInvoiceController extends Controller
 		$invoices = [];
 		$salesmans = $this->salesman->getSalesmanList();
 		
-		$customer = $this->accountmaster->getCustomerList();
+		$customer = $this->accountmaster->getCustomerList();//echo '<pre>';print_r($customer);exit;
 		$jobs = $this->jobmaster->activeJobmasterList();
 	
         $item = DB::table('itemmaster')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
@@ -685,7 +685,7 @@ class SalesInvoiceController extends Controller
 			$is_dept = true;
 		    $deptid =env('DEPARTMENT_ID');
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
-			//echo '<pre>';print_r($docItems);exit;
+		
 			return view('body.salesinvoice.addpi') //addpi  addpisp
 						->withItems($itemmaster)
 						->withTerms($terms)

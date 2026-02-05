@@ -62,22 +62,15 @@ class QuotationSalesController extends Controller
 		$this->formData = $this->forms->getFormData('QS');
 		$this->customer_enquiry = $customer_enquiry;
 		$this->location = $location;
-		// if(Auth::user()->roles[0]->name=='Salesman') {
-		//     $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
-		//     if($srec)
-		//         Session::set('salesman_id',$srec->id);
-		// }
-		if (Auth::check() && Auth::user()->hasRole('Salesman')) {
 
-			$srec = DB::table('salesman')
-				->where('name', Auth::user()->name)
-				->select('id')
-				->first();
+		$user = Auth::user();
 
-			if ($srec) {
-				session(['salesman_id' => $srec->id]); // Laravel 10 way
-			}
-		}		
+		if ($user && $user->roles->isNotEmpty() && $user->roles->first()->name === 'Salesman') {
+		    $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
+		    if($srec)
+		        Session::set('salesman_id',$srec->id);
+		}
+		
 		
 	}
 	
@@ -368,7 +361,7 @@ class QuotationSalesController extends Controller
 		/* $this->validate($request, [
         'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
     ]); */
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			 'location_id' =>'required','location_id' => 'required',
@@ -386,10 +379,7 @@ class QuotationSalesController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('quotation_sales/add')->withInput()->withErrors();
-		}
+		);
 
 		/*$request['voucher_no']='';
 		$res = $this->voucherno->getVoucherNo('QS');
@@ -756,7 +746,7 @@ private function createItem($row) {
 	{	
 		//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('quotation_order_id');
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			 'location_id' =>'required','location_id' => 'required',
@@ -774,10 +764,7 @@ private function createItem($row) {
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('quotation_sales/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		$this->quotation_sales->update($id, $request->all()); 
 		//echo '<pre>';print_r($request->all());exit;

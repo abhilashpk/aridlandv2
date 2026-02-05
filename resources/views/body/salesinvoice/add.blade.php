@@ -110,20 +110,20 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('si-print')
+								@can('si-print')
 								 <a href="{{ url('sales_invoice/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 									<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span>
 								 </a>
-								@endpermission
-								@permission('si-print')
+								@endcan
+								@can('si-print')
 								 <!--<a href="{{ url('sales_invoice/printdo/'.$printid->id) }}" target="_blank" class="btn btn-info btn-sm">
 									<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i> DO
 									</span>
 								 </a>-->
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
 							
@@ -322,9 +322,9 @@
 												<span class="small">Crdit Limit</span> <input type="text" id="cr_limit" name="clmt" value="{{old('clmt')}}" readonly readonly class="form-control cost">
 											</div>
 											<div class="col-xs-1"><br/>
-												@permission('si-history')
+												@can('si-history')
 												<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 										<div class="col-xs-10" id="newcustomerInfo">
@@ -338,12 +338,12 @@
 												<span class="small">Phone No</span> <input type="text" id="customer_phone" name="customer_phone" value="{{old('customer_phone')}}" class="form-control" autocomplete="off">
 											</div>
 											<div class="col-xs-1"><br/>
-												@permission('si-history')
+												@can('si-history')
 												<a href="" class="btn btn-info cust-history" data-toggle="modal" data-target="#custhistory_modal">History</a>
-												@endpermission
-												@permission('siph-history')
+												@endcan
+												@can('siph-history')
 												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 									</div>
@@ -1147,9 +1147,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('sales_invoice') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('sales_invoice/add') }}" class="btn btn-warning">Clear</a>
-										@permission('si-history')
+										@can('si-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endpermission
+										@endcan
                                     </div>
                                 </div>
                             
@@ -2550,7 +2550,7 @@ $(function() {
 				var cur_quantity = parseFloat(data.cur_quantity);
 				var min_quantity = parseFloat(data.min_quantity);
 				<?php //if($settings->item_quantity==1) { ?>
-				@permission('-qty-sale')
+				@can('-qty-sale')
 				if(cur_quantity == 0 || cur_quantity < 0) {
 					alert('Item is out of stock!');
 					$('#itmqty_'+curNum).val('');
@@ -2563,7 +2563,7 @@ $(function() {
 					$('#itmqty_'+curNum).focus();
 					return false;
 				}
-				@endpermission
+				@endcan
 				<?php //} ?>
 			});
 		}
@@ -2591,7 +2591,7 @@ $(function() {
 		if(res) 
 			getNetTotal();
 
-		@permission('si-create')
+		@can('si-create')
 			//MAR18
 			var rate = 1;
 			if( $('#is_fc').is(":checked") ) { 
@@ -2603,7 +2603,7 @@ $(function() {
 				$('#itmcst_'+curNum).val('');
 				$('#itmcst_'+curNum).focus();
 			}
-		@endpermission
+		@endcan
 	});
 	
 	var ordhisurl = "{{ url('sales_invoice/order_history/') }}";

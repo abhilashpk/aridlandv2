@@ -346,6 +346,7 @@
                             @endcan  
                            
                             
+                            
                             @can('bank-list')
                             <li {!! (Request::is('bank') || Request::is('bank/*') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('bank') }}">
@@ -453,7 +454,7 @@
 
                 {{--
                   @if(auth()->user()->can('bd-list') || auth()->user()->can('bd-list') ) 
-                  --}}
+                  
 					
                     <li {!! ( Request::is('duration') || Request::is('duration/*') || Request::is('manual_journal') || Request::is('manual_journal/*') || Request::is('contra_type') || Request::is('contra_type/*') ||  Request::is('buildingmaster') || Request::is('buildingmaster/*') || Request::is('manual_journal') || Request::is('manual_journal/*') ||  Request::is('flatmaster') || Request::is('flatmaster/*')||  Request::is('contractbuilding') || Request::is('contractbuilding/*')? 'class="menu-dropdown active"' : 'class="menu-dropdown"') !!}>
                         <a href="#">
@@ -463,7 +464,7 @@
                         </a>
                          
                         <ul class="sub-menu">
-                        {{-- @can('bd-list')  --}}
+                         @can('bd-list')  
                             <li {!! (Request::is('buildingmaster') || Request::is('buildingmaster/*') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('buildingmaster') }}">
                                     <i class="fa fa-fw fa-gift"></i> Building Master
@@ -501,7 +502,7 @@
                                     <i class="fa fa-fw fa-square"></i> Enquiry
                                 </a>
                             </li>
-                            {{-- <li {!! (Request::is('contractbuilding/expiry') ? 'class="active"' : '') !!}>
+                             <li {!! (Request::is('contractbuilding/expiry') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('contractbuilding/expiry') }}">
                                     <i class="fa fa-fw fa-square"></i> Contract Expiry
                                 </a>
@@ -511,7 +512,7 @@
                                 <a href="{{ URL::to('contractbuilding/history') }}">
                                     <i class="fa fa-fw fa-square"></i> History
                                 </a>
-                            </li>--}}
+                            </li>
 							
 							<li {!! (Request::is('contractbuilding/closed') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('contractbuilding/closed') }}">
@@ -519,16 +520,16 @@
                                 </a>
                             </li>
                           
-                            {{--<li {!! (Request::is('manual_journal') || Request::is('manual_journal/*') ? 'class="active"' : '') !!}>
+                            <li {!! (Request::is('manual_journal') || Request::is('manual_journal/*') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('manual_journal') }}">
                                 <i class="fa fa-fw fa-circle"></i> Manual Journal
                                 </a>
-                            </li>--}}
-                            {{-- @endcan --}}
+                            </li>
+                             @endcan 
 
                         </ul>
                         </li>
-                    	{{-- @endif --}}
+                    	 @endif --}}
 
                          @if(auth()->user()->can('cce-list') || auth()->user()->can('cce-list') )
 					
@@ -1094,10 +1095,18 @@
 							@can('si-list')
 							<li {!! (Request::is('sales_invoice') || Request::is('sales_invoice/*') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('sales_invoice') }}">
-                                    <i class="fa fa-fw fa-calendar"></i> Sales Invoice
+                                    <i class="fa fa-fw fa-calendar"></i> Sales Invoice Credit
                                 </a>
                             </li>
 							@endcan
+                            @can('si-list')
+							<li {!! (Request::is('sales_invoice') || Request::is('sales_invoice/*') ? 'class="active"' : '') !!}>
+                                <a href="{{ URL::to('sales_invoice/cash') }}">
+                                    <i class="fa fa-fw fa-calendar"></i> Sales Invoice Cash
+                                </a>
+                            </li>
+							@endcan
+							
                             @can('pl-list')
                             <li {!! (Request::is('packing_list') || Request::is('packing_list/*') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('packing_list') }}">
@@ -1255,7 +1264,7 @@
                                     <i class="fa fa-fw fa-keyboard-o"></i> Vouchers Entry <span class="fa arrow"></span>
                                 </a>
 								<ul class="sub-menu sub-submenu">
-								    {{--
+								    
 									@can('jv-list')
 									<li {!! (Request::is('journal') || Request::is('journal/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('journal') }}">
@@ -1263,7 +1272,7 @@
 										</a>
 									</li>
 									@endcan
-									--}}
+									
 										@can('rv-list')
 									<li {!! (Request::is('receipt_voucher') || Request::is('receipt_voucher/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('receipt_voucher') }}">
@@ -1279,7 +1288,7 @@
 										</a>
 									</li>
 									@endcan
-									{{--
+									
 									@can('vp-list')
 									<li {!! (Request::is('purchase_voucher') || Request::is('purchase_voucher/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('purchase_voucher') }}">
@@ -1295,7 +1304,7 @@
 										</a>
 									</li>
 									@endcan
-									--}}
+									
 									@can('rv-list')
 									<li {!! (Request::is('customer_receipt') || Request::is('customer_receipt/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('customer_receipt') }}">
@@ -1316,7 +1325,7 @@
 										</a>
 									</li>
 									@endcan
-									{{--
+									
                                     	@can('cv-list')
                                     <li {!! (Request::is('contra_voucher') || Request::is('contra_voucher/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('contra_voucher') }}">
@@ -1331,7 +1340,7 @@
 										</a>
 									</li>
 									@endcan
-									--}}
+									
 									<!-- <li {!! (Request::is('cheque_details') || Request::is('cheque_details/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('cheque_details') }}">
 											<i class="fa fa-fw fa-suitcase"></i> Print Cheque
@@ -1342,7 +1351,7 @@
 											<i class="fa fa-fw fa-money"></i> Other Payment
 										</a>
 									</li>-->
-									{{--
+									
 									@can('as-list')
 									<li {!! (Request::is('advance_set') || Request::is('advance_set/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('advance_set/add') }}">
@@ -1350,7 +1359,7 @@
 										</a>
 									</li>
 									@endcan
-									--}}
+									
 									@can('pc-list')
 									<li {!! (Request::is('pettycash') || Request::is('pettycash/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('pettycash') }}">
@@ -1358,7 +1367,7 @@
 										</a>
 									</li>
 									@endcan
-									{{--
+									
 									@can('cn-list')
 									<li {!! (Request::is('credit_note') || Request::is('credit_note/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('credit_note') }}">
@@ -1400,14 +1409,14 @@
                                 </a>
                                </li>
 							   @endcan
-                                --}}
-                                   {{-- @can('mjv-list') --}}
+                                
+                                    @can('mjv-list') 
                                     <li {!! (Request::is('manual_journal') || Request::is('manual_journal/*') ? 'class="active"' : '') !!}>
 										<a href="{{ URL::to('manual_journal') }}">
                                             <i class="fa fa-fw fa-folder-o"></i> Manual Journal
 										</a>
 									</li>
-                                    {{-- @endcan --}}
+                                     @endcan 
 								</ul>
                             </li>
                         </ul>
@@ -1715,55 +1724,7 @@
                                 </a>
                             </li>
 							@endcan
-							<!--<li {!! (Request::is('document_report') || Request::is('document_report/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('document_report') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> Document Report
-                                </a>
-                            </li>
-							
-							<li {!! (Request::is('voucherwise_report/pisi_report') || Request::is('voucherwise_report/pisi_report/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('voucherwise_report/pisi_report') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> PC & SI Report
-                                </a>
-                            </li>
-							
-							<li {!! (Request::is('voucherwise_report/pisi_jobwise') || Request::is('voucherwise_report/pisi_jobwise/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('voucherwise_report/pisi_jobwise') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> PC & SI Jobwise Report
-                                </a>
-                            </li>
-							
-							<li {!! (Request::is('voucherwise_report/pisirtn_report') || Request::is('voucherwise_report/pisirtn_report/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('voucherwise_report/pisirtn_report') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> PC & SI Retention Report
-                                </a>
-                            </li>
-							
-							<li {!! (Request::is('voucherwise_report/pisirtn_jobwise') || Request::is('voucherwise_report/pisirtn_jobwise/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('voucherwise_report/pisirtn_jobwise') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> PC & SI Jobwise Retention Report
-                                </a>
-                            </li>
-							
-							<li {!! (Request::is('voucherwise_report/pisirv_report') || Request::is('voucherwise_report/pisirv_report/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('voucherwise_report/pisirv_report') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> PC & SI RV Report
-                                </a>
-                            </li>
-							
-							<li {!! (Request::is('voucherwise_report/pisirv_jobwise') || Request::is('voucherwise_report/pisirv_jobwise/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('voucherwise_report/pisirv_jobwise') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> PC & SI Jobwise RV Report
-                                </a>
-                            </li>
-							
-							<li {!! (Request::is('voucherwise_report/pisi_summary') || Request::is('voucherwise_report/pisi_summary/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('voucherwise_report/pisi_summary') }}">
-                                   <i class="glyphicon glyphicon-list-alt"></i> PC & SI Summary Report
-                                </a>
-                            </li>
-							-->
-							
+														
 						</ul>
 					</li>
 					@endif
@@ -1906,7 +1867,7 @@
                     </li>
                     @endif
 					
-					{{--
+					
 					@if(auth()->user()->can('emp-list') || auth()->user()->can('doc-list') || auth()->user()->can('ast-list'))
 					<li {!! ( Request::is('document_master') || Request::is('document_master/*') || Request::is('employee') ||Request::is('division/*') || Request::is('employee/*') || Request::is('assets_issued') || Request::is('assets_issued/*') || Request::is('document_report/*') || Request::is('employee_document') || Request::is('employee_document/*') || Request::is('employee_report') || Request::is('employee_report/*') ? 'class="menu-dropdown active"' : 'class="menu-dropdown"') !!}>
                         <a href="#">
@@ -1980,7 +1941,7 @@
                         </ul>
                     </li>
 					@endif
-					--}}
+					
 					
 					{{--
 					@if(auth()->user()->can('wage-list') || auth()->user()->can('pay-roll-report') || auth()->user()->can('pay-slip'))

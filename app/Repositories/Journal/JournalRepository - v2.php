@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\Journal;
+<?php namespace App\Repositories\Journal;
 
 use App\Models\Journal;
 use App\Models\JournalEntry;
@@ -11,9 +9,9 @@ use App\Repositories\UpdateUtility;
 use App\Models\JournalVoucherTr;
 
 use Config;
-use Illuminate\Support\Facades\DB;
+use DB;
 use Auth;
-use Illuminate\Support\Facades\Session;
+use Session;
 
 class JournalRepository extends AbstractValidator implements JournalInterface {
 	
@@ -69,6 +67,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 	{
 		//echo $this->getVoucherType( $attributes['voucher_type'] );
 		$this->journal->voucher_type  = $this->getVoucherType( $attributes['voucher_type'] );
+		$this->journal->voucher_no = $attributes['voucher_no'];
 		$this->journal->voucher_date  = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])); //date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->journal->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
 		$this->journal->trn_no = isset($attributes['trn_no'])?$attributes['trn_no']:'';
@@ -104,11 +103,8 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		$journalEntryTr->description    		= $attributes['description'][$key];
 		$journalEntryTr->reference    		= $attributes['reference'][$key];
 		$journalEntryTr->entry_type    		= $attributes['account_type'][$key];
-		$journalEntryTr->amount    		= $attributes['line_amount'][$key];
-		//$journalEntryTr->fc_amount    		= $attributes['amount_fc'][$key];
-		//$journalEntryTr->fc_id    		= $attributes['fc'][$key];
-		//$journalEntryTr->currency_rate    		= $attributes['currency_rate'][$key];
-		$journalEntryTr->job_id    		= $attributes['job_id'][$key];
+		$journalEntryTr->amount = (float) $attributes['line_amount'][$key]; //$journalEntryTr->amount    		= $attributes['line_amount'][$key];
+		$journalEntryTr->job_id    		= isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
 		$journalEntryTr->department_id    		= isset($attributes['department'][$key])?$attributes['department'][$key]:'';
 		$journalEntryTr->cheque_no    		= isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
 		$journalEntryTr->cheque_date    		=  isset($attributes['cheque_date'][$key])?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
@@ -144,29 +140,30 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 	private function setAccountTransaction($attributes, $journal_id, $key)
 	{
 		
-		if($this->getVoucherType($attributes['voucher_type'])=='PIN'||$this->getVoucherType($attributes['voucher_type'])=='SIN') {
+	    if($this->getVoucherType($attributes['voucher_type'])=='PIN'||$this->getVoucherType($attributes['voucher_type'])=='SIN') {
 			$department = isset($attributes['department_id'])?$attributes['department_id']:'';
 		} else {
 			$department = isset($attributes['department'][$key])?$attributes['department'][$key]:'';
 		}
 		
-		DB::table('account_transaction')
+	        DB::table('account_transaction')
 				->insert([  'voucher_type' 		=> $this->getVoucherType($attributes['voucher_type']),//'JV',//journal entry
 						    'voucher_type_id'   => $journal_id,
 							'account_master_id' => $attributes['account_id'][$key],
 							'transaction_type'  => $attributes['account_type'][$key],
 							'amount'   			=> $attributes['line_amount'][$key],
 							'status' 			=> 1,
-							'created_at' 		=> now(),
+							'created_at' 		=> date('Y-m-d H:i:s'),
 							'created_by' 		=> Auth::User()->id,
 							'description' 		=> $attributes['description'][$key],
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
-							'department_id'     => $department
+							'department_id'     => $department,
+							'version_no'		=> $attributes['version_no']
 							]);
 		
-		return true;
+		return true; 
 	}
 	
 	private function setAccountTransactionUpdate($attributes, $journal_id, $key)
@@ -184,7 +181,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				->update([ 'account_master_id' => $attributes['account_id'][$key],
 							'transaction_type'  => $attributes['account_type'][$key],
 							'amount'   			=> $attributes['line_amount'][$key],
-							'modify_at' 		=> now(),
+							'modify_at' 		=> date('Y-m-d H:i:s'),
 							'modify_by' 		=> Auth::User()->id,
 							'description' 		=> $attributes['description'][$key],
 							'reference'			=> $attributes['voucher_no'],
@@ -203,7 +200,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				->where('voucher_type', $this->getVoucherType($attributes['voucher_type']))
 				->where('voucher_type_id', $journal_id)
 				->update([ 'status' 		=> 0,
-						   'deleted_at' 	=> now(),
+						   'deleted_at' 	=> date('Y-m-d H:i:s'),
 						   'deleted_by'		=> Auth::User()->id ]);
 		
 		return true;
@@ -215,8 +212,8 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 			//if amount partially transfered, update pending amount.
 			if( isset($attributes['inv_id'][$key]) ) {
 				if($attributes['bill_type'][$key]=='SI') {
-					$lnamount = ($attributes['line_amount'][$key]!='')?$attributes['line_amount'][$key]:0;
-					$actamount = ($attributes['actual_amount'][$key]!='')?$attributes['actual_amount'][$key]:0;
+					$lnamount = ($attributes['line_amount'][$key]!='')?(float)$attributes['line_amount'][$key]:0;
+					$actamount = ($attributes['actual_amount'][$key]!='')?(float)$attributes['actual_amount'][$key]:0;
 					$balance_amount = $actamount - $lnamount;
 					//update as partially paid.
 					DB::table('sales_invoice')
@@ -230,7 +227,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 					}
 				} else if($attributes['bill_type'][$key]=='OB') {
 					
-					$balance_amount = $attributes['actual_amount'][$key] - $attributes['line_amount'][$key];
+					$balance_amount = (float)$attributes['actual_amount'][$key] - (float)$attributes['line_amount'][$key];
 					//update as partially paid.
 					DB::table('opening_balance_tr')
 								->where('id', $attributes['inv_id'][$key])
@@ -244,7 +241,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 					
 				} else if($attributes['bill_type'][$key]=='SIN') {
 							
-					$balance_amount = $attributes['actual_amount'][$key] - $attributes['line_amount'][$key];
+					$balance_amount = (float)$attributes['actual_amount'][$key] - (float)$attributes['line_amount'][$key];
 					//update as partially paid.
 					DB::table('journal')
 								->where('id', $attributes['inv_id'][$key])
@@ -258,7 +255,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				
 				} else if($attributes['bill_type'][$key]=='OT') { //May 15......
 							
-					$balance_amount = $attributes['actual_amount'][$key] - $attributes['line_amount'][$key];
+					$balance_amount = (float)$attributes['actual_amount'][$key] - (float)$attributes['line_amount'][$key];
 					//update as partially paid.
 					DB::table('other_voucher_tr')
 								->where('id', $attributes['inv_id'][$key])
@@ -295,7 +292,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 			if( isset($attributes['inv_id'][$key]) ) {
 				
 				if($attributes['bill_type'][$key]=='PI') {
-					$balance_amount = $attributes['actual_amount'][$key] - $attributes['line_amount'][$key];
+					$balance_amount = (float)$attributes['actual_amount'][$key] - (float)$attributes['line_amount'][$key];
 					//update as partially paid.
 					DB::table('purchase_invoice')
 								->where('id', $attributes['inv_id'][$key])
@@ -309,7 +306,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 					
 				} else if($attributes['bill_type'][$key]=='OB') {
 					
-					$balance_amount = $attributes['actual_amount'][$key] - $attributes['line_amount'][$key];
+					$balance_amount = (float)$attributes['actual_amount'][$key] - (float)$attributes['line_amount'][$key];
 					//update as partially paid.
 					DB::table('opening_balance_tr')
 								->where('id', $attributes['inv_id'][$key])
@@ -323,7 +320,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 								
 				} else if($attributes['bill_type'][$key]=='PIN') {
 					
-					$balance_amount = $attributes['actual_amount'][$key] - $attributes['line_amount'][$key];
+					$balance_amount = (float)$attributes['actual_amount'][$key] - (float)$attributes['line_amount'][$key];
 					//update as partially paid.
 					DB::table('journal')
 								->where('id', $attributes['inv_id'][$key])
@@ -337,7 +334,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				
 				} else if($attributes['bill_type'][$key]=='OT') { //May 15....
 					
-					$balance_amount = $attributes['actual_amount'][$key] - $attributes['line_amount'][$key];
+					$balance_amount = (float)$attributes['actual_amount'][$key] - (float)$attributes['line_amount'][$key];
 					//update as partially paid.
 					DB::table('other_voucher_tr')
 								->where('id', $attributes['inv_id'][$key])
@@ -533,6 +530,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		}
 	}
 	
+
 	public function create($attributes)
 	{ 
 		//echo '<pre>';print_r($attributes);exit;
@@ -540,55 +538,60 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		
 			DB::beginTransaction();
 			try {
-				//VOUCHER NO INCREMENT LOGIC//
-				if( $attributes['curno'] == $attributes['voucher_no'] ) {
-					$cnt = 0;
-					do {
-						$jvset = DB::table('account_setting')->where('id', $attributes['voucher'])->select('prefix','is_prefix','voucher_no')->first();
-						$vtype = $this->getVoucherType($attributes['voucher_type']);
-						if($jvset) {
-							if($jvset->is_prefix==0) {
-								$attributes['voucher_no'] = $jvset->voucher_no + $cnt;
-								$attributes['vno'] = $jvset->voucher_no + $cnt;
-							} else {
-								$attributes['voucher_no'] = $jvset->prefix.($jvset->voucher_no + $cnt);
-								$attributes['vno'] = $jvset->voucher_no + $cnt;
-							}
-							$attributes['curno'] = $attributes['voucher_no'];
-						}
-						if(isset($attributes['department_id']) && Session::get('department')==1)
-							$inv = DB::table('journal')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type', $vtype)->where('department_id', $attributes['department_id'])->where('status',1)->whereNull('deleted_at')->count();
-						else
-							$inv = DB::table('journal')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type', $vtype)->where('status',1)->whereNull('deleted_at')->count();
-
-						$cnt++;
-					} while ($inv!=0);
-				} 
-				//VOUCHER NO INCREMENT LOGIC//
+				$attributes['version_no'] = 1;
+				//VOUCHER NO LOGIC.....................
+				// 2️⃣ Get the highest numeric part from voucher_master
+				$maxNumeric = DB::table('journal')
+					->where('deleted_at', '0000-00-00 00:0:00')
+					//->where('department_id', $departmentId)
+					->where('status', 1)->where('voucher_type', 'JV')
+					->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+					->value('max_no');
 				
-				//JN13
-				/*do {
-					$jvset = DB::table('account_setting')->where('id', $attributes['voucher'])->select('prefix','is_prefix','voucher_no')->first();
-					$vtype = $this->getVoucherType($attributes['voucher_type']);
-					if($jvset) {
-						if($jvset->is_prefix==0) {
-							$attributes['voucher_no'] = $jvset->voucher_no;
-							$attributes['vno'] = $jvset->voucher_no;
+				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+				$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();//echo '<pre>';print_r($accset);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+				//VOUCHER NO LOGIC.....................
+				//exit;
+				$maxRetries = 5; // prevent infinite loop
+				$retryCount = 0;
+				$saved = false;
+
+				while (!$saved && $retryCount < $maxRetries) {
+					try {
+						if ($this->setInputValue($attributes)) {
+
+							$this->journal->status = 1;
+							$this->journal->created_at = date('Y-m-d H:i:s');
+							$this->journal->created_by = Auth::User()->id;
+							$this->journal->fill($attributes)->save();
+							$saved = true; // success ✅
+
+						}	
+					} catch (\Illuminate\Database\QueryException $ex) {
+
+						// Check if it's a duplicate voucher number error
+						if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+							strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+							$maxNumeric = DB::table('journal')
+								->where('deleted_at', '0000-00-00 00:0:00')
+								//->where('department_id', $departmentId)
+								->where('status', 1)->where('voucher_type', 'JV')
+								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+								->value('max_no');
+							
+							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+							$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+
+							$retryCount++;
 						} else {
-							$attributes['voucher_no'] = $jvset->prefix.$jvset->voucher_no;
-							$attributes['vno'] = $jvset->voucher_no;
+							throw $ex; //echo $ex;exit;// rethrow if different DB error
 						}
 					}
-					$inv = DB::table('journal')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type', $vtype)->where('status',1)->whereNull('deleted_at')->count();
-				} while ($inv!=0);*/
-									
-				if($this->setInputValue($attributes)) {
-					$this->journal->status = 1;
-					$this->journal->created_at = now();
-					$this->journal->created_by = Auth::User()->id;
-					$this->journal->fill($attributes)->save();
 				}
-				
+													
 				//transactions insert
 				if($this->journal->id && !empty( array_filter($attributes['line_amount']))) {
 					$cr_amount = 0; $dr_amount = 0;
@@ -607,54 +610,82 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							//PDCR list inserting....
 							if($attributes['group_id'][$key]=='PDCR') {
 								
-								$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
 								
+								if(isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]=='') {
+									$party_id = '';
+									$ctrow = DB::table('journal_entry')->where('journal_id',$this->jv_entry_id->id)
+													->where('entry_type','Cr')->where('status',1)
+													->where('deleted_at','0000-00-00 00:00:00')
+													->select('account_id')->first();
+									if($ctrow) {
+										$party_id = $ctrow->account_id;
+									}
+								} else
+									$party_id = $attributes['partyac_id'][$key];
+									
 								DB::table('pdc_received')
 												->insert([ 'voucher_id' 	=>  $this->journal->id,
 															'voucher_type'   => 'DB',
-															'dr_account_id' => $acrow->id,
+															'dr_account_id' => ($acrow)?$acrow->id:0,
 															'cr_account_id' => $attributes['account_id'][$key],
 															'reference'  => $attributes['reference'][$key],
 															'amount'   			=> $attributes['line_amount'][$key],
 															'status' 			=> 0,
-															'created_at' 		=> now(),
+															'created_at' 		=> date('Y-m-d H:i:s'),
 															'created_by' 		=> Auth::User()->id,
 															'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
-															'customer_id' => $attributes['partyac_id'][$key],
+															'customer_id' => $party_id,
 															'cheque_no' => $attributes['cheque_no'][$key],
-															'cheque_date' => date('Y-m-d', strtotime($attributes['cheque_date'][$key])),
+															'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
 															'voucher_no' => $attributes['voucher_no'],
 															'description' => $attributes['description'][$key],
-															'bank_id'	=> $attributes['bank_id'][$key],
+															'bank_id'	=> (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 															'entry_id' => $jv_entry_id->id,
-															'entry_type' => 'JV'
+															'entry_type' => 'JV',
+														    'dr_bank_id' => ($bnk)?$bnk->dr_account_master_id:0
 														]);
 							}
 							
 							//PDCI list inserting....
 							if($attributes['group_id'][$key]=='PDCI') {
 								
-								$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cr_account_master_id')->first();
 								
+								if(isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]=='') {
+									$party_id = '';
+									$ctrow = DB::table('payment_voucher_entry')->where('payment_voucher_id',$this->payment_voucher->id)
+													->where('entry_type','Dr')->where('status',1)
+													->where('deleted_at','0000-00-00 00:00:00')
+													->select('account_id')->first();
+									if($ctrow) {
+										$party_id = $ctrow->account_id;
+									}
+								} else
+									$party_id = $attributes['partyac_id'][$key];
+
 								DB::table('pdc_issued')
 												->insert([ 'voucher_id' 	=>  $this->journal->id,
 															'voucher_type'   => 'CB',
 															'dr_account_id' => $attributes['account_id'][$key],
-															'cr_account_id' => $acrow->id,
+															'cr_account_id' => ($acrow)?$acrow->id:0,
 															'reference'  => $attributes['reference'][$key],
 															'amount'   			=> $attributes['line_amount'][$key],
 															'status' 			=> 0,
-															'created_at' 		=> now(),
+															'created_at' 		=> date('Y-m-d H:i:s'),
 															'created_by' 		=> Auth::User()->id,
 															'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
-															'supplier_id' => $attributes['partyac_id'][$key],
+															'supplier_id' => $party_id,
 															'cheque_no' => $attributes['cheque_no'][$key],
 															'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
 															'voucher_no' => $attributes['voucher_no'],
 															'description' => $attributes['description'][$key],
-															'bank_id'	=> ($attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
+															'bank_id'	=> (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 															'entry_id' => $jv_entry_id->id,
-															'entry_type' => 'JV'
+															'entry_type' => 'JV',
+														    'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
 														]);
 							}
 							
@@ -691,51 +722,26 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							//update closing balance of debitor/creditor account
 							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
 							
-							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['account_id'][$key] ]);
+							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!='' && isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]!=''){
+								if($attributes['group_id'][$key]=='PDCR')
+									DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['partyac_id'][$key] ]);
+								elseif($attributes['group_id'][$key]=='PDCI')
+									DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> '','ctype' => 1]);
 							}
 						}
 					} 
 					
-					$difference = (int)($dr_amount - $cr_amount);
-					if($difference==0) { //JN1
-						//update debit, credit, difference amount
-						DB::table('journal')
-									->where('id', $this->journal->id)
-									->update(['debit'     => $dr_amount,
-											  'credit' 	  => $cr_amount,
-											  'difference' => $difference ]);
-											  
-						//update voucher no........  MY23
-						if(isset($attributes['is_prefix']) && $attributes['is_prefix']==0) {
-							if( ($this->journal->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) {
-								DB::table('account_setting')
-										->where('id', $attributes['voucher'])
-										->update(['voucher_no' => DB::raw('voucher_no + 1') ]);
-										//->update(['voucher_no' => $attributes['voucher_no'] + 1 ]);
-							}
-						} else {
-							if( $this->journal->id ) {
-								if(isset($attributes['vno'])) {
-									
-									DB::table('account_setting')->where('id', $attributes['voucher'])
-													->update(['voucher_no' =>  $attributes['vno'] + 1 ]);
-									
-								} else {
-									
-									DB::table('account_setting')
-										->where('id', $attributes['voucher'])
-										->update(['voucher_no' =>  DB::raw('voucher_no + 1') ]);
-								}
-							}
-						}	
-					} else {
-						throw new ValidationException('Journal entry validation error! Please try again.', $this->getErrors());
+					$difference = round($dr_amount - $cr_amount, 2);
+					if(bccomp($difference, '0.00', 2) != 0) { 	
+						Session::flash('error', 'Debit and Credit totals must be equal before saving this voucher.');
+						return false;
+						//throw new ValidationException('Receipt entry validation error! Please try again.',$this->getErrors());
 					}
+
 				}
 					
 				DB::commit(); 
-				return true;
+				return $this->journal->id;
 				
 			} catch (\Exception $e) {
 			  
@@ -753,59 +759,77 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		
 			DB::beginTransaction();
 			try {
-				//VOUCHER NO INCREMENT LOGIC//
-				if( $attributes['curno'] == $attributes['voucher_no'] ) {
-					$cnt = 0;
-					do {
-						$jvset = DB::table('account_setting')->where('id', $attributes['voucher'])->select('prefix','is_prefix','voucher_no')->first();
-						
-						if($jvset) {
-							if($jvset->is_prefix==0) {
-								$attributes['voucher_no'] = $jvset->voucher_no + $cnt;
-								$attributes['vno'] = $jvset->voucher_no + $cnt;
-							} else {
-								$attributes['voucher_no'] = $jvset->prefix.($jvset->voucher_no + $cnt);
-								$attributes['vno'] = $jvset->voucher_no + $cnt;
-							}
-							$attributes['curno'] = $attributes['voucher_no'];
-						}
-						if(isset($attributes['department_id']) && Session::get('department')==1)
-							$inv = DB::table('journal')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type', 'SIN')->where('department_id', $attributes['department_id'])->where('status',1)->whereNull('deleted_at')->count();
-						else
-							$inv = DB::table('journal')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type', 'SIN')->where('status',1)->whereNull('deleted_at')->count();
+			    $attributes['version_no'] = 1;
+				//VOUCHER NO LOGIC.....................
+				// 2️⃣ Get the highest numeric part from voucher_master
+				$maxNumeric = DB::table('journal')
+					->where('deleted_at', '0000-00-00 00:0:00')
+					//->where('department_id', $departmentId)
+					->where('status', 1)->where('voucher_type', 'SIN')
+					->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+					->value('max_no');
+				
+				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+				$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();//echo '<pre>';print_r($accset);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+				//VOUCHER NO LOGIC.....................
+				//exit;
+				$maxRetries = 5; // prevent infinite loop
+				$retryCount = 0;
+				$saved = false;
 
-						$cnt++;
-					} while ($inv!=0);
-				} 
-				//VOUCHER NO INCREMENT LOGIC//
-				//JN13
-			/*	do {
-					$jvset = DB::table('account_setting')->where('id', $attributes['voucher'])->select('prefix','is_prefix','voucher_no')->first();
-					if($jvset) {
-						if($jvset->is_prefix==0) {
-							$attributes['voucher_no'] = $jvset->voucher_no;
-							$attributes['vno'] = $jvset->voucher_no;
+				while (!$saved && $retryCount < $maxRetries) {
+					try {
+						if ($this->setInputValue($attributes)) {
+
+							$this->journal->status = 1;
+							$this->journal->created_at = date('Y-m-d H:i:s');
+							$this->journal->created_by = Auth::User()->id;
+							$this->journal->fill($attributes)->save();
+							$saved = true; // success ✅
+
+						}	
+					} catch (\Illuminate\Database\QueryException $ex) {
+
+						// Check if it's a duplicate voucher number error
+						if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+							strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+							$maxNumeric = DB::table('journal')
+								->where('deleted_at', '0000-00-00 00:0:00')
+								//->where('department_id', $departmentId)
+								->where('status', 1)->where('voucher_type', 'SIN')
+								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+								->value('max_no');
+							
+							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
+							$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+
+							$retryCount++;
 						} else {
-							$attributes['voucher_no'] = $jvset->prefix.$jvset->voucher_no;
-							$attributes['vno'] = $jvset->voucher_no;
+							throw $ex; //echo $ex;exit;// rethrow if different DB error
 						}
 					}
-					$inv = DB::table('journal')->where('voucher_no',$attributes['voucher_no'])->where('voucher_type','SIN')->where('status',1)->whereNull('deleted_at')->count();
-				} while ($inv!=0);*/
-				
-				
-				if($this->setInputValue($attributes)) {
-					$this->journal->status = 1;
-					$this->journal->created_at = now();
-					$this->journal->created_by = Auth::User()->id;
-					$this->journal->fill($attributes)->save();
 				}
 				
+
+				$hasLineAmount = isset($attributes['line_amount']) && is_array($attributes['line_amount']) && !empty(array_filter($attributes['line_amount'], function ($v) {
+                                    return is_numeric($v) && (float) $v != 0;
+                                }));
+
 				//transactions insert
-				if($this->journal->id && !empty( array_filter($attributes['line_amount']))) {
+				//if($this->journal->id && !empty( array_filter($attributes['line_amount']))) {
+				if (!empty($this->journal->id) && $hasLineAmount) { 
 					$cr_amount = 0; $dr_amount = 0;
-					foreach($attributes['line_amount'] as $key => $value) {
+					foreach($attributes['line_amount'] as $key => $value) { //echo $attributes['account_id'][$key];exit;
+					
+					    if (empty($attributes['account_id'][$key]) || !is_numeric($value) || (float) $value == 0 ) {
+                            continue;
+                        }
 						
+						if($attributes['account_id'][$key] !='') {
+							
 							$journalEntryTr = new JournalEntry();
 							$arrResult = $this->setTrInputValue($attributes, $journalEntryTr, $key);
 							
@@ -823,7 +847,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 								$journalVoucherTr = new JournalVoucherTr();
 								
 								$journalVoucherTr->journal_entry_id = $jv_entry_id;
-								$journalVoucherTr->invoice_id = (isset($attributes['sales_invoice_id'][$key]))?$attributes['sales_invoice_id'][$key]:'';
+								$journalVoucherTr->invoice_id = $attributes['sales_invoice_id'][$key];
 								$journalVoucherTr->assign_amount = $attributes['line_amount'][$key];
 								$journalVoucherTr->bill_type = $attributes['bill_type'][$key];
 								$journalVoucherTr->status = 1;
@@ -835,7 +859,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 								$journalVoucherTr = new JournalVoucherTr();
 								
 								$journalVoucherTr->journal_entry_id = $jv_entry_id;
-								$journalVoucherTr->invoice_id = (isset($attributes['purchase_invoice_id'][$key]))?$attributes['purchase_invoice_id'][$key]:'';
+								$journalVoucherTr->invoice_id = $attributes['purchase_invoice_id'][$key];
 								$journalVoucherTr->assign_amount = $attributes['line_amount'][$key];
 								$journalVoucherTr->bill_type = $attributes['bill_type'][$key];
 								$journalVoucherTr->status = 1;
@@ -851,39 +875,25 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
 							
 							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['account_id'][$key] ]);
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key] ]);
 							}
+						}
 					}
 					
-					$difference = (int)($dr_amount - $cr_amount);//echo '<br>'.$dr_amount.' - '.$cr_amount.'<br>';
-					if($difference==0) { //JN1
+					$difference = round($dr_amount - $cr_amount, 2);
+					if(bccomp($difference, '0.00', 2) != 0) { 	
+						Session::flash('error', 'Debit and Credit totals must be equal before saving this voucher.');
+						return false;
+
+					} else  { //JN1
 						//update debit, credit, difference amount
 						DB::table('journal')
 									->where('id', $this->journal->id)
 									->update(['debit'     => $dr_amount,
 											  'credit' 	  => $cr_amount,
 											  'difference' => $difference ]);
-											  
-						//update voucher no........  MY23
-						if($attributes['is_prefix']==0) {
-							if( ($this->journal->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) {
-								DB::table('account_setting')
-										->where('id', $attributes['voucher'])
-										->update(['voucher_no' => $attributes['voucher_no'] + 1 ]);
-							}
-						} else {
-							if( $this->journal->id ) {
-								DB::table('account_setting')
-									->where('id', $attributes['voucher'])
-									->update(['voucher_no' => $attributes['vno'] + 1 ]);
-							}
-						}	
-					} else {
-						throw new ValidationException('Journal entry validation error! Please try again.', $this->getErrors());
-					}
+					} 
 				}
-				
-				
 				
 				DB::commit();
 				return true;
@@ -910,6 +920,19 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				foreach($attributes['line_amount'] as $key => $value) {
 					
 					if($attributes['je_id'][$key]!='') {
+
+						//FIND CURRENT VERSION	 
+						$currentVersion = DB::table('account_transaction')->where('voucher_type', 'JV')->where('voucher_type_id', $attributes['je_id'][$key])->max('version_no');
+						$newVersion = $currentVersion + 1;
+						$attributes['version_no'] = $newVersion;
+
+						//SOFT DELETE OLD VERSION
+						DB::table('account_transaction')->where('voucher_type', 'JV')->where('voucher_type_id', $attributes['je_id'][$key])
+									->update([
+												'status' => 0,
+												'deleted_at' => date('Y-m-d h:i:s'),
+												'deleted_by'  => Auth::User()->id,
+											]);
 						
 						if($attributes['account_id'][$key]!='' && $attributes['account_id'][$key]!=0) {
 							$journalEntryTr = JournalEntry::find($attributes['je_id'][$key]);
@@ -924,7 +947,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							$jerow['reference']    		= $attributes['reference'][$key];
 							$jerow['entry_type']    		= $attributes['account_type'][$key];
 							$jerow['amount']    		= $attributes['line_amount'][$key];
-							$jerow['job_id']    		= $attributes['job_id'][$key];
+							$jerow['job_id']    		= isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
 							$jerow['department_id']    	= isset($attributes['department'][$key])?$attributes['department'][$key]:'';
 							$jerow['cheque_no']   		= isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
 							$jerow['cheque_date']    	=  isset($attributes['cheque_date'][$key])?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
@@ -933,62 +956,57 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							
 							$journalEntryTr->update($jerow);
 							
-							//if($value=='' || $value==0) {
-								//DB::table('journal_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0]);//, 'deleted_at' => now()
-							//}
-							
-							//UPDATE JOURNAL VOUCHER TRANSACTION......
-							/* if($attributes['group_id'][$key]=='CUSTOMER' && $attributes['account_type'][$key]=='Cr' && $attributes['inv_id'][$key]!='') {
-								$journalVoucherTr = new JournalVoucherTr($attributes['id'][$key]);
-								$invrow['assign_amount'] = $attributes['line_amount'][$key];
-								$invrow['invoice_id'] = $attributes['inv_id'][$key];
-								$receiptVoucherTr->update($invrow);
-							} */
-								
+							if($value=='' || $value==0) {
+								DB::table('journal_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+								DB::table('account_transaction')->where('voucher_type', 'JV')->where('voucher_type_id', $attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d h:i:s')]);
+							}
+
 							//update invoice transaction status...
 							$this->setTransactionStatusUpdate($attributes, $key, $journalEntryTr->id); //May 15
-							
-							$this->setAccountTransactionUpdate($attributes, $journalEntryTr->id, $key);
-							
+						
+							//$this->setAccountTransactionUpdate($attributes, $journalEntryTr->id, $key);
+							$this->setAccountTransaction($attributes, $journalEntryTr->id, $key);
+								
 							//update closing balance of debitor/creditor account
-							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
+							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]); 
 							
 							//PDCR list updating.... NOV27
 							if($attributes['group_id'][$key]=='PDCR') {
 								
 								//UPDATE PDC...
-								$pdcrow = DB::table('pdc_received')
-												->where('entry_id', $attributes['je_id'][$key])
-												->where('entry_type','JV')
-												->select('id')->first();
+								$pdcrow = DB::table('pdc_received')->where('entry_id', $attributes['je_id'][$key])->where('entry_type','JV')->select('id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
 
 								if($pdcrow)	{			
 									DB::table('pdc_received')
 													->where('id', $pdcrow->id)
-													->update([ 	'reference'  => $attributes['reference'][$key],
+													->update([ 	'dr_account_id' => ($acrow)?$acrow->id:0,
+																'cr_account_id' => $attributes['account_id'][$key],
+																'reference'  => $attributes['reference'][$key],
 																'amount'   			=> $attributes['line_amount'][$key],
-																'voucher_date'		=> date('Y-m-d', strtotime($attributes['voucher_date'])),
+																'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 																'customer_id' => $attributes['partyac_id'][$key],
 																'cheque_no' => $attributes['cheque_no'][$key],
 																'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
 																'voucher_no' => $attributes['voucher_no'],
 																'description' => $attributes['description'][$key],
-																'bank_id' => ($attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
-																'deleted_at' => '0000-00-00 00:00:00'
+																'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
+																'deleted_at' => '0000-00-00 00:00:00',
+																'dr_bank_id' => ($bnk)?$bnk->dr_account_master_id:0
 															]);
 								} else {
 									//INSERT NEW PDC....
-									$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
 								
 									DB::table('pdc_received')
 												->insert([ 'voucher_id' 	=>  $this->journal->id,
 															'voucher_type'   => 'DB',
-															'dr_account_id' => $acrow->id,
+															'dr_account_id' => ($acrow)?$acrow->id:0,
 															'cr_account_id' => $attributes['account_id'][$key],
 															'reference'  => $attributes['reference'][$key],
 															'amount'   			=> $attributes['line_amount'][$key],
 															'status' 			=> 0,
-															'created_at' 		=> now(),
+															'created_at' 		=> date('Y-m-d H:i:s'),
 															'created_by' 		=> Auth::User()->id,
 															'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
 															'customer_id' => $attributes['partyac_id'][$key],
@@ -996,9 +1014,10 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 															'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
 															'voucher_no' => $attributes['voucher_no'],
 															'description' => $attributes['description'][$key],
-															'bank_id' => ($attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
+															'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 															'entry_id' =>  $attributes['je_id'][$key],
-															'entry_type' => 'JV'
+															'entry_type' => 'JV',
+															'dr_bank_id' => ($bnk)?$bnk->dr_account_master_id:0
 														]);
 								}
 
@@ -1007,71 +1026,14 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 									DB::table('pdc_received')
 													->where('entry_id', $attributes['je_id'][$key])
 													->where('entry_type','JV')
-													->update([ 	'deleted_at'  => now() ]);
+													->update([ 	'deleted_at'  => date('Y-m-d H:i:s') ]);
 							}
 
-							//PDCR list updating.... NOV27
-							if($attributes['group_id'][$key]=='PDCI') {
-								
-								//UPDATE PDC...
-								$pdcrow = DB::table('pdc_issued')
-												->where('entry_id', $attributes['je_id'][$key])
-												->where('entry_type','JV')
-												->select('id')->first();
-
-								if($pdcrow)	{			
-									DB::table('pdc_issued')
-													->where('id', $pdcrow->id)
-													->update([ 	'reference'  => $attributes['reference'][$key],
-																'amount'   			=> $attributes['line_amount'][$key],
-																'voucher_date'		=> date('Y-m-d', strtotime($attributes['voucher_date'])),
-																'supplier_id' => $attributes['partyac_id'][$key],
-																'cheque_no' => $attributes['cheque_no'][$key],
-																'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
-																'voucher_no' => $attributes['voucher_no'],
-																'description' => $attributes['description'][$key],
-																'bank_id' => ($attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
-																'deleted_at' => '0000-00-00 00:00:00'
-															]);
-								} else {
-									//INSERT NEW PDC....
-									$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
-									DB::table('pdc_issued')
-												->insert([ 'voucher_id' 	=> $this->journal->id,
-															'voucher_type'   => 'CB',
-															'cr_account_id' => $acrow->id,
-															'dr_account_id' => $attributes['account_id'],
-															'reference'  => $attributes['reference'],
-															'amount'   			=> $attributes['amount'],
-															'status' 			=> 0,
-															'created_at' 		=> now(),
-															'created_by' 		=> Auth::User()->id,
-															'voucher_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-															'supplier_id' => $attributes['partyac_id'],
-															'cheque_no' => $attributes['cheque_no'],
-															'cheque_date' => ($attributes['cheque_date']!='')?date('Y-m-d', strtotime($attributes['cheque_date'])):date('Y-m-d'),
-															'voucher_no' => $attributes['voucher_no'],
-															'description' => $attributes['description'],
-															'bank_id' => (isset($attributes['bank_id']) && $attributes['bank_id']!='')?$attributes['bank_id']:1,
-															'entry_id' => $attributes['je_id'][$key],
-															'entry_type' => 'JV'
-														]);
-
-								}
-
-							} else { 
-									//SET AS DELETED
-									DB::table('pdc_issued')
-													->where('entry_id', $attributes['je_id'][$key])
-													->where('entry_type','JV')
-													->update([ 	'deleted_at'  => now() ]);
-							}
 							
-							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['partyac_id'] ]);
+							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!='' && isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]!=''){
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['partyac_id'][$key] ]);
 							}
 
-							 
 						}
 						
 						
@@ -1093,27 +1055,41 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							//PDCR list inserting....
 							if($attributes['group_id'][$key]=='PDCR') {
 								
-								$acrow = DB::table('account_master')->where('status',1)->where('category','BANK')->select('id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								if($attributes['partyac_id'][$key]=='') {
+									$party_id = '';
+									$ctrow = DB::table('receipt_voucher_entry')->where('receipt_voucher_id',$this->receipt_voucher->id)
+													->where('entry_type','Cr')->where('status',1)
+													->where('deleted_at','0000-00-00 00:00:00')
+													->select('account_id')->first();
+									if($ctrow) {
+										$party_id = $ctrow->account_id;
+									}
+								} else
+									$party_id = $attributes['partyac_id'][$key];
+									
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
 								
 								DB::table('pdc_received')
 												->insert([ 'voucher_id' 	=>  $this->journal->id,
 															'voucher_type'   => 'DB',
-															'dr_account_id' => $acrow->id,
+															'dr_account_id' => ($acrow)?$acrow->id:0,
 															'cr_account_id' => $attributes['account_id'][$key],
 															'reference'  => $attributes['reference'][$key],
 															'amount'   			=> $attributes['line_amount'][$key],
 															'status' 			=> 0,
-															'created_at' 		=> now(),
+															'created_at' 		=> date('Y-m-d H:i:s'),
 															'created_by' 		=> Auth::User()->id,
 															'voucher_date'		=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
-															'customer_id' => $attributes['partyac_id'][$key],
+															'customer_id' => $party_id,
 															'cheque_no' => $attributes['cheque_no'][$key],
 															'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
 															'voucher_no' => $attributes['voucher_no'],
 															'description' => $attributes['description'][$key],
-															'bank_id'	=> ($attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
+															'bank_id'	=> (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 															'entry_id' => $jv_entry_id->id,
-															'entry_type' => 'JV'
+															'entry_type' => 'JV',
+															'dr_bank_id' => ($bnk)?$bnk->dr_account_master_id:0
 														]);
 							}
 							
@@ -1139,13 +1115,13 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
 							
 							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['account_id'][$key] ]);
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['partyac_id'][$key] ]);
 							}
 						}
 					}
+					
 				}
 				
-				$difference = (int)($dr_amount - $cr_amount);
 				
 				//manage removed items...
 				if($attributes['remove_item']!='')
@@ -1158,7 +1134,9 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 											->select('journal_entry.*','account_master.category')
 											->where('journal_entry.id', $id)->first();
 						if($jes) {
-							DB::table('journal_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => now()]);
+							DB::table('journal_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+							DB::table('pdc_received')->where('entry_id',$id)->where('entry_type','JV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]); 
+							
 							if($jes->category=='SUPPLIER') {
 								$invs = DB::table('payment_voucher_tr')->where('payment_voucher_entry_id', $id)->select('id','purchase_invoice_id','assign_amount')->get();
 								foreach($invs as $inv) {
@@ -1181,7 +1159,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 										else if($ent->bill_type=='SIN')
 											DB::table('journal')->where('id', $ent->sales_invoice_id)->update(['is_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
 										
-										DB::table('receipt_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => now() ]);
+										DB::table('receipt_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
 									}
 								}
 							}
@@ -1190,13 +1168,20 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							
 							//update closing balance of debitor/creditor account 
 							$this->updateClosingBalance($jes->account_id, $jes->amount, $jes->entry_type);
+
+							//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
+							if($jes->bank_id!=0 && $jes->cheque_no!='') {
+								DB::table('cheque')->where('cheque_no',$jes->cheque_no)->where('bank_id',$jes->bank_id)->where('account_id',$jes->account_id)->delete();
+							}
 						}
 						
 					}
 				}
 			}
 			
-			if($difference==0) { //JN1
+			
+			$difference = round($dr_amount - $cr_amount, 2);
+			if(bccomp($difference, '0.00', 2) == 0) { 
 			
 				$this->journal->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
 				$this->journal->trn_no = isset($attributes['trn_no'])?$attributes['trn_no']:'';
@@ -1204,18 +1189,62 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				$this->journal->debit = $dr_amount;
 				$this->journal->credit = $cr_amount;
 				$this->journal->difference = $difference;
-				$this->journal->modify_at = now();
+				$this->journal->modify_at = date('Y-m-d H:i:s');
 				$this->journal->modify_by = Auth::User()->id;
 				$this->journal->fill($attributes)->save();
+
 			} else {
-				throw new ValidationException('Journal entry validation error! Please try again.', $this->getErrors());
+				// Fetch all valid (non-deleted) entries
+				$entries = DB::table('journal_entry')
+					->where('journal_id', $id)
+					->where('status', 1)
+					->where('deleted_at', '0000-00-00 00:00:00')
+					->get();
+
+				foreach ($entries as $row) {
+					// check if account_transaction exists
+					$exists = DB::table('account_transaction')
+						->where('voucher_type', 'JV')
+						->where('voucher_type_id', $row->id)
+						->exists();
+
+					$data = [
+						'account_master_id' => $row->account_id,
+						'transaction_type'  => $row->entry_type,
+						'amount'            => round($row->amount, 2),
+						'description'       => $row->description,
+						'reference'         => $this->receipt_voucher->voucher_no,
+						'reference_from'    => $row->reference,
+						'invoice_date'      => $this->receipt_voucher->voucher_date,
+						'department_id'     => $row->department_id ?? null,
+						'salesman_id'       => $row->salesman_id ?? null,
+						'status'            => 1,
+						'deleted_at'        => '0000-00-00 00:00:00',
+						'modify_at'         => date('Y-m-d H:i:s'),
+						'modify_by'         => Auth::user()->id,
+					];
+
+					if ($exists) {
+						DB::table('account_transaction')
+							->where('voucher_type', 'JV')
+							->where('voucher_type_id', $row->id)
+							->update($data);
+					} else {
+						DB::table('account_transaction')->insert(array_merge($data, [
+							'voucher_type'    => 'JV',
+							'voucher_type_id' => $row->id,
+							'created_at'      => date('Y-m-d H:i:s'),
+							'created_by'      => Auth::user()->id,
+						]));
+					}
+				}
 			}
 			
 			DB::commit();
 			return true;
 			
 		} catch (\Exception $e) {
-			DB::rollback();
+			DB::rollback(); echo $e->getLine().' '.$e->getMessage();exit;
 			return false;
 		}
 		
@@ -1228,12 +1257,37 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		
 		DB::beginTransaction();
 		try {
+		    
+		    $hasLineAmount = isset($attributes['line_amount']) && is_array($attributes['line_amount']) && !empty(array_filter($attributes['line_amount'], function ($v) {
+                                    return is_numeric($v) && (float) $v != 0;
+                                }));
+
+				//transactions insert
+				//if($this->journal->id && !empty( array_filter($attributes['line_amount']))) {
+			if (!empty($this->journal->id) && $hasLineAmount) { 
 			
-			if($this->journal->id && !empty( array_filter($attributes['line_amount']))) {
+			        //if($this->journal->id && !empty( array_filter($attributes['line_amount']))) {
 				$cr_amount = 0; $dr_amount = 0;
 				foreach($attributes['line_amount'] as $key => $value) {
+				    
+				    if (empty($attributes['account_id'][$key]) || !is_numeric($value) || (float) $value == 0 ) {
+                        continue;
+                    }
 					
 					if($attributes['je_id'][$key]!='') {
+
+						//FIND CURRENT VERSION	 
+					   $currentVersion = DB::table('account_transaction')->where('voucher_type', 'SIN')->where('voucher_type_id', $attributes['je_id'][$key])->max('version_no');
+						$newVersion = $currentVersion + 1;
+						$attributes['version_no'] = $newVersion;
+
+						//SOFT DELETE OLD VERSION
+						DB::table('account_transaction')->where('voucher_type', 'SIN')->where('voucher_type_id', $attributes['je_id'][$key])//->get();//echo '<pre>';print_r($attributes);exit;
+									->update([
+												'status' => 0,
+												'deleted_at' => date('Y-m-d h:i:s'),
+												'deleted_by'  => Auth::User()->id,
+											]);
 						
 							$journalEntryTr = JournalEntry::find($attributes['je_id'][$key]);
 							
@@ -1281,13 +1335,13 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							//update invoice transaction status...
 							$this->setTransactionStatusUpdate($attributes, $key, $journalEntryTr->id); //May 15
 							
-							$this->setAccountTransactionUpdate($attributes, $journalEntryTr->id, $key);
+							$this->setAccountTransaction($attributes, $journalEntryTr->id, $key);
 							
 							//update closing balance of debitor/creditor account
 							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
 							
 							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['account_id'][$key] ]);
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['partyac_id'][$key] ]);
 							} 
 						
 					} else {
@@ -1325,10 +1379,12 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							$this->updateClosingBalance($attributes['account_id'][$key], $attributes['line_amount'][$key], $attributes['account_type'][$key]);
 							
 							if(isset($attributes['cheque_no'][$key]) && $attributes['cheque_no'][$key]!=''){
-								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['account_id'][$key] ]);
+								DB::table('cheque')->insert([ 'cheque_no' => $attributes['cheque_no'][$key], 'bank_id' => $attributes['bank_id'][$key],'account_id'=> $attributes['partyac_id'][$key] ]);
 							}
 					}
 				}
+				
+				
 				
 				$difference = (int)($dr_amount - $cr_amount);
 				
@@ -1343,7 +1399,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 											->select('journal_entry.*','account_master.category')
 											->where('journal_entry.id', $id)->first();
 						if($jes) {
-							DB::table('journal_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => now()]);
+							DB::table('journal_entry')->where('id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 							if($jes->category=='SUPPLIER') {
 								$invs = DB::table('payment_voucher_tr')->where('payment_voucher_entry_id', $id)->select('id','purchase_invoice_id','assign_amount')->get();
 								foreach($invs as $inv) {
@@ -1366,7 +1422,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 										else if($ent->bill_type=='SIN')
 											DB::table('journal')->where('id', $ent->sales_invoice_id)->update(['is_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
 										
-										DB::table('receipt_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => now() ]);
+										DB::table('receipt_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
 									}
 								}
 							}
@@ -1381,6 +1437,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				}
 			}
 			
+			
 			if($difference==0) { //JN1
 			
 				$this->journal->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
@@ -1389,7 +1446,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				$this->journal->debit = $dr_amount;
 				$this->journal->credit = $cr_amount;
 				$this->journal->difference = $difference;
-				$this->journal->modify_at = now();
+				$this->journal->modify_at = date('Y-m-d H:i:s');
 				$this->journal->modify_by = Auth::User()->id;
 				$this->journal->fill($attributes)->save();
 			} else {
@@ -1401,6 +1458,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 			
 		} catch (\Exception $e) {
 			DB::rollback();
+			dd($e->getMessage(), $e->getLine());
 			return false;
 		}
 		
@@ -1413,33 +1471,93 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		DB::beginTransaction();
 		try {
 			
-			$rows = DB::table('journal_entry')->where('journal_id', $id)->select('id','account_id','entry_type','amount')->get();
+			$rows = DB::table('journal_entry')->where('journal_id', $id)->select('id','account_id','entry_type','amount','cheque_no','bank_id')->get();
 			foreach($rows as $row) {
 				
-				//Transaction update....
-				DB::table('account_transaction')->where('voucher_type', $this->journal->voucher_type)->where('voucher_type_id', $row->id)->update(['status' => 0,'deleted_at' => now(), 'deleted_by' => Auth::User()->id ]);
-				$this->objUtility->tallyClosingBalance($row->account_id);
-				
-				//update sales invoice entry....
-				$entry = DB::table('journal_voucher_tr')->where('journal_entry_id', $row->id)->where('status',1)->whereNull('deleted_at')->get();
-				if($entry) {
-					foreach($entry as $ent) {
-						if($ent->bill_type=='SI')
-							DB::table('sales_invoice')->where('id', $ent->invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
-						
-						DB::table('journal_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => now() ]);
+				if($row->entry_type=='Dr') {
+					$account_id = $row->account_id; $amount = $row->amount;
+					if($this->journal->voucher_type=='PDCR') {
+						DB::table('pdc_received')->where('entry_id',$row->id)->where('entry_type','RV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+
+						DB::table('account_master')->where('id', $row->account_id)
+													->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')'), 'pdc_amount' => DB::raw('IF(pdc_amount < 0, pdc_amount + '.$row->amount.', pdc_amount - '.$row->amount.')')]);
+
+						//DELETE CHEQUE NO...
+						if($row->cheque_no!='' && $row->bank_id!='' && $row->account_id!='') {
+							DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('account_id',$row->party_account_id)->delete();
+						}
+
+					} else
+						DB::table('account_master')->where('id', $row->account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$row->amount)]);
+
+				} else {
+					DB::table('account_master')->where('id', $row->account_id)
+												->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')')]);
+					
+					//update sales invoice entry....
+					$entry = DB::table('journal_voucher_tr')->where('journal_entry_id', $row->id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+					if($entry) {
+						foreach($entry as $ent) {
+							if($ent->bill_type=='SI')
+								DB::table('sales_invoice')->where('id', $ent->invoice_id)->update(['amount_transfer' => 0, 'balance_amount' => DB::raw('balance_amount + '.$ent->assign_amount) ]);
+							
+							DB::table('journal_voucher_tr')->where('id', $ent->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
+						}
+					}
+
+					//Transaction update....
+					DB::table('account_transaction')->where('voucher_type', 'JV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::User()->id  ]);
+					$this->objUtility->tallyClosingBalance($row->account_id);
+
+					//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
+					if($row->bank_id!=0 && $row->cheque_no!='') {
+						DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('account_id', $row->party_account_id)->delete();
 					}
 				}
+				
+				
+				if($row->entry_type=='Cr') {
+					$account_id = $row->account_id; $amount = $row->amount;
+					if($this->journal->voucher_type=='PDCI') {
+						DB::table('pdc_issued')->where('entry_id',$row->id)->where('entry_type','PV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+						DB::table('account_master')->where('id', $row->account_id)
+													->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')'), 'pdc_amount' => DB::raw('IF(pdc_amount < 0, pdc_amount + '.$row->amount.', pdc_amount - '.$row->amount.')')]);
+						
+						//DELETE CHEQUE NO...
+						if($row->cheque_no!='' && $row->bank_id!='' && $row->account_id!='') {
+							DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('ctype',1)->delete();
+						}
+					} else
+						DB::table('account_master')->where('id', $row->account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$row->amount)]);
+					
+				} else {
+					DB::table('account_master')->where('id', $row->account_id)
+												->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')')]);
+					
+					DB::table('journal_entry')->where('id', $row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id  ]);
+					
+					//Transaction update....
+					DB::table('account_transaction')->where('voucher_type', 'JV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::User()->id  ]);
+					$this->objUtility->tallyClosingBalance($row->account_id);
+					
+					//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
+					if($row->bank_id!=0 && $row->cheque_no!='') {
+						DB::table('cheque')->where('cheque_no',$row->cheque_no)->where('bank_id',$row->bank_id)->where('account_id', $row->party_account_id)->delete();
+					}
+				}
+				
 			}
 			
-			DB::table('journal_entry')->where('journal_id', $id)->update(['status' => 0,'deleted_at' => now() ]);
+			DB::table('journal_entry')->where('journal_id', $id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id  ]);
+
+			DB::table('journal')->where('id', $id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id  ]);
 			$this->journal->delete();
 			
 			DB::commit();
 			return true;
 			
 		} catch (\Exception $e) {
-			DB::rollback();
+			DB::rollback(); echo $e->getLine().' '.$e->getMessage();exit;
 			return false;
 		}
 	}
@@ -1457,7 +1575,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							 ->where('voucher_type', $type)
 							 ->where('JE.status',1)
 							 ->where('JE.deleted_at','0000-00-00 00:00:00')
-							 ->select('journal.*','JE.description','AM.master_name')
+							 ->select('journal.*','JE.description','JE.reference','AM.master_name')
 							 ->groupBy('journal.id')
 							 ->orderBy('journal.id', 'DESC')
 							 ->get();
@@ -1529,12 +1647,13 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 								$query->where(function($query) use ($search){
 									$query->where('journal.voucher_no','LIKE',"%{$search}%")
 										   ->orWhere('JE.description', 'LIKE',"%{$search}%")
+										   ->orWhere('JE.reference', 'LIKE',"%{$search}%")
 										   ->orWhere('AM.master_name', 'LIKE',"%{$search}%");
 										
 							   });
 							}
 
-							$query->select('journal.*','JE.description','AM.master_name');
+							$query->select('journal.*','JE.description','JE.reference','AM.master_name');
 							if($type=='get')
 							return $query->offset($start)
 					 				->limit($limit)
@@ -1553,21 +1672,23 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 	
 	public function journalListPara($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->journal->where('journal.status', 1)
+		$query = $this->journal->where('journal.status', 1)->where('journal.voucher_type','JV')
 							 ->join('journal_entry AS JE', function($join) {
 								 $join->on('JE.journal_id', '=', 'journal.id');
 							 })
 							 ->where('JE.status',1)
+							 
 							 ->where('JE.deleted_at','0000-00-00 00:00:00');
 							 
 					  if($search) {
 					 	 $query->where(function($query) use ($search){
 					 		 $query->where('journal.voucher_no','LIKE',"%{$search}%")
 					 				->orWhere('JE.description', 'LIKE',"%{$search}%")
+					 				->orWhere('JE.reference', 'LIKE',"%{$search}%")
 					 				->orWhere('journal.voucher_type', 'LIKE',"%{$search}%");
 					 	});
 					  }
-					 		 $query->select('journal.*','JE.description');
+					 		 $query->select('journal.*','JE.description','JE.reference');
 							 
 					 		 $query->offset($start)
 					 				->limit($limit)
@@ -1617,30 +1738,39 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
                                       ->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
 		                           ->select('journal.*','JE.description')->get();
 		elseif($type ==6)
-								   $result = $this->journal->where('journal.status', 1)
-														   ->join('journal_entry AS JE', function($join) {
-															  $join->on('JE.journal_id', '=', 'journal.id');
-																  })
-															 ->where('voucher_type','SIN')->where('voucher_no', $voucher_no)
-														  ->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
-													   ->select('journal.*','JE.description')->get();
+			   $result = $this->journal->where('journal.status', 1)
+									   ->join('journal_entry AS JE', function($join) {
+										  $join->on('JE.journal_id', '=', 'journal.id');
+											  })
+										 ->where('voucher_type','SIN')->where('voucher_no', $voucher_no)
+									  ->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+								   ->select('journal.*','JE.description')->get();
 		elseif($type ==10)
-													   $result = $this->journal->where('journal.status', 1)
-																			   ->join('journal_entry AS JE', function($join) {
-																				  $join->on('JE.journal_id', '=', 'journal.id');
-																					  })
-																				 ->where('voucher_type','PV')->where('voucher_no', $voucher_no)
-																			  ->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
-																		   ->select('journal.*','JE.description')->get();
+			$result = DB::table('payment_voucher')->where('status',1)->where('voucher_no', $voucher_no)->get();
 
 		elseif($type ==9)
-								   $result = $this->journal->where('journal.status', 1)
-														   ->join('journal_entry AS JE', function($join) {
-															  $join->on('JE.journal_id', '=', 'journal.id');
-																  })
-															 ->where('voucher_type','RV')->where('voucher_no', $voucher_no)
-														  ->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
-													   ->select('journal.*','JE.description')->get();
+			$result = DB::table('receipt_voucher')->where('status',1)->where('voucher_no', $voucher_no)->get();
+	
+		return $result;
+	}
+
+    
+    public function journalListpritlast($type)
+	
+	{
+		
+		if($type ==16 )
+		    $result = $this->journal->where('journal.status', 1)->where('voucher_type','JV')->orderBy('id','desc')->first();
+		
+		elseif($type ==5)
+		  $result = $this->journal->where('journal.status', 1)->where('voucher_type','PIN')->orderBy('id','desc')->first();
+		elseif($type ==6)
+			$result = $this->journal->where('journal.status', 1)->where('voucher_type','SIN')->orderBy('id','desc')->first();
+		elseif($type ==10)
+				$result = DB::table('payment_voucher')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','desc')->first();
+
+		elseif($type ==9)
+			$result = DB::table('receipt_voucher')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','desc')->first();
 		//echo '<pre>';print_r($result);exit;
 		return $result;
 	}
@@ -1650,38 +1780,47 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		$result = DB::table('journal_entry')->where('journal_entry.journal_id', $id)
 						->join('account_master', 'account_master.id', '=', 'journal_entry.account_id')
 						->leftJoin('account_master AS AM', 'AM.id', '=', 'journal_entry.party_account_id')
+						->leftJoin('jobmaster AS J', 'J.id', '=', 'journal_entry.job_id')
 						->where('journal_entry.status', 1)
-						->select('journal_entry.*','account_master.master_name','AM.master_name AS party_name','account_master.category')
+						->select('journal_entry.*','account_master.master_name','AM.master_name AS party_name','account_master.category','J.code')
 						->orderBy('journal_entry.id','ASC')
 						->get();
 	//echo '<pre>';print_r($result);exit;					
 	return $result;
 	}
 	
+	public function check_vno($refno, $id = null) { 
+		
+		if($id)
+			return $this->journal->where('voucher_no',$refno)->where('id', '!=', $id)->count();
+		else
+			return $this->journal->where('voucher_no',$refno)->count();
+	}
+	
 	public function check_voucher_no($refno, $vtype, $id = null) { 
 		
 		if($id)
-			return $this->journal->where('voucher_no', $refno)->where('id', '!=', $id)->where('status',1)->whereNull('deleted_at')->count();
+			return $this->journal->where('voucher_no', $refno)->where('id', '!=', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 		else {
 			switch($vtype) {
 				case 16:
-					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'JV')->where('status',1)->whereNull('deleted_at')->count();
+					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'JV')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 					break;
 				
 				case 9:
-					return DB::table('receipt_voucher')->where('voucher_no', $refno)->where('status',1)->whereNull('deleted_at')->count();
+					return DB::table('receipt_voucher')->where('voucher_no', $refno)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 					break;
 					
 				case 10:
-					return DB::table('payment_voucher')->where('voucher_no', $refno)->where('status',1)->whereNull('deleted_at')->count();
+					return DB::table('payment_voucher')->where('voucher_no', $refno)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 					break;
 					
 				case 5:
-					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'PIN')->where('status',1)->whereNull('deleted_at')->count();
+					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'PIN')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 					break;
 					
 				case 6:
-					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'SIN')->where('status',1)->whereNull('deleted_at')->count();
+					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'SIN')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 					break;
 			}
 		}
@@ -1692,11 +1831,11 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		
+		DB::enableQueryLog();
 		if($attributes['search_type']=="issued")
 		{
 			
-			$ob_only = (isset($attributes['ob_only']))?true:false;
+			$ob_only = (isset($attributes['ob_only'])  && $attributes['ob_only'] !='')?true:false;
 			
 			$query1 = DB::table('pdc_issued')
 						->join('account_master', 'account_master.id', '=', 'pdc_issued.dr_account_id')
@@ -1715,7 +1854,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 						->join('bank AS B', 'B.id', '=', 'PVE.bank_id');*/
 			
 			if($date_from!='' && $date_to!='') {
-				$query1->whereBetween('pdc_issued.voucher_date',[$date_from, $date_to]);
+				$query1->whereBetween('pdc_issued.cheque_date',[$date_from, $date_to]);
 			}
 			
 			if($attributes['account_id']!='') {
@@ -1728,16 +1867,19 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 			}
 					
 			if($ob_only) {
-				$query1->where('PV.opening_balance_id', '>', 0);
+				//$query1->where('PV.opening_balance_id', '>', 0);
+				$query1->whereRaw('PV.opening_balance_id > 0');
 			}		
 
-				$result = $query1->where('pdc_issued.deleted_at','0000-00-00 00:00:00')
+		$result = $query1->where('pdc_issued.deleted_at','0000-00-00 00:00:00')
 				->select('pdc_issued.*','account_master.master_name AS debitor','AM.master_name AS customer',
 						'B.code','pdc_issued.entry_type AS vtype',
 						DB::raw('EXTRACT(MONTH FROM pdc_issued.cheque_date) AS month'))
 				->groupBy('pdc_issued.id')
 				->orderBy('pdc_issued.cheque_date','ASC')
 				->get();
+				
+				//dd(DB::getQueryLog());exit;
 
 				/*$result = $query1->where('pdc_issued.deleted_at','0000-00-00 00:00:00')
 								->select('pdc_issued.*','account_master.master_name AS debitor','AM.master_name AS customer','PV.voucher_no',
@@ -1750,7 +1892,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 						
 		} else if($attributes['search_type']=="received") {
 			
-			$ob_only = (isset($attributes['ob_only']))?true:false;
+			$ob_only = (isset($attributes['ob_only'])  && $attributes['ob_only'] !='')?true:false;
 			
 			$query1 = DB::table('pdc_received')
 						->join('account_master', 'account_master.id', '=', 'pdc_received.cr_account_id')
@@ -1759,7 +1901,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 						->join('receipt_voucher AS RV', 'RV.id', '=', 'pdc_received.voucher_id');
 			//echo '<pre>';print_r($query1);exit;
 			if($date_from!='' && $date_to!='') {
-				$query1->whereBetween('pdc_received.voucher_date',[$date_from, $date_to]);
+				$query1->whereBetween('pdc_received.cheque_date',[$date_from, $date_to]);
 			}
 			
 			if($attributes['account_id']!='') {

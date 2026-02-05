@@ -73,7 +73,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		$this->payment_voucher->depositor  = (isset($attributes['depositor']))?$attributes['depositor']:'';
 		$this->payment_voucher->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
 		$this->payment_voucher->trn_no = isset($attributes['trn_no'])?$attributes['trn_no']:'';
-		$this->payment_voucher->department_id  = (isset($attributes['department_id']))?$attributes['department_id']:'';
+		$this->payment_voucher->department_id  =env('DEPARTMENT_ID');
 		//MR12
 		$this->payment_voucher->is_fc = isset($attributes['is_fc'])?1:0;
 	//	$this->payment_voucher->currency_id = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
@@ -109,7 +109,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$trtype = 'Cr';
 				$amount = $attributes['amount'];
 				$jobid = isset($attributes['job_id'])?$attributes['job_id']:'';
-				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
+				$department_id = env('DEPARTMENT_ID');//isset($attributes['department_id'])?$attributes['department_id']:'';
 			} else if($ar==2) {
 				$account_id = $attributes['supplier_id'];
 				$description = $attributes['supplier_account'];
@@ -117,7 +117,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$trtype = 'Dr';
 				$amount = $attributes['line_amount'][$key];
 				$jobid = isset($attributes['job_id'])?$attributes['job_id']:'';
-				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
+				$department_id =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:'';
 			} else if($ar==3) {
 				$account_id = $attributes['dr_entry_ac_id'];
 				$description = $attributes['dr_entry_desc'];
@@ -125,7 +125,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$trtype = 'Cr';
 				$amount = $attributes['dr_entry_amount'];
 				$jobid = '';
-				$department_id = '';
+				$department_id = env('DEPARTMENT_ID');
 			}  else if($ar==4) {
 				$account_id = $attributes['supplier_id'];
 				$description = $attributes['supplier_account'];
@@ -133,7 +133,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$trtype = 'Dr';
 				$amount = $attributes['debit'];
 				$jobid = $attributes['job_id'];
-				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
+				$department_id = env('DEPARTMENT_ID');//isset($attributes['department_id'])?$attributes['department_id']:'';
 			} else if($ar==5) {
 				$account_id = $attributes['supplier_id'];
 				$description = $attributes['supplier_account'];
@@ -141,7 +141,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$trtype = 'Cr';
 				$amount = $attributes['line_amount'][$key];
 				$jobid = $attributes['job_id'];
-				$department_id = isset($attributes['department_id'])?$attributes['department_id']:'';
+				$department_id = env('DEPARTMENT_ID');//isset($attributes['department_id'])?$attributes['department_id']:'';
 			}
 			
 			$paymentVoucherEntry->payment_voucher_id = $this->payment_voucher->id;
@@ -151,7 +151,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			$paymentVoucherEntry->entry_type = $trtype;
 			$paymentVoucherEntry->amount = $amount;
 			$paymentVoucherEntry->job_id = $jobid;
-			$paymentVoucherEntry->department_id = $department_id;
+			$paymentVoucherEntry->department_id =env('DEPARTMENT_ID'); //$department_id;
 			$paymentVoucherEntry->cheque_no = isset($attributes['cheque_no'])?$attributes['cheque_no']:'';
 			$paymentVoucherEntry->cheque_date = ($attributes['cheque_date']!='')?date('Y-m-d', strtotime($attributes['cheque_date'])):'';
 			$paymentVoucherEntry->bank_id = isset($attributes['bank_id'])?$attributes['bank_id']:'';
@@ -180,7 +180,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			$paymentVoucherEntry->amount = $attributes['line_amount'][$key];
 			$paymentVoucherEntry->job_id = isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
 			$paymentVoucherEntry->currency_id = isset($attributes['currency_id'][$key])?$attributes['currency_id'][$key]:'';
-			$paymentVoucherEntry->department_id  = isset($attributes['department'][$key])?$attributes['department'][$key]:'';
+			$paymentVoucherEntry->department_id  =env('DEPARTMENT_ID'); //isset($attributes['department'][$key])?$attributes['department'][$key]:'';
 		    /*if($attributes['group_id'][$key]=='BANK') {
 				$paymentVoucherEntry->cheque_no = isset($attributes['chq_no'])?$attributes['chq_no']:'';
 				$paymentVoucherEntry->cheque_date =  ($attributes['chq_date']!='')?date('Y-m-d', strtotime($attributes['chq_date'])):'';
@@ -258,7 +258,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							'reference'			=> $attributes['voucher_no'],
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
-							'department_id'		=> isset($attributes['department'][$key])?$attributes['department'][$key]:'',
+							'department_id'		=> env('DEPARTMENT_ID'),
 							'version_no'		=> $attributes['version_no']
 							]);
 		
@@ -270,6 +270,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		
 		DB::table('account_transaction')
 				->where('voucher_type', 'PV')
+				->where('department_id', env('DEPARTMENT_ID'))
 				->where('voucher_type_id', $payment_voucher_id)
 				->update([ 'status' 		=> 0,
 						   'deleted_at' 	=> date('Y-m-d H:i:s'),
@@ -826,7 +827,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								'reference'			=> $attributes['voucher_no'], //(isset($attributes['is_onaccount']))?'ADV':
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> (isset($attributes['is_onaccount']))?'ADV':$referencefrm,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:''
 								'version_no'		=> $attributes['version_no']
 							]);
 								
@@ -853,7 +854,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								'reference'			=> $attributes['voucher_no'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $attributes['reference'][$key],
-								'department_id'		=> (isset($attributes['department'][$key]))?$attributes['department'][$key]:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department'][$key]))?$attributes['department'][$key]:''
 								'version_no'		=> $attributes['version_no']
 								]);
 		}
@@ -883,6 +884,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			
 			DB::table('account_transaction')
 					->where('voucher_type', 'PV')
+					->where('department_id', env('DEPARTMENT_ID'))
 					->where('voucher_type_id', $voucher_id)
 					->where('account_master_id', $account_master_id)
 					->where('transaction_type', $type)
@@ -899,6 +901,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			
 			DB::table('account_transaction')
 					->where('voucher_type', 'PV')
+					->where('department_id', env('DEPARTMENT_ID'))
 					->where('voucher_type_id', $voucher_id)
 					->where('account_master_id', $attributes['account_id'][$key])
 					->where('transaction_type', $type)
@@ -909,7 +912,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								'reference'			=> $attributes['voucher_no'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $attributes['reference'][$key],
-								'department_id'		=> (isset($attributes['department_id'][$key]))?$attributes['department_id'][$key]:''
+								'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id'][$key]))?$attributes['department_id'][$key]:''
 								]);
 		}
 		
@@ -922,6 +925,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			
 			DB::table('account_transaction')
 						->where('voucher_type', 'PV')
+						->where('department_id', env('DEPARTMENT_ID'))
 						->where('voucher_type_id', $voucher_id)
 						->where('account_master_id', $account_master_id)
 						->where('reference_from', $attributes['refno'][$key])
@@ -994,7 +998,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
                         'fc_amount' => 0,
                         'other_type' => '',
                         'is_fc' => 0,
-                        'department_id' => 0,
+                        'department_id' => env('DEPARTMENT_ID'),
                         'job_id' => 0,
                         'other_info' => ''
                     ]);
@@ -1021,7 +1025,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
                 $newPVEntry->amount = $amountToSettle;
                 $newPVEntry->entry_type = 'Cr';
                 $newPVEntry->job_id = 0;
-                $newPVEntry->department_id = 0;
+                $newPVEntry->department_id = env('DEPARTMENT_ID');
                 $newPVEntry->is_fc = 0;
                 $newPVEntry->currency_id = 0;
                 $newPVEntry->currency_rate = 1;
@@ -1084,7 +1088,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				->where('deleted_at','0000-00-00 00:00:00'); // ✅ important
 
 			if (isset($attributes['department_id']) && Session::get('department') == 1) {
-				$query->where('department_id', $attributes['department_id']);
+				$query->where('department_id', env('DEPARTMENT_ID'));
 			}
 
 			$inv = $query->count(); //echo $inv;exit;
@@ -1167,18 +1171,16 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					// 2️⃣ Get the highest numeric part from voucher_master
 					$maxNumeric = DB::table('payment_voucher')
 						->where('deleted_at', '0000-00-00 00:00:00')
-						//->where('department_id', $departmentId)
+						->where('department_id', env('DEPARTMENT_ID'))
 						->where('status', 1)
 						->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
 						->value('max_no');
 					
-					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-					if($attributes['from_jv']==0)
-						$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
-					else
-						$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();//echo '<pre>';print_r($accset);
-					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+					$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+					$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
+					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 					//VOUCHER NO LOGIC.....................
+					//exit;
 					//exit;
 					$maxRetries = 5; // prevent infinite loop
 					$retryCount = 0;
@@ -1202,25 +1204,22 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							// Check if it's a duplicate voucher number error
 							if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
 								strpos($ex->getMessage(), 'duplicate key value') !== false) {
-
-								$maxNumeric = DB::table('payment_voucher')
+									$maxNumeric = DB::table('payment_voucher')
 									->where('deleted_at', '0000-00-00 00:00:00')
-									//->where('department_id', $departmentId)
+									->where('department_id', env('DEPARTMENT_ID'))
 									->where('status', 1)
 									->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
 									->value('max_no');
 								
-								$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-								if($attributes['from_jv']==0)
-									$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
-								else
-									$accset = DB::table('account_setting')->where('id',$attributes['voucher'])->first();//echo '<pre>';print_r($accset);
-								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+								$dept = env('DEPARTMENT_ID');//isset($attributes['department_id'])?$attributes['department_id']:0;
+								$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->first();
+								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 								$retryCount++;
 							} else {
 								throw $ex; //echo $ex;exit;// rethrow if different DB error
 							}
+								
 						}
 					}
 										
@@ -1388,7 +1387,8 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 																'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 																'entry_id' => $pv_entry_id,
 																'entry_type' => 'PV',
-																'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
+																'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0,
+																'department_id'=>env('DEPARTMENT_ID')
 															]);
 										}
 										
@@ -1469,6 +1469,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 													'bank_id' => (isset($attributes['bank_id'])&&$attributes['bank_id']!='')?$attributes['bank_id']:1,
 													'entry_id' => $crv_entry_id,
 													'entry_type' => 'PV',
+													'department_id'=>env('DEPARTMENT_ID'),
 													'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
 												]);
 							}
@@ -1480,7 +1481,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				}
 				DB::commit();
 				return $this->payment_voucher->id;
-				//abi-----------
+				
 				
 			} catch (\Exception $e) {
 			  
@@ -1533,7 +1534,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							$jerow['entry_type']    		= $attributes['account_type'][$key];
 							$jerow['amount']    		= $attributes['line_amount'][$key];
 							$jerow['job_id']    		= isset($attributes['job_id'][$key])?$attributes['job_id'][$key]:'';
-							$jerow['department_id']    		= isset($attributes['department'][$key])?$attributes['department'][$key]:'';
+							$jerow['department_id']    		=  env('DEPARTMENT_ID');
 							$jerow['cheque_no']   		= isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
 							$jerow['cheque_date']    		=  (isset($attributes['cheque_date'][$key]) && $attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):'';
 							$jerow['bank_id']   		= isset($attributes['bank_id'][$key])?$attributes['bank_id'][$key]:'';
@@ -1543,7 +1544,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							
 							if($value=='' || $value==0) {
 								DB::table('payment_voucher_entry')->where('id',$attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
-								DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id', $attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d h:i:s')]);
+								DB::table('account_transaction')->where('voucher_type', 'PV')->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id', $attributes['je_id'][$key])->update(['status' => 0, 'deleted_at' => date('Y-m-d h:i:s')]);
 							}
 							
 							if($attributes['account_type'][$key]=='Cr') {
@@ -1571,14 +1572,14 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							if($attributes['group_id'][$key]=='PDCI') {
 
 								//UPDATE PDC...
-								$pdcrow = DB::table('pdc_issued')->where('entry_id', $attributes['je_id'][$key])->where('entry_type','PV')->select('id')->first();
-												
+								$pdcrow = DB::table('pdc_issued')->where('entry_id', $attributes['je_id'][$key])->where('department_id',env('DEPARTMENT_ID'))
+								                      ->where('entry_type','PV')->select('id')->first();												
 								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
 								$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cr_account_master_id')->first();
 
 								if($pdcrow)	{	
 									DB::table('pdc_issued')
-									            ->where('id', $pdcrow->id)
+									            ->where('id', $pdcrow->id)->where('department_id',env('DEPARTMENT_ID'))
 												->update([ 	'cr_account_id' => ($acrow)?$acrow->id:0,
 															'dr_account_id' => $attributes['account_id'][$key],
 															'reference'  => $attributes['reference'][$key],
@@ -1592,6 +1593,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 															'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 															'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0,
 															'deleted_at' => '0000-00-00 00:00:00',
+															'department_id'=>env('DEPARTMENT_ID')
 														]);
 								} else {
 									
@@ -1614,6 +1616,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 													'bank_id' => (isset($attributes['bank_id'][$key]) && $attributes['bank_id'][$key]!='')?$attributes['bank_id'][$key]:1,
 													'entry_id' => $attributes['je_id'][$key],
 													'entry_type' => 'PV',
+													'department_id'=>env('DEPARTMENT_ID'),
 													'dr_bank_id' => ($bnk)?$bnk->cr_account_master_id:0
 												]);
 								}
@@ -1621,6 +1624,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								
 									DB::table('pdc_issued')
 													->where('entry_id', $attributes['je_id'][$key])
+													->where('department_id',env('DEPARTMENT_ID'))
 													->where('entry_type','PV')
 													->update([ 	'deleted_at'  => date('Y-m-d H:i:s') ]);
 								
@@ -1786,6 +1790,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					// check if account_transaction exists
 					$exists = DB::table('account_transaction')
 						->where('voucher_type', 'PV')
+						->where('department_id', env('DEPARTMENT_ID'))
 						->where('voucher_type_id', $row->id)
 						->exists();
 
@@ -1797,22 +1802,28 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 						'reference'         => $this->payment_voucher->voucher_no,
 						'reference_from'    => $row->reference,
 						'invoice_date'      => $this->payment_voucher->voucher_date,
-						'department_id'     => $row->department_id ?? null,
+						'department_id'     =>env('DEPARTMENT_ID'),
 						'status'            => 1,
 						'deleted_at'        => '0000-00-00 00:00:00',
 						'modify_at'         => date('Y-m-d H:i:s'),
 						'modify_by'         => Auth::user()->id,
 					];
 
-					if (!$exists) {
+					if ($exists) {
+						DB::table('account_transaction')
+							->where('voucher_type', 'PV')
+							->where('department_id', env('DEPARTMENT_ID'))
+							->where('voucher_type_id', $row->id)
+							->update($data);
+					} else {
 						DB::table('account_transaction')->insert(array_merge($data, [
 							'voucher_type'    => 'PV',
 							'voucher_type_id' => $row->id,
+							'department_id'   =>env('DEPARTMENT_ID'),
 							'created_at'      => date('Y-m-d H:i:s'),
 							'created_by'      => Auth::user()->id,
-							'version_no'	  => $attributes['version_no']
 						]));
-					} 
+					}
 				}
 			}
 		
@@ -1840,7 +1851,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					if($row->entry_type=='Cr') {
 						$account_id = $row->account_id; $amount = $row->amount;
 						if($this->payment_voucher->voucher_type=='PDCI') {
-							DB::table('pdc_issued')->where('entry_id',$row->id)->where('entry_type','PV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+							DB::table('pdc_issued')->where('entry_id',$row->id)->where('department_id',env('DEPARTMENT_ID'))->where('entry_type','PV')->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 							DB::table('account_master')->where('id', $row->account_id)
 													   ->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')'), 'pdc_amount' => DB::raw('IF(pdc_amount < 0, pdc_amount + '.$row->amount.', pdc_amount - '.$row->amount.')')]);
 							
@@ -1879,7 +1890,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					 DB::table('payment_voucher_entry')->where('id', $row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id]);
 					 
 					//Transaction update....
-					DB::table('account_transaction')->where('voucher_type', 'PV')->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::User()->id  ]);
+					DB::table('account_transaction')->where('voucher_type', 'PV')->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id',$row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::User()->id  ]);
 					
 					//REMOVE CHEQUE NO ALSO FROM CHEQUE TABLE....
 					if($row->bank_id!=0 && $row->cheque_no!='') {
@@ -1892,11 +1903,11 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			if($this->payment_voucher->opening_balance_id > 0) {
 				
 				DB::table('opening_balance_tr')->where('id', $this->payment_voucher->opening_balance_id)->update(['status' => 0, 'deleted_at' => '0000-00-00 00:00:00']);
-				DB::table('account_transaction')->where('voucher_type', 'OBD')->where('voucher_type_id', $this->payment_voucher->opening_balance_id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+				DB::table('account_transaction')->where('voucher_type', 'OBD')->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id', $this->payment_voucher->opening_balance_id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 				
 				DB::table('account_master')->where('id', $account_id)->update(['cl_balance' => DB::raw('op_balance - '.$amount), 'op_balance' => DB::raw('op_balance - '.$amount)]);
 				
-				DB::table('account_transaction')->where('voucher_type', 'OB')->where('voucher_type_id', $account_id)->where('account_master_id',$account_id)->update(['amount' => 0]);
+				DB::table('account_transaction')->where('voucher_type', 'OB')->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id', $account_id)->where('account_master_id',$account_id)->update(['amount' => 0]);
 			}
 					
 			DB::table('payment_voucher')->where('id', $id)->update(['deleted_by' => Auth::User()->id   ]);
@@ -1947,7 +1958,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	
 	public function PDCIssuedList($date=null)
 	{
-		$query1 = DB::table('pdc_issued')->where('pdc_issued.status',0)
+		$query1 = DB::table('pdc_issued')->where('pdc_issued.status',0)->where('pdc_issued.department_id',env('DEPARTMENT_ID'))
 						->join('account_master', 'account_master.id', '=', 'pdc_issued.dr_account_id')
 						->join('account_master AS AM', 'AM.id', '=', 'pdc_issued.supplier_id')
 						->join('payment_voucher AS PV', 'PV.id', '=', 'pdc_issued.voucher_id')
@@ -2132,7 +2143,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					$query->whereBetween('payment_voucher.voucher_date', array($date_from, $date_to));
 				}
 				if(isset($attributes['dept_id']) && $attributes['dept_id']!=''){
-				$query->where('payment_voucher.department_id', $attributes['dept_id']);
+				$query->where('payment_voucher.department_id',env('DEPARTMENT_ID'));
 				}
 				
 				
@@ -2152,6 +2163,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	{
 		DB::table('account_transaction')
 					->where('voucher_type', $type)
+					->where('department_id', env('DEPARTMENT_ID'))
 					->where('voucher_type_id', $voucher_id)
 					->where('account_master_id', $attributes['account_id'])
 					->where('transaction_type', $actype)
@@ -2219,6 +2231,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 												
 									DB::table('account_transaction')
 												->where('voucher_type','OBD')
+												->where('department_id', env('DEPARTMENT_ID'))
 												->where('voucher_type_id',$obtr->id)
 												->where('account_master_id',$obtr->account_master_id)
 												//->where('reference', $obtr->reference_no)
@@ -2239,6 +2252,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 											
 								DB::table('account_transaction')
 												->where('voucher_type','SR')
+												->where('department_id', env('DEPARTMENT_ID'))
 												->where('account_master_id',$srrow->supplier_id)
 												->where('reference', $srrow->voucher_no)
 												->update(['reference_from' => $attributes['refno'][$key] ]);
@@ -2272,6 +2286,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								DB::table('account_transaction')
 									->insert([  'voucher_type' 		=> $attributes['type'][$val],
 												'voucher_type_id'   => $pv_entry_id,
+												'department_id'     => env('DEPARTMENT_ID'),
 												'account_master_id' => $attributes['supplier_id'],
 												'transaction_type'  => 'Dr',
 												'amount'   			=> $attributes['line_amount'][$key],
@@ -2312,6 +2327,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								DB::table('account_transaction')
 									->insert([  'voucher_type' 		=> $attributes['type'][$val],
 												'voucher_type_id'   => $jv_entry_id,
+												'department_id'    => env('DEPARTMENT_ID'),
 												'account_master_id' => $attributes['supplier_id'],
 												'transaction_type'  => 'Dr',
 												'amount'   			=> $attributes['line_amount'][$key],
@@ -2373,6 +2389,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 												
 									DB::table('account_transaction')
 												->where('voucher_type','OBD')
+												->where('department_id', env('DEPARTMENT_ID'))
 												->where('account_master_id',$obtr->account_master_id)
 												->update(['reference_from' => $attributes['refno'][$key]]);
 												
@@ -2384,6 +2401,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 										
 									DB::table('account_transaction')
 												->where('voucher_type','OBD')
+												->where('department_id', env('DEPARTMENT_ID'))
 												->where('account_master_id',$obtr->account_master_id)
 												->update(['reference_from' => $attributes['refno'][$key] ]);
 								}
@@ -2453,6 +2471,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								DB::table('account_transaction')
 									->insert([  'voucher_type' 		=> $attributes['type'][$val],
 												'voucher_type_id'   => $pv_entry_id,
+												'department_id'     =>env('DEPARTMENT_ID'),
 												'account_master_id' => $attributes['customer_id'],
 												'transaction_type'  => 'Dr',
 												'amount'   			=> $attributes['line_amount'][$key],
@@ -2493,6 +2512,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 								DB::table('account_transaction')
 									->insert([  'voucher_type' 		=> $attributes['type'][$val],
 												'voucher_type_id'   => $jv_entry_id,
+												'department_id'     => env('DEPARTMENT_ID'),
 												'account_master_id' => $attributes['customer_id'],
 												'transaction_type'  => 'Dr',
 												'amount'   			=> $attributes['line_amount'][$key],
@@ -2561,6 +2581,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				DB::table('account_transaction')
 									->where('voucher_type_id', $pv_entry_id)
 									->where('voucher_type','PV')
+									->where('department_id', env('DEPARTMENT_ID'))
 									->update(['description' => '', 'reference' => $attributes['refno'][$row] ]);
 			}
 			$paymentVoucherEntry->update($jerow);
@@ -2608,7 +2629,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	
 	public function PDCIundoList()  //JL27
 	{
-		$result = DB::table('pdc_issued')->where('pdc_issued.status',1)
+		$result = DB::table('pdc_issued')->where('pdc_issued.status',1)->where('pdc_issued.department_id',env('DEPARTMENT_ID'))
 						 ->join('account_master', 'account_master.id', '=', 'pdc_issued.dr_account_id')
 						->join('account_master AS AM', 'AM.id', '=', 'pdc_issued.supplier_id')
 						->leftJoin('account_master AS AM2', 'AM2.id', '=', 'pdc_issued.dr_bank_id')
@@ -2655,16 +2676,17 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 		//echo '<pre>';print_r($trnarr);exit;
 		foreach($trnarr['id'] as $key => $val) { 
 			
-			$pdcs = DB::table('pdc_issued')->where('id', $val)->first();
+			$pdcs = DB::table('pdc_issued')->where('id', $val)->where('department_id',env('DEPARTMENT_ID'))->first();
 			$id = null;
 			if($pdcs) {
 				$id = $pdcs->id;
-				DB::table('pdc_issued')->where('id',$id)->update(['status' => 1,'dr_bank_id' => $trnarr['crid'][$key], 'voucher_date' => date('Y-m-d', strtotime($trnarr['vdate'])) ]); //JL27
+				DB::table('pdc_issued')->where('id',$id)->where('department_id',env('DEPARTMENT_ID'))->update(['status' => 1,'dr_bank_id' => $trnarr['crid'][$key], 'voucher_date' => date('Y-m-d', strtotime($trnarr['vdate'])) ]); //JL27
 				
 				$trans = DB::table('account_transaction')
 									->where('voucher_type', 'CB')
 									->where('voucher_type_id', $id)
 									->where('status',1)
+									->where('department_id', env('DEPARTMENT_ID'))
 									->where('deleted_at','0000-00-00 00:00:00')
 									->get();
 				if($trans) {
@@ -2707,7 +2729,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	{
 		foreach($attributes['tag'] as $k => $key) { 
 			
-			$pdcs = DB::table('pdc_issued')->where('voucher_id',$attributes['id'][$key])->first();
+			$pdcs = DB::table('pdc_issued')->where('voucher_id',$attributes['id'][$key])->where('department_id',env('DEPARTMENT_ID'))->first();
 			
 			if(!$pdcs) {
 				$id = DB::table('pdc_issued')
@@ -2721,7 +2743,8 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 									'created_at' => date('Y-m-d H:i:s'),
 									'created_by' => Auth::User()->id,
 									'voucher_date'	=> ($attributes['voucher_date']!='')?date('Y-m-d', strtotime($attributes['voucher_date'])):date('Y-m-d'),
-									'supplier_id' => $attributes['supplier_id'][$key]
+									'supplier_id' => $attributes['supplier_id'][$key],
+									'department_id'=>env('DEPARTMENT_ID')
 									]);
 								
 				if($this->setAccountTransaction($id, $attributes, 'Cr', $key))
@@ -2729,7 +2752,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				
 			} else {
 				$id = $pdcs->id;
-				DB::table('pdc_issued')->where('id',$id)->update(['status' => 1]);
+				DB::table('pdc_issued')->where('id',$id)->where('department_id',env('DEPARTMENT_ID'))->update(['status' => 1]);
 				
 				if($this->setAccountTransactionReSubmit($id, $attributes, 'Cr', $key))
 					$this->setAccountTransactionReSubmit($id, $attributes, 'Dr', $key);
@@ -2778,6 +2801,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				->insert([  'voucher_type' 		=> 'CB',
 						    'voucher_type_id'   => $id,
 							'account_master_id' => $account_master_id,
+							'department_id'     =>env('DEPARTMENT_ID'),
 							'transaction_type'  => $type,
 							'amount'   			=> $trans['amt'][$key],
 							'status' 			=> $status,
@@ -2826,7 +2850,8 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							'reference'			=> $attributes['id'][$key],
 							'invoice_date'		=> date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
-							'version_no'		=> $attributes['version_no']
+							'version_no'		=> $attributes['version_no'],
+							'department_id'     =>env('DEPARTMENT_ID')
 						]);
 						
 		if($type=='Cr') {
@@ -2853,7 +2878,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$status = 1;
 		}
 
-		DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $id)
+		DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $id)->where('department_id', env('DEPARTMENT_ID'))
 										->where('account_master_id', $account_master_id)
 										->update([  'transaction_type'  => $type,
 													'amount'   			=> $trnarr['amt'][$key],
@@ -2890,7 +2915,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					$status = 1;
 			}
 
-		DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $id)
+		DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $id)->where('department_id', env('DEPARTMENT_ID'))
 										->where('account_master_id', $account_master_id)
 										->update([  'transaction_type'  => $type,
 													'amount'   			=> $attributes['amount'][$key],
@@ -2921,10 +2946,10 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			
 			if($attributes['voucher_type'][$val]=="PDCI") {
 				
-				DB::table('pdc_issued')->where('id', $attributes['id'][$val])
+				DB::table('pdc_issued')->where('id', $attributes['id'][$val])->where('department_id',env('DEPARTMENT_ID'))
 										 ->update(['status' => 0]);
 				
-				DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $attributes['id'][$val])
+				DB::table('account_transaction')->where('voucher_type', 'CB')->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id', $attributes['id'][$val])
 													->update([  'status' 			=> 0,
 																'modify_at'			=> date('Y-m-d H:i:s'),
 																'deleted_at' 		=> date('Y-m-d H:i:s'),
@@ -2955,7 +2980,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					DB::table('journal_entry')->where('id',$entry->id)
 								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 								
-					DB::table('account_transaction')->where('voucher_type',"JV")->where('voucher_type_id',$entry->id)
+					DB::table('account_transaction')->where('voucher_type',"JV")->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id',$entry->id)
 								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 				} 
 				
@@ -2980,7 +3005,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 					DB::table('petty_cash_entry')->where('id',$entry->id)
 								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 								
-					DB::table('account_transaction')->where('voucher_type',"PC")->where('voucher_type_id',$entry->id)
+					DB::table('account_transaction')->where('voucher_type',"PC")->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id',$entry->id)
 								->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s') ]);
 				} 
 				
@@ -2997,7 +3022,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	
 	public function getLastId() {
 		
-		return $this->payment_voucher->where('status',1)
+		return $this->payment_voucher->where('status',1)->where('department_id', env('DEPARTMENT_ID'))
 					->select('id')
 					->orderBY('id', 'DESC')
 					->first();
@@ -3006,7 +3031,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	
 	public function findPVEtryData($id)
 	{
-		return DB::table('payment_voucher_entry')->where('payment_voucher_entry.payment_voucher_id', $id)
+		return DB::table('payment_voucher_entry')->where('payment_voucher_entry.payment_voucher_id', $id)->where('payment_voucher_entry.department_id', env('DEPARTMENT_ID'))
 						->join('account_master', 'account_master.id', '=', 'payment_voucher_entry.account_id')
 						->leftJoin('account_master AS AM', 'AM.id', '=', 'payment_voucher_entry.party_account_id')
 						->leftJoin('payment_voucher_tr AS PVT', 'PVT.payment_voucher_entry_id', '=', 'payment_voucher_entry.id')
@@ -3039,7 +3064,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	
 	public function SupplierPaymentListCount() 
 	{
-		return $query = $this->payment_voucher->where('payment_voucher.status',1)->where('payment_voucher.opening_balance_id',0)
+		return $query = $this->payment_voucher->where('payment_voucher.status',1)->where('payment_voucher.opening_balance_id',0)->where('payment_voucher.department_id', env('DEPARTMENT_ID'))
 							->select('payment_voucher.id','payment_voucher.voucher_no','payment_voucher.voucher_date','payment_voucher.tr_description',
 									 'payment_voucher.debit AS amount','payment_voucher.from_jv','payment_voucher.voucher_type',
 									 DB::raw("(SELECT account_master.master_name FROM payment_voucher_entry 
@@ -3056,7 +3081,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	
 	public function SupplierPaymentList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->payment_voucher->where('payment_voucher.opening_balance_id',0); //->where('payment_voucher.status',1)
+		$query = $this->payment_voucher->where('payment_voucher.opening_balance_id',0)->where('payment_voucher.department_id', env('DEPARTMENT_ID')); //->where('payment_voucher.status',1)
 		
 									$query->join('payment_voucher_entry AS PE', function($join) {
 									    $join->on('PE.payment_voucher_id', '=', 'payment_voucher.id');
@@ -3117,12 +3142,12 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	
 	public function PdcIssuedDelete($id)
 	{
-        $pdcrow = DB::table('pdc_issued')->where('id', $id)->first();
+        $pdcrow = DB::table('pdc_issued')->where('id', $id)->where('department_id',env('DEPARTMENT_ID'))->first();
         if($pdcrow) {
-            DB::table('pdc_issued')->where('id', $id)->update(['status' => 0]);
+            DB::table('pdc_issued')->where('id', $id)->where('department_id',env('DEPARTMENT_ID'))->update(['status' => 0]);
             //DB::table('account_transaction')->where('voucher_type', 'DB')->where('voucher_type_id', $id)->update(['status' => 0]);
             //DB::table('pdc_issued')->where('id', $id)->delete();
-            DB::table('account_transaction')->where('voucher_type', 'CB')->where('voucher_type_id', $id)->delete();
+            DB::table('account_transaction')->where('voucher_type', 'CB')->where('department_id', env('DEPARTMENT_ID'))->where('voucher_type_id', $id)->delete();
 													
 			if($pdcrow->entry_type=='PV') {
 			    $rvEntry = DB::table('payment_voucher_entry')->where('id', $pdcrow->entry_id)->first();

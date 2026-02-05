@@ -505,7 +505,7 @@
 									</thead>
 								</table>
 								<!-- ROWCHNG -->
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php $i = 0; $num = count($orditems); @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -740,7 +740,7 @@
 								<?php $i++; } } else { ?>
 								
 								@foreach($orditems as $item)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -860,9 +860,10 @@
 								            <!--MAY25-->
             								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
             									<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>
-            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches']}}"></div>
-            									<input type="hidden" id="bthSelIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids']}}"> 
-                                                <input type="hidden" id="bthSelQty_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys']}}">
+            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelNos_{{$i}}" style="border:none;color:#FFF;" value="{{ $batchitems[$item->id]['batches'] ?? null }}
+"></div>
+            									<input type="hidden" id="bthSelIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids'] ?? null}}"> 
+                                                <input type="hidden" id="bthSelQty_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys'] ?? null}}">
                                                 <input type="hidden" id="batchRem_{{$i}}" name="batchRem[]">
             								</div>
 								

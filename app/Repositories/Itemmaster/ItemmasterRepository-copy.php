@@ -66,20 +66,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	}
 	
 	public function create($attributes)
-	{	
+	{	//echo '<pre>';print_r($attributes);exit;
 		
-		if($attributes['dimension']==1) {
-
-			$attributes['unit'] = $attributes['unit_d'];
-			$attributes['packing'] = $attributes['packing_d'];	
-			$attributes['opn_quantity'] = $attributes['opn_quantity_d'];	
-			$attributes['opn_cost'] = $attributes['opn_cost_d'];
-			//$attributes['vat'] = $attributes['vat_d'];
-
-			$attributes['vat'] = $attributes['selvat'];
-		}
-
-		//echo '<pre>';print_r($attributes);exit;
 		if($this->isValid($attributes)) { 
 			
 			$image = '';
@@ -100,90 +88,65 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			
 			$this->itemmaster->item_code = $attributes['item_code'];
 			$this->itemmaster->description = $attributes['description'];
-			$this->itemmaster->description_ar =(isset($attributes['descriptionar']))?$attributes['descriptionar']:'';
 			$this->itemmaster->class_id = $attributes['item_class'];
 			$this->itemmaster->model_no = $attributes['model_no'];
 			$this->itemmaster->serial_no = $attributes['serial_no'];
-			$this->itemmaster->group_id = $attributes['group_id'] ?? 0;
-			$this->itemmaster->subgroup_id = $attributes['subgroup_id'] ?? 0;
-			$this->itemmaster->category_id = $attributes['category_id'] ?? 0;
-			$this->itemmaster->subcategory_id = $attributes['subcategory_id'] ?? 0;
-			$this->itemmaster->assembly = $attributes['assembly'] ?? 0;
+			$this->itemmaster->group_id = $attributes['group_id'];
+			$this->itemmaster->subgroup_id = $attributes['subgroup_id'];
+			$this->itemmaster->category_id = $attributes['category_id'];
+			$this->itemmaster->subcategory_id = $attributes['subcategory_id'];
+			$this->itemmaster->assembly = $attributes['assembly'];
 			$this->itemmaster->image = $image;
 			$this->itemmaster->status = 1;
-			$this->itemmaster->created_department = env('DEPARTMENT_ID');
-			$this->itemmaster->profit_per = $attributes['profit_per'] ?? 0;
-			$this->itemmaster->bin = $attributes['machine_model'] ?? '';
-			$this->itemmaster->weight = $attributes['size'] ?? 0;
-			$this->itemmaster->other_info = $attributes['other_info'] ?? '';
+			$this->itemmaster->profit_per = $attributes['profit_per'];
+			$this->itemmaster->bin = $attributes['machine_model'];
+			$this->itemmaster->weight = $attributes['size'];
+			$this->itemmaster->other_info = $attributes['other_info'];
 			$this->itemmaster->created_at = date('Y-m-d H:i:s');
 			$this->itemmaster->created_by = Auth::User()->id;
 			$this->itemmaster->supersede_items = (isset($attributes['supersede']))?implode(',', $attributes['supersede']):'';
 			$this->itemmaster->surface_cost = (isset($attributes['surface_cost']))?$attributes['surface_cost']:'';
 			$this->itemmaster->other_cost = (isset($attributes['other_cost']))?$attributes['other_cost']:'';
 			$this->itemmaster->bin_location = (isset($attributes['bin_location']))?$attributes['bin_location']:'';//SP7
-
-			$this->itemmaster->itmHt = (isset($attributes['itmHt']))?$attributes['itmHt']:'';//SP7
-			$this->itemmaster->itmWd = (isset($attributes['itmWd']))?$attributes['itmWd']:'';//SP7
-			$this->itemmaster->itmLt = (isset($attributes['itmLt']))?$attributes['itmLt']:'';//SP7
-
-			$this->itemmaster->mpqty = (isset($attributes['mpqty']))?$attributes['mpqty']:'';
-            $this->itemmaster->p1_qty = (isset($attributes['opn_quantity'][1]))?$attributes['opn_quantity'][1]:'';
-            $this->itemmaster->p2_qty = (isset($attributes['opn_quantity'][2]))?$attributes['opn_quantity'][2]:'';  
-			$this->itemmaster->dimension = (isset($attributes['dimension']))?$attributes['dimension']:'';
-			$this->itemmaster->batch_req = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
-			
-			$this->itemmaster->p1_formula = (isset($attributes['packing'][1]) && isset($attributes['pkno'][1]))?(($attributes['packing'][1]>$attributes['pkno'][1])?$attributes['packing'][1].',/':$attributes['pkno'][1].',*'):'';
-            $this->itemmaster->p2_formula = (isset($attributes['packing'][2]) && isset($attributes['pkno'][2]))?(($attributes['packing'][2]>$attributes['pkno'][2])?$attributes['packing'][2].',/':$attributes['pkno'][2].',*'):'';
-			//$this->itemmaster->fill($attributes)->save();
-			$this->itemmaster->save();
+			$this->itemmaster->fill($attributes)->save();
 			
 			if($this->itemmaster->id) {
 				$c = 1;
-				
 				foreach($attributes['unit'] as $key => $val){
 					$itemunit = new ItemUnit();
 					if($attributes['unit'][$key]!="" || $c==1) {
-					     $unitdat = DB::table('units')->where('id',$attributes['unit'][$key])->first();
-					    if($attributes['unit'][$key]=='') {
-					        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
-					        //echo $unitdat->unit_name;exit;
-					    }
-					    
 						$itemunit->itemmaster_id = $this->itemmaster->id;
-						$itemunit->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];//$attributes['unit'][$key];
-						$itemunit->packing = ($attributes['packing'][$key]=='')?$unitdat->unit_name:$attributes['packing'][$key];
-						$itemunit->opn_quantity = $attributes['opn_quantity'][$key] ?? 0;
-						$itemunit->opn_cost = $attributes['opn_cost'][$key] ?? 0;
-						$itemunit->sell_price = isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:''; //($c==1)?(float)$attributes['sell_price'][$key]:((float)$attributes['sell_price'][$key] * (float)$attributes['packing'][$key]);
-						$itemunit->wsale_price = $attributes['wsale_price'][$key] ?? 0;
-						$itemunit->min_quantity = $attributes['min_quantity'][$key] ?? 0;
-						$itemunit->reorder_level = $attributes['reorder_level'][$key] ?? 0; //selvat
-						$itemunit->vat = $attributes['selvat'][0] ?? 0;
+						$itemunit->unit_id = ($attributes['unit'][$key]=='')?4:$attributes['unit'][$key];//$attributes['unit'][$key];
+						$itemunit->packing = ($attributes['packing'][$key]=='')?'PCS':$attributes['packing'][$key];
+						$itemunit->opn_quantity = $attributes['opn_quantity'][$key];
+						$itemunit->opn_cost = $attributes['opn_cost'][$key];
+						$itemunit->sell_price = ($c==1)?$attributes['sell_price'][$key]:($attributes['sell_price'][$key] * $attributes['packing'][$key]);
+						$itemunit->wsale_price = $attributes['wsale_price'][$key];
+						$itemunit->min_quantity = $attributes['min_quantity'][$key];
+						$itemunit->reorder_level = $attributes['reorder_level'][$key]; //selvat
+						$itemunit->vat = $attributes['vat'][$key];
 						$itemunit->status = 1;
-						$itemunit->cur_quantity = $attributes['opn_quantity'][$key] ?? 0;
+						$itemunit->cur_quantity = $attributes['opn_quantity'][$key];
 						$itemunit->is_baseqty = ($c==1)?$is_baseqty=1:$is_baseqty=0;
-						$itemunit->received_qty = $attributes['opn_quantity'][$key] ?? 0;
-						$itemunit->last_purchase_cost = $attributes['opn_cost'][$key] ?? 0;
+						$itemunit->received_qty = $attributes['opn_quantity'][$key];
+						$itemunit->last_purchase_cost = $attributes['opn_cost'][$key];
 						$itemunit->pur_count = 1;
-						$itemunit->cost_avg = $attributes['opn_cost'][$key] ?? 0;
-						$itemunit->pkno = ($attributes['packing'][$key]=='')?1:$attributes['pkno'][$key];
+						$itemunit->cost_avg = $attributes['opn_cost'][$key];
 						$this->itemmaster->itemUnits()->save($itemunit);
 						if($c==1) {
 														
 							//-----------ITEM LOG----------------		
 							$dtrow = DB::table('parameter1')->select('from_date')->first();
-							$log_id = DB::table('item_log')->insertGetId([
+							DB::table('item_log')->insertGetId([
 											 'document_type' => 'OQ',
-											 'department_id'=>env('DEPARTMENT_ID'),
 											 'item_id' 	  => $this->itemmaster->id,
-											 'unit_id'    => ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key],
-											 'quantity'   => $attributes['opn_quantity'][$key] ?? 0,
-											 'unit_cost'  => $attributes['opn_cost'][$key] ?? 0,
+											 'unit_id'    => ($attributes['unit'][$key]=='')?4:$attributes['unit'][$key],
+											 'quantity'   => $attributes['opn_quantity'][$key],
+											 'unit_cost'  => $attributes['opn_cost'][$key],
 											 'trtype'	  => 1,
-											 'cur_quantity' => $attributes['opn_quantity'][$key] ?? 0,
-											 'cost_avg' => $attributes['opn_cost'][$key] ?? 0,
-											 'pur_cost' => $attributes['opn_cost'][$key] ?? 0,
+											 'cur_quantity' => $attributes['opn_quantity'][$key],
+											 'cost_avg' => $attributes['opn_cost'][$key],
+											 'pur_cost' => $attributes['opn_cost'][$key],
 											 'sale_cost' => '',
 											 'packing' => 1,
 											 'status'     => 1,
@@ -193,131 +156,75 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 											 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
 											]);
 							//-------------ITEM LOG------------------
-						    
-						    
-						    //---------------DEPARTMENT STOCK--------
-							
-							$departmentId = env('DEPARTMENT_ID');
-							if($attributes['unit'][0]!="") {
-    					        $unitdat = DB::table('units')->where('id',$attributes['unit'][0])->first();
-    						}
-    						
-    					    if($attributes['unit'][0]=='') {
-    					        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
-    					        //echo $unitdat->unit_name;exit;
-    					    }
-						    $unit=($attributes['unit'][0]=='')?$unitdat->id:$attributes['unit'][0];
-							$packing= ($attributes['packing'][0]=='')?$unitdat->unit_name:$attributes['packing'][0];
-                            $openingQty   = isset($attributes['opn_quantity'][0]) ? (float)$attributes['opn_quantity'][0] : 0;
-                            $openingCost  = isset($attributes['opn_cost'][0]) ? (float)$attributes['opn_cost'][0] : 0;
-                            $sellPrice    = isset($attributes['sell_price'][0])?$attributes['sell_price'][0]:0;
-							$wsalePrice   = isset($attributes['wsale_price'][0])?$attributes['wsale_price'][0]:0;
-							$minqty       =  isset($attributes['min_quantity'][0])?$attributes['min_quantity'][0]:0;
-							$reorder      =  isset($attributes['reorder_level'][0])?$attributes['reorder_level'][0]:''; 
-							$vat          =isset($attributes['selvat'][0])?$attributes['selvat'][0]:0;
-							$pkno = ($attributes['packing'][0]=='')?1:$attributes['pkno'][0];
-							
-                            $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
-
-                                      foreach ($departments as $dept) {
-                                               $isCurrent = ($dept->id == $departmentId);
-
-                                             DB::table('itemstock_department')->insert([
-                                                        'itemmaster_id'      => $this->itemmaster->id,
-                                                         'department_id'      => $dept->id,
-														 'unit_id'         =>$unit,
-														 'packing'         =>$packing,
-                                                          'opn_cost'       => $isCurrent ? $openingCost : 0,
-                                                          'opn_quantity'        => $isCurrent ? $openingQty : 0,
-                                                            'cur_quantity'            => $isCurrent ? $openingQty : 0,
-                                                            'received_qty'       => $isCurrent ? $openingQty : 0,
-                                                             'issued_qty'         => 0,
-															 'min_quantity'        =>$isCurrent ? $minqty :0,
-															 'reorder_level'       =>$isCurrent ? $reorder :0,
-															 'vat'                =>$isCurrent ? $vat :$vat,
-															 'is_baseqty'         =>1,
-															 'pur_count'          => 1,
-                                                             'last_purchase_cost' => $isCurrent ? $openingCost : 0,
-                                                             'cost_avg'           => $isCurrent ? $openingCost : 0,
-															 'status'             =>1,
-															 'sell_price'          =>$isCurrent?$sellPrice:0,
-															 'wsale_price'        =>$isCurrent?$wsalePrice:0,
-															 'pkno'               =>  $isCurrent?$pkno:1,
-                                                           // 'created_at'         => date('Y-m-d H:i:s'),
-            
-                                                          ]);
-                                         }
-                             //------------------DEPT STOCK------------------------------------------------
+						}
 										
-    						//...............ITEM LOCATION........
-    						if(isset($attributes['locid']) && isset($attributes['locqty'])) {
-    							$arrLoc = [];
-    							foreach($attributes['locid'] as $k => $v) {
-    								if($c==1)
-    									$quantity = $attributes['locqty'][$k] ?? 0;
-    								else {
-    									$quantity = $attributes['locqty'][$k]/$attributes['packing'][$key];
-    								}
-    								$itemLocation = new ItemLocation();
-    								$itemLocation->location_id = $v;
-    								$itemLocation->item_id = $this->itemmaster->id;
-    								$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
-									$itemLocation->department_id = env('DEPARTMENT_ID');
-    								$itemLocation->quantity = $quantity ?? 0;
-    								$itemLocation->status = 1;
-    								$itemLocation->opn_qty = $attributes['locqty'][$k] ?? 0;
-    								$itemLocation->bin_id = $attributes['binid'][$k] ?? 0;
-    								$itemLocation->save();
-    							}
-    							
-    							//ADD OTHER ITEMS TO OTHER LOCATIONS...
-    							$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-    							if($rows){
-    								foreach($rows as $row) {
-    									if(!in_array($row->id, $attributes['locid'])) {
-    										$itemLocation = new ItemLocation();
-    										$itemLocation->location_id = $row->id;
-    										$itemLocation->department_id = env('DEPARTMENT_ID');
-    										$itemLocation->item_id = $this->itemmaster->id;
-    										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
-    										$itemLocation->quantity = 0;
-    										$itemLocation->status = 1;
-    										$itemLocation->opn_qty = 0;
-    										$itemLocation->bin_id = $attributes['binid'][$k];
-    										$itemLocation->save();
-    									}
-    								}
-    							}
-    								
-    						} else {
-    							//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-    							if($c==1) {
-    								$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-    								if($rows){
-    									foreach($rows as $row) {
-    										
-    										$itemLocation = new ItemLocation();
-    										$itemLocation->location_id = $row->id;
-    										$itemLocation->department_id = env('DEPARTMENT_ID');
-    										$itemLocation->item_id = $this->itemmaster->id;
-    										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
-    										$itemLocation->quantity = ($row->is_default==1)?($attributes['opn_quantity'][0] ?? 0):0;
-    										$itemLocation->status = 1;
-    										$itemLocation->opn_qty = ($row->is_default==1)?($attributes['opn_quantity'][0] ?? 0):0;
-    										$itemLocation->bin_id = isset($attributes['binid'][$key])?$attributes['binid'][$key]:0;
-    										//$itemLocation->doc_type = 'OQ';
-    										$itemLocation->save();
-    									}
-    								}
-    							}
-    						}
-					    }
+						//...............ITEM LOCATION........
+						if(isset($attributes['locid']) && isset($attributes['locqty'])) {
+							$arrLoc = [];
+							foreach($attributes['locid'] as $k => $v) {
+								if($c==1)
+									$quantity = $attributes['locqty'][$k];
+								else {
+									$quantity = $attributes['locqty'][$k]/$attributes['packing'][$key];
+								}
+								$itemLocation = new ItemLocation();
+								$itemLocation->location_id = $v;
+								$itemLocation->item_id = $this->itemmaster->id;
+								$itemLocation->unit_id = ($attributes['unit'][$key]=='')?1:$attributes['unit'][$key];
+								$itemLocation->quantity = $quantity;
+								$itemLocation->status = 1;
+								$itemLocation->opn_qty = $attributes['locqty'][$k];
+								$itemLocation->save();
+							}
+							
+							//ADD OTHER ITEMS TO OTHER LOCATIONS...
+							$rows = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+							if($rows){
+								foreach($rows as $row) {
+									if(!in_array($row->id, $attributes['locid'])) {
+										$itemLocation = new ItemLocation();
+										$itemLocation->location_id = $row->id;
+										$itemLocation->item_id = $this->itemmaster->id;
+										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?1:$attributes['unit'][$key];
+										$itemLocation->quantity = 0;
+										$itemLocation->status = 1;
+										$itemLocation->opn_qty = 0;
+										$itemLocation->save();
+									}
+								}
+							}
+								
+						} else {
+							//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+							$rows = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+							if($rows){
+								foreach($rows as $row) {
+									
+									$itemLocation = new ItemLocation();
+									$itemLocation->location_id = $row->id;
+									$itemLocation->item_id = $this->itemmaster->id;
+									$itemLocation->unit_id = ($attributes['unit'][$key]=='')?4:$attributes['unit'][$key];
+									$itemLocation->quantity = ($row->is_default==1)?$attributes['opn_quantity'][0]:0;
+									$itemLocation->status = 1;
+									$itemLocation->opn_qty = ($row->is_default==1)?$attributes['opn_quantity'][0]:0;
+									//$itemLocation->doc_type = 'OQ';
+									$itemLocation->save();
+								}
+							}
+						}
+						
 						$c++;
 					}
 					
 				}
 				
-			
+				//API ...
+				/* $response = Curl::to($this->api_url.'itemadd.php')
+							->withData($attributes)
+							->asJson()
+							->post(); */
+				//print_r($response); exit;
+				
 				//Manufacture item row materials add.....
 				if($attributes['assembly']==1) { $a=1;
 					foreach($attributes['item_id'] as $ky => $item) {
@@ -326,55 +233,14 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									->insert([
 										'item_id'	=> $this->itemmaster->id,
 										'subitem_id'	=> $item,
-										'quantity'	=> $attributes['quantity'][$ky] ?? 0,
-										'unit_price'	=> $attributes['cost'][$ky] ?? 0,
-										'total'	=> $attributes['line_total'][$ky] ?? 0
+										'quantity'	=> $attributes['quantity'][$ky],
+										'unit_price'	=> $attributes['cost'][$ky],
+										'total'	=> $attributes['line_total'][$ky]
 									]);
 						}
 					}
 				}
 				
-				//BATCH NO ENTRY............
-				$isbatch = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
-				if($isbatch==1 && $attributes['batchNos']!='' && $attributes['mfgDates']!='' && $attributes['qtyBatchs']!='') {
-				    
-				    $batchArr = explode(',', $attributes['batchNos']);
-				    $mfgArr = explode(',', $attributes['mfgDates']);
-				    $expArr = explode(',', $attributes['expDates']);
-				    $qtyArr = explode(',', $attributes['qtyBatchs']);
-				    
-				    foreach($batchArr as $bkey => $bval) {
-				        
-				        $batch_id = DB::table('item_batch')
-            				                ->insertGetId([
-            				                    'item_id' => $this->itemmaster->id,
-            				                    'batch_no' => $bval,
-            				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
-            				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
-            				                    'quantity' => $qtyArr[$bkey]
-            				                ]);
-            				                
-            			if($batch_id) {
-            			    DB::table('batch_log')
-        				                ->insert([
-        				                    'batch_id' => $batch_id,
-        				                    'item_id' => $this->itemmaster->id,
-        				                    'document_type' => 'OQ',
-        				                    'quantity' => $qtyArr[$bkey],
-        				                    'trtype' => 1,
-        				                    'invoice_date' => $dtrow->from_date,
-        				                    'log_id' => $log_id,
-        				                    'created_at' => date('Y-m-d h:i:s'),
-        				                    'created_by' => Auth::User()->id
-        				                    ]);
-            			}	                
-            				                
-            				                
-            				                
-				    }
-				
-				}
-				//.....END BATCH ENTRY
 				return true;
 			}
 		}
@@ -384,19 +250,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	
 	public function update($id, $attributes) //sell_price
 	{ //
-
-		//echo '<pre>';print_r($attributes);exit;
-		if($attributes['dimension']==1) {
-
-			$attributes['unit'] = $attributes['unit_d'];
-			$attributes['packing'] = $attributes['packing_d'];	
-			$attributes['opn_quantity'] = $attributes['opn_quantity_d'];	
-			$attributes['opn_cost'] = $attributes['opn_cost_d'];
-			//$attributes['vat'] = $attributes['vat_d'];
-
-			$attributes['vat'] = $attributes['selvat'];
-		}
-		
+	
 		$this->itemmaster = $this->find($id);
 		if($this->isValid($attributes, ['item_code' => 'required'])) {
 			
@@ -420,7 +274,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			
 			$this->itemmaster->item_code = $attributes['item_code']; //opn_quantity
 			$this->itemmaster->description = $attributes['description'];
-			$this->itemmaster->description_ar =(isset($attributes['descriptionar']))?$attributes['descriptionar']:'';
 			$this->itemmaster->class_id = $attributes['item_class'];
 			$this->itemmaster->model_no = $attributes['model_no'];
 			$this->itemmaster->serial_no = $attributes['serial_no'];
@@ -438,161 +291,48 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$this->itemmaster->modified_at = date('Y-m-d H:i:s');
 			$this->itemmaster->supersede_items = (isset($attributes['supersede']))?implode(',', $attributes['supersede']):'';
 			$this->itemmaster->bin_location = (isset($attributes['bin_location']))?$attributes['bin_location']:'';//SP7
-
-			$this->itemmaster->itmHt = (isset($attributes['itmHt']))?$attributes['itmHt']:'';//SP7
-			$this->itemmaster->itmWd = (isset($attributes['itmWd']))?$attributes['itmWd']:'';//SP7
-			$this->itemmaster->itmLt = (isset($attributes['itmLt']))?$attributes['itmLt']:'';//SP7
-			$this->itemmaster->mpqty = (isset($attributes['mpqty']))?$attributes['mpqty']:'';
-            $this->itemmaster->p1_qty = (isset($attributes['opn_quantity'][1]))?$attributes['opn_quantity'][1]:'';
-            $this->itemmaster->p2_qty = (isset($attributes['opn_quantity'][2]))?$attributes['opn_quantity'][2]:'';
-			$this->itemmaster->dimension = (isset($attributes['dimension']))?$attributes['dimension']:'';
-			
-			//$this->itemmaster->p1_formula = (isset($attributes['packing'][1]))?$attributes['packing'][1]:'';
-           // $this->itemmaster->p2_formula = (isset($attributes['packing'][2]))?$attributes['packing'][2]:'';   
-            
-            $this->itemmaster->p1_formula = (isset($attributes['packing'][1]) && isset($attributes['pkno'][1]))?(($attributes['packing'][1]>$attributes['pkno'][1])?$attributes['packing'][1].',/':$attributes['pkno'][1].',*'):'';
-            $this->itemmaster->p2_formula = (isset($attributes['packing'][2]) && isset($attributes['pkno'][2]))?(($attributes['packing'][2]>$attributes['pkno'][2])?$attributes['packing'][2].',/':$attributes['pkno'][2].',*'):'';
-			
-			
-			
 			$this->itemmaster->fill($attributes)->save();
 			
 			//$units = $this->getUnits($id);//echo '<pre>';print_r($units);exit;
 			$key = 0;
-			$currentDeptId = env('DEPARTMENT_ID');
-			
+			//foreach($units as $unit){
 			foreach($attributes['unit'] as $key => $val) {
 				
-				if(isset($attributes['item_unit_id'][$key]) && $attributes['item_unit_id'][$key]!='')
+				if($attributes['item_unit_id'][$key]!='')
 					$itemunit = ItemUnit::find($attributes['item_unit_id'][$key]);
 				else
 					$itemunit = new ItemUnit();
 				
-					$logs = DB::table('item_log')->where('document_type','!=','OQ')->where('item_id',$id)->where('department_id',$currentDeptId)->count();
 				if($attributes['unit'][$key]!="" || $key==0) {
-					if(isset($attributes['opn_quantity_cur'][$key])&& isset($attributes['opn_quantity'][$key])&&$attributes['opn_quantity_cur'][$key] != $attributes['opn_quantity'][$key]){
-						if($logs==0)
-							$itemunit->cur_quantity = $attributes['opn_quantity'][$key];// + $itemunit->cur_quantity;
+					if($attributes['opn_quantity_cur'][$key] != $attributes['opn_quantity'][$key]){
+						$itemunit->cur_quantity = $attributes['opn_quantity'][$key];// + $itemunit->cur_quantity;
 					}
-					
-					if($attributes['unit'][$key]=='') {
-				        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
-				    }
-                      //echo '<pre>';print_r($attributes['unit'][$key]);exit;
-                      $unitId = ($attributes['unit'][$key] == '') ? $unitdat->id : $attributes['unit'][$key];
-                     $opnQty = isset($attributes['opn_quantity'][$key]) ? (float)$attributes['opn_quantity'][$key] : 0;
-                     $opnCost = isset($attributes['opn_cost'][$key]) ? (float)$attributes['opn_cost'][$key] : 0;
-					  $sellPrice=isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:0;
-                       $wsalePrice=isset($attributes['wsale_price'][$key])?$attributes['wsale_price'][$key]:0;
-					   $minQty=    isset($attributes['min_quantity'][$key])?$attributes['min_quantity'][$key]:0;
-                     // ----------------------------------------------
-                       // DETERMINE WHETHER TO REPLACE OR ADD
-                     // ----------------------------------------------
-                         $existingDeptStock = DB::table('itemstock_department')->where('itemmaster_id', $id)
-						                           ->where('department_id', $currentDeptId)->first();
-
-                        $isSameDept = false;
-                        if ($existingDeptStock) {
-            // If this department already has non-zero stock, it’s the same dept
-			          if($existingDeptStock->opn_quantity > 0 || $existingDeptStock->opn_cost > 0)
-                        $isSameDept =true ;
-                       }
-                       //echo '<pre>';print_r($isSameDept);exit;
-        
-                      // UPDATE GLOBAL ITEM_UNIT TABLE
-        
-                        if ($isSameDept) {
-                            // SAME STORE → REPLACE
-                                $itemunit->opn_quantity = $opnQty;
-                                $itemunit->opn_cost = $opnCost;
-                                $itemunit->cur_quantity = $opnQty;
-								$itemunit->sell_price=$sellPrice;
-								$itemunit->wsale_price=$wsalePrice;
-								$itemunit->min_quantity=$minQty;
-								$itemunit->cost_avg = $opnCost;
-                        } else {
-                           // 🆕 DIFFERENT STORE → ADD
-                              $itemunit->opn_quantity = ($itemunit->opn_quantity ?: 0) + $opnQty;
-                               $itemunit->opn_cost = ($itemunit->opn_cost ?: 0) + $opnCost;
-                               $itemunit->cur_quantity = ($itemunit->cur_quantity ?: 0) + $opnQty;
-							   $itemunit->sell_price=($itemunit->sell_price ?: 0) + $sellPrice;
-							   $itemunit->wsale_price=($itemunit->wsell_price ?: 0) + $wsalePrice;
-							   $itemunit->min_quantity=($itemunit->min_quantity ?: 0) + $minQty;
-							   $itemunit->cost_avg =($itemunit->cost_avg ?: 0) + $opnCost;
-							   
-                        }
-
-                         //echo '<pre>';print_r($itemunit->opn_quantity);exit;
-                             // COMMON FIELD UPDATES
-        
-                    $itemunit->unit_id = $unitId;
+					$itemunit->unit_id = ($attributes['unit'][$key]=='')?4:$attributes['unit'][$key];
 					$itemunit->packing = $attributes['packing'][$key];
-					//$itemunit->opn_quantity = $attributes['opn_quantity'][$key];
-					//$itemunit->opn_cost = $attributes['opn_cost'][$key];
-					//$itemunit->sell_price = isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:'';
-					//$itemunit->wsale_price = isset($attributes['wsale_price'][$key])?$attributes['wsale_price'][$key]:'';
-					//$itemunit->min_quantity = isset($attributes['min_quantity'][$key])?$attributes['min_quantity'][$key]:'';
-					$itemunit->reorder_level = isset($attributes['reorder_level'][$key])?$attributes['reorder_level'][$key]:'';
-					$itemunit->vat = isset($attributes['selvat'][0])?$attributes['selvat'][0]:'';
+					$itemunit->opn_quantity = $attributes['opn_quantity'][$key];
+					$itemunit->opn_cost = $attributes['opn_cost'][$key];
+					$itemunit->sell_price = $attributes['sell_price'][$key];
+					$itemunit->wsale_price = $attributes['wsale_price'][$key];
+					$itemunit->min_quantity = $attributes['min_quantity'][$key];
+					$itemunit->reorder_level = $attributes['reorder_level'][$key];
+					$itemunit->vat = $attributes['vat'][0];
 					$itemunit->is_baseqty = ($key==0)?$is_baseqty=1:$is_baseqty=0;
-					//$itemunit->cost_avg = isset($attributes['opn_cost'][$key])?$attributes['opn_cost'][$key]:'';
-					$itemunit->pkno = isset($attributes['pkno'][$key])?$attributes['pkno'][$key]:'';
+					$itemunit->cost_avg = $attributes['opn_cost'][$key];
 					$itemunit->status = 1;
 					//$itemunit->received_qty = $attributes['opn_quantity'][$key];
-					//echo '<pre>';print_r($itemunit);exit;
-					if(isset($attributes['item_unit_id'][$key]) && $attributes['item_unit_id'][$key]!='')
-						
+					if($attributes['item_unit_id'][$key]!='')
 						$itemunit->save();
 					else
 						$this->itemmaster->itemUnits()->save($itemunit);
-					// ----------------------------------------------
-        // UPDATE ITEMSTOCK_DEPARTMENT (per-store)
-        // ----------------------------------------------
-                       if ($existingDeptStock) {
-                  if ($isSameDept) {
-                            // ✅ SAME STORE → REPLACE
-                DB::table('itemstock_department')
-                    ->where('itemmaster_id', $id)
-                    ->where('department_id', $currentDeptId)
-                    ->update([
-                        'opn_quantity' => $opnQty,
-                        'opn_cost'     => $opnCost,
-                        'cur_quantity' => $opnQty,
-						'received_qty' =>$opnQty,
-                        'last_purchase_cost' => $opnCost,
-                        'cost_avg'     => $opnCost,
-                        
-                    ]);
-            } else {
-                // 🆕 DIFFERENT STORE → ADD stock to that department
-                DB::table('itemstock_department')
-                    ->where('itemmaster_id', $id)
-                    ->where('department_id', $currentDeptId)
-                    ->update([
-                        'opn_quantity' => DB::raw('opn_quantity + ' . $opnQty),
-                        'opn_cost'     => DB::raw('opn_cost + ' . $opnCost),
-                        'cur_quantity' => DB::raw('cur_quantity + ' . $opnQty),
-						'received_qty' =>DB::raw('received_qty + ' . $opnQty),
-                        'last_purchase_cost' => $opnCost,
-                        'cost_avg'     => $opnCost,
-
-                        
-                    ]);
-            }
-        }
-                    
-                           // END UPDATE ITEMSTOCK_DEPARTMENT (per-store)
-        
-        
+					
 					if($key==0) {
 						//-----------ITEM LOG----------------							
 						DB::table('item_log')
 									->where('document_type', 'OQ')
-									->where('item_id', $this->itemmaster->id) 
-									->where('department_id', $currentDeptId)
+									->where('item_id', $this->itemmaster->id)
+									->where('unit_id', $attributes['unit'][$key])
 									->where('packing', 1)
 									->update([
-									     'unit_id' => $attributes['unit'][$key],
 										 'quantity'   => $attributes['opn_quantity'][$key],
 										 'unit_cost'  => $attributes['opn_cost'][$key],
 										 'cur_quantity' => $attributes['opn_quantity'][$key],
@@ -602,66 +342,28 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						//-------------ITEM LOG--------------
 					}		
 					$key++;
-
-					//-----------ITEM LOG----------------	
-					$log_count=DB::table('item_log')
-									->where('document_type', 'OQ')
-									->where('item_id', $this->itemmaster->id) 
-									->where('department_id', $currentDeptId)->count();
-					
-                  if ($log_count==0) {	
-							$dtrow = DB::table('parameter1')->select('from_date')->first();
-							$log_id = DB::table('item_log')->insertGetId([
-											 'document_type' => 'OQ',
-											 'department_id'=>env('DEPARTMENT_ID'),
-											 'item_id' 	  => $this->itemmaster->id,
-											 'unit_id'    => $unitId,
-											 'quantity'   => isset($attributes['opn_quantity'][0])?$attributes['opn_quantity'][0]:0,
-											 'unit_cost'  => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
-											 'trtype'	  => 1,
-											 'cur_quantity' => isset($attributes['opn_quantity'][0])?$attributes['opn_quantity'][0]:0,
-											 'cost_avg' => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
-											 'pur_cost' => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
-											 'sale_cost' => '',
-											 'packing' => 1,
-											 'status'     => 1,
-											 'created_at' => date('Y-m-d H:i:s'),
-											 'created_by' => Auth::User()->id,
-											 'voucher_date' => $dtrow->from_date
-											 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
-											]);
-										}
-									
-
-									//echo '<pre>';print_r($log_id);exit;
-							//-------------ITEM LOG------------------
-						
 					
 					if(isset($attributes['locid']) && isset($attributes['locqty'])) {
 						foreach($attributes['locid'] as $k => $v) {
-							$itlocid = isset($attributes['itlocid'][$k])?$attributes['itlocid'][$k]:0;
+							$itlocid = $attributes['itlocid'][$k];
 							if($itlocid!='')
-								DB::table('item_location')->where('id', $itlocid)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => $attributes['locqty'][$k],'opn_qty' => $attributes['locqty'][$k], 'bin_id' => $attributes['binid'][$k]]);
+								DB::table('item_location')->where('id', $itlocid)->update(['quantity' => $attributes['locqty'][$k],'opn_qty' => $attributes['locqty'][$k]]);
 							else {
-							    $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
 								$itemLocation = new ItemLocation();
 								$itemLocation->location_id = $v;
 								$itemLocation->item_id = $this->itemmaster->id;
-								$itemLocation->department_id = env('DEPARTMENT_ID');
-								$itemLocation->unit_id = (isset($attributes['unit'][$key]) && $attributes['unit'][$key]!='')?$attributes['unit'][$key]:$unitdat->id;
+								$itemLocation->unit_id = ($attributes['unit'][$key]=='')?4:$attributes['unit'][$key];
 								$itemLocation->quantity = $attributes['locqty'][$k];
 								$itemLocation->status = 1;
 								$itemLocation->opn_qty = $attributes['locqty'][$k];
-								$itemLocation->bin_id = $attributes['binid'][$k];
 								//$itemLocation->doc_type = 'OQ';
 								$itemLocation->save();
 							}
 						}
-					}  
+					} 
 				}
 				
 			}
-			
 			
 			//Manufacture item row materials add.....
 			if($attributes['assembly']==1) { $a=1;
@@ -700,86 +402,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					}
 				}
 			}
-			
-			$this->formatLogs($id);
-			
-			
-			//BATCH NO ENTRY............
-			$isbatch = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
-			if($isbatch==1 && $attributes['batchNos']!='' && $attributes['mfgDates']!='' && $attributes['qtyBatchs']!='') {
-			    
-			    $dtrow = DB::table('parameter1')->select('from_date')->first();
-			    $logrow = DB::table('item_log')->where('document_type', 'OQ')->where('item_id', $this->itemmaster->id)->where('packing', 1)->select('id')->first();
-			    
-			    $batchArr = explode(',', $attributes['batchNos']);
-			    $mfgArr = explode(',', $attributes['mfgDates']);
-			    $expArr = explode(',', $attributes['expDates']);
-			    $qtyArr = explode(',', $attributes['qtyBatchs']);
-			    $bthidsArr = explode(',', $attributes['batchIds']);
-			    $remArr = explode(',', $attributes['batchRem']);
-			    //echo '<pre>';print_r($batchArr);print_r($bthidsArr);exit;
-			    foreach($batchArr as $bkey => $bval) {
-			        
-			        if(isset($bthidsArr[$bkey]) && $bthidsArr[$bkey]!='') { //UPDATE...
-			            
-			            DB::table('item_batch')
-			                            ->where('id', $bthidsArr[$bkey])
-        				                ->update([
-        				                    'batch_no' => $bval,
-        				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
-        				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
-        				                    'quantity' => $qtyArr[$bkey]
-        				                ]);
-        				                
-        				DB::table('batch_log')
-        				                ->where('batch_id', $bthidsArr[$bkey])
-        				                ->where('document_type','OQ')
-        				                ->update([
-        				                    'quantity' => $qtyArr[$bkey],
-        				                    'modify_at' => date('Y-m-d h:i:s'),
-        				                    'modify_by' => Auth::User()->id
-        				                    ]);
-        				                    
-			        } else {  //INSERT NEW....
-			        
-    			        $batch_id = DB::table('item_batch')
-            				                ->insertGetId([
-            				                    'item_id' => $this->itemmaster->id,
-            				                    'batch_no' => $bval,
-            				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
-            				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
-            				                    'quantity' => $qtyArr[$bkey]
-            				                ]);
-            				                
-            			if($batch_id) {
-            			    DB::table('batch_log')
-        				                ->insert([
-        				                    'batch_id' => $batch_id,
-        				                    'item_id' => $this->itemmaster->id,
-        				                    'document_type' => 'OQ',
-        				                    'quantity' => $qtyArr[$bkey],
-        				                    'trtype' => 1,
-        				                    'invoice_date' => $dtrow->from_date,
-        				                    'log_id' => $logrow->id,
-        				                    'created_at' => date('Y-m-d h:i:s'),
-        				                    'created_by' => Auth::User()->id
-        				                    ]);
-            			}	                
-        				                
-			        }                
-        				                
-			    }
-			    
-			    //DELETE...
-			    foreach($remArr as $rem) {
-			        
-			        DB::table('item_batch')->where('id',$rem)->update(['deleted_at' => date('Y-m-d h:i:s')]);
-			        
-			        DB::table('batch_log')->where('batch_id',$rem)->where('document_type','OQ')->update(['deleted_at' => date('Y-m-d h:i:s'), 'deleted_by' => Auth::User()->id]);
-			    }
-			
-			}
-
+				
 			return true;
 		}
 		//throw new ValidationException('Itemmaster validation error!', $this->getErrors());
@@ -799,69 +422,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		return $query->join('item_unit AS u', function($join) {
 							$join->on('u.itemmaster_id','=','itemmaster.id');
 						} )
-						->join('itemstock_department AS ID', function($join) {
-							$join->on('ID.itemmaster_id','=','itemmaster.id');
-						} )
-						->where('ID.department_id',env('DEPARTMENT_ID'))
 						->orderBy('u.id','ASC')
-						->select('ID.*','u.id AS iuid ')->get();
-	}
-
-	// public function getItemUnit($id)
-	// {
-	// 	return DB::table('item_unit as u')
-	// 		->join('itemstock_department as sd', function ($join) {
-	// 			$join->on('sd.itemmaster_id', '=', 'u.itemmaster_id');
-	// 			$join->on('sd.unit_id', '=', 'u.unit_id');
-	// 		})
-	// 		->where('u.itemmaster_id', $id)
-	// 		->where('sd.department_id', env('DEPARTMENT_ID'))
-	// 		// ->where('sd.deleted_at', '0000-00-00 00:00:00')
-	// 		->orderBy('u.id', 'ASC')
-	// 		->select([
-	// 			'u.id as iuid',
-	// 			'u.unit_id',
-	// 			'u.packing',
-	// 			'u.pkno',
-
-	// 			'sd.opn_quantity',
-	// 			'sd.opn_cost',
-	// 			'sd.sell_price',
-	// 			'sd.wsale_price',
-	// 			'sd.min_quantity',
-	// 			'sd.reorder_level',
-	// 			'sd.vat'
-	// 		])
-	// 		->get();
-	// }
-
-	
-	public function getItemUnits($id)
-	{
-		$query = $this->itemmaster->where('itemmaster.id', $id);
-		
-		return $query->join('item_unit AS u', function($join) {
-							$join->on('u.itemmaster_id','=','itemmaster.id');
-						})
-						->join('units','units.id','=','u.unit_id')
-						->orderBy('u.id','ASC')
-						->select('u.*','units.unit_name')->get();
-	}
-	
-	
-	public function getItemUnitsArr($items)
-	{
-		foreach($items as $item) {
-    		$query = $this->itemmaster->where('itemmaster.id', $item->item_id);
-    		
-    		$result[$item->item_id] = $query->join('item_unit AS u', function($join) {
-    							$join->on('u.itemmaster_id','=','itemmaster.id');
-    						})
-    						->join('units','units.id','=','u.unit_id')
-    						->orderBy('u.id','ASC')
-    						->select('u.*','units.unit_name')->get();
-		}
-		return $result;
+						->select('u.*')->get();
 	}
 	
 	//paging count...
@@ -872,9 +434,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		$query->join('item_unit AS u', function($join) {
 							$join->on('u.itemmaster_id','=','itemmaster.id');
 						} )
-						->join('itemstock_department AS ISD', function($join) {
-							$join->on('ISD.itemmaster_id','=','itemmaster.id');
-						} )
 						->leftJoin('groupcat AS GC', function($join) {
 							$join->on('GC.id','=','itemmaster.group_id');
 						} );
@@ -884,26 +443,20 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							$query->where('itemmaster.class_id',$val);
 						}
 						
-		return $query->where('u.is_baseqty','=',1)->where('ISD.department_id','=',env('DEPARTMENT_ID'))->count();
+		return $query->where('u.is_baseqty','=',1)->count();
 	}
 	
 	//paging..
-    public function getActiveItemList($mod=null,$type,$start,$limit,$order,$dir,$search)
+	public function getActiveItemList($mod=null,$type,$start,$limit,$order,$dir,$search)
 	{
 		$query = $this->itemmaster->where('itemmaster.status',1);
 		
 		$query->join('item_unit AS iu', function($join) {
 							$join->on('iu.itemmaster_id','=','itemmaster.id');
-							$join->where('iu.is_baseqty','=',1);
-						} )
-						->join('itemstock_department AS ISD', function($join) {
-							$join->on('ISD.itemmaster_id','=','itemmaster.id');
-							$join->where('ISD.department_id','=',env('DEPARTMENT_ID'));
 						} )
 						->join('units AS u', function($join) {
 							$join->on('u.id','=','iu.unit_id');
 						} );
-						
 						
 						if($search) {
 							$query->where('itemmaster.item_code','LIKE',"%{$search}%")
@@ -917,8 +470,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						
 			 $query->groupBy('iu.itemmaster_id')
 						//->orderBy('itemmaster.description','ASC')
-						->select('itemmaster.id','itemmaster.item_code','itemmaster.model_no','itemmaster.description','itemmaster.description_ar','ISD.vat','itemmaster.class_id',
-						'u.unit_name','ISD.cost_avg','ISD.sell_price','ISD.last_purchase_cost AS pur_cost','ISD.cur_quantity','itemmaster.itmLt','itemmaster.itmWd','itemmaster.batch_req')
+						->select('itemmaster.id','itemmaster.item_code','itemmaster.model_no','itemmaster.description','iu.vat','itemmaster.class_id',
+						'u.unit_name','iu.cost_avg','iu.sell_price','iu.last_purchase_cost AS pur_cost','iu.cur_quantity')
 						->offset($start)
                         ->limit($limit)
                         ->orderBy($order,$dir);
@@ -927,106 +480,62 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					else
 						return $query->count();
 	}
-
 	
-	public function itemmasterList($type, $start, $limit, $order, $dir, $search)
+	public function itemmasterList($type,$start,$limit,$order,$dir,$search)
+	{	
+		$query = $this->itemmaster->where('itemmaster.status', 1);
+				
+		$query->join('item_unit AS u', function($join) {
+							$join->on('u.itemmaster_id','=','itemmaster.id');
+						} )
+						->leftJoin('groupcat AS GC', function($join) {
+							$join->on('GC.id','=','itemmaster.group_id');
+						} )
+						->leftJoin('groupcat AS GS', function($join) {
+							$join->on('GS.id','=','itemmaster.subgroup_id');
+						} )
+						->leftJoin('category AS C', function($join) {
+							$join->on('C.id','=','itemmaster.category_id');
+						} )
+						->leftJoin('category AS S', function($join) {
+							$join->on('S.id','=','itemmaster.subcategory_id');
+						} )
+						->where('u.is_baseqty','=',1);
+						
+				if($search) {
+					$query->where('item_code','LIKE',"%{$search}%")
+                          ->orWhere('itemmaster.description', 'LIKE',"%{$search}%")
+						  ->orWhere('GC.description', 'LIKE',"%{$search}%");
+				}
+				
+				$query->select('itemmaster.*','u.cur_quantity AS quantity','u.received_qty','C.category_name AS category','S.category_name AS subcategory',
+								 'u.last_purchase_cost','u.cost_avg','u.issued_qty','u.packing','GC.description AS group_name','u.reorder_level','u.sell_price',
+								 'GS.description AS subgroup')
+						->groupBy('u.itemmaster_id')
+						->offset($start)
+                        ->limit($limit)
+                        ->orderBy($order,$dir);
+					if($type=='get')
+						return $query->get();
+					else
+						return $query->count();
+	}
+	
+	public function itemmasterListCount()
 	{	
 		$query = $this->itemmaster->where('itemmaster.status', 1);
 		
-		// Add the conditions INSIDE the join (like you did in itemmasterListCount)
-		$query->join('item_unit AS u', function($join) {
-					$join->on('u.itemmaster_id', '=', 'itemmaster.id')
-						->where('u.is_baseqty', 1);  // ← MOVED HERE
-				})
-				->join('itemstock_department AS ID', function($join) {
-					$join->on('ID.itemmaster_id', '=', 'itemmaster.id')
-						->where('ID.department_id', env('DEPARTMENT_ID')); // ← MOVED HERE
-				})
-				->leftJoin('groupcat AS GC', function($join) {
-					$join->on('GC.id', '=', 'itemmaster.group_id');
-				})
-				->leftJoin('groupcat AS GS', function($join) {
-					$join->on('GS.id', '=', 'itemmaster.subgroup_id');
-				})
-				->leftJoin('category AS C', function($join) {
-					$join->on('C.id', '=', 'itemmaster.category_id');
-				})
-				->leftJoin('category AS S', function($join) {
-					$join->on('S.id', '=', 'itemmaster.subcategory_id');
-				});
-		
-		if($search) {
-			$query->where(function($qry) use($search) {
-				$qry->where('item_code', 'LIKE', "%{$search}%")
-					->orWhere('itemmaster.description', 'LIKE', "%{$search}%")
-					->orWhere('GC.description', 'LIKE', "%{$search}%");
-			});
-		}
-		
-		// REMOVE these lines - they're now in the join conditions above
-		// $query->where('u.is_baseqty', 1)
-		//       ->where('ID.department_id', env('DEPARTMENT_ID'));
-		
-		$query->select(
-				'itemmaster.*',
-				'ID.cur_quantity AS quantity',
-				'ID.received_qty',
-				'ID.opn_quantity',
-				'C.category_name AS category',
-				'S.category_name AS subcategory',
-				'ID.last_purchase_cost',
-				'ID.cost_avg',
-				'ID.issued_qty',
-				'u.packing',
-				'GC.description AS group_name',
-				'u.reorder_level',
-				'ID.sell_price',
-				'GS.description AS subgroup'
-			)
-			->groupBy('u.itemmaster_id')
-			->offset($start)
-			->limit($limit)
-			->orderBy($order, $dir);
-		
-		if($type == 'get')
-			return $query->get();
-		else
-			return $query->count();
+		return $query->join('item_unit AS u', function($join) {
+							$join->on('u.itemmaster_id','=','itemmaster.id');
+						} )
+						->leftJoin('groupcat AS GC', function($join) {
+							$join->on('GC.id','=','itemmaster.group_id');
+						} )
+						->where('u.is_baseqty','=',1)
+						//->groupBy('u.itemmaster_id')
+						//->select('itemmaster.*','u.cur_quantity AS quantity','u.received_qty','u.last_purchase_cost','u.cost_avg','u.issued_qty','GC.description AS group_name')
+						->count();
 	}
-	
-	
-	// public function itemmasterListCount()
-	// {	
-	// 	$query = $this->itemmaster->where('itemmaster.status', 1);
-		
-	// 	return $query->join('item_unit AS u', function($join) {
-	// 						$join->on('u.itemmaster_id','=','itemmaster.id');
-	// 					} )
-	// 					->leftJoin('groupcat AS GC', function($join) {
-	// 						$join->on('GC.id','=','itemmaster.group_id');
-	// 					} )
-	// 					->where('u.is_baseqty','=',1)
-	// 					//->groupBy('u.itemmaster_id')
-	// 					//->select('itemmaster.*','u.cur_quantity AS quantity','u.received_qty','u.last_purchase_cost','u.cost_avg','u.issued_qty','GC.description AS group_name')
-	// 					->count();
-	// }
-
-	public function itemmasterListCount()
-	{
-		return $this->itemmaster
-		->where('itemmaster.status', 1)
-		->join('item_unit AS u', function ($join) {
-			$join->on('u.itemmaster_id','=','itemmaster.id')
-				->where('u.is_baseqty', 1);
-		})
-		->join('itemstock_department AS ID', function ($join) {
-			$join->on('ID.itemmaster_id','=','itemmaster.id')
-				->where('ID.department_id', 1);
-		})
-		->count();
-
-	}
-
 	
 	public function activeItemmasterList()
 	{
@@ -1127,12 +636,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	public function getItemInfo($id)
 	{
 		return $result = DB::table('item_unit')
-							->join('itemmaster', 'itemmaster.id', '=', 'item_unit.itemmaster_id')
-			                ->join('units', 'units.id', '=', 'item_unit.unit_id')
+							->join('units', 'units.id', '=', 'item_unit.unit_id')
 							->where('item_unit.itemmaster_id', $id)
-							->select('units.unit_name','item_unit.cur_quantity','item_unit.sell_price','item_unit.cost_avg','item_unit.reorder_level','itemmaster.itmWd','itemmaster.itmLt',
-							         'itemmaster.mpqty','item_unit.is_baseqty','item_unit.packing','item_unit.pkno')
-							->orderBy('item_unit.is_baseqty','DESC')->get();
+							->select('units.unit_name','item_unit.cur_quantity','item_unit.sell_price','item_unit.cost_avg','item_unit.reorder_level')
+							->get();
 	}
 	
 	
@@ -1143,7 +650,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								->join('itemmaster AS IM', 'IM.id', '=', 'mfg_items.subitem_id')
 								->join('item_unit AS IU', 'IU.itemmaster_id', '=', 'IM.id')
 								->where('mfg_items.deleted_at', '0000-00-00 00:00:00')
-								->where('IU.is_baseqty',1)//AUG25
 								->select('mfg_items.*','IU.unit_id','IM.item_code','IM.description')
 								->get();
 								
@@ -1179,7 +685,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$result = DB::table('item_unit')
 							->where('item_unit.itemmaster_id', $attributes['item_id'])
 							->where('item_unit.unit_id', $attributes['unit_id'])
-							->select('item_unit.opn_cost AS unit_price')//->select('item_unit.cost_avg AS unit_price')
+							->select('item_unit.cost_avg AS unit_price')
 							->first();
 							
 		}
@@ -1199,13 +705,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->first(); 
 		if(!$result) {
 			
-			$qry = DB::table('item_unit')->where('item_unit.itemmaster_id', $attributes['item_id']);
-							
-					if($attributes['unit_id']!='')
-							$qry->where('item_unit.unit_id', $attributes['unit_id']);
-							
-				$result = $qry->select('item_unit.sell_price AS unit_price') //cost_avg
-							    ->first();
+			$result = DB::table('item_unit')
+							->where('item_unit.itemmaster_id', $attributes['item_id'])
+							//->where('item_unit.unit_id', $attributes['unit_id'])
+							->select('item_unit.sell_price AS unit_price') //cost_avg
+							->first();
 							
 		}
 		
@@ -1292,26 +796,20 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
 		$dt = DB::table('parameter1')->select('from_date')->first();
 		$date_from = $dt->from_date;
-	
+		
 		if($attributes['search_type']=='opening_quantity') {
-			//echo '<pre>';print_r($date_from);exit;
+		
 			$query = $this->itemmaster->where('itemmaster.status', 1)		
 							->join('item_unit AS u', function($join) {
 								$join->on('u.itemmaster_id','=','itemmaster.id');
 							} )
-							->join('itemstock_department AS ISD', function($join) {
-								$join->on('ISD.itemmaster_id','=','itemmaster.id');
-							} )
 							->join('item_log AS IL', function($join) {
 								$join->on('IL.item_id','=','itemmaster.id');
 							} )
-							->where('IL.document_type','OQ')
+							->where('document_type','OQ')
 							->where('IL.status',1)
-							
-							->where('IL.department_id',env('DEPARTMENT_ID'))
 							->where('IL.deleted_at','0000-00-00 00:00:00')
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('ISD.is_baseqty','=',1);
+							->where('u.is_baseqty','=',1);
 							
 			if(($date_from!='') && ($date_to!='')) {
 				$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -1321,888 +819,23 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						if($attributes['itemtype']!='')
 							$query->where('itemmaster.class_id', $attributes['itemtype']);
 						
-						if(isset($attributes['group_id']) && $attributes['group_id']!='')
+						if(isset($attributes['group_id']))
 							$query->whereIn('itemmaster.group_id', $attributes['group_id']);
 						
-						if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
+						if(isset($attributes['subgroup_id']))
 							$query->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
 						
-						if(isset($attributes['category_id']) && $attributes['category_id']!='')
+						if(isset($attributes['category_id']))
 							$query->whereIn('itemmaster.category_id', $attributes['category_id']);
 						
-						if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='' )
+						if(isset($attributes['subcategory_id']))
 							$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
 						
-						
-						
-						if(isset($attributes['document_id'])&& $attributes['document_id']!='' )
-							$query->whereIn('itemmaster.id', $attributes['document_id']);
-						
-						$quantity_col = 'ISD.opn_quantity'; 
-						
-						if($attributes['quantity_type']=='minus')
-							$query->where($quantity_col, '<', 0);
-						else if($attributes['quantity_type']=='positive')
-							$query->where($quantity_col, '>', 0);
-						else if($attributes['quantity_type']=='zero')
-							$query->where($quantity_col,0);
-						else if($attributes['quantity_type']=='nonzero')
-							$query->where($quantity_col,'!=',0);
-							
-			$result = $query->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','itemmaster.mpqty','itemmaster.p1_qty','itemmaster.p2_qty','IL.*','ISD.packing','ISD.opn_cost','ISD.opn_quantity','itemmaster.bin_location')->get()->toArray();
-		
-			return $result;
-		
-		} else if($attributes['search_type']=='qtyhand_ason_date' || $attributes['search_type']=='price_list_qty') {
-			
-			$date_to = ($attributes['date_to']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['date_to']));
-			$query = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) {
-								$join->on('u.itemmaster_id','=','itemmaster.id');
-							} )
-							->join('itemstock_department AS ISD', function($join) {
-								$join->on('ISD.itemmaster_id','=','itemmaster.id');
-							} )
-							->join('item_log AS IL', function($join) {
-								$join->on('IL.item_id','=','itemmaster.id');
-							} )
-							->where('IL.status',1)
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')
-							->where('u.is_baseqty','=',1);
-				
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
-				}
-				
-				//$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
-						
-						if(isset($attributes['document_id']) && $attributes['document_id']!='')
-							$query->whereIn('itemmaster.id', $attributes['document_id']);
-						
-						if(isset($attributes['itemtype']) && $attributes['itemtype']!='')
-							$query->where('itemmaster.class_id', $attributes['itemtype']);
-						
-						if(isset($attributes['group_id']) && $attributes['group_id']!='')
-							$query->whereIn('itemmaster.group_id', $attributes['group_id']);
-						
-						if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-							$query->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-						
-						if(isset($attributes['category_id']) && $attributes['category_id']!='') {
-							$query->whereIn('itemmaster.category_id', $attributes['category_id'])
-							->orWhereIn('IL.category_id', $attributes['category_id']);
-						}
-						
-						if(isset($attributes['subcategory_id'])&& $attributes['subcategory_id']!='')
+						if(isset($attributes['subcategory_id']))
 							$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
 						
-						/*$quantity_col = 'u.cur_quantity'; 
-						
-						if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-							$query->where($quantity_col, '<', 0);
-						else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-							$query->where($quantity_col, '>', 0);
-						else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-							$query->where($quantity_col,0);
-						else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-							$query->where($quantity_col,'!=',0);*/
-							
-			$result = $query->select('itemmaster.id','itemmaster.item_code','itemmaster.description','itemmaster.mpqty',
-			                    'itemmaster.p1_qty','itemmaster.p2_qty','IL.*','ISD.packing','ISD.opn_cost','ISD.opn_quantity','itemmaster.bin_location','ISD.sell_price','itemmaster.p1_formula','itemmaster.p2_formula',
-			                    DB::raw("(SELECT IL2.pur_cost FROM item_log as IL2 WHERE (IL.item_id=IL2.item_id) AND (IL2.document_type='PI') AND IL2.status=1 AND IL2.deleted_at='0000-00-00 00:00:00' ORDER BY IL2.id DESC LIMIT 1) AS pr_cost")
-			                    )
-			                    ->orderBy('IL.voucher_date')->get()->toArray();
-		
-			return $result;
-		
-	} else if($attributes['search_type']=='qtyhand_ason_priordate') {
-			
-			$query = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) {
-								$join->on('u.itemmaster_id','=','itemmaster.id');
-							} )
-							->join('itemstock_department AS ISD', function($join) {
-								$join->on('ISD.itemmaster_id','=','itemmaster.id');
-							} )
-							->join('item_log AS IL', function($join) {
-								$join->on('IL.item_id','=','itemmaster.id');
-							} )
-							->where('IL.status',1)
-							->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')
-							->where('u.is_baseqty','=',1);
-							
-			if(($date_from!='') && ($date_to!='')) {
-				$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-				$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
-			}
-						if(isset($attributes['document_id']) && $attributes['document_id']!='')
+						if(isset($attributes['document_id']))
 							$query->whereIn('itemmaster.id', $attributes['document_id']);
-						
-						if($attributes['itemtype']!='')
-							$query->where('itemmaster.class_id', $attributes['itemtype']);
-						
-						if(isset($attributes['group_id']) && $attributes['group_id']!='')
-							$query->whereIn('itemmaster.group_id', $attributes['group_id']);
-						
-						if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-							$query->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-						
-						if(isset($attributes['category_id']) && $attributes['category_id']!='')
-							$query->whereIn('itemmaster.category_id', $attributes['category_id']);
-						
-						if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-							$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-						
-						/*$quantity_col = 'u.cur_quantity'; 
-						
-						if($attributes['quantity_type']=='minus')
-							$query->where($quantity_col, '<', 0);
-						else if($attributes['quantity_type']=='positive')
-							$query->where($quantity_col, '>', 0);
-						else if($attributes['quantity_type']=='zero')
-							$query->where($quantity_col,0);
-						else if($attributes['quantity_type']=='nonzero')
-							$query->where($quantity_col,'!=',0);*/
-							
-			$result = $query->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','itemmaster.mpqty','itemmaster.p1_qty','itemmaster.p2_qty','IL.*','ISD.packing','ISD.opn_cost','ISD.opn_quantity','itemmaster.bin_location',
-			                DB::raw("(SELECT IL2.pur_cost FROM item_log as IL2 WHERE (IL.item_id=IL2.item_id) AND (IL2.document_type='PI') AND IL2.status=1 AND IL2.deleted_at='0000-00-00 00:00:00' ORDER BY IL2.id DESC LIMIT 1) AS pr_cost"))
-			                ->orderBy('IL.voucher_date')->get()->toArray();
-		
-			return $result;
-			
-	} else if($attributes['search_type']=='qtyhand_ason_date_loc' || $attributes['search_type']=='qtyhand_ason_priordate_loc') { 
-			//echo '<pre>';print_r($attributes);exit;
-			if($attributes['search_type']=='qtyhand_ason_date_loc')
-				$date_to = ($attributes['date_to']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['date_to']));
-			
-			//OPENING QUANTITY
-			$query0 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->join('item_location AS IL','IL.item_id','=','itemmaster.id')
-							->join('location AS L','L.id','=','IL.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 							
-							->where('ILG.document_type','OQ')->where('IL.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'))
-;
-						
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query0->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-				
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query0->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query0->whereIn('IL.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query0->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query0->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query0->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query0->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id'])&& $attributes['category_id']!='')
-					$query0->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-					$query0->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-				
-				/*$quantity_col = 'u.opn_quantity'; 
-				$quantity_col2 = 'IL.opn_qty'; 
-			
-				if($attributes['quantity_type']=='minus')
-					$query0->where($quantity_col, '<', 0)->where($quantity_col2, '<', 0);
-				else if($attributes['quantity_type']=='positive')
-					$query0->where($quantity_col, '>', 0)->where($quantity_col2, '<', 0);
-				else if($attributes['quantity_type']=='zero')
-					$query0->where($quantity_col,0)->where($quantity_col2, '<', 0);
-				else if($attributes['quantity_type']=='nonzero')
-					$query0->where($quantity_col,'!=',0)->where($quantity_col2, '<', 0);*/
-			
-			$query0->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date',DB::raw('"1" AS trtype'),'ILG.cost_avg','ILG.pur_cost','IL.item_id','IL.unit_id','IL.opn_qty AS quantity','L.id AS location_id','itemmaster.bin_location');
-						
-			//$res = $query0->get()->toArray();echo '<pre>';print_r($res);exit;			
-						
-			//TRANSFER OUT
-			$query1 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_to AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');//->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')
-							->where('ISD.department_id',env('DEPARTMENT_ID'))->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00');
-							/*->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
-							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LT.locto_id') 
-							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');*/
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query1->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query1->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query1->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query1->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query1->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query1->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query1->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id'])&& $attributes['category_id']!='')
-					$query1->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id'])&& $attributes['subcategory_id']!='')
-					$query1->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-				
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query1->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query1->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query1->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query1->where($quantity_col,'!=',0);*/
-						
-			$query1->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-						
-			/*$query1->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','LT.id AS logid','u.packing',
-						'LT.voucher_date',DB::raw('"1" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id','LTI.unit_id','LTI.quantity','L.id AS location_id','itemmaster.bin_location');*/
-			
-
-			//TRANSFER IN 
-			$query4 = $this->itemmaster->where('itemmaster.status', 1)	
-			                ->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-                            ->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_ti AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');//->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00');
-							
-						/*	->join('location AS L','L.id','=','LSI.location_id') 
-							->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00');
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
-							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LT.locfrom_id') 
-							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');*/
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query4->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query4->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query4->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query4->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='' )
-					$query4->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query4->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query4->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query4->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id'])&& $attributes['subcategory_id']!='')
-					$query4->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query4->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query4->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query4->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query4->where($quantity_col,'!=',0); */
-			
-			$query4->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-						
-			/*$query4->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','LT.id AS logid','u.packing',
-						'LT.voucher_date',DB::raw('"0" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id','LTI.unit_id','LTI.quantity','L.id AS location_id','itemmaster.bin_location');*/
-						
-			//$res = $query4->get()->toArray();echo '<pre>';print_r($res);exit;	
-			
-			
-			//LOCATION TRANSFER (FROM LOCATION) 
-			$query9 = $this->itemmaster->where('itemmaster.status', 1)	
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
-							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LT.locfrom_id')->where('ISD.department_id',env('DEPARTMENT_ID'))->where('LT.department_id',env('DEPARTMENT_ID'))
-							->where('LTI.status',1)->where('L.department_id',env('DEPARTMENT_ID'))->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query9->whereBetween('LT.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query9->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query9->whereIn('LT.locfrom_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query4->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='' )
-					$query9->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query9->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query9->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query9->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id'])&& $attributes['subcategory_id']!='')
-					$query9->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query9->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query9->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query9->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query9->where($quantity_col,'!=',0); */
-			
-            
-						
-			$query9->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','LT.id AS logid','ISD.packing',
-						'LT.voucher_date',DB::raw('"0" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id','LTI.unit_id','LTI.quantity','L.id AS location_id','itemmaster.bin_location');
-						
-			
-			//LOCATION TRANSFER (TO LOCATION) 
-			$query10 = $this->itemmaster->where('itemmaster.status', 1)	
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
-							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LT.locto_id')->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('ISD.department_id',env('DEPARTMENT_ID'))->where('LT.department_id',env('DEPARTMENT_ID')) 
-							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query10->whereBetween('LT.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query10->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query10->whereIn('LT.locto_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query10->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='' )
-					$query10->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query10->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query10->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query10->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id'])&& $attributes['subcategory_id']!='')
-					$query10->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query10->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query10->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query10->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query10->where($quantity_col,'!=',0); */
-			
-            
-						
-			$query10->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','LT.id AS logid','ISD.packing',
-						'LT.voucher_date',DB::raw('"1" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id','LTI.unit_id','LTI.quantity','L.id AS location_id','itemmaster.bin_location');
-						
-			//$res = $query10->get()->toArray();echo '<pre>';print_r($res);exit;	
-			
-			
-			//SALES
-			$query2 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_si AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('LSI.department_id',env('DEPARTMENT_ID'))
-							->where('ISD.department_id',env('DEPARTMENT_ID'))  
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query2->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query2->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query2->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query2->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query2->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query2->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query2->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query2->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-					$query2->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-		/*		$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query2->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query2->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query2->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query2->where($quantity_col,'!=',0); */
-				
-			$query2->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-						
-			//GOODS ISSUE
-			$query6 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_gi AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query6->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query6->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query6->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query6->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query6->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query6->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query6->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query6->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-					$query6->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query6->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query6->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query6->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query6->where($quantity_col,'!=',0); */
-				
-			$query6->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-						
-			//GOODS RETURN
-			$query8 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_gr AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query8->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query8->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query8->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query8->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query8->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query8->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query8->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query8->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-					$query8->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query8->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query8->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query8->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query8->where($quantity_col,'!=',0); */
-				
-			$query8->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-						
-			//SALES RETURN
-			$query5 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_sr AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query5->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query5->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query5->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query5->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query5->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query5->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query5->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query5->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-					$query5->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query5->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query5->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query5->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query5->where($quantity_col,'!=',0);  */
-				
-			$query5->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-						
-		//$res = $query2->get();print_r($res);exit;
-						
-						
-			//PURCHASE	
-			$query3 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_pi AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query3->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query3->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query3->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query3->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query3->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query3->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query3->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query3->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-					$query3->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query3->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query3->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query3->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query3->where($quantity_col,'!=',0); */
-				
-			$query3->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-						
-			//PURCHASE RETURN
-			$query7 = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
-							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
-							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
-							->Join('item_location_pr AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
-							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
-							
-				if(($date_from!='') && ($date_to!='')) {
-					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-					$query7->whereBetween('ILG.voucher_date', array($date_from, $date_to));
-				}
-						
-				if(isset($attributes['document_id']) && $attributes['document_id']!='')
-					$query7->whereIn('itemmaster.id', $attributes['document_id']);
-			
-				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
-					$query7->whereIn('LSI.location_id', $attributes['location_id']);
-			
-				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
-					$query7->whereIn('L.customer_id', $attributes['account_id']);
-			
-				if($attributes['itemtype']!='')
-					$query7->where('itemmaster.class_id', $attributes['itemtype']);
-			
-				if(isset($attributes['group_id']) && $attributes['group_id']!='')
-					$query7->whereIn('itemmaster.group_id', $attributes['group_id']);
-			
-				if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-					$query7->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query7->whereIn('itemmaster.category_id', $attributes['category_id']);
-			
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-					$query7->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-			
-			/*	$quantity_col = 'u.cur_quantity'; 
-				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
-					$query7->where($quantity_col, '<', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
-					$query7->where($quantity_col, '>', 0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
-					$query7->where($quantity_col,0);
-				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
-					$query7->where($quantity_col,'!=',0); */
-				
-			$query7->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','ISD.packing',
-						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location')
-						->orderBy('ILG.voucher_date');
-				
-			$result = $query0->union($query1)->union($query4)->union($query2)->union($query3)->union($query5)->union($query6)->union($query7)->union($query8)->union($query9)->union($query10)->get()->toArray();			
-			//$result = $query1->get()->toArray();			
-			//echo '<pre>';print_r($result);exit;
-			return $result;
-			
-		}
-	}
-	
-	//NOV24
-	public function getOpeningQuantityLocReport($attributes) {
-
-		$result = array();
-		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		$dt = DB::table('parameter1')->select('from_date')->first();
-		$date_from = $dt->from_date;
-		//echo '<pre>';print_r($attributes);exit;
-			$query = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_unit AS u', function($join) {
-								$join->on('u.itemmaster_id','=','itemmaster.id');
-							} )
-							->join('itemstock_department AS ISD', function($join) {
-								$join->on('ISD.itemmaster_id','=','itemmaster.id');
-							} )
-							->join('item_location AS L', function($join) {
-								$join->on('L.item_id','=','u.itemmaster_id');
-							} )
-							->join('item_log AS IL', function($join) {
-								$join->on('IL.item_id','=','itemmaster.id');
-							} )
-							->join('location AS L2', function($join) {
-								$join->on('L2.id','=','L.location_id');
-							} )
-							->join('units AS UN', function($join) {
-								$join->on('UN.id','=','u.unit_id');
-							} )
-							->where('IL.status',1)->where('L.status',1)->where('L2.status',1)
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')
-							->where('L.deleted_at','0000-00-00 00:00:00')
-							->where('L2.deleted_at','0000-00-00 00:00:00')
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							//->where('L2.department_id',env('department_id'))
-							->where('L.opn_qty','>',0)
-							->where('u.is_baseqty','=',1);
-							
-			if(($date_from!='') && ($date_to!='')) {
-				$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-				$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
-			}
-						if(isset($attributes['document_id']) && $attributes['document_id']!='')
-							$query->whereIn('itemmaster.id', $attributes['document_id']);
-						
-						if($attributes['itemtype']!='')
-							$query->where('itemmaster.class_id', $attributes['itemtype']);
-						
-						if(isset($attributes['group_id']) && $attributes['group_id']!='')
-							$query->whereIn('itemmaster.group_id', $attributes['group_id']);
-						
-						if(isset($attributes['subgroup_id']) && $attributes['subgroup_id']!='')
-							$query->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
-						
-						if(isset($attributes['category_id']) && $attributes['category_id']!='')
-							$query->whereIn('itemmaster.category_id', $attributes['category_id']);
-						
-						if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='')
-							$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-
-						if(isset($attributes['location_id']) && $attributes['location_id']!='')
-							$query->whereIn('L.location_id', $attributes['location_id']);
 						
 						$quantity_col = 'u.opn_quantity'; 
 						
@@ -2215,31 +848,482 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						else if($attributes['quantity_type']=='nonzero')
 							$query->where($quantity_col,'!=',0);
 							
-			$result = $query->select('itemmaster.id','itemmaster.item_code','itemmaster.description','IL.voucher_date','ISD.packing','ISD.opn_cost','ISD.opn_quantity',
-									'UN.unit_name AS unit','L.opn_qty','L.location_id','L.id AS lid','L2.code','L2.name')
-			->groupBy('lid')->get()->toArray();
+			$result = $query->select('itemmaster.id','itemmaster.item_code','itemmaster.description','IL.*','u.packing','u.opn_cost','u.opn_quantity','itemmaster.bin_location')->get()->toArray();
 		
 			return $result;
 		
+		} else if($attributes['search_type']=='qtyhand_ason_date') {
+			
+			$date_to = ($attributes['date_to']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['date_to']));
+			$query = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) {
+								$join->on('u.itemmaster_id','=','itemmaster.id');
+							} )
+							->join('item_log AS IL', function($join) {
+								$join->on('IL.item_id','=','itemmaster.id');
+							} )
+							->where('IL.status',1)
+							->where('IL.deleted_at','0000-00-00 00:00:00')
+							->where('u.is_baseqty','=',1);
+				
+				if(($date_from!='') && ($date_to!='')) {
+					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+					$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
+				}
+				
+				//$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
+						
+						if(isset($attributes['document_id']))
+							$query->whereIn('itemmaster.id', $attributes['document_id']);
+						
+						if(isset($attributes['itemtype']) && $attributes['itemtype']!='')
+							$query->where('itemmaster.class_id', $attributes['itemtype']);
+						
+						if(isset($attributes['group_id']))
+							$query->whereIn('itemmaster.group_id', $attributes['group_id']);
+						
+						if(isset($attributes['subgroup_id']))
+							$query->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+						
+						if(isset($attributes['category_id']))
+							$query->whereIn('itemmaster.category_id', $attributes['category_id']);
+						
+						if(isset($attributes['subcategory_id']))
+							$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+						
+						$quantity_col = 'u.cur_quantity'; 
+						
+						if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
+							$query->where($quantity_col, '<', 0);
+						else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
+							$query->where($quantity_col, '>', 0);
+						else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
+							$query->where($quantity_col,0);
+						else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
+							$query->where($quantity_col,'!=',0);
+							
+			$result = $query->select('itemmaster.id','itemmaster.item_code','itemmaster.description','IL.*','u.packing','u.opn_cost','u.opn_quantity','itemmaster.bin_location')->get()->toArray();
+		
+			return $result;
+		
+	} else if($attributes['search_type']=='qtyhand_ason_priordate') {
+			
+			$query = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) {
+								$join->on('u.itemmaster_id','=','itemmaster.id');
+							} )
+							->join('item_log AS IL', function($join) {
+								$join->on('IL.item_id','=','itemmaster.id');
+							} )
+							->where('IL.status',1)
+							->where('IL.deleted_at','0000-00-00 00:00:00')
+							->where('u.is_baseqty','=',1);
+							
+			if(($date_from!='') && ($date_to!='')) {
+				$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+				$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
+			}
+						if(isset($attributes['document_id']))
+							$query->whereIn('itemmaster.id', $attributes['document_id']);
+						
+						if($attributes['itemtype']!='')
+							$query->where('itemmaster.class_id', $attributes['itemtype']);
+						
+						if(isset($attributes['group_id']))
+							$query->whereIn('itemmaster.group_id', $attributes['group_id']);
+						
+						if(isset($attributes['subgroup_id']))
+							$query->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+						
+						if(isset($attributes['category_id']))
+							$query->whereIn('itemmaster.category_id', $attributes['category_id']);
+						
+						if(isset($attributes['subcategory_id']))
+							$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+						
+						$quantity_col = 'u.cur_quantity'; 
+						
+						if($attributes['quantity_type']=='minus')
+							$query->where($quantity_col, '<', 0);
+						else if($attributes['quantity_type']=='positive')
+							$query->where($quantity_col, '>', 0);
+						else if($attributes['quantity_type']=='zero')
+							$query->where($quantity_col,0);
+						else if($attributes['quantity_type']=='nonzero')
+							$query->where($quantity_col,'!=',0);
+							
+			$result = $query->select('itemmaster.id','itemmaster.item_code','itemmaster.description','IL.*','u.packing','u.opn_cost','u.opn_quantity','itemmaster.bin_location')->get()->toArray();
+		
+			return $result;
+			
+		} else if($attributes['search_type']=='qtyhand_ason_date_loc' || $attributes['search_type']=='qtyhand_ason_priordate_loc') { 
+			
+			if($attributes['search_type']=='qtyhand_ason_date_loc')
+				$date_to = ($attributes['date_to']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['date_to']));
+			
+			//OPENING QUANTITY
+			$query0 = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
+							->join('item_location AS IL','IL.item_id','=','itemmaster.id')
+							->join('location AS L','L.id','=','IL.location_id') 							
+							->where('ILG.document_type','OQ')->where('IL.status',1)->where('IL.deleted_at','0000-00-00 00:00:00')
+							->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1);
+						
+				if(($date_from!='') && ($date_to!='')) {
+					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+					$query0->whereBetween('ILG.voucher_date', array($date_from, $date_to));
+				}
+				
+				if(isset($attributes['document_id']))
+					$query0->whereIn('itemmaster.id', $attributes['document_id']);
+			
+				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
+					$query0->whereIn('IL.location_id', $attributes['location_id']);
+			
+				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
+					$query0->whereIn('L.customer_id', $attributes['account_id']);
+			
+				if($attributes['itemtype']!='')
+					$query0->where('itemmaster.class_id', $attributes['itemtype']);
+			
+				if(isset($attributes['group_id']))
+					$query0->whereIn('itemmaster.group_id', $attributes['group_id']);
+			
+				if(isset($attributes['subgroup_id']))
+					$query0->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+			
+				if(isset($attributes['category_id']))
+					$query0->whereIn('itemmaster.category_id', $attributes['category_id']);
+			
+				if(isset($attributes['subcategory_id']))
+					$query0->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+				
+				$quantity_col = 'u.opn_quantity'; 
+				$quantity_col2 = 'IL.opn_qty'; 
+			
+				if($attributes['quantity_type']=='minus')
+					$query0->where($quantity_col, '<', 0)->where($quantity_col2, '<', 0);
+				else if($attributes['quantity_type']=='positive')
+					$query0->where($quantity_col, '>', 0)->where($quantity_col2, '<', 0);
+				else if($attributes['quantity_type']=='zero')
+					$query0->where($quantity_col,0)->where($quantity_col2, '<', 0);
+				else if($attributes['quantity_type']=='nonzero')
+					$query0->where($quantity_col,'!=',0)->where($quantity_col2, '<', 0);
+			
+			$query0->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','u.packing',
+						'ILG.voucher_date',DB::raw('"1" AS trtype'),'ILG.cost_avg','ILG.pur_cost','IL.item_id','IL.unit_id','IL.opn_qty AS quantity','L.id AS location_id','itemmaster.bin_location');
+						
+			//LOCATION TRANSFER (TO LOCATION)
+			$query1 = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
+							->Join('location_transfer AS LT', function($join) {
+								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+							})
+							->join('location AS L','L.id','=','LT.locto_id') 
+							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1);
+							
+				if(($date_from!='') && ($date_to!='')) {
+					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+					$query1->whereBetween('LT.voucher_date', array($date_from, $date_to));
+				}
+						
+				if(isset($attributes['document_id']))
+					$query1->whereIn('itemmaster.id', $attributes['document_id']);
+			
+				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
+					$query1->whereIn('LT.locto_id', $attributes['location_id']);
+			
+				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
+					$query1->whereIn('L.customer_id', $attributes['account_id']);
+			
+				if($attributes['itemtype']!='')
+					$query1->where('itemmaster.class_id', $attributes['itemtype']);
+			
+				if(isset($attributes['group_id']))
+					$query1->whereIn('itemmaster.group_id', $attributes['group_id']);
+			
+				if(isset($attributes['subgroup_id']))
+					$query1->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+			
+				if(isset($attributes['category_id']))
+					$query1->whereIn('itemmaster.category_id', $attributes['category_id']);
+			
+				if(isset($attributes['subcategory_id']))
+					$query1->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+				
+				$quantity_col = 'u.cur_quantity'; 
+				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
+					$query1->where($quantity_col, '<', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
+					$query1->where($quantity_col, '>', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
+					$query1->where($quantity_col,0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
+					$query1->where($quantity_col,'!=',0);
+						
+			
+			$query1->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','LT.id AS logid','u.packing',
+						'LT.voucher_date',DB::raw('"1" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id','LTI.unit_id','LTI.quantity','L.id AS location_id','itemmaster.bin_location');
+			
+
+			//LOCATION TRANSFER (FROM LOCATION) 
+			$query4 = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
+							->Join('location_transfer AS LT', function($join) {
+								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+							})
+							->join('location AS L','L.id','=','LT.locfrom_id') 
+							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1);
+							
+				if(($date_from!='') && ($date_to!='')) {
+					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+					$query4->whereBetween('LT.voucher_date', array($date_from, $date_to));
+				}
+						
+				if(isset($attributes['document_id']))
+					$query4->whereIn('itemmaster.id', $attributes['document_id']);
+			
+				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
+					$query4->whereIn('LT.locfrom_id', $attributes['location_id']);
+			
+				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
+					$query4->whereIn('L.customer_id', $attributes['account_id']);
+			
+				if($attributes['itemtype']!='')
+					$query4->where('itemmaster.class_id', $attributes['itemtype']);
+			
+				if(isset($attributes['group_id']))
+					$query4->whereIn('itemmaster.group_id', $attributes['group_id']);
+			
+				if(isset($attributes['subgroup_id']))
+					$query4->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+			
+				if(isset($attributes['category_id']))
+					$query4->whereIn('itemmaster.category_id', $attributes['category_id']);
+			
+				if(isset($attributes['subcategory_id']))
+					$query4->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+			
+				$quantity_col = 'u.cur_quantity'; 
+				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
+					$query4->where($quantity_col, '<', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
+					$query4->where($quantity_col, '>', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
+					$query4->where($quantity_col,0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
+					$query4->where($quantity_col,'!=',0);
+			
+			$query4->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','LT.id AS logid','u.packing',
+						'LT.voucher_date',DB::raw('"0" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id','LTI.unit_id','LTI.quantity','L.id AS location_id','itemmaster.bin_location');
+						
+						
+			//SALES
+			$query2 = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
+							->Join('item_location_si AS LSI', function($join) {
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+							})
+							->join('location AS L','L.id','=','LSI.location_id') 
+							->where('LSI.is_do',0)->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1);
+							
+				if(($date_from!='') && ($date_to!='')) {
+					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+					$query2->whereBetween('ILG.voucher_date', array($date_from, $date_to));
+				}
+						
+				if(isset($attributes['document_id']))
+					$query2->whereIn('itemmaster.id', $attributes['document_id']);
+			
+				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
+					$query2->whereIn('LSI.location_id', $attributes['location_id']);
+			
+				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
+					$query2->whereIn('L.customer_id', $attributes['account_id']);
+			
+				if($attributes['itemtype']!='')
+					$query2->where('itemmaster.class_id', $attributes['itemtype']);
+			
+				if(isset($attributes['group_id']))
+					$query2->whereIn('itemmaster.group_id', $attributes['group_id']);
+			
+				if(isset($attributes['subgroup_id']))
+					$query2->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+			
+				if(isset($attributes['category_id']))
+					$query2->whereIn('itemmaster.category_id', $attributes['category_id']);
+			
+				if(isset($attributes['subcategory_id']))
+					$query2->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+			
+				$quantity_col = 'u.cur_quantity'; 
+				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
+					$query2->where($quantity_col, '<', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
+					$query2->where($quantity_col, '>', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
+					$query2->where($quantity_col,0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
+					$query2->where($quantity_col,'!=',0);
+				
+			$query2->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','u.packing',
+						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location');
+						
+						
+			//PURCHASE	
+			$query3 = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
+							->Join('item_location_pi AS LSI', function($join) {
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+							})
+							->join('location AS L','L.id','=','LSI.location_id') 
+							->where('LSI.is_sdo',0)->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1);
+							
+				if(($date_from!='') && ($date_to!='')) {
+					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+					$query3->whereBetween('ILG.voucher_date', array($date_from, $date_to));
+				}
+						
+				if(isset($attributes['document_id']))
+					$query3->whereIn('itemmaster.id', $attributes['document_id']);
+			
+				if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
+					$query3->whereIn('LSI.location_id', $attributes['location_id']);
+			
+				if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
+					$query3->whereIn('L.customer_id', $attributes['account_id']);
+			
+				if($attributes['itemtype']!='')
+					$query3->where('itemmaster.class_id', $attributes['itemtype']);
+			
+				if(isset($attributes['group_id']))
+					$query3->whereIn('itemmaster.group_id', $attributes['group_id']);
+			
+				if(isset($attributes['subgroup_id']))
+					$query3->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+			
+				if(isset($attributes['category_id']))
+					$query3->whereIn('itemmaster.category_id', $attributes['category_id']);
+			
+				if(isset($attributes['subcategory_id']))
+					$query3->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+			
+				$quantity_col = 'u.cur_quantity'; 
+				if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='minus')
+					$query3->where($quantity_col, '<', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='positive')
+					$query3->where($quantity_col, '>', 0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='zero')
+					$query3->where($quantity_col,0);
+				else if(isset($attributes['quantity_type']) && $attributes['quantity_type']=='nonzero')
+					$query3->where($quantity_col,'!=',0);
+				
+			$query3->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name','ILG.id AS logid','u.packing',
+						'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity','L.id AS location_id','itemmaster.bin_location');
+			
+			$result = $query0->union($query1)->union($query4)->union($query2)->union($query3)->get()->toArray();			
+			//$result = $query1->get()->toArray();			
+			//echo '<pre>';print_r($result);exit;
+			return $result;
+			
+		} /* else if($attributes['search_type']=='qtyhand_ason_priordate_loc') { 
+		
+			$query = $this->itemmaster->where('itemmaster.status', 1)		
+							->join('item_unit AS u', function($join) {
+								$join->on('u.itemmaster_id','=','itemmaster.id');
+							} )
+							->join('item_location AS LO', function($join) {
+								$join->on('LO.item_id','=','itemmaster.id');
+								$join->on('LO.unit_id','=','u.unit_id');
+							} )
+							->join('location AS L', function($join) {
+								$join->on('L.id','=','LO.location_id');
+							} )
+							->join('item_log AS IL', function($join) {
+								$join->on('IL.item_id','=','itemmaster.id');
+							} )
+							->leftjoin('location_transfer','location_transfer.locto_id','=','L.id')
+							->leftJoin('location_transfer_item AS LTI', function($join) {
+								$join->on('LTI.location_transfer_id','=','location_transfer.id')
+									->on('LTI.item_id','=','itemmaster.id');
+							} )
+							->leftJoin('item_location_pi AS LPI', function($join) {
+								$join->on('LPI.logid','=','IL.id');
+							} )
+							->leftJoin('item_location_pr AS LPR', function($join) {
+								$join->on('LPR.logid','=','IL.id');
+							} )
+							->leftJoin('item_location_si AS LSI', function($join) {
+								$join->on('LSI.logid','=','IL.id');
+							} )
+							->leftJoin('item_location_sr AS LSR', function($join) {
+								$join->on('LSR.logid','=','IL.id');
+							} )
+							->where('location_transfer.status',1)
+							->where('IL.status',1)
+							->where('IL.deleted_at','0000-00-00 00:00:00')
+							->where('location_transfer.deleted_at','0000-00-00 00:00:00')
+							->where('u.is_baseqty','=',1)
+							->where('LO.status','=',1)
+							->where('LO.deleted_at','=','0000-00-00 00:00:00');
+						
+						if(($date_from!='') && ($date_to!='')) {
+							$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+							$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
+						}
+						
+						if(isset($attributes['document_id']))
+							$query->whereIn('itemmaster.id', $attributes['document_id']);
+						
+						if(isset($attributes['account_id']) && ($attributes['account_id']!='all'))
+							$query->whereIn('L.customer_id', $attributes['account_id']);
+						
+						if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
+							$query->whereIn('L.id', $attributes['location_id']);
+						
+						if($attributes['itemtype']!='')
+							$query->where('itemmaster.class_id', $attributes['itemtype']);
+						
+						if(isset($attributes['group_id']))
+							$query->whereIn('itemmaster.group_id', $attributes['group_id']);
+						
+						if(isset($attributes['subgroup_id']))
+							$query->whereIn('itemmaster.subgroup_id', $attributes['subgroup_id']);
+						
+						if(isset($attributes['category_id']))
+							$query->whereIn('itemmaster.category_id', $attributes['category_id']);
+						
+						if(isset($attributes['subcategory_id']))
+							$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
+						
+						$quantity_col = ($attributes['search_type']=='qtyhand_ason_date')?'u.cur_quantity':'u.opn_quantity'; 
+						$quantity_col2 = ($attributes['search_type']=='qtyhand_ason_date')?'LO.opn_qty':'LO.quantity'; 
+						
+						if($attributes['quantity_type']=='minus')
+							$query->where($quantity_col, '<', 0)->where($quantity_col2, '<', 0);
+						else if($attributes['quantity_type']=='positive')
+							$query->where($quantity_col, '>', 0)->where($quantity_col2, '<', 0);
+						else if($attributes['quantity_type']=='zero')
+							$query->where($quantity_col,0)->where($quantity_col2, '<', 0);
+						else if($attributes['quantity_type']=='nonzero')
+							$query->where($quantity_col,'!=',0)->where($quantity_col2, '<', 0);
+							
+			$result = $query->select('itemmaster.id AS imid','itemmaster.item_code','itemmaster.description','u.packing','u.opn_cost','u.opn_quantity','IL.*',
+							'L.id AS location_id','L.code','LO.quantity AS lqty','L.name','LO.opn_qty','LPI.quantity AS lpi_qty','LPR.quantity AS lpr_qty',
+							'LSI.quantity AS lsi_qty','LSR.quantity AS lsr_qty','LTI.quantity AS trqty')
+						->groupBy('LO.id')->get()->toArray();
+							
+			return $result; unit
+		} */
 	}
 	
-	//NOV24
-	public function getStockLedgerReportSummary() {
 
-		$result = DB::table('item_log')->join('itemmaster','itemmaster.id','=','item_log.item_id')
-						->where('item_log.status',1)->where('item_log.deleted_at','0000-00-00 00:00:00')
-						->where('itemmaster.status',1)->where('itemmaster.deleted_at','0000-00-00 00:00:00')
-						->where('itemmaster.class_id',1)
-						->select('itemmaster.item_code','itemmaster.description',
-							DB::raw("(SELECT SUM(IL.quantity) FROM item_log as IL WHERE (item_log.item_id=IL.item_id) AND (IL.trtype=1) AND IL.status=1 AND IL.deleted_at='0000-00-00 00:00:00') AS qty_in"),
-							DB::raw("(SELECT SUM(IL.quantity) FROM item_log as IL WHERE (item_log.item_id=IL.item_id) AND (IL.trtype=0) AND IL.status=1 AND IL.deleted_at='0000-00-00 00:00:00') AS qty_out")
-						)->groupBy('itemmaster.id')->get();
-
-		return $result;
-	}
-	
-
-	public function getOpeningQuantityLocReportBkp($attributes) {
+	public function getOpeningQuantityLocReport($attributes) {
 
 		$result = array();
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
@@ -2262,10 +1346,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('units AS UN', function($join) {
 								$join->on('UN.id','=','u.unit_id');
 							} )
-							->where('IL.status',1)->where('L.status',1)->where('L2.status',1)
+							->where('IL.status',1)->where('L.status',1)
 							->where('IL.deleted_at','0000-00-00 00:00:00')
 							->where('L.deleted_at','0000-00-00 00:00:00')
-							->where('L.opn_qty','>',0)->where('L2.deleted_at','0000-00-00 00:00:00')
+							->where('L.opn_qty','>',0)
 							->where('u.is_baseqty','=',1);
 							
 			if(($date_from!='') && ($date_to!='')) {
@@ -2655,7 +1739,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		return $result;
 	}
 	
-	public function getStockLedgerReportBkp($attributes)
+	public function getStockLedgerReport($attributes)
 	{
 		$result = array();
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
@@ -2674,235 +1758,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			
 			//PURCHASE INVOICE..	
 			$query1 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('purchase_invoice','purchase_invoice.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','purchase_invoice.supplier_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','purchase_invoice.job_id')
-									 ->where('item_log.document_type','=','PI')
-									 ->where('purchase_invoice.status',1);
-									 
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query1->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to));
-			
-			$result1 = $query1->select('item_log.id','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.master_name',DB::raw('"PI" AS type'),'purchase_invoice.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','purchase_invoice.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-			
-			//SDO..	
-			$query1_1 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('supplier_do','supplier_do.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','supplier_do.supplier_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','supplier_do.job_id')
-									 ->where('item_log.document_type','=','SDO')
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('supplier_do.status',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query1_1->whereBetween('supplier_do.voucher_date', array($date_from, $date_to));
-			
-			$result1_1 = $query1_1->select('item_log.id','supplier_do.voucher_no','supplier_do.voucher_date','account_master.master_name',DB::raw('"SDO" AS type'),'supplier_do.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','supplier_do.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-
-										
-			//SALES INVOICE...	
-			$query2 = DB::table('item_log')->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('sales_invoice','sales_invoice.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','sales_invoice.customer_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','sales_invoice.job_id')
-									 ->where('item_log.document_type','=','SI')
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('sales_invoice.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query2->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to));
-			
-			$result2 = $query2->select('item_log.id','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.master_name',DB::raw('"SI" AS type'),'sales_invoice.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','sales_invoice.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-				
-				
-			//PURCHASE RETURN.....
-			$query3 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('purchase_return','purchase_return.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','purchase_return.supplier_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','purchase_return.job_id')
-									 ->where('item_log.document_type','=','PR')
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('purchase_return.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query3->whereBetween('purchase_return.voucher_date', array($date_from, $date_to));
-			
-			$result3 = $query3->select('item_log.id','purchase_return.voucher_no','purchase_return.voucher_date','account_master.master_name',DB::raw('"PR" AS type'),'purchase_return.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','purchase_return.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-			
-			//SALES RETURN...						 
-			$query4 = DB::table('item_log')->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('sales_return','sales_return.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','sales_return.customer_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','sales_return.job_id')
-									 ->where('item_log.document_type','=','SR')
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('sales_return.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query4->whereBetween('sales_return.voucher_date', array($date_from, $date_to));
-			
-			$result4 = $query4->select('item_log.id','sales_return.voucher_no','sales_return.voucher_date','account_master.master_name',DB::raw('"SR" AS type'),'sales_return.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','sales_return.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-			
-			//TRANSFER IN...						 
-			$query5 = DB::table('item_log')->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('stock_transferin','stock_transferin.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','stock_transferin.account_dr')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferin.job_id')
-									 ->where('item_log.document_type','=','TI')
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('stock_transferin.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query5->whereBetween('stock_transferin.voucher_date', array($date_from, $date_to));
-			
-			$result5 = $query5->select('item_log.id','stock_transferin.voucher_no','stock_transferin.voucher_date','account_master.master_name',DB::raw('"TI" AS type'),'stock_transferin.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','stock_transferin.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-										
-			
-			//GOODS RETURN...						 
-			$query6 = DB::table('item_log')->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('goods_return','goods_return.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','goods_return.account_master_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','goods_return.job_id')
-									 ->where('item_log.document_type','=','GR')
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('goods_return.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query6->whereBetween('goods_return.voucher_date', array($date_from, $date_to));
-			
-			$result6 = $query6->select('item_log.id','goods_return.voucher_no','goods_return.voucher_date','account_master.master_name',DB::raw('"GR" AS type'),'goods_return.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','goods_return.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-			
-			//TRANSFER OUT...						 
-			$query7 = DB::table('item_log')->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('stock_transferout','stock_transferout.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','stock_transferout.account_dr')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferout.job_id')
-									 ->where('item_log.document_type','=','TO')
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('stock_transferout.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query7->whereBetween('stock_transferout.voucher_date', array($date_from, $date_to));
-			
-			$result7 = $query7->select('item_log.id','stock_transferout.voucher_no','stock_transferout.voucher_date','account_master.master_name',DB::raw('"TO" AS type'),'stock_transferout.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','stock_transferout.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-			
-			//GOODS ISSUED...						 
-			$query8 = DB::table('item_log')->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('goods_issued','goods_issued.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','goods_issued.account_master_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','goods_issued.job_id')
-									 ->where('item_log.document_type','=','GI')
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('goods_issued.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query8->whereBetween('goods_issued.voucher_date', array($date_from, $date_to));
-			
-			$result8 = $query8->select('item_log.id','goods_issued.voucher_no','goods_issued.voucher_date','account_master.master_name',DB::raw('"GI" AS type'),'goods_issued.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','goods_issued.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-
-			//CDO..	
-			$query9 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->leftjoin('customer_do','customer_do.id','=','item_log.document_id')
-									 ->leftjoin('account_master','account_master.id','=','customer_do.customer_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','customer_do.job_id')
-									 ->where('item_log.document_type','=','CDO')
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('customer_do.status',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query9->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
-			
-			$result9 = $query9->select('item_log.id','customer_do.voucher_no','customer_do.voucher_date','account_master.master_name',DB::raw('"CDO" AS type'),'customer_do.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','customer_do.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
-										
-			$result['pursales'] = $result1->union($result1_1)->union($result2)->union($result3)->union($result4)->union($result5)->union($result6)->union($result7)->union($result8)->union($result9)->orderBy('vdate','ASC')->orderBy('id','ASC')->get();
-		 
-		return $result;
-	}
-	
-	
-	public function getStockLedgerReport($attributes)
-	{
-		$result = array();
-		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
-		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):''; 
-		
-			//OPENING DETAILS...
-			$result['opn_details'] = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
-									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('item_log.document_type','OQ')
-									 ->where('u.is_baseqty','1')
-									 ->select('itemmaster.id','itemmaster.item_code','itemmaster.description','isd.opn_quantity','isd.opn_cost AS cost_avg')
-									 ->get();
-			
-			//NOV24
-			if($date_from!='' && ($date_from!=$attributes['start_date'])) {
-				$enddate = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
-				
-				$qtyin = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('trtype',1)
-							->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
-							->where('status',1)->where('item_log.department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
-		
-				$qtyout = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('item_log.department_id',env('DEPARTMENT_ID'))
-							->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
-							->where('trtype',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
-				
-				$result['opn_details'][0]->opn_quantity = $qtyin - $qtyout;
-				//echo '1<pre>';print_r($qtyin);print_r($qtyout);exit;
-			}
-			
-			//PURCHASE INVOICE..	
-			$query1 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
 									 ->join('purchase_invoice','purchase_invoice.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','purchase_invoice.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','purchase_invoice.job_id')
 									 ->where('item_log.document_type','=','PI')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
 									 ->where('purchase_invoice.status',1);
 									 
 									 
@@ -2918,13 +1778,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('supplier_do','supplier_do.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','supplier_do.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','supplier_do.job_id')
 									 ->where('item_log.document_type','=','SDO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('supplier_do.department_id',env('DEPARTMENT_ID'))
 									 ->where('supplier_do.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -2940,14 +1796,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('sales_invoice','sales_invoice.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','sales_invoice.customer_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','sales_invoice.job_id')
 									 ->where('item_log.document_type','=','SI')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.status',1)
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
 									 ->where('sales_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -2963,13 +1815,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('purchase_return','purchase_return.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','purchase_return.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','purchase_return.job_id')
 									 ->where('item_log.document_type','=','PR')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('purchase_return.department_id',env('DEPARTMENT_ID'))
 									 ->where('purchase_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -2984,14 +1832,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('sales_return','sales_return.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','sales_return.customer_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','sales_return.job_id')
 									 ->where('item_log.document_type','=','SR')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('sales_return.department_id',env('DEPARTMENT_ID'))
 									 ->where('sales_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3006,13 +1850,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('stock_transferin','stock_transferin.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','stock_transferin.account_dr')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferin.job_id')
 									 ->where('item_log.document_type','=','TI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
 									 ->where('stock_transferin.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3028,13 +1869,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('goods_return','goods_return.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','goods_return.account_master_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','goods_return.job_id')
 									 ->where('item_log.document_type','=','GR')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
 									 ->where('goods_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3049,13 +1887,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('stock_transferout','stock_transferout.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','stock_transferout.account_dr')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferout.job_id')
 									 ->where('item_log.document_type','=','TO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.status',1)
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
 									 ->where('stock_transferout.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3070,13 +1905,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('goods_issued','goods_issued.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','goods_issued.account_master_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','goods_issued.job_id')
 									 ->where('item_log.document_type','=','GI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
 									 ->where('goods_issued.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3085,32 +1917,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$result8 = $query8->select('item_log.id','goods_issued.voucher_no','goods_issued.voucher_date','account_master.master_name',DB::raw('"GI" AS type'),'goods_issued.created_at','item_log.pur_cost',
 										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','goods_issued.voucher_date AS vdate','item_log.sale_cost',
 										'jobmaster.code AS jobno');
-
-			//CDO..	
-			$query9 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->join('customer_do','customer_do.id','=','item_log.document_id')
-									 ->join('account_master','account_master.id','=','customer_do.customer_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
-									 ->leftJoin('jobmaster','jobmaster.id','=','customer_do.job_id')
-									 ->where('item_log.document_type','=','CDO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('customer_do.department_id',env('DEPARTMENT_ID'))
-									 ->where('customer_do.status',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query9->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
-			
-			$result9 = $query9->select('item_log.id','customer_do.voucher_no','customer_do.voucher_date','account_master.master_name',DB::raw('"CDO" AS type'),'customer_do.created_at','item_log.pur_cost',
-										'item_log.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','customer_do.voucher_date AS vdate','item_log.sale_cost',
-										'jobmaster.code AS jobno');
 										
-			$result['pursales'] = $result1->union($result1_1)->union($result2)->union($result3)->union($result4)->union($result5)->union($result6)->union($result7)->union($result8)->union($result9)->orderBy('vdate','ASC')->orderBy('id','ASC')->get();
+			$result['pursales'] = $result1->union($result1_1)->union($result2)->union($result3)->union($result4)->union($result5)->union($result6)->union($result7)->union($result8)->orderBy('vdate','ASC')->orderBy('id','ASC')->get();
 		 
 		return $result;
 	}
+	
 	
 	public function getStockLedgerLocReport($attributes)
 	{
@@ -3127,8 +1939,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										->join('location AS L', function($join) {
 											$join->on('L.id','=','IL.location_id');
 										} )
-									->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id');	
+									->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id');
+										
 									 if(isset($attributes['location_id']) && $attributes['location_id']!='all')
 										$query0->whereIn('IL.location_id', $attributes['location_id']);
 									
@@ -3137,11 +1949,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 											  ->where('IL.deleted_at','=','0000-00-00 00:00:00')
 											 ->where('item_log.document_type','=','OQ')
 											 ->where('IL.opn_qty','>',0)
-											 ->where('IL.department_id',env('DEPARTMENT_ID'))
 											 ->where('L.status','=',1)
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											  ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											   ->where('isd.department_id',env('DEPARTMENT_ID'))
 											 ->where('itemmaster.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3156,7 +1964,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('purchase_invoice','purchase_invoice.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','purchase_invoice.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('item_location_pi AS IL', function($join) {
 										$join->on('IL.logid','=','item_log.id');
 										} )
@@ -3172,12 +1979,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									
 										$query1->where('IL.status','=',1)
 											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
-											  ->where('L.department_id',env('DEPARTMENT_ID'))
 											 ->where('item_log.document_type','=','PI')
 											 ->where('item_log.status','=',1)
-											  ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											  ->where('isd.department_id',env('DEPARTMENT_ID'))
-											  ->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
 											 ->where('purchase_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3193,7 +1996,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('supplier_do','supplier_do.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','supplier_do.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('item_location_pi AS IL', function($join) {
 										$join->on('IL.logid','=','item_log.id');
 										})
@@ -3209,13 +2011,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 
 									 $query1_1->where('IL.status','=',1)
 											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
 											 ->where('item_log.document_type','=','SDO')
 											 ->where('supplier_do.status','=',1)
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 											 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											 ->where('supplier_do.department_id',env('DEPARTMENT_ID'))
 											 ->where('supplier_do.status',1);
 											 
 				if(($date_from!='') && ($date_to!=''))
@@ -3246,9 +2044,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									$query7->whereIn('location_transfer.locto_id', $attributes['location_id']);
 
 								$query7->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								             ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_location.department_id',env('DEPARTMENT_ID'))
 									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
 									
 								if(($date_from!='') && ($date_to!=''))
@@ -3275,9 +2070,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									$query8->whereIn('location_transfer.locfrom_id', $attributes['location_id']);
 
 								$query8->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								        ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_location.department_id',env('DEPARTMENT_ID'))
 									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
 									
 								if(($date_from!='') && ($date_to!=''))
@@ -3306,9 +2098,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									$query2->whereIn('location_transfer.locto_id', $attributes['location_id']);
 
 								$query2->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								          ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_location.department_id',env('DEPARTMENT_ID'))
 									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
 									
 								if(($date_from!='') && ($date_to!=''))
@@ -3339,9 +2128,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									$query6->whereIn('location_transfer.locto_id', $attributes['location_id']);
 
 								$query6->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								        ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											->where('item_location.department_id',env('DEPARTMENT_ID'))
 									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
 									
 								if(($date_from!='') && ($date_to!=''))
@@ -3360,7 +2146,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('sales_invoice','sales_invoice.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','sales_invoice.customer_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('item_location_si AS IL', function($join) {
 										$join->on('IL.logid','=','item_log.id');
 									})
@@ -3378,11 +2163,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
 											 ->where('item_log.document_type','=','SI')
 											 ->where('item_log.status','=',1)
-											 ->where('IL.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											 ->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
 											 ->where('sales_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3394,51 +2174,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			//$res = $result3->orderBy('vdate','ASC')->orderBy('created_at','ASC')->get();
 				//echo "<pre>";print_r($res);exit;
 				
-				
-		    //CDO...						 
-			$query3_1 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->join('customer_do','customer_do.id','=','item_log.document_id')
-									 ->join('account_master','account_master.id','=','customer_do.customer_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
-									 ->join('item_location_si AS IL', function($join) {
-										$join->on('IL.logid','=','item_log.id');
-									})
-									->join('location AS L', function($join) {
-											$join->on('L.id','=','IL.location_id');
-									});
-										
-									 if(isset($attributes['location_id']) && $attributes['location_id']!='all')
-										$query3_1->whereIn('IL.location_id', $attributes['location_id']);
-									 
-									  if(isset($attributes['account_id']) && $attributes['account_id']!='all')
-										$query3_1->whereIn('customer_do.customer_id', $attributes['account_id']);
-									
-										$query3_1->where('IL.status','=',1)
-											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
-											 ->where('item_log.document_type','=','CDO')
-											 ->where('IL.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											  ->where('customer_do.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_log.status','=',1)
-											 ->where('customer_do.status','=',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query3_1->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
-			
-			$result3_1 = $query3_1->select('customer_do.voucher_no','customer_do.voucher_date','account_master.master_name',DB::raw('"CDO" AS type'),'customer_do.created_at',
-										'u.cost_avg','item_log.quantity','item_log.cur_quantity','item_log.unit_cost','account_master.vat_no','customer_do.voucher_date AS vdate',
-										'L.code','L.name','IL.quantity AS lqty','IL.location_id','item_log.sale_cost','item_log.pur_cost');
-										
-										
 			//PURCHASE RETURN.....
 			$query4 = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
 									 ->join('purchase_return','purchase_return.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','purchase_return.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									  ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('item_location_pi AS IL', function($join) {
 										$join->on('IL.logid','=','item_log.id');
 										} )
@@ -3455,11 +2195,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										$query4->where('IL.status','=',1)
 											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
 											 ->where('item_log.document_type','=','PR')
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
 											 ->where('item_log.status','=',1)
-											  ->where('purchase_return.department_id',env('DEPARTMENT_ID'))
 											 ->where('purchase_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3474,7 +2210,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('sales_return','sales_return.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','sales_return.customer_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('item_location_sr AS CL', function($join) {
 										$join->on('CL.logid','=','item_log.id');
 									})
@@ -3490,12 +2225,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									
 										$query5->where('CL.status','=',1)
 											 ->where('CL.deleted_at','=','0000-00-00 00:00:00')
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
 											 ->where('item_log.document_type','=','SR')
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
 											 ->where('item_log.status','=',1)
-											  ->where('sales_return.department_id',env('DEPARTMENT_ID'))
 											 ->where('sales_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3508,7 +2239,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			if($attributes['search_type']=='quantity_conloc' || $attributes['search_type']=='quantity_conloc_cost')
 				$result['pursales'] = $result0->union($result1)->union($result8)->union($result2)->union($result6)->union($result3)->union($result4)->union($result5)->orderBy('vdate','ASC')->orderBy('created_at','ASC')->get();//->toArray();
 			else
-				$result['pursales'] = $result0->union($result1)->union($result1_1)->union($result7)->union($result8)->union($result2)->union($result3)->union($result3_1)->union($result4)->union($result5)->orderBy('vdate','ASC')->orderBy('created_at','ASC')->get();//->toArray();
+				$result['pursales'] = $result0->union($result1)->union($result1_1)->union($result7)->union($result8)->union($result2)->union($result3)->union($result4)->union($result5)->orderBy('vdate','ASC')->orderBy('created_at','ASC')->get();//->toArray();
 		
 		//echo '<pre>';print_r($result);exit; //->union($result2)
 		return $result;
@@ -3658,20 +2389,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	
 	public function check_item($id)
 	{
-	    $count3 = DB::table('location_transfer_item')
-		        ->join('location_transfer', 'location_transfer.id', '=', 'location_transfer_item.location_transfer_id')
-				->where('location_transfer_item.item_id', $id)->where('location_transfer.department_id',env('DEPARTMENT_ID'))->where('location_transfer_item.status',1)
-				->where('location_transfer_item.deleted_at','0000-00-00 00:00:00')->count();
 		$count = DB::table('purchase_invoice_item')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('item_id', $id)->count();
-		if($count > 0 || $count3 > 0 )
+		if($count > 0)
 			return false;
 		else {
-			$count1 = DB::table('sales_invoice_item')
-			->join('sales_invoice', 'sales_invoice.id', '=', 'sales_invoice_item.sales_invoice_id')->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
-			->where('sales_invoice_item.status',1)->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')->where('sales_invoice_item.item_id', $id)->count();
-			$count2 = DB::table('item_log')->where('document_type','!=','OQ')->where('department_id',env('DEPARTMENT_ID'))
-			->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('item_id', $id)->count();
-			if($count1 > 0 || $count2 > 0 )
+			$count = DB::table('sales_invoice_item')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('item_id', $id)->count();
+			if($count > 0)
 				return false;
 			else
 				return true;
@@ -3712,7 +2435,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				
 			$this->itemmaster->item_code = trim($attributes['item_code']);
 			$this->itemmaster->description = trim($attributes['description']);
-			$this->itemmaster->description_ar =isset($attributes['descriptionar'])?$attributes['descriptionar']:'';
 			$this->itemmaster->class_id = $attributes['class_id'];
 			$this->itemmaster->status = 1;
 			$this->itemmaster->created_at = date('Y-m-d H:i:s');
@@ -3729,32 +2451,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				$itemunit->is_baseqty = 1;
 				$this->itemmaster->itemUnits()->save($itemunit);
 				
-					//Item Stock Department
-				$departmentId = env('DEPARTMENT_ID');
-				 $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
-
-                                      foreach ($departments as $dept) {
-                                               $isCurrent = ($dept->id == $departmentId);
-
-                                             DB::table('itemstock_department')->insert([
-                                                        'itemmaster_id'      => $this->itemmaster->id,
-                                                         'department_id'      => $dept->id,
-														 'unit_id'         => $attributes['unit'],
-														 'packing'         =>$attributes['uname'],
-                                                          'is_baseqty'      =>1,
-                                                          'vat'            =>$attributes['vat'],
-														 'status'             =>1
-														 ]);
-                                         
-
-                                      } 
-				//Item Stock Department End
-				
 				$dtrow = DB::table('parameter1')->select('from_date')->first();
 				DB::table('item_log')->insert([
 								 'document_type' => 'OQ',
 								 'item_id' 	  => $this->itemmaster->id,
-								 'department_id'  =>env('DEPARTMENT_ID'),
 								 'unit_id'    => $attributes['unit'],
 								 'trtype'	  => 1,
 								 'packing' => 1,
@@ -3764,18 +2464,17 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								 'voucher_date' => $dtrow->from_date
 								 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
 								]);
-                        			
+											
 				//...............ITEM LOCATION........
 				//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-				$rows = DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->get();
+				$rows = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
 				if($rows){
 					foreach($rows as $row) {
 						$loc_id = ($row->is_default==1)?$row->id:'';
 						$itemLocation = new ItemLocation();
 						$itemLocation->location_id = $row->id;
-						$itemLocation->department_id = env('DEPARTMENT_ID');
 						$itemLocation->item_id = $this->itemmaster->id;
-						$itemLocation->unit_id = ($attributes['unit']=='')?2:$attributes['unit'];
+						$itemLocation->unit_id = ($attributes['unit']=='')?4:$attributes['unit'];
 						$itemLocation->status = 1;
 						$itemLocation->save();
 						
@@ -3807,20 +2506,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	
 	public function getLocation()
 	{
-		return DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('is_conloc',0)->where('deleted_at', '0000-00-00 00:00:00')->orderBy('id','ASC')->get();
+		return DB::table('location')->where('status',1)->where('is_conloc',0)->where('deleted_at', '0000-00-00 00:00:00')->orderBy('id','ASC')->get();
 	}
 	
 	public function getStockLocation($id)
 	{
-		return DB::table('item_location')
-						->leftJoin('bin_location','bin_location.id','=','item_location.bin_id')
-						->where('item_location.status',1)->where('item_location.item_id',$id)
-						->where('item_location.department_id',env('DEPARTMENT_ID'))
-						->where('item_location.deleted_at', '0000-00-00 00:00:00')
-						->where('bin_location.deleted_at', null)
-						->select('item_location.*','bin_location.code')
-						->orderBy('item_location.location_id','ASC')
-						->get();
+		return DB::table('item_location')->where('status',1)->where('item_id',$id)->where('deleted_at', '0000-00-00 00:00:00')->orderBy('location_id','ASC')->get();
 	}
 	
 	
@@ -3835,218 +2526,93 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->select('L.name','item_location.quantity')
 							->get(); */
 		if(!$invid) {				
-			$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+			$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
 									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-							->where('location.deleted_at','=', '0000-00-00 00:00:00');
-							
+								});
 					if(Auth::user()->location_id > 0)
 						$qry->where('location.id', Auth::user()->location_id);
 								
-			return $qry->select('location.code','location.name','IL.quantity','location.id','BL.code AS bin')->orderBy('location.id')->get();
+			return $qry->select('location.name','IL.quantity','location.id')->orderBy('location.id')->get();
 			
 		} else {
 			if($type=='PI') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
 									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
 								})
 								->leftJoin('item_location_pi AS PI', function($join) use($invid){
 									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
 									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
 									->where('PI.is_sdo','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								});
 								
 					if(Auth::user()->location_id > 0)
 						$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+				return $qry->select('location.name','IL.quantity','location.id','PI.quantity AS curqty')->orderBy('location.id')->get();
 								
 			} else if($type=='SI') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
 									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) use($id){
-									$join->on('BL.id','=','IL.bin_id');
 								})
 								->leftJoin('item_location_si AS SI', function($join) use($invid){
 									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
 									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
 									->where('SI.is_do','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								});
 								
 					if(Auth::user()->location_id > 0)
 						$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+				return $qry->select('location.name','IL.quantity','location.id','SI.quantity AS curqty')->orderBy('location.id')->get();
 			
 			} else if($type=='CDO') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
 									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
 								})
 								->leftJoin('item_location_si AS SI', function($join) use($invid){
 									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
 									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
 									->where('SI.is_do','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								});
 								
 					if(Auth::user()->location_id > 0)
 						$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+				return $qry->select('location.name','IL.quantity','location.id','SI.quantity AS curqty')->orderBy('location.id')->get();
 				
 			} elseif($type=='SDO') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
 									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
 								})
 								->leftJoin('item_location_pi AS PI', function($join) use($invid){
 									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
 									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
 									->where('PI.is_sdo','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								});
 								
 					if(Auth::user()->location_id > 0)
 						$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','PI.qty_entry','BL.code AS bin')->orderBy('location.id')->get();
+				return $qry->select('location.name','IL.quantity','location.id','PI.quantity AS curqty')->orderBy('location.id')->get();
 								
 			}
 		}
 	}
 	
-
-	public function getStockIntraLocInfo($id,$invid,$type)
-	{
-		
-		if(!$invid) {				
-			$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-							->where('location.deleted_at','=', '0000-00-00 00:00:00');
-							
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-			return $qry->select('location.code','location.name','IL.quantity','location.id','BL.code AS bin')->orderBy('location.id')->get();
-			
-		} else {
-			if($type=='PI') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_pi AS PI', function($join) use($invid){
-									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('PI.is_sdo','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
-								
-			} else if($type=='SI') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) use($id){
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_si AS SI', function($join) use($invid){
-									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('SI.is_do','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
-			
-			} else if($type=='CDO') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_si AS SI', function($join) use($invid){
-									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('SI.is_do','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
-				
-			} elseif($type=='SDO') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_pi AS PI', function($join) use($invid){
-									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('PI.is_sdo','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','PI.qty_entry','BL.code AS bin')->orderBy('location.id')->get();
-								
-			}
-		}
-	}
 	
 	public function getcnItemLocations() {
 		
@@ -4117,12 +2683,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$join->on('QSI.purchase_invoice_id', '=', 'purchase_invoice.id');
 							})
 							->join('item_location_pi AS D', function($join) {
-								$join->on('D.invoice_id', '=', 'QSI.id')->where('D.is_sdo','=',0); //NOV24
+								$join->on('D.invoice_id', '=', 'QSI.id')->where('D.is_sdo','=',0);
 							})
 							->join('item_location AS IL', function($join) {
 								$join->on('IL.location_id','=','D.location_id');
 								$join->on('IL.item_id','=','D.item_id');
-								//$join->on('IL.unit_id','=', 'D.unit_id');
+								$join->on('IL.unit_id','=', 'D.unit_id');
 							})
 							->join('location AS L', function($join) {
 								$join->on('L.id','=','D.location_id');
@@ -4130,45 +2696,37 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('purchase_invoice.id', $id)
 							->where('QSI.status',1)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							//->where('D.status',1) NOV24
-							//->where('D.deleted_at','0000-00-00 00:00:00') NOV24
+							->where('D.status',1)
+							->where('D.deleted_at','0000-00-00 00:00:00')
 							->where('L.is_conloc',0)
-							->where('L.status',1)
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('D.*','L.name','IL.quantity AS cqty')
-							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
 							
 		} else if($type=='PR') {
 			
-			return DB::table('purchase_invoice')
-						->join('purchase_invoice_item AS QSI', function($join) {
-							$join->on('QSI.purchase_invoice_id', '=', 'purchase_invoice.id');
-						})
-						->join('item_location_pr AS D', function($join) {
-							$join->on('D.invoice_id', '=', 'QSI.id');//NOV24
-						})
-						->join('item_location AS IL', function($join) {
-							$join->on('IL.location_id','=','D.location_id');
-							$join->on('IL.item_id','=','D.item_id');
-							//$join->on('IL.unit_id','=', 'D.unit_id');
-						})
-						->join('location AS L', function($join) {
-							$join->on('L.id','=','D.location_id');
-						})
-						->where('purchase_invoice.id', $id)
-						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
-						//->where('D.status',1)//NOV24
-						->where('L.department_id',env('DEPARTMENT_ID'))
-						->where('L.is_conloc',0)
-						//->where('D.deleted_at','0000-00-00 00:00:00')//NOV24
-						->where('L.status',1)
-						->where('L.deleted_at','0000-00-00 00:00:00')
-						->select('D.*','L.name','IL.quantity AS cqty')
-						->orderBy('D.id','ASC')->groupBy('D.id')
-						->get();
+			return DB::table('purchase_return')
+							->join('purchase_return_item AS QSI', function($join) {
+								$join->on('QSI.purchase_return_id', '=', 'purchase_return.id');
+							})
+							->join('item_location_pr AS D', function($join) {
+								$join->on('D.invoice_id', '=', 'QSI.id');
+							})
+							->join('item_location AS IL', function($join) {
+								$join->on('IL.location_id','=','D.location_id');
+								$join->on('IL.item_id','=','D.item_id');
+								$join->on('IL.unit_id','=', 'D.unit_id');
+							})
+							->join('location AS L', function($join) {
+								$join->on('L.id','=','D.location_id');
+							})
+							->where('purchase_return.id', $id)
+							->where('QSI.status',1)
+							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->where('D.status',1)
+							->where('L.is_conloc',0)
+							->where('D.deleted_at','0000-00-00 00:00:00')
+							->select('D.*','L.name','IL.quantity AS cqty')
+							->get();
 							
 		} else if($type=='SI') {
 			
@@ -4177,12 +2735,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							$join->on('QSI.sales_invoice_id', '=', 'sales_invoice.id');
 						})
 						->join('item_location_si AS D', function($join) {
-							$join->on('D.invoice_id', '=', 'QSI.id')->where('D.is_do','=',0);//NOV24
+							$join->on('D.invoice_id', '=', 'QSI.id');
 						})
 						->join('item_location AS IL', function($join) {
 							$join->on('IL.location_id','=','D.location_id');
 							$join->on('IL.item_id','=','D.item_id');
-							//$join->on('IL.unit_id','=', 'D.unit_id');
+							$join->on('IL.unit_id','=', 'D.unit_id');
 						})
 						->join('location AS L', function($join) {
 							$join->on('L.id','=','D.location_id');
@@ -4190,14 +2748,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('sales_invoice.id', $id)
 						->where('QSI.status',1)
 						->where('QSI.deleted_at','0000-00-00 00:00:00')
-						//->where('D.status',1)//NOV24
+						->where('D.status',1)
 						->where('L.is_conloc',0)
-						->where('L.department_id',env('DEPARTMENT_ID'))
-						//->where('D.deleted_at','0000-00-00 00:00:00')//NOV24
-						->where('L.status',1)
-						->where('L.deleted_at','0000-00-00 00:00:00')
+						->where('D.deleted_at','0000-00-00 00:00:00')
 						->select('D.*','L.name','IL.quantity AS cqty')
-						->orderBy('D.id','ASC')->groupBy('D.id')
 						->get();
 						
 		} else if($type=='SR') {
@@ -4212,23 +2766,18 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->join('item_location AS IL', function($join) {
 							$join->on('IL.location_id','=','D.location_id');
 							$join->on('IL.item_id','=','D.item_id');
-							//$join->on('IL.unit_id','=', 'D.unit_id');
+							$join->on('IL.unit_id','=', 'D.unit_id');
 						})
 						->join('location AS L', function($join) {
 							$join->on('L.id','=','D.location_id');
 						})
 						->where('sales_return.id', $id)
-						->where('sales_return.department_id',env('DEPARTMENT_ID'))
 						->where('QSI.status',1)
 						->where('QSI.deleted_at','0000-00-00 00:00:00')
 						->where('D.status',1)
 						->where('L.is_conloc',0)
-						->where('L.department_id',env('DEPARTMENT_ID'))
 						->where('D.deleted_at','0000-00-00 00:00:00')
-						->where('L.status',1)
-						->where('L.deleted_at','0000-00-00 00:00:00')
 						->select('D.*','L.name','IL.quantity AS cqty')
-						->orderBy('D.id','ASC')->groupBy('D.id')
 						->get();
 						
 		} else if($type=='SDO') {
@@ -4242,7 +2791,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('item_location AS IL', function($join) {
 								$join->on('IL.location_id','=','D.location_id');
 								$join->on('IL.item_id','=','D.item_id');
-								//$join->on('IL.unit_id','=', 'D.unit_id'); //MAY25
+								$join->on('IL.unit_id','=', 'D.unit_id');
 							})
 							->join('location AS L', function($join) {
 								$join->on('L.id','=','D.location_id');
@@ -4250,14 +2799,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('supplier_do.id', $id)
 							->where('QSI.status',1)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							//->where('D.status',1) NOV24
+							->where('D.status',1)
 							->where('L.is_conloc',0)
-							//->where('D.deleted_at','0000-00-00 00:00:00') NOV24
-							->where('L.status',1)
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->where('D.deleted_at','0000-00-00 00:00:00')
 							->select('D.*','L.name','IL.quantity AS cqty')
-							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
 							
 		} else if($type=='CDO') {
@@ -4271,7 +2816,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('item_location AS IL', function($join) {
 								$join->on('IL.location_id','=','D.location_id');
 								$join->on('IL.item_id','=','D.item_id');
-								//$join->on('IL.unit_id','=', 'D.unit_id');
+								$join->on('IL.unit_id','=', 'D.unit_id');
 							})
 							->join('location AS L', function($join) {
 								$join->on('L.id','=','D.location_id');
@@ -4279,15 +2824,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('customer_do.id', $id)
 							->where('QSI.status',1)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							//->where('D.status',1)NOV24
+							->where('D.status',1)
 							->where('L.is_conloc',0)
-							//->where('D.deleted_at','0000-00-00 00:00:00')NOV24
-							->where('L.status',1)
-							->where('customer_do.department_id',env('DEPARTMENT_ID'))
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->where('D.deleted_at','0000-00-00 00:00:00')
 							->select('D.*','L.name','IL.quantity AS cqty')
-							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
 						
 		} else if($type=='TI') {
@@ -4302,7 +2842,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('item_location AS IL', function($join) {
 								$join->on('IL.location_id','=','D.location_id');
 								$join->on('IL.item_id','=','D.item_id');
-								//$join->on('IL.unit_id','=', 'D.unit_id');
+								$join->on('IL.unit_id','=', 'D.unit_id');
 							})
 							->join('location AS L', function($join) {
 								$join->on('L.id','=','D.location_id');
@@ -4313,10 +2853,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('D.status',1)
 							->where('D.deleted_at',null)
 							->where('L.is_conloc',0)
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('D.*','L.name','IL.quantity AS cqty')
-							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
 							
 		} else if($type=='TO') {
@@ -4331,7 +2868,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('item_location AS IL', function($join) {
 								$join->on('IL.location_id','=','D.location_id');
 								$join->on('IL.item_id','=','D.item_id');
-								//$join->on('IL.unit_id','=', 'D.unit_id');
+								$join->on('IL.unit_id','=', 'D.unit_id');
 							})
 							->join('location AS L', function($join) {
 								$join->on('L.id','=','D.location_id');
@@ -4342,10 +2879,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('D.status',1)
 							->where('D.deleted_at',null)
 							->where('L.is_conloc',0)
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('D.*','L.name','IL.quantity AS cqty')
-							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
 							
 		} else if($type=='GI') {
@@ -4360,7 +2894,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('item_location AS IL', function($join) {
 								$join->on('IL.location_id','=','D.location_id');
 								$join->on('IL.item_id','=','D.item_id');
-								//$join->on('IL.unit_id','=', 'D.unit_id');
+								$join->on('IL.unit_id','=', 'D.unit_id');
 							})
 							->join('location AS L', function($join) {
 								$join->on('L.id','=','D.location_id');
@@ -4368,14 +2902,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('goods_issued.id', $id)
 							->where('QSI.status',1)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							//->where('D.status',1)//NOV24
-							//->where('D.deleted_at',null)//NOV24
+							->where('D.status',1)
+							->where('D.deleted_at',null)
 							->where('L.is_conloc',0)
-							->where('L.status',1)
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('D.*','L.name','IL.quantity AS cqty')
-							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
 		} else if($type=='GR') {
 			
@@ -4389,7 +2919,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('item_location AS IL', function($join) {
 								$join->on('IL.location_id','=','D.location_id');
 								$join->on('IL.item_id','=','D.item_id');
-								//$join->on('IL.unit_id','=', 'D.unit_id');
+								$join->on('IL.unit_id','=', 'D.unit_id');
 							})
 							->join('location AS L', function($join) {
 								$join->on('L.id','=','D.location_id');
@@ -4400,16 +2930,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('D.status',1)
 							->where('D.deleted_at',null)
 							->where('L.is_conloc',0)
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('D.*','L.name','IL.quantity AS cqty')
-							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
 		}
 	}
 	
-	public function getcnItemLocEdit($id,$type) 
+	public function getcnItemLocEdit($id,$type)
 	{
 		
 		if($type=='SI') {
@@ -4494,8 +3020,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4516,8 +3040,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4538,8 +3060,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('QSI.status',1)
 						->where('L.is_conloc',0)
 						->where('QSI.deleted_at','0000-00-00 00:00:00')
-						->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 						->select('L.id','L.name','IL.quantity AS cqty')
 						->groupBy('L.id')
 						->get();
@@ -4560,8 +3080,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('QSI.status',1)
 						->where('L.is_conloc',0)
 						->where('QSI.deleted_at','0000-00-00 00:00:00')
-						->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 						->select('L.id','L.name','IL.quantity AS cqty')
 						->groupBy('L.id')
 						->get();
@@ -4581,8 +3099,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4602,8 +3118,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4622,8 +3136,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4642,8 +3154,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4663,8 +3173,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4683,8 +3191,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
 							->where('QSI.deleted_at','0000-00-00 00:00:00')
-							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -4821,7 +3327,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					$itemunit = new ItemUnit();
 					if($row['unit_id']!="" || $c==1) {
 						$itemunit->itemmaster_id = $this->itemmaster->id;
-						$itemunit->unit_id = ($row['unit_id']=='')?2:$row['unit_id'];
+						$itemunit->unit_id = ($row['unit_id']=='')?4:$row['unit_id'];
 						$itemunit->packing = ($row['packing']=='')?'PCS':$row['packing'];
 						$itemunit->opn_quantity = 0;//$row['opn_quantity'];
 						$itemunit->opn_cost = $row['opn_cost'];
@@ -4837,7 +3343,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						$itemunit->cost_avg = ($row['opn_cost']==0)?$row['sell_price']:$row['opn_cost'];
 						$this->itemmaster->itemUnits()->save($itemunit);
 						$c++;
-
+						
+						
 					}
 				}
 				
@@ -4846,9 +3353,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					foreach($attributes['item_location'] as $loc) {
 						$itemLocation = new ItemLocation();
 						$itemLocation->location_id = $loc['location_id'];
-						$itemLocation->department_id = env('DEPARTMENT_ID');
 						$itemLocation->item_id = $this->itemmaster->id;
-						$itemLocation->unit_id = ($loc['unit_id']=='')?2:$loc['unit_id'];
+						$itemLocation->unit_id = ($loc['unit_id']=='')?4:$loc['unit_id'];
 						$itemLocation->quantity = $loc['quantity'];
 						$itemLocation->status = 1;
 						$itemLocation->opn_qty = $loc['opn_qty'];
@@ -4893,15 +3399,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	}
 	
 	public function ImportItems($data)
-	{  ##################  EXCEL FORMAT:   Item Code|Description|Unit|Quantity|Rate|Sales Price|Item Class|Group|Image|Model|Subgroup|Serial No|Other Info|Weight|Wsales Price  ######################
+	{  ##################  EXCEL FORMAT:   Item Code|Description|Unit|Quantity|Rate|Sales Price|Item Class|Group|Image  ######################
 		DB::beginTransaction();
 		try { //echo '<pre>';print_r($data);exit;
 			//foreach($data as $value) { open_quantity cost_avg rate item_class
 				
 				//echo $value;exit;
-                $item_id = null;
-				$mod_location = DB::table('parameter2')->where('keyname', 'mod_location')->where('status',1)->select('is_active')->first();
-
+				//$location = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
 				$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
 				$vat = DB::table('vat_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('percentage')->first();
 				$dtrow = DB::table('parameter1')->select('from_date')->first();
@@ -4917,7 +3421,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					if(!$item) {
 						
 						//CHECK GROUP NAME EXIST OR NOT....
-						$group_id = $subgroup_id = '';
+						$group_id = '';
 						if($row->group!='') {
 							$group = DB::table('groupcat')->where('group_name', $row->group)->where('status',1)
 												->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
@@ -4925,18 +3429,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$group_id = $group->id;
 							else {
 								$group_id = DB::table('groupcat')->insertGetId(['group_name' => $row->group, 'description' => $row->group, 'status'=>1]);
-							}
-
-							//SUBGROUP......
-							if($row->subgroup!='') {
-								$subgroup = DB::table('groupcat')->where('group_name', $row->subgroup)->where('status',1)->where('parent_id','!=',0)
-												->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
-
-								if($subgroup)
-									$subgroup_id = $subgroup->id;
-								else {
-									$subgroup_id = DB::table('groupcat')->insertGetId(['group_name' => $row->subgroup, 'description' => $row->subgroup, 'parent_id' => $group_id, 'status'=>1]);
-								}
 							}
 						
 						}
@@ -4961,28 +3453,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							}
 						}
 						
-						//BATCH NO SECTION...
-						$batch_req = 0;
-						if($row->batch_no!='' && $row->mfg_date!='' && $row->exp_date!='' && $row->quantity!='') {
-						    $isbatch = DB::table('item_batch')->where('batch_no',$row->batch_no)->whereNull('deleted_at')->select('id')->first();
-						    if(!$isbatch)
-						        $batch_req = 1;
-						}
-						// end batch
-						
 						$insert = ['item_code' => $row->item_code, 
 									 'description' => $row->description,
 									 'class_id' => ($row->item_class=='')?1:$row->item_class, 
-									 'model_no' => $row->model,
-									 'serial_no' => $row->serial_no,
 									 'group_id' => $group_id,
-									 'subgroup_id' => $subgroup_id,
-									 'weight'	=> $row->weight,
 									 'image' => $image_name,
 									 'status'   => 1,
-									 'created_at' => date('Y-m-d H:i:s'),
-									 'other_info' => $row->other_info,
-									 'batch_req' => $batch_req
+									 'created_at' => date('Y-m-d H:i:s')
 								  ];
 						
 						if(isset($row->unit)) {
@@ -4997,7 +3474,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							} else
 								$unit_id = $unit->id;
 						} else
-							$unit_id = 2;
+							$unit_id = 1;
 						
 						$item_id = DB::table('itemmaster')->insertGetId($insert);
 						DB::table('item_unit')->insert(['itemmaster_id' => $item_id,
@@ -5006,7 +3483,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 														'opn_quantity' => ($row->quantity=='')?0:$row->quantity,
 														'opn_cost' => ($row->rate=='')?0:$row->rate,
 														'sell_price' => ($row->sales_price=='')?0:$row->sales_price,
-														'wsale_price' => ($row->wsales_price=='')?0:$row->wsales_price,
 														'vat' => $vat->percentage,
 														'status' => 1,
 														'cur_quantity' => ($row->quantity=='')?0:$row->quantity,
@@ -5014,96 +3490,36 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 														'cost_avg' => ($row->rate=='')?0:$row->rate
 														]);
 														
-						$log_id = DB::table('item_log')->insertGetId([
-    								'document_type' => 'OQ',
-    								'document_id' => 0,
-    								'item_id' => $item_id,
-    								'unit_id' => $unit_id,
-    								'quantity' => ($row->quantity=='')?0:$row->quantity,
-    								'unit_cost' => ($row->rate=='')?0:$row->rate,
-    								'trtype' => 1,
-    								'cur_quantity' => ($row->quantity=='')?0:$row->quantity,
-    								'cost_avg' => ($row->rate=='')?0:$row->rate,
-    								'pur_cost' => ($row->rate=='')?0:$row->rate,
-    								'packing' => 1,
-    								'status' => 1,
-    								'created_at' => date('Y-m-d H:i:s'),
-    								'voucher_date' => $dtrow->from_date
-    								//'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
-    								]);
-									
-						    
-						    //BATCH SECTION....
-						    if($batch_req==1) {
-    					    	$batch_id = DB::table('item_batch')
-                				                ->insertGetId([
-                				                    'item_id' => $item_id,
-                				                    'batch_no' => $row->batch_no,
-                				                    'mfg_date' => date('Y-m-d', strtotime($row->mfg_date)),
-                				                    'exp_date' => date('Y-m-d', strtotime($row->exp_date)),
-                				                    'quantity' => $row->quantity
-                				                ]);
-                				                
-                        			if($batch_id) {
-                        			    DB::table('batch_log')
-                    				                ->insert([
-                    				                    'batch_id' => $batch_id,
-                    				                    'item_id' => $item_id,
-                    				                    'document_type' => 'OQ',
-                    				                    'quantity' => $row->quantity,
-                    				                    'trtype' => 1,
-                    				                    'invoice_date' => $dtrow->from_date,
-                    				                    'log_id' => $log_id,
-                    				                    'created_at' => date('Y-m-d h:i:s'),
-                    				                    'created_by' => Auth::User()->id
-                    				                    ]);
-                        			}
-						        }
-                    			//END BATCH
-                    			
-						if($mod_location->is_active==0) {
-							if($location) {
-								foreach($location as $res) {
-									$itemLocation = new ItemLocation();
-									$itemLocation->location_id = $res->id;
-									$itemLocation->item_id = $item_id;
-									$itemLocation->unit_id = $unit_id;
-									$itemLocation->quantity = ($row->quantity=='')?0:$row->quantity;
-									$itemLocation->status = 1;
-									$itemLocation->opn_qty = ($row->quantity=='')?0:$row->quantity;
-									$itemLocation->save();
-								}
+						DB::table('item_log')->insert([
+								'document_type' => 'OQ',
+								'document_id' => 0,
+								'item_id' => $item_id,
+								'unit_id' => $unit_id,
+								'quantity' => ($row->quantity=='')?0:$row->quantity,
+								'unit_cost' => ($row->rate=='')?0:$row->rate,
+								'trtype' => 1,
+								'cur_quantity' => ($row->quantity=='')?0:$row->quantity,
+								'cost_avg' => ($row->rate=='')?0:$row->rate,
+								'pur_cost' => ($row->rate=='')?0:$row->rate,
+								'packing' => 1,
+								'status' => 1,
+								'created_at' => date('Y-m-d H:i:s'),
+								'voucher_date' => $dtrow->from_date
+								//'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
+								]);
+														
+						
+						if($location){
+							foreach($location as $res) {
+								$itemLocation = new ItemLocation();
+								$itemLocation->location_id = $res->id;
+								$itemLocation->item_id = $item_id;
+								$itemLocation->unit_id = $unit_id;
+								$itemLocation->quantity = ($row->quantity=='')?0:$row->quantity;
+								$itemLocation->status = 1;
+								$itemLocation->opn_qty = ($row->quantity=='')?0:$row->quantity;
+								$itemLocation->save();
 							}
-
-						} else {
-
-							$locations = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_conloc',0)->get();
-							if($location) {
-								foreach($locations as $res) {
-
-									$strcode = strtolower($res->code).'_qty';
-									$strbin = strtolower($res->code).'_bin';
-									//echo '<br>'.$row->{$strbin}; exit;
-
-									$brow = DB::table('bin_location')->where('code',$row->{$strbin})->first();
-									if($brow) {
-										$binid = $brow->id;
-									} else {
-										$binid = DB::table('bin_location')->insertGetId(['code' => $row->{$strbin}, 'name' => $row->{$strbin}]);
-									}
-
-									$itemLocation = new ItemLocation();
-									$itemLocation->location_id = $res->id;
-									$itemLocation->item_id = $item_id;
-									$itemLocation->unit_id = $unit_id;
-									$itemLocation->quantity = ($row->{$strcode}=='')?0:$row->{$strcode};
-									$itemLocation->status = 1;
-									$itemLocation->opn_qty = ($row->{$strcode}=='')?0:$row->{$strcode};
-									$itemLocation->bin_id = $binid;
-									$itemLocation->save();
-								}
-							}
-
 						}
 				   }
 				 }
@@ -5111,7 +3527,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			//}
 			
 			DB::commit();
-			return $item_id;
+			return true;
 			
 		} catch(\Exception $e) { 
 		
@@ -5160,11 +3576,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->join('account_master AS AM', function($join) {
 								$join->on('AM.id','=','PI.supplier_id');
 							} )
-						->join('units AS U', function($join) {
-								$join->on('U.id','=','PITM.unit_id');
-							} )
 						->where('PITM.status',1)->where('PITM.deleted_at','0000-00-00 00:00:00')
-						->select('PI.voucher_no','PI.voucher_date','PITM.quantity','PITM.unit_price','AM.master_name','U.unit_name')
+						->select('PI.voucher_no','PI.voucher_date','PITM.quantity',
+								 'PITM.unit_price','AM.master_name')
 						->orderBy('PI.voucher_date')
 						->get();
 	}
@@ -5182,10 +3596,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->join('account_master AS AM', function($join) {
 								$join->on('AM.id','=','SI.customer_id');
 							} )
-						->join('units AS U', function($join) {
-								$join->on('U.id','=','SITM.unit_id');
-							} )
-						->select('SI.voucher_no','SI.voucher_date','SITM.quantity','SITM.unit_price','AM.master_name','U.unit_name')
+						->select('SI.voucher_no','SI.voucher_date','SITM.quantity',
+								 'SITM.unit_price','AM.master_name')
 						->orderBy('SI.voucher_date')
 						->get();
 	}
@@ -5304,14 +3716,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('purchase_invoice','purchase_invoice.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','purchase_invoice.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','PI')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.status',1)
-									 ->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
-									 ->where('purchase_invoice.status',1)
-									 ->where('isd.department_id',env('DEPARTMENT_ID'));
+									 ->where('purchase_invoice.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
 				$query1->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to));
@@ -5325,14 +3733,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('sales_invoice','sales_invoice.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','sales_invoice.customer_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','SI')
-									  ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
-									 ->where('sales_invoice.status','=',1)
-									  ->where('isd.department_id',env('DEPARTMENT_ID'));
+									 ->where('sales_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
 				$query2->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to));
@@ -5347,14 +3751,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('purchase_return','purchase_return.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','purchase_return.supplier_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','PR')
 									 ->where('item_log.status','=',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('purchase_return.department_id',env('DEPARTMENT_ID'))
 									 ->where('purchase_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -5369,14 +3769,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('sales_return','sales_return.id','=','item_log.document_id')
 									 ->join('account_master','account_master.id','=','sales_return.customer_id')
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','SR')
 									 ->where('item_log.status',1)
-									  ->where('item_log.department_id',env('DEPARTMENT_ID'))
 									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('isd.department_id',env('DEPARTMENT_ID'))
-									  ->where('sales_return.department_id',env('DEPARTMENT_ID'))
 									 ->where('sales_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -5437,7 +3833,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			if(($date_from!='') && ($date_to!=''))
 				$query7->whereBetween('stock_transferout.voucher_date', array($date_from, $date_to));
 			
-			$result['Transfer Out'] = $query7->select('item_log.id','stock_transferout.voucher_no','stock_transferout.voucher_date','account_master.master_name',DB::raw('"TO" AS type'),
+			$result['Transfer Oou'] = $query7->select('item_log.id','stock_transferout.voucher_no','stock_transferout.voucher_date','account_master.master_name',DB::raw('"TO" AS type'),
 										'item_log.quantity','item_log.cur_quantity','item_log.unit_cost','stock_transferout.voucher_date AS vdate',
 										'itemmaster.id','itemmaster.item_code','itemmaster.description','item_log.sale_reference')->orderBy('item_log.id','ASC')->get();
 			
@@ -5458,50 +3854,6 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$result['Goods Isued'] = $query8->select('item_log.id','goods_issued.voucher_no','goods_issued.voucher_date','account_master.master_name',DB::raw('"GI" AS type'),
 										'item_log.quantity','item_log.cur_quantity','item_log.unit_cost','goods_issued.voucher_date AS vdate',
 										'itemmaster.id','itemmaster.item_code','itemmaster.description','item_log.sale_reference')->orderBy('item_log.id','ASC')->get();
-										
-				//SDO..	
-			$query9 = DB::table('item_log')//->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
-									 ->join('supplier_do','supplier_do.id','=','item_log.document_id')
-									 ->join('account_master','account_master.id','=','supplier_do.supplier_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
-									 ->join('itemmaster','itemmaster.id','=','item_log.item_id')
-									 ->where('item_log.document_type','=','SDO')
-									  ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('isd.department_id',env('DEPARTMENT_ID'))
-									  ->where('supplier_do.department_id',env('DEPARTMENT_ID'))
-									 ->where('supplier_do.status',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query9->whereBetween('supplier_do.voucher_date', array($date_from, $date_to));
-			
-			$result['Supplier DO'] = $query9->select('item_log.id','supplier_do.voucher_no','supplier_do.voucher_date','account_master.master_name',DB::raw('"SDO" AS type'),
-										'item_log.quantity','item_log.cur_quantity','item_log.unit_cost','supplier_do.voucher_date AS vdate',
-										'itemmaster.id','itemmaster.item_code','itemmaster.description','item_log.sale_reference')->orderBy('item_log.id','ASC')->get();
-			//CDO
-			$query10 = DB::table('item_log')//->where('item_log.item_id', $attributes['document_id'])
-									 ->join('customer_do','customer_do.id','=','item_log.document_id')
-									 ->join('account_master','account_master.id','=','customer_do.customer_id')
-									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
-									 ->join('itemmaster','itemmaster.id','=','item_log.item_id')
-									 ->where('item_log.document_type','=','CDO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									  ->where('customer_do.department_id',env('DEPARTMENT_ID'))
-									 ->where('customer_do.status',1);
-									 
-			if(($date_from!='') && ($date_to!=''))
-				$query10->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
-			
-			$result['Customer DO'] = $query10->select('item_log.id','customer_do.voucher_no','customer_do.voucher_date','account_master.master_name',DB::raw('"CDO" AS type'),
-			                                'item_log.quantity','item_log.cur_quantity','item_log.unit_cost','customer_do.voucher_date AS vdate',
-										'itemmaster.id','itemmaster.item_code','itemmaster.description','item_log.sale_reference')->orderBy('item_log.id','ASC')->get();				
-																
 										
 			//$result['pursales'] = $result1->union($result2)->union($result3)->union($result4)->union($result5)->union($result6)->union($result7)->union($result8)->orderBy('vdate','ASC')->get();
 		 
@@ -5631,32 +3983,97 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		
 		return DB::table('item_location')
 				->join('location','location.id','=','item_location.location_id')
-				->leftjoin('bin_location','bin_location.id','=','item_location.bin_id')
 				->where('item_location.item_id',$id)
 				->where('item_location.status',1)
-				->where('item_location.department_id',env('DEPARTMENT_ID'))
 				->where('item_location.deleted_at','0000-00-00 00:00:00')
 				->where('location.status',1)
 				->where('location.deleted_at','0000-00-00 00:00:00')
 				->where('item_location.quantity','>',0)
-				->select('location.code','location.name','item_location.quantity','bin_location.code AS bin')
+				->select('location.code','location.name','item_location.quantity')
 				->get();
 	}
-
-	public function getInLocQuantity($id) {
-		
-		return DB::table('item_location')
-				->join('location','location.id','=','item_location.location_id')
-				->leftjoin('bin_location','bin_location.id','=','item_location.bin_id')
-				->where('item_location.item_id',$id)
-				->where('item_location.status',1)
-				->where('item_location.department_id','!=',env('DEPARTMENT_ID'))
-				->where('item_location.deleted_at','0000-00-00 00:00:00')
-				->where('location.status',1)
-				->where('location.deleted_at','0000-00-00 00:00:00')
-				->where('item_location.quantity','>',0)
-				->select('location.code','location.name','item_location.quantity','bin_location.code AS bin')
-				->get();
+	
+	
+	public function ItemLogLocation($itemmaster_id) {
+			
+			$items = DB::table('item_unit')->where('is_baseqty',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+			
+				//OPENING QUANTITY
+				$query0 = $this->itemmaster->where('itemmaster.status', 1)		
+								->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+								->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
+								->join('item_location AS IL','IL.item_id','=','itemmaster.id')
+								->join('location AS L','L.id','=','IL.location_id') 		
+								->where('itemmaster.id', $itemmaster_id)
+								->where('ILG.document_type','OQ')->where('IL.status',1)->where('IL.deleted_at','0000-00-00 00:00:00')
+								->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
+								->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name',
+										'ILG.voucher_date',DB::raw('"1" AS trtype'),'ILG.cost_avg','ILG.pur_cost','IL.item_id','IL.unit_id',
+										'IL.opn_qty AS quantity','L.id AS location_id','ILG.id AS logid');
+						
+				//LOCATION TRANSFER locto
+				$query1 = $this->itemmaster->where('itemmaster.status', 1)		
+								->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+								->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
+								->Join('location_transfer AS LT', function($join) {
+									$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+								})
+								->join('location AS L','L.id','=','LT.locto_id') 
+								->where('itemmaster.id', $itemmaster_id)
+								->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
+								->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name',
+										'LT.voucher_date',DB::raw('"1" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id',
+										'LTI.unit_id','LTI.quantity','L.id AS location_id','LT.id AS logid');
+										
+				//LOCATION TRANSFER locfrom
+				$query4 = $this->itemmaster->where('itemmaster.status', 1)		
+								->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+								->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
+								->Join('location_transfer AS LT', function($join) {
+									$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+								})
+								->join('location AS L','L.id','=','LT.locfrom_id') 
+								->where('itemmaster.id', $itemmaster_id)
+								->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
+								->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name',
+										'LT.voucher_date',DB::raw('"0" AS trtype'),DB::raw('"0" AS cost_avg'),DB::raw('"0" AS pur_cost'),'LTI.item_id',
+										'LTI.unit_id','LTI.quantity','L.id AS location_id','LT.id AS logid');
+							
+				//SALES
+				$query2 = $this->itemmaster->where('itemmaster.status', 1)		
+								->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+								->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
+								->Join('item_location_si AS LSI', function($join) {
+									$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								})
+								->join('location AS L','L.id','=','LSI.location_id') 
+								->where('itemmaster.id', $itemmaster_id)
+								->where('LSI.is_do',0)->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
+								->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name',
+										'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id','LSI.quantity',
+										'L.id AS location_id','ILG.id AS logid');
+							
+							
+				//PURCHASE	
+				$query3 = $this->itemmaster->where('itemmaster.status', 1)		
+								->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
+								->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
+								->Join('item_location_pi AS LSI', function($join) {
+									$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								})
+								->join('location AS L','L.id','=','LSI.location_id') 
+								->where('itemmaster.id', $itemmaster_id)
+								->where('LSI.is_sdo',0)->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
+								->select('itemmaster.id','itemmaster.item_code','itemmaster.description','L.code','L.name',
+										'ILG.voucher_date','ILG.trtype','ILG.cost_avg','ILG.pur_cost','LSI.item_id','LSI.unit_id',
+										'LSI.quantity','L.id AS location_id','ILG.id AS logid');
+				
+				$result = $query0->union($query1)->union($query4)->union($query2)->union($query3)->get()->toArray();	
+				
+			//$result = $query1->get()->toArray();			
+			//echo '<pre>';print_r($result);exit;
+			return $result;
+			
 	}
 	
 	public function getStockMovementSummaryReport($attributes)
@@ -5667,11 +4084,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		
 		$query = DB::table('item_log')
 						 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
-						  ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 						 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 						 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-						 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-						 ->where('isd.department_id',env('DEPARTMENT_ID'))
 						 ->where('item_log.status','=',1);
 									 
 		if(($date_from!='') && ($date_to!=''))
@@ -5691,175 +4105,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
 		
 		$result = $query->select('item_log.id','item_log.cost_avg','item_log.quantity',
-								 'item_log.item_id','itemmaster.item_code','itemmaster.description','item_log.sale_reference','item_log.trtype','item_log.unit_cost','item_log.pur_cost','item_log.sale_cost','isd.opn_quantity','isd.opn_cost')
+								 'item_log.item_id','itemmaster.item_code','itemmaster.description','item_log.sale_reference','item_log.trtype')
 								->orderBy('item_log.id','ASC')
 								->get();
 		
 		return $result;
 		
 	}
-
-	private function formatLogs($itemid) {
-
-			$itemlog = DB::table('item_log')
-								  ->where('item_id', $itemid)
-								  ->where('department_id', env('DEPARTMENT_ID'))
-								  ->where('status',1)
-								  ->where('deleted_at','0000-00-00 00:00:00')
-								  ->select('item_log.*')
-								  ->orderBy('id','DESC')
-								  ->first(); 
-				if($itemlog) {
-					
-					$qty_rec = $qty_isd = $curr_qnty = 0;
-					$qntys = $this->getItemQtyFromLog($itemid);
-					$opqntys = $this->getItemOpnQtyFromLog($itemid);
-					if($qntys) {
-						$qty_rec = $qntys['in'];
-						$qty_isd = $qntys['out'];
-						$curr_qnty = $qty_rec - $qty_isd;
-					}
-					if($opqntys){
-						$qty_opn = $opqntys['opq'];
-					}
-					//echo '<pre>';print_r($itemlog); exit;
-					if($itemlog->document_type=='SI'||$itemlog->document_type=='PR'||$itemlog->document_type=='GR'||$itemlog->document_type=='TO') {
-						
-						DB::table('item_unit')->where('itemmaster_id', $itemid)
-											  ->update([
-												'cur_quantity' => $curr_qnty,
-												'issued_qty' => $qty_isd, 'received_qty' => $qty_rec,
-												'last_purchase_cost' => $itemlog->pur_cost,
-												'cost_avg' => $itemlog->cost_avg
-											  ]);
-					} else if($itemlog->document_type=='PI'||$itemlog->document_type=='SR'||$itemlog->document_type=='GI'||$itemlog->document_type=='TI') { 
-						DB::table('item_unit')->where('itemmaster_id', $itemid)
-											  ->update([
-												'cur_quantity' => $curr_qnty,
-												'last_purchase_cost' => $itemlog->pur_cost,
-												'cost_avg' => $itemlog->cost_avg,
-												'received_qty' => $qty_rec, 'issued_qty' => $qty_isd
-											  ]);
-					} else if($itemlog->document_type=='OQ') { 
-						DB::table('item_unit')->where('itemmaster_id', $itemid)
-											  ->update([
-												'opn_quantity'=>$qty_opn ,
-												'cur_quantity' => $curr_qnty,
-												'last_purchase_cost' => $itemlog->pur_cost,
-												'cost_avg' => $itemlog->cost_avg,
-												'received_qty' => $qty_rec,
-												'issued_qty' => 0
-											  ]);
-					}
-				}
-
-			return true;
-	}
-
-	private function getItemOpnQtyFromLog($item_id){
-       $oqtyin = DB::table('item_log')->where('item_id', $item_id)->where('document_type', 'OQ')->where('trtype',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
-		return ['opq' => $oqtyin];
-	}
-	
-
-	private function getItemQtyFromLog($item_id)
-	{
-		$qtyin = DB::table('item_log')->where('item_id', $item_id)->where('trtype',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
-		
-		$qtyout = DB::table('item_log')->where('item_id', $item_id)->where('trtype',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
-		
-		return ['in' => $qtyin, 'out' => $qtyout];
-	}
-	
-	public function ImportItemsUpdate($data)
-	{  ##################  EXCEL FORMAT:   Item Code|Description|Unit|Quantity|Rate|Sales Price|Item Class|Group|Image|Model|Subgroup|Serial No|Other Info|Weight|Wsales Price  ######################
-		DB::beginTransaction();
-		try { //echo '<pre>';print_r($data);exit;
-			//foreach($data as $value) { open_quantity cost_avg rate item_class
-				
-				foreach ($data as $row) { 
-				//	echo $row;exit;
-				 
-				 if($row->item_code!='' && $row->description!='') {
-					//CHECK ITEM EXIST OR NOT
-					$item = DB::table('itemmaster')->where( function ($query) use($row) {
-														$query->where('item_code', '=', $row->item_code);
-															  //->orWhere('description', '=', $row->description);
-												   })->select('id')->first();
-					if($item) {
-						
-						DB::table('item_unit')
-						        ->where('itemmaster_id',$item->id)
-					            ->update(['opn_quantity' => ($row->quantity=='')?0:$row->quantity,
-										  'opn_cost' => ($row->rate=='')?0:$row->rate
-										]);
-														
-						DB::table('item_log')->where('item_id',$item->id)->where('document_type','OQ')
-						->update([
-								'quantity' => ($row->quantity=='')?0:$row->quantity,
-								'unit_cost' => ($row->rate=='')?0:$row->rate,
-								'cost_avg' => ($row->rate=='')?0:$row->rate,
-								'pur_cost' => ($row->rate=='')?0:$row->rate,
-								]);
-														
-						
-				   }
-				 }
-				}
-
-			DB::commit();
-			return true;
-			
-		} catch(\Exception $e) { 
-		
-			DB::rollback(); echo $e->getLine().' - '.$e->getMessage();exit;
-			return false;
-		}
-		
-	}
-	
-	public function getBatchReport($attributes) {
-	    
-	    $result = array();
-		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
-		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-
-		if($attributes['search_type']=='batch_expiry') {
-		
-			$query = $this->itemmaster->where('itemmaster.status', 1)		
-							->join('item_batch AS B', function($join) {
-								$join->on('B.item_id','=','itemmaster.id');
-							})
-							->join('item_unit AS U', function($join) {
-								$join->on('U.itemmaster_id','=','itemmaster.id');
-							})
-							->leftjoin('category AS C', function($join) {
-								$join->on('C.id','=','itemmaster.subcategory_id');
-							})
-							->where('itemmaster.batch_req', 1)
-							->whereNull('B.deleted_at');
-
-    			if(($date_from!='') && ($date_to!='')) {
-    				$query->whereBetween('B.exp_date', array($date_from, $date_to));
-    			}
-			
-				if(isset($attributes['category_id']) && $attributes['category_id']!='')
-					$query->whereIn('itemmaster.category_id', $attributes['category_id']);
-				
-				if(isset($attributes['subcategory_id']) && $attributes['subcategory_id']!='' )
-					$query->whereIn('itemmaster.subcategory_id', $attributes['subcategory_id']);
-
-				if(isset($attributes['document_id'])&& $attributes['document_id']!='' )
-					$query->whereIn('itemmaster.id', $attributes['document_id']);
-						
-
-			$result = $query->select('itemmaster.id','itemmaster.item_code','itemmaster.description','B.*','U.cost_avg','C.category_name')->orderBy('B.exp_date','ASC')->get()->toArray();
-		
-			return $result;
-		
-		}
-	}
-	
 }
 
 //

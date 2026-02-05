@@ -67,13 +67,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Sales Return
                         </h3>
                         <div class="pull-right">
-						@can('sr-create')
+						@permission('sr-create')
                              <a href="{{ url('sales_return/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-						@endcan
+						@endpermission
                         </div>
                     </div>
                     <div class="panel-body">
@@ -105,13 +105,13 @@
 											<td>{{ date('d-m-Y', strtotime($order->voucher_date)) }}</td>
 											<td>{{$order->net_amount}}</td>
 											<td>
-												@can('sr-create')<p><button class="btn btn-primary btn-xs" onClick="location.href='{{ url('sales_return/edit/'.$order->id)}}'"><span class="glyphicon glyphicon-pencil"></span></button></p>@endcan
+												@permission('sr-create')<p><button class="btn btn-primary btn-xs" onClick="location.href='{{ url('sales_return/edit/'.$order->id)}}'"><span class="glyphicon glyphicon-pencil"></span></button></p>@endpermission
 											</td>
 											<td>
-												@can('sr-create')<p><button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $order->id }}')"><span class="glyphicon glyphicon-trash"></span></button></p>@endcan
+												@permission('sr-create')<p><button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $order->id }}')"><span class="glyphicon glyphicon-trash"></span></button></p>@endpermission
 											</td>
 											<td>
-												@can('sr-create')<p><a href="{{url('sales_return/print/'.$order->id)}}" class="btn btn-primary btn-xs"><span class="fa fa-fw fa-print"></span></a></p>@endcan
+												@permission('sr-create')<p><a href="{{url('sales_return/print/'.$order->id)}}" class="btn btn-primary btn-xs"><span class="fa fa-fw fa-print"></span></a></p>@endpermission
 											</td>
 										</tr>
 										@endforeach
@@ -265,10 +265,10 @@ $(function() {
 		{ "data": "voucher_date" },
 		{ "data": "customer" },
 		{ "data": "net_amount" },
-		@can('sr-edit'){ "data": "edit","bSortable": false },@endcan
-		@can('sr-view'){ "data": "viewonly","bSortable": false },@endcan
-		@can('sr-print'){ "data": "print","bSortable": false },@endcan
-		@can('sr-delete'){ "data": "delete","bSortable": false },@endcan
+		@permission('sr-edit'){ "data": "edit","bSortable": false },@endpermission
+		@permission('sr-view'){ "data": "viewonly","bSortable": false },@endpermission
+		@permission('sr-print'){ "data": "print","bSortable": false },@endpermission
+		@permission('sr-delete'){ "data": "delete","bSortable": false },@endpermission
 	]	
 	  
 	});

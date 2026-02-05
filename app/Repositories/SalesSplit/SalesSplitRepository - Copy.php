@@ -1,6 +1,4 @@
-<?php
-declare(strict_types=1);
-namespace App\Repositories\SalesSplit;
+<?php namespace App\Repositories\SalesSplit;
 
 use App\Models\SalesSplit;
 use App\Models\SalesSplitItem;
@@ -10,10 +8,11 @@ use App\Exceptions\Validation\ValidationException;
 use App\Repositories\UpdateUtility;
 
 use Config;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
+use DB;
+use Session;
 use Auth;
 use Storage;
+
 
 class SalesSplitRepository extends AbstractValidator implements SalesSplitInterface {
 	
@@ -46,12 +45,14 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		$this->sales_split->reference_no = $attributes['reference_no'];
 		$this->sales_split->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->sales_split->customer_id = $attributes['customer_id'];
-		$this->sales_split->job_id = $attributes['job_id'];
+		$this->sales_split->job_id = isset($attributes['job_id'])?$attributes['job_id']:'';
 		$this->sales_split->description = isset($attributes['description'])?$attributes['description']:'';
 		$this->sales_split->is_fc = isset($attributes['is_fc'])?1:0;
 		$this->sales_split->currency_id = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
 		$this->sales_split->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
-		$this->sales_split->department_id   = isset($attributes['department_id'])?$attributes['department_id']:'';
+		$this->sales_split->department_id   =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:'';
+		$this->sales_split->is_pettycash   = isset($attributes['is_pettycash'])?$attributes['is_pettycash']:'';
+		$this->sales_split->vehicle_id   = isset($attributes['vehicle_id'])?$attributes['vehicle_id']:'';
 		
 		return true;
 	}
@@ -135,7 +136,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		$salesSplitItem->item_total = $line_total;
 		$salesSplitItem->tax_code 	= $tax_code;
 		$salesSplitItem->line_total = $item_total;
-		$salesSplitItem->item_jobid = $attributes['jobid'][$key];
+		$salesSplitItem->item_jobid = isset($attributes['jobid'][$key])?$attributes['jobid'][$key]:$attributes['job_id'];
 		
 		$salesSplitItem->unit_price_fc = $attributes['cost'][$key];
 		$salesSplitItem->item_vat_fc = (isset($attributes['is_fc']))?round(($tax_total /  $attributes['currency_rate']),2):$tax_total;
@@ -155,10 +156,12 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); 
 			if($vatrow) {
 				$dr_acnt_id = $vatrow->payment_account;
-				$itemid = $itemid->sales_split_id.'VAT';
+				//$itemid = $itemid->sales_split_id.'VAT';
+				$itemid = $itemid->id.'VAT';
 			}
 		} else {
-			$itemid = $itemid->sales_split_id;
+			//$itemid = $itemid->sales_split_id;
+			$itemid = $itemid->id;
 			$dr_acnt_id = $attributes['account_id'][$key];
 		} 
 			
@@ -169,7 +172,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'transaction_type'  => 'Cr',
 								'amount'   			=> $amount,
 								'status' 			=> 1,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['item_description'][$key],
 								'reference'			=> $attributes['voucher_no'],
@@ -177,7 +180,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> $attributes['jobid'][$key],
 								'other_info'		=> $itemid,
 							]);
@@ -201,6 +204,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 			
 		DB::table('account_transaction')
 					->where('voucher_type','SS')
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('voucher_type_id', $this->sales_split->id)
 					->where('transaction_type','Cr')
 					->where('other_info', $itemid)
@@ -212,7 +216,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> $attributes['jobid'][$key]
 							]);
 								
@@ -224,7 +228,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	private function AccountingMethod($attributes, $line_total, $tax_total, $net_amount, $sales_split_id)
 	{
 		if( isset($attributes['is_fc']) ) 
-			$discount = (isset($attributes['discount']))?($attributes['discount']* $attributes['currency_rate']):0;
+			$discount = (isset($attributes['discount']))?((int)$attributes['discount']* (int)$attributes['currency_rate']):0;
 		else
 			$discount = ($attributes['discount']=='')?0:$attributes['discount'];
 		
@@ -262,7 +266,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				$dr_acnt_id = $attributes['customer_id'];
 			} else if($amount_type == 'DIS') {
 				if(Session::get('department')==1) { 
-					$vatrow = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('purdis_acid')->first();
+					$vatrow = DB::table('department_accounts')->where('department_id', env('DEPARTMENT_ID'))->select('purdis_acid')->first();
 					$dr_acnt_id = $vatrow->purdis_acid;
 				} else {
 					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
@@ -279,7 +283,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'transaction_type'  => $type,
 								'amount'   			=> $amount,
 								'status' 			=> 1,
-								'created_at' 		=> now(),
+								'created_at' 		=> date('Y-m-d H:i:s'),
 								'created_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'],
 								'reference'			=> $attributes['voucher_no'],
@@ -287,7 +291,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> $fc_amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> (isset($attributes['job_id']))?$attributes['job_id']:''
 							]);
 			
@@ -317,7 +321,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 											'transaction_type'  => 'Dr',
 											'amount'   			=> $amount,
 											'status' 			=> 1,
-											'created_at' 		=> now(),
+											'created_at' 		=> date('Y-m-d H:i:s'),
 											'created_by' 		=> Auth::User()->id,
 											'description' 		=> $attributes['description'],
 											'reference'			=> $attributes['voucher_no'],
@@ -325,7 +329,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+											'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:''
 											]);
 											
 							$dr_acnt_id = $account_id = $vatrow->payment_account;
@@ -336,6 +340,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 							//Update Vat input a/c as vat input import a/c...
 							DB::table('account_transaction')
 								->where('voucher_type_id', $voucher_id)
+								->where('department_id',env('DEPARTMENT_ID'))
 								->where('account_master_id', $vatrow->payment_account) //CHNG tax_code
 								->where('transaction_type' , 'Dr')
 								->where('voucher_type', 'SS')					
@@ -350,7 +355,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 											'transaction_type'  => 'Cr',
 											'amount'   			=> $amount,
 											'status' 			=> 1,
-											'created_at' 		=> now(),
+											'created_at' 		=> date('Y-m-d H:i:s'),
 											'created_by' 		=> Auth::User()->id,
 											'description' 		=> $attributes['description'],
 											'reference'			=> $attributes['voucher_no'],
@@ -358,7 +363,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 											'reference_from'	=> $attributes['reference_no'],
 											'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 											'is_fc'				=> isset($attributes['is_fc'])?1:0,
-											'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:''
+											'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:''
 											]);
 											
 							
@@ -383,6 +388,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				if($attributes['customer_id'] != $attributes['old_customer_id']) {
 					DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
+							->where('department_id',env('DEPARTMENT_ID'))
 							->where('voucher_type', 'SS')
 							->where('account_master_id', $attributes['old_customer_id'])
 							->update( ['account_master_id' => $attributes['customer_id'] ]);
@@ -403,11 +409,12 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 			
 			DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $cur_account_id) //CHNG
 					->where('voucher_type', 'SS')					
 					->update([  'account_master_id' => $account_id,
 								'amount'   			=> $amount,
-								'modify_at' 		=> now(),
+								'modify_at' 		=> date('Y-m-d H:i:s'),
 								'modify_by' 		=> Auth::User()->id,
 								'description' 		=> $attributes['description'],
 								'reference'			=> $attributes['voucher_no'],
@@ -415,7 +422,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'		=> (isset($attributes['job_id']))?$attributes['job_id']:''
 							]);
 								
@@ -427,30 +434,33 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				//Remove vat account...
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $vatrow->payment_account)
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'SS')					
-						->update(['status' => 0, 'deleted_at' => now()]);
+						->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 						
 				$this->objUtility->tallyClosingBalance($vatrow->payment_account);
 						
 				//Remove vatoutput acount		
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $vatrow->vatoutput_import)
 					->where('transaction_type' , 'Cr')
 					->where('voucher_type', 'SS')					
-						->update(['status' => 0, 'deleted_at' => now()]);
+						->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 								
 				$this->objUtility->tallyClosingBalance($vatrow->vatoutput_import);
 				
 				//Remove vatinput acount		
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
+					->where('department_id',env('DEPARTMENT_ID'))
 					->where('account_master_id', $vatrow->vatinput_import)
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'SS')					
-						->update(['status' => 0, 'deleted_at' => now()]);
+						->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 								
 				$this->objUtility->tallyClosingBalance($vatrow->vatinput_import);
 						
@@ -470,7 +480,6 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		}
 		return $total;
 	}
-	
 	public function create($attributes)
 	{ 	//echo '<pre>';print_r($attributes);exit;
 		if($this->isValid($attributes)) {
@@ -478,21 +487,65 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		 DB::beginTransaction();
 		 try {
 			
-			if($this->setInputValue($attributes)) {
-				$this->sales_split->status = 1;
-				$this->sales_split->created_at = now();
-				$this->sales_split->created_by = 1;
-				$this->sales_split->fill($attributes)->save();
-			}
+			//VOUCHER NO LOGIC.....................
+			// 2️⃣ Get the highest numeric part from voucher_master
+			$maxNumeric = DB::table('sales_split')
+				->where('deleted_at', '0000-00-00 00:0:00')
+				->where('department_id', env('DEPARTMENT_ID'))
+				->where('status', 1)
+				->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+				->value('max_no');
 			
+			$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+			$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id', env('DEPARTMENT_ID'))->first();//echo '<pre>';print_r($accset);
+			$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+			//VOUCHER NO LOGIC.....................
+			//exit;
+			$maxRetries = 5; // prevent infinite loop
+			$retryCount = 0;
+			$saved = false;
+
+			while (!$saved && $retryCount < $maxRetries) {
+				try {
+					if ($this->setInputValue($attributes)) {
+
+						$this->sales_split->status = 1;
+						$this->sales_split->created_at = date('Y-m-d H:i:s');
+						$this->sales_split->created_by = 1;
+						$saved = true; // success ✅
+
+					}	
+				} catch (\Illuminate\Database\QueryException $ex) {
+
+					// Check if it's a duplicate voucher number error
+					if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+						strpos($ex->getMessage(), 'duplicate key value') !== false) {
+
+						$maxNumeric = DB::table('sales_split')
+							->where('deleted_at', '0000-00-00 00:0:00')
+							->where('department_id', env('DEPARTMENT_ID'))
+							->where('status', 1)
+							->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+							->value('max_no');
+						
+						$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+						$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id', env('DEPARTMENT_ID'))->first();
+						$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+
+						$retryCount++;
+					} else {
+						throw $ex; //echo $ex;exit;// rethrow if different DB error
+					}
+				}
+			}
 			//invoice items insert
 			if($this->sales_split->id && !empty( array_filter($attributes['account_id']))) { 
 				
-				$line_total = 0; $tax_total = 0; $total_quantity = 0; $total = 0; $item_total = 0;
+				$line_total = 0; $tax_total = 0; $total_quantity = 0; $total = 0; $item_total = 0; $other_cost = 0;
 				
 				//calculate total amount....
 				if( isset($attributes['is_fc']) ) 
-					$discount = (isset($attributes['discount']))?($attributes['discount']* $attributes['currency_rate']):0;
+					$discount = (isset($attributes['discount']))?((int)$attributes['discount']* (int)$attributes['currency_rate']):0;
 				else
 					$discount = ($attributes['discount']=='')?0:$attributes['discount'];
 		
@@ -526,10 +579,10 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 					$discount_fc   = $attributes['discount']; 
 					$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
 					$tax_fc 	   = round($tax_total / $attributes['currency_rate'],2);
-					$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
+					$net_amount_fc = (int)$total_fc - (int)$discount_fc + (int)$tax_fc;
 					$other_cost_fc = $other_cost / $attributes['currency_rate'];
 					$subtotal_fc   = $subtotal / $attributes['currency_rate'];
-					$discount      = $attributes['discount'] * $attributes['currency_rate']; 
+					$discount      = (int)$attributes['discount'] * (int)$attributes['currency_rate']; 
 				} else {
 					$total_fc = 0; $discount_fc = 0; $tax_fc = 0; $net_amount_fc = 0; $vat_fc = 0; $other_cost_fc = $subtotal_fc = 0;
 					$discount      = (isset($attributes['discount']))?$attributes['discount']:0; 
@@ -553,21 +606,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				$this->AccountingMethod($attributes, $subtotal, $tax_total, $net_amount, $this->sales_split->id);
 				
 				
-				//update voucher no........
-				if( ($this->sales_split->id) && ($attributes['curno'] <= $attributes['voucher_no']) ) {  
-					//Update voucher no based on department or not...
-					if(Session::get('department')==1) { //if dept active...
-						 DB::table('account_setting')
-							->where('voucher_type_id', 24) 
-							->where('department_id', $attributes['department_id'])
-							->update(['voucher_no' => $attributes['voucher_no'] + 1]);
-					 } else {
-						 DB::table('account_setting')
-							->where('voucher_type_id', 24)
-							->update(['voucher_no' => $attributes['voucher_no'] + 1 ]); //DB::raw('voucher_no + 1')
-					 }
-					 
-				}
+				
 				
 			}
 			
@@ -639,8 +678,8 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 							
 							if($tax_code=="ZR") {
 								$tax        = 0;
-								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
-								$taxtotal  = round($tax * $attributes['quantity'][$key],2);
+								$itemtotal = ((int)$attributes['cost'][$key] * (int)$attributes['quantity'][$key]) - (int)$attributes['line_discount'][$key];
+								$taxtotal  = round($tax * $attributes['quantity'][$key],2);								
 							} else {
 								$tax        = ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100;
 								$itemtotal = ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key];
@@ -673,7 +712,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 						$items['unit_id'] = $attributes['unit_id'][$key];
 						$items['quantity'] = $attributes['quantity'][$key];
 						$items['unit_price'] = $costchk = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
-						$items['item_jobid'] = $attributes['jobid'][$key];
+						$items['item_jobid'] = isset($attributes['jobid'][$key])?$attributes['jobid'][$key]:$attributes['job_id'];
 						$items['vat']		 = $attributes['line_vat'][$key];
 						$items['item_vat'] = $taxtotal;
 						$items['discount'] = $attributes['line_discount'][$key];
@@ -734,17 +773,22 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				$arrids = explode(',', $attributes['remove_item']);
 				$remline_total = $remtax_total = 0;
 				foreach($arrids as $row) {
-					DB::table('sales_split_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => now()]);
-					$itm = DB::table('sales_split_item')->where('id', $row)->get();
-					//print_r($itm);exit;
-					$this->updateLastPurchaseCostAndCostAvgonDelete($itm, $attributes['sales_split_id']);
+					$itm = DB::table('sales_split_item')->where('id', $row)->select('id','sales_split_id','account_id')->first();
+					DB::table('sales_split_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					
+					//REMOVE FROM TRANSACTION TABLE..
+					DB::table('account_transaction')->where('voucher_type','SS')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$itm->sales_split_id)->where('account_master_id',$itm->account_id)
+							->where('other_info',$itm->id)->update(['status'=>0,'deleted_at'=> date('Y-m-d h:i:s')]);
+							
+					//IF VAT ALSO
+					DB::table('account_transaction')->where('voucher_type','SS')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$itm->sales_split_id)->where('account_master_id',$itm->account_id)
+							->where('other_info',$itm->id.'VAT')->update(['status'=>0,'deleted_at'=> date('Y-m-d h:i:s')]);
 				}
 			}
 			
 			if($this->setInputValue($attributes)) {
 				
-				$this->sales_split->modify_at = now();
+				$this->sales_split->modify_at = date('Y-m-d H:i:s');
 				$this->sales_split->modify_by = 1;
 				$this->sales_split->fill($attributes)->save();
 				
@@ -804,7 +848,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		DB::beginTransaction();
 		try {
 			//Transaction update....
-			DB::table('account_transaction')->where('voucher_type', 'SS')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => now(),'deleted_by' => Auth::User()->id ]);
+			DB::table('account_transaction')->where('voucher_type', 'SS')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			
 			$this->objUtility->tallyClosingBalance( $this->sales_split->customer_id );
 			
@@ -813,11 +857,11 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				$this->objUtility->tallyClosingBalance( $row->account_id );
 			}
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
 			if($vatrow) {
 				$this->objUtility->tallyClosingBalance($vatrow->payment_account);
 			}
-			
+			DB::table('sales_split')->where('id', $id)->update(['deleted_by' => Auth::User()->id   ]);
 			$this->sales_split->delete();
 			
 			DB::commit();
@@ -828,6 +872,52 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 			return false;
 		}	
 		
+	}
+	
+	public function salesSplitListCount($dept=null)
+	{
+		$query = $this->sales_split->where('sales_split.status',1)->where('sales_split.is_transfer',0);
+		
+			$query->where('sales_split.department_id', env('DEPARTMENT_ID'));
+				
+		return $query->join('account_master AS am', function($join) {
+							$join->on('am.id','=','sales_split.customer_id');
+						} )
+					->count();
+	}
+	
+	public function salesSplitList($type,$start,$limit,$order,$dir,$search, $dept=null)
+	{
+		$query = $this->sales_split->where('sales_split.status',1)->where('sales_split.is_transfer',0)
+						->join('account_master AS am', function($join) {
+							$join->on('am.id','=','sales_split.customer_id');
+						} )
+					
+						->leftJoin('vehicle AS V', function($join) {
+							$join->on('V.id','=','sales_split.vehicle_id');
+						} );
+				//if($dept && $dept!=null)
+					$query->where('sales_split.department_id', env('DEPARTMENT_ID'));
+				
+				if($search) {
+					
+					$query->where(function($qry) use($search) {
+						$date = date('Y-m-d', strtotime($search));
+						$qry->where('sales_split.voucher_no','LIKE',"%{$search}%")
+							->orWhere('am.master_name', 'LIKE',"%{$search}%")
+							->orWhere('sales_split.voucher_date','LIKE',"%{$date}%");
+					});
+				}
+				
+				$query->select('sales_split.*','am.master_name AS customer','V.reg_no','V.name AS vehicle')
+					->offset($start)
+                    ->limit($limit)
+                    ->orderBy($order,$dir);
+					
+				if($type=='get')
+					return $query->get();
+				else
+					return $query->count();
 	}
 	
 		
@@ -852,8 +942,8 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	public function getPIdata($did=null)
 	{
 		$query = $this->sales_split->where('sales_split.status',1);
-		if($did)
-			$query->where('sales_split.department_id', $did);
+		//if($did)
+			$query->where('sales_split.department_id', env('DEPARTMENT_ID'));
 				
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_split.customer_id');
@@ -903,7 +993,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								   ->where('status',1)
 								   ->where('account_master_id', $customer_id)
 								   ->where('amount','>',0)
-								   ->whereNull('deleted_at')
+								   ->where('deleted_at','0000-00-00 00:00:00')
 								   ->whereIn('amount_transfer',$arr)
 								   ->orderBY('tr_date', 'ASC')
 								   ->select('*','amount AS net_amount')
@@ -959,7 +1049,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		$arr = ($mod)?[0,1,2]:[0,2];
 		return DB::table('other_voucher_tr')->where('account_master_id', $customer_id)
 										 ->whereIn('amount_transfer', $arr)
-										 ->where('status',1)->whereNull('deleted_at')
+										 ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
 										 ->get();
 		
 	} //......May 15
@@ -1034,13 +1124,47 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	
 	public function findPOdata($id)
 	{
-		$query = $this->sales_split->where('sales_split.id', $id);
+		$query = $this->sales_split->where('sales_split.id', $id)->where('sales_split.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_split.customer_id');
 						} )
-					->select('sales_split.*','am.master_name AS customer')
+						->leftJoin('jobmaster AS J',function($join) {
+						$join->on('J.id','=','sales_split.job_id');
+					    })
+					    ->leftJoin('vehicle AS V',function($join) {
+						$join->on('V.id','=','sales_split.vehicle_id');
+					})
+					->select('sales_split.*','am.master_name AS customer','J.code','V.name AS vehicle','V.reg_no','V.model','V.make','V.issue_plate','V.code_plate')
 					->orderBY('sales_split.id', 'ASC')
 					->first();
+	}
+	public function getSSItems($id)
+	{
+		$query = $this->sales_split->where('sales_split.id',$id);
+		
+		return $query->join('sales_split_item AS SSI', function($join) {
+							$join->on('SSI.sales_split_id','=','sales_split.id');
+						} )
+					  ->join('account_master AS AM', function($join){
+						  $join->on('AM.id','=','SSI.account_id');
+					  })
+					  ->leftjoin('item_unit AS iu', function($join){
+						  $join->on('iu.unit_id','=','SSI.unit_id');
+							   
+					  })
+					  ->leftjoin('units AS u', function($join){
+						  $join->on('u.id','=','SSI.unit_id');
+					  }) 
+					  ->leftJoin('jobmaster AS J', function($join){
+						  $join->on('J.id','=','SSI.item_jobid');
+					  })
+					  ->whereIn('SSI.is_transfer',[0,2])
+					  ->where('SSI.status',1)
+					  ->where('SSI.deleted_at','0000-00-00 00:00:00')
+					  ->select('SSI.*','u.unit_name','AM.account_id AS account_code','AM.master_name','J.code AS jobcode','J.transport_type')
+					  ->orderBY('SSI.id')
+					  ->groupBY('SSI.id')
+					  ->get();
 	}
 	
 	public function getItems($id)
@@ -1053,12 +1177,19 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 					  ->join('account_master AS AM', function($join){
 						  $join->on('AM.id','=','SSI.account_id');
 					  })
+					  ->leftjoin('item_unit AS iu', function($join){
+						  $join->on('iu.unit_id','=','SSI.unit_id');
+							   
+					  })
+					  ->leftjoin('units AS u', function($join){
+						  $join->on('u.id','=','SSI.unit_id');
+					  }) 
 					  ->leftJoin('jobmaster AS J', function($join){
 						  $join->on('J.id','=','SSI.item_jobid');
 					  })
 					  ->where('SSI.status',1)
 					  ->where('SSI.deleted_at','0000-00-00 00:00:00')
-					  ->select('SSI.*','AM.account_id AS account_code','AM.master_name','J.code AS jobcode','J.transport_type')
+					  ->select('SSI.*','u.unit_name','AM.account_id AS account_code','AM.master_name','J.code AS jobcode','J.transport_type')
 					  ->orderBY('SSI.id')
 					  ->groupBY('SSI.id')
 					  ->get();
@@ -1151,13 +1282,57 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		
 		return $result; 
 	}
-	
+	public function customerWiseSummary($attributes) 
+	{ //echo '<pre>';print_r($attributes);exit;
+		$result = array();
+		//echo '<pre>';print_r($result);exit;
+		
+		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
+		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
+		$invoice_from =(isset($attributes['invoice_from']))?$attributes['invoice_from']:'';	
+		$invoice_to = (isset($attributes['invoice_to']))?$attributes['invoice_to']:'';	
+		$department_id =env('DEPARTMENT_ID'); //(isset($attributes['department_id']))?$attributes['department_id']:'';	
+		$query = $this->sales_split
+					->join('sales_split_item AS POI', function($join) {
+							$join->on('POI.sales_split_id','=','sales_split.id');
+							})
+							
+							->join('account_master AS AM', function($join) {
+	 						$join->on('AM.id','=','sales_split.customer_id');
+		 					})
+					
+						->leftJoin('jobmaster AS J', function($join) {
+		 					$join->on('J.id','=','sales_split.job_id');
+						 })
+						 ->where('sales_split.department_id',env('DEPARTMENT_ID'))
+	 					->where('POI.status',1);
+									
+		if( $date_from!='' && $date_to!='' ) { 
+	 				$query->whereBetween('sales_split.voucher_date', array($date_from, $date_to));
+					}
+		if(isset($attributes['customer_id']) && $attributes['customer_id']!='')
+		$query->whereIn('sales_split.customer_id', $attributes['customer_id']);			
+	    //$orderby = ($attributes['search_type']=='jobwise')?'jobcode':'master_name';
+		$result = $query->select('sales_split.voucher_no','sales_split.reference_no','sales_split.total','sales_split.vat_amount','sales_split.subtotal','sales_split.customer_id',
+		 						'sales_split.amount_transfer','sales_split.discount','sales_split.total','sales_split.id AS id','sales_split.net_amount',
+		 						'sales_split.voucher_date','POI.quantity','AM.id AS cid','POI.unit_price','AM.account_id','AM.master_name','AM.master_name AS supplier',
+								'AM.vat_no','POI.tax_code','J.code AS jobcode','sales_split.amount_transfer AS amount_transfer',
+								DB::raw("(SELECT SUM(SI.quantity) FROM sales_split_item SI WHERE (SI.sales_split_id=sales_split.id) AND (SI.status=1) AND (SI.deleted_at='0000-00-00 00:00:00')
+		 						)AS quantity") )
+		 						->groupBy('sales_split.id')
+								->orderBY('sales_split.voucher_date','ASC')
+							->get()->toArray();
+							return $result;
+			
+			
+			
+	}
 	public function getReport($attributes)
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		$department = (Session::get('department')==1)?$attributes['department_id']:null;
-		
+		$department =env('DEPARTMENT_ID'); //(Session::get('department')==1)?$attributes['department_id']:null;
+		//echo '<pre>';print_r($date_to);exit;
 		$query = $this->sales_split
 						->join('sales_split_item AS POI', function($join) {
 							$join->on('POI.sales_split_id','=','sales_split.id');
@@ -1166,13 +1341,13 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 							$join->on('AM.id','=','sales_split.customer_id');
 						})
 						->where('POI.status',1);
-
-				if($attributes['isimport']==1)
-					$query->where('sales_split.is_import',1);
-				else if($attributes['isimport']==0)
-					$query->where('sales_split.is_import',0);
-				else if($attributes['isimport']==2)
-					$query->whereIn('sales_split.is_import',[0,1]);
+		//echo '<pre>';print_r($query);exit;
+				// if($attributes['isimport']==1)
+				// 	$query->where('purchase_split.is_import',1);
+				// else if($attributes['isimport']==0)
+				// 	$query->where('purchase_split.is_import',0);
+				// else if($attributes['isimport']==2)
+				// 	$query->whereIn('purchase_split.is_import',[0,1]);
 
 				if( $date_from!='' && $date_to!='' ) { 
 					$query->whereBetween('sales_split.voucher_date', array($date_from, $date_to));
@@ -1181,15 +1356,94 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				if($department)
 					$query->where('sales_split.department_id', $department);
 					
-		$query->select('sales_split.voucher_no','sales_split.reference_no','sales_split.total','sales_split.vat_amount','sales_split.amount_transfer','POI.tax_code','sales_split.discount',
-							  'sales_split.voucher_date','POI.quantity','POI.balance_quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no','sales_split.net_amount','sales_split.subtotal');
+        $query->select('sales_split.voucher_no','sales_split.net_amount','sales_split.reference_no','sales_split.total','sales_split.vat_amount','sales_split.amount_transfer','POI.tax_code','sales_split.discount',
+							  'sales_split.voucher_date','POI.quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no','sales_split.subtotal');
 						
 		if(isset($attributes['type']))
-			return $query->groupBy('sales_split.id')->get()->toArray();
+		          return $query->groupBy('sales_split.id')->get()->toArray();
 		else
-			return $query->groupBy('sales_split.id')->get();
+		       return $query->groupBy('sales_split.id')->get();
+					  
 	}
 	
+// 	public function getReport($attributes)
+// 	{
+// 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
+// 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
+// 		$department = (Session::get('department')==1)?$attributes['department_id']:null;
+// 		// if($attributes['search_type']=='customer_wise') {
+// 		// 	$query = $this->sales_split
+// 		// 					->join('sales_split_item AS POI', function($join) {
+// 		// 						$join->on('POI.sales_split_id','=','sales_split.id');
+// 		// 					})
+// 		// 					->join('account_master AS AM', function($join) {
+// 		// 						$join->on('AM.id','=','sales_split.customer_id');
+// 		// 					})
+// 		// 					// ->leftJoin('salesman AS S', function($join) {
+// 		// 					// 	$join->on('S.id','=','sales_split.salesman_id');
+// 		// 					//})
+// 		// 					->leftJoin('jobmaster AS J', function($join) {
+// 		// 					$join->on('J.id','=','sales_split.job_id');
+// 		// 					 })
+// 		// 					->where('POI.status',1);
+							
+// 		// 			if( $date_from!='' && $date_to!='' ) { 
+// 		// 				$query->whereBetween('sales_split.voucher_date', array($date_from, $date_to));
+// 		// 			}
+					
+// 		// 			//  if($attributes['salesman']!='') { 
+// 		// 			// 	$query->where('sales_split.salesman_id', $attributes['salesman']);
+// 		// 			//  }
+					
+// 		// 		 $orderby = ($attributes['search_type']=='jobwise')?'jobcode':'master_name';
+// 		// 		return $query->select('sales_split.voucher_no','sales_split.reference_no','sales_split.total','sales_split.vat_amount',
+// 		// 						'sales_split.amount_transfer','sales_split.discount','sales_split.total',
+// 		// 						'sales_split.voucher_date','POI.quantity','POI.unit_price','AM.account_id','AM.master_name',
+// 		// 						'AM.vat_no','POI.tax_code','J.code AS jobcode',
+// 		// 						DB::raw("(SELECT SUM(SI.quantity) FROM sales_split_item SI WHERE (SI.sales_split_id=sales_split.id) AND (SI.status=1) AND (SI.deleted_at='0000-00-00 00:00:00')
+// 		// 						)AS quantity") )
+// 		// 						->groupBy('sales_split.id')
+// 		// 						->orderBY('sales_split.voucher_date','ASC')
+// 		// 						->get();
+								
+
+
+
+// 		// }else {
+// 			if($attributes['search_type']=='summary') 
+// 			{
+// 		$query = $this->sales_split
+// 						->join('sales_split_item AS POI', function($join) {
+// 							$join->on('POI.sales_split_id','=','sales_split.id');
+// 						})
+// 						->join('account_master AS AM', function($join) {
+// 							$join->on('AM.id','=','sales_split.customer_id');
+// 						})
+// 						->where('POI.status',1);
+
+// 				// if($attributes['isimport']==1)
+// 				// 	$query->where('sales_split.is_import',1);
+// 				// else if($attributes['isimport']==0)
+// 				// 	$query->where('sales_split.is_import',0);
+// 				// else if($attributes['isimport']==2)
+// 				// 	$query->whereIn('sales_split.is_import',[0,1]);
+
+// 				if( $date_from!='' && $date_to!='' ) { 
+// 					$query->whereBetween('sales_split.voucher_date', array($date_from, $date_to));
+// 				}
+				
+// 				if($department)
+// 					$query->where('sales_split.department_id', $department);
+					
+// 		$query->select('sales_split.voucher_no','sales_split.reference_no','sales_split.total','sales_split.vat_amount','sales_split.amount_transfer','POI.tax_code','sales_split.discount',
+// 							  'sales_split.voucher_date','POI.quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no','sales_split.net_amount','sales_split.subtotal');
+											
+// 		if(isset($attributes['type']))
+// 			return $query->groupBy('sales_split.id')->get()->toArray();
+// 		else
+// 			return $query->groupBy('sales_split.id')->get();}
+	
+// }
 	public function getOtherCost($id)
 	{
 		$query = $this->sales_split->where('sales_split.id',$id);
@@ -1209,7 +1463,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	
 	public function getItemLocation($id) {
 		
-		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->whereNull('deleted_at')->get();
+		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
 	}
 	
 	
@@ -1228,6 +1482,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 						->join('account_transaction', 'account_transaction.account_master_id', '=', 'account_master.id')
 						->where('account_transaction.voucher_type','!=','OBD')
 						->where('account_transaction.status',1)
+						->where('account_transaction.department_id',env('DEPARTMENT_ID'))
 						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
 						->where('account_master.status',1)
 						->where('account_master.deleted_at','0000-00-00 00:00:00')
@@ -1290,7 +1545,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	public function purchaseInvoiceListCount()
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		$deptid = env('DEPARTMENT_ID');//(Session::get('department')==1)?Auth::user()->department_id:0;
 		
 		$query = $this->sales_split->where('sales_split.status',1);
 		if($deptid!=0)
@@ -1305,21 +1560,17 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	public function purchaseInvoiceList($type,$start,$limit,$order,$dir,$search,$dept=null)
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		$deptid = env('DEPARTMENT_ID');//(Session::get('department')==1)?Auth::user()->department_id:0;
 		
 		$query = $this->sales_split->where('sales_split.status',1)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_split.customer_id');
 						})
-						->join('jobmaster','jobmaster.id','=','sales_split.job_id');
+						->leftjoin('jobmaster','jobmaster.id','=','sales_split.job_id');
 						
 				if($deptid!=0) //dept chk
 					$query->where('sales_split.department_id', $deptid);
-				else {
-					if($dept!='' && $dept!=0) {
-						$query->where('sales_split.department_id', $dept);
-					}
-				}
+				
 					
 				if($search) {
 					$query->where(function($qry) use($search) {
@@ -1412,10 +1663,9 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		if(Session::get('department')==1 && $department_id!=null) {
 			return DB::table('vat_department')->where('department_id', $department_id)->first();
 		} else {
-			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
+			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		}
 	}
 	
 	
 }
-
