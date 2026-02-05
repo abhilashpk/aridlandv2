@@ -146,15 +146,12 @@ class LocationController extends Controller
 			->with('info', $info);
 	}
 
-<<<<<<< HEAD
-=======
 	public function getCode($id)
 	{
 		$loc = DB::table('location')->where('id', $id)->first();
 
 		return $loc ? $loc->code : '';
 	}
->>>>>>> ac12b25474a57c8a6148892ef22c6e23bdaca6ff
 
 	public function getBin($num,$mod=null)
 	{
