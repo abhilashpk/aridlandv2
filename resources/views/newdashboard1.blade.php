@@ -956,6 +956,9 @@ $(document).ready(function () { //alert('hi');
         memory_used: function () {
             //canvas initialization
             var usedmemory = document.getElementById("space-used");
+            if (!usedmemory || !usedmemory.getContext) {
+                return;
+            }
             var view = usedmemory.getContext("2d");
             //dimensions
             var width = usedmemory.width;
@@ -1004,6 +1007,9 @@ $(document).ready(function () { //alert('hi');
         memory_used: function () {
             //canvas initialization
             var usedmemory = document.getElementById("cpu-load");
+            if (!usedmemory || !usedmemory.getContext) {
+                return;
+            }
             var view = usedmemory.getContext("2d");
             //dimensions
             var width = usedmemory.width;
