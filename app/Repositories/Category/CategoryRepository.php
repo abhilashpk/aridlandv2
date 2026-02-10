@@ -31,21 +31,34 @@ class CategoryRepository extends AbstractValidator implements CategoryInterface 
 		return $this->category->where('id', $id)->first();
 	}
 	
-	public function create($attributes)
-	{
-		if($this->isValid($attributes)) { 
+	// public function create($attributes)
+	// {
+	// 	if($this->isValid($attributes)) { 
 			
 			
-			//list($parent_id, $level) = explode(':', $attributes['parent_id']);
-			$this->category->parent_id = $attributes['parent_id'];
-			$this->category->category_name = $attributes['category_name'];
-			$this->category->description = $attributes['description'];
-			$this->category->status = 1;
-			$this->category->fill($attributes)->save();
+	// 		//list($parent_id, $level) = explode(':', $attributes['parent_id']);
+	// 		$this->category->parent_id = $attributes['parent_id'];
+	// 		$this->category->category_name = $attributes['category_name'];
+	// 		$this->category->description = $attributes['description'];
+	// 		$this->category->status = 1;
+	// 		$this->category->fill($attributes)->save();
+	// 		return true;
+	// 	}
+		
+	// 	//throw new ValidationException('Category validation error!', $this->getErrors());
+	// }
+
+	public function create($attributes) {
+		if ($this->isValid($attributes)) {
+			$this->category->fill([
+				'parent_id' => $attributes['parent_id'],
+				'category_name' => $attributes['category_name'],
+				'description' => $attributes['description'] ?? '',
+				'status' => 1
+			]);
+			$this->category->save();
 			return true;
 		}
-		
-		//throw new ValidationException('Category validation error!', $this->getErrors());
 	}
 	
 	public function update($id, $attributes)
@@ -88,17 +101,36 @@ class CategoryRepository extends AbstractValidator implements CategoryInterface 
 	public function allSubcategoryList($parent_id)
 	{
 		//check admin session and apply return $this->category->where('parent_id',0)->where('status', 1)->get();
-		return $this->category->where('parent_id',$parent_id)->select('id','name')->get()->toArray();
+		// return $this->category->where('parent_id',$parent_id)->select('id','name')->get()->toArray();
+		return $this->category->where('parent_id', $parent_id)->select('id', 'category_name') // ✓ Correct field name
+        ->get()
+        ->toArray();
 	}
 	
-	public function categoryView($id)
-	{
-		return $this->category->where('id', $id)->join('category');
+	// public function categoryView($id)
+	// {
+	// 	return $this->category->where('id', $id)->join('category');
+	// }
+
+	public function categoryView($id) {
+		return $this->category->find($id); // Simple approach
+		// OR if you need related data:
+		// return $this->category->with('subcategory')->find($id);
 	}
 	
-	public function subcategoryList()
-	{
-		return $this->category->where('parent_id',1)->get();
+	// public function subcategoryList()
+	// {
+	// 	return $this->category->where('parent_id',1)->get();
+	// }
+
+	public function subcategoryList($parent_id = null) {
+		$query = $this->category->where('parent_id', '!=', 0);
+		
+		if ($parent_id !== null) {
+			$query->where('parent_id', $parent_id);
+    	}
+    
+    	return $query->get();
 	}
 	
 	public function productList($slug)
@@ -120,12 +152,24 @@ class CategoryRepository extends AbstractValidator implements CategoryInterface 
 			return $this->category->where('category_name',$name)->where('parent_id', 0)->count();
 	}
 	
-	public function check_subcategory_name($name, $id = null) {
+	// public function check_subcategory_name($name, $id = null) {
 		
-		if($id)
-			return $this->category->where('category_name',$name)->where('parent_id', 1)->where('id', '!=', $id)->count();
-		else
-			return $this->category->where('category_name',$name)->where('parent_id', 1)->count();
+	// 	if($id)
+	// 		return $this->category->where('category_name',$name)->where('parent_id', 1)->where('id', '!=', $id)->count();
+	// 	else
+	// 		return $this->category->where('category_name',$name)->where('parent_id', 1)->count();
+	// }
+
+	public function check_subcategory_name($name, $parent_id, $id = null) {
+		$query = $this->category
+			->where('category_name', $name)
+			->where('parent_id', $parent_id); // ✓ Use actual parent
+		
+		if ($id) {
+			$query->where('id', '!=', $id);
+		}
+    
+    	return $query->count();
 	}
 }
 

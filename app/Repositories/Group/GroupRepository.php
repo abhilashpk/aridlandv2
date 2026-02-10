@@ -94,10 +94,17 @@ class GroupRepository extends AbstractValidator implements GroupInterface {
 		return $this->group->where('parent_id','!=',0)->get();
 	}
 	
-	public function allSubgroupList($parent_id)
-	{
-		//check admin session and apply return $this->group->where('parent_id',0)->where('status', 1)->get();
-		return $this->group->where('parent_id',$parent_id)->select('id','name')->get()->toArray();
+	// public function allSubgroupList($parent_id)
+	// {
+	// 	//check admin session and apply return $this->group->where('parent_id',0)->where('status', 1)->get();
+	// 	return $this->group->where('parent_id',$parent_id)->select('id','name')->get()->toArray();
+	// }
+
+	public function allSubgroupList($parent_id) {
+		return $this->group->where('parent_id', $parent_id)
+			->select('id', 'group_name') // Use correct field name
+			->get()
+			->toArray();
 	}
 	
 	public function groupView($id)
@@ -113,12 +120,24 @@ class GroupRepository extends AbstractValidator implements GroupInterface {
 			return $this->group->where('group_name',$name)->where('parent_id', 0)->count();
 	}
 	
-	public function check_subgroup_name($name, $id = null) {
+	// public function check_subgroup_name($name, $id = null) {
 		
-		if($id)
-			return $this->group->where('group_name',$name)->where('parent_id', 1)->where('id', '!=', $id)->count();
-		else
-			return $this->group->where('group_name',$name)->where('parent_id', 1)->count();
+	// 	if($id)
+	// 		return $this->group->where('group_name',$name)->where('parent_id', 1)->where('id', '!=', $id)->count();
+	// 	else
+	// 		return $this->group->where('group_name',$name)->where('parent_id', 1)->count();
+	// }
+
+
+	public function check_subgroup_name($name, $parent_id, $id = null) {
+		$query = $this->group->where('group_name', $name)
+			->where('parent_id', $parent_id); // Use actual parent_id
+		
+		if($id) {
+			$query->where('id', '!=', $id);
+		}
+		
+		return $query->count();
 	}
 	
 	public function productList($slug)

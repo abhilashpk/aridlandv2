@@ -6,6 +6,7 @@ use App\Models\ItemLocation;
 use App\Repositories\AbstractValidator;
 use App\Exceptions\Validation\ValidationException;
 use Ixudra\Curl\Facades\Curl;
+use Illuminate\Support\Facades\Log;
 
 use Image;
 use Config;
@@ -13,6 +14,7 @@ use DB;
 use Cache;
 use Session;
 use Auth;
+
 
 class ItemmasterRepository extends AbstractValidator implements ItemmasterInterface {
 	
@@ -65,725 +67,1803 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		
 	}
 	
-	public function create($attributes)
-	{	
+	// public function create($attributes)
+	// {	
 		
-		if($attributes['dimension']==1) {
+	// 	if($attributes['dimension']==1) {
 
-			$attributes['unit'] = $attributes['unit_d'];
-			$attributes['packing'] = $attributes['packing_d'];	
-			$attributes['opn_quantity'] = $attributes['opn_quantity_d'];	
-			$attributes['opn_cost'] = $attributes['opn_cost_d'];
-			//$attributes['vat'] = $attributes['vat_d'];
+	// 		$attributes['unit'] = $attributes['unit_d'];
+	// 		$attributes['packing'] = $attributes['packing_d'];	
+	// 		$attributes['opn_quantity'] = $attributes['opn_quantity_d'];	
+	// 		$attributes['opn_cost'] = $attributes['opn_cost_d'];
+	// 		//$attributes['vat'] = $attributes['vat_d'];
 
-			$attributes['vat'] = $attributes['selvat'];
-		}
+	// 		$attributes['vat'] = $attributes['selvat'];
+	// 	}
 
-		//echo '<pre>';print_r($attributes);exit;
-		if($this->isValid($attributes)) { 
+	// 	//echo '<pre>';print_r($attributes);exit;
+	// 	if($this->isValid($attributes)) { 
 			
-			$image = '';
-			$file = (isset($attributes['image'])) ? $attributes['image'] : null;
-			//---------------image uploading section-----------------
-			if($file) {
-				$image = time().'.'.$file->getClientOriginalExtension();
-				//
-				$destinationPath = public_path() . $this->imgDir.'/'.$image;
-				$destinationPathThumb = public_path() . $this->imgDir.'/thumb_'.$image;
+	// 		$image = '';
+	// 		$file = (isset($attributes['image'])) ? $attributes['image'] : null;
+	// 		//---------------image uploading section-----------------
+	// 		if($file) {
+	// 			$image = time().'.'.$file->getClientOriginalExtension();
+	// 			//
+	// 			$destinationPath = public_path() . $this->imgDir.'/'.$image;
+	// 			$destinationPathThumb = public_path() . $this->imgDir.'/thumb_'.$image;
 
-				// resizing an uploaded file
-				Image::make($file->getRealPath())->resize($this->width, $this->height, function($constraint) { $constraint->aspectRatio(); })->save($destinationPath);
+	// 			// resizing an uploaded file
+	// 			Image::make($file->getRealPath())->resize($this->width, $this->height, function($constraint) { $constraint->aspectRatio(); })->save($destinationPath);
 
-				// thumb
-				Image::make($file->getRealPath())->resize($this->thumbWidth, $this->thumbHeight, function($constraint) { $constraint->aspectRatio(); })->save($destinationPathThumb);
+	// 			// thumb
+	// 			Image::make($file->getRealPath())->resize($this->thumbWidth, $this->thumbHeight, function($constraint) { $constraint->aspectRatio(); })->save($destinationPathThumb);
+	// 		}
+			
+	// 		$this->itemmaster->item_code = $attributes['item_code'];
+	// 		$this->itemmaster->description = $attributes['description'];
+	// 		$this->itemmaster->description_ar =(isset($attributes['descriptionar']))?$attributes['descriptionar']:'';
+	// 		$this->itemmaster->class_id = $attributes['item_class'];
+	// 		$this->itemmaster->model_no = $attributes['model_no'];
+	// 		$this->itemmaster->serial_no = $attributes['serial_no'];
+	// 		$this->itemmaster->group_id = $attributes['group_id'] ?? 0;
+	// 		$this->itemmaster->subgroup_id = $attributes['subgroup_id'] ?? 0;
+	// 		$this->itemmaster->category_id = $attributes['category_id'] ?? 0;
+	// 		$this->itemmaster->subcategory_id = $attributes['subcategory_id'] ?? 0;
+	// 		$this->itemmaster->assembly = $attributes['assembly'] ?? 0;
+	// 		$this->itemmaster->image = $image;
+	// 		$this->itemmaster->status = 1;
+	// 		$this->itemmaster->created_department = env('DEPARTMENT_ID');
+	// 		$this->itemmaster->profit_per = $attributes['profit_per'] ?? 0;
+	// 		$this->itemmaster->bin = $attributes['machine_model'] ?? '';
+	// 		$this->itemmaster->weight = $attributes['size'] ?? 0;
+	// 		$this->itemmaster->other_info = $attributes['other_info'] ?? '';
+	// 		$this->itemmaster->created_at = date('Y-m-d H:i:s');
+	// 		$this->itemmaster->created_by = Auth::User()->id;
+	// 		$this->itemmaster->supersede_items = (isset($attributes['supersede']))?implode(',', $attributes['supersede']):'';
+	// 		$this->itemmaster->surface_cost = (isset($attributes['surface_cost']))?$attributes['surface_cost']:'';
+	// 		$this->itemmaster->other_cost = (isset($attributes['other_cost']))?$attributes['other_cost']:'';
+	// 		$this->itemmaster->bin_location = (isset($attributes['bin_location']))?$attributes['bin_location']:'';//SP7
+
+	// 		$this->itemmaster->itmHt = (isset($attributes['itmHt']))?$attributes['itmHt']:'';//SP7
+	// 		$this->itemmaster->itmWd = (isset($attributes['itmWd']))?$attributes['itmWd']:'';//SP7
+	// 		$this->itemmaster->itmLt = (isset($attributes['itmLt']))?$attributes['itmLt']:'';//SP7
+
+	// 		$this->itemmaster->mpqty = (isset($attributes['mpqty']))?$attributes['mpqty']:'';
+    //         $this->itemmaster->p1_qty = (isset($attributes['opn_quantity'][1]))?$attributes['opn_quantity'][1]:'';
+    //         $this->itemmaster->p2_qty = (isset($attributes['opn_quantity'][2]))?$attributes['opn_quantity'][2]:'';  
+	// 		$this->itemmaster->dimension = (isset($attributes['dimension']))?$attributes['dimension']:'';
+	// 		$this->itemmaster->batch_req = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
+			
+	// 		$this->itemmaster->p1_formula = (isset($attributes['packing'][1]) && isset($attributes['pkno'][1]))?(($attributes['packing'][1]>$attributes['pkno'][1])?$attributes['packing'][1].',/':$attributes['pkno'][1].',*'):'';
+    //         $this->itemmaster->p2_formula = (isset($attributes['packing'][2]) && isset($attributes['pkno'][2]))?(($attributes['packing'][2]>$attributes['pkno'][2])?$attributes['packing'][2].',/':$attributes['pkno'][2].',*'):'';
+	// 		//$this->itemmaster->fill($attributes)->save();
+	// 		$this->itemmaster->save();
+			
+	// 		if($this->itemmaster->id) {
+	// 			$c = 1;
+				
+	// 			foreach($attributes['unit'] as $key => $val){
+	// 				$itemunit = new ItemUnit();
+	// 				if($attributes['unit'][$key]!="" || $c==1) {
+	// 				     $unitdat = DB::table('units')->where('id',$attributes['unit'][$key])->first();
+	// 				    if($attributes['unit'][$key]=='') {
+	// 				        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+	// 				        //echo $unitdat->unit_name;exit;
+	// 				    }
+					    
+	// 					$itemunit->itemmaster_id = $this->itemmaster->id;
+	// 					$itemunit->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];//$attributes['unit'][$key];
+	// 					$itemunit->packing = ($attributes['packing'][$key]=='')?$unitdat->unit_name:$attributes['packing'][$key];
+	// 					$itemunit->opn_quantity = $attributes['opn_quantity'][$key] ?? 0;
+	// 					$itemunit->opn_cost = $attributes['opn_cost'][$key] ?? 0;
+	// 					$itemunit->sell_price = isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:''; //($c==1)?(float)$attributes['sell_price'][$key]:((float)$attributes['sell_price'][$key] * (float)$attributes['packing'][$key]);
+	// 					$itemunit->wsale_price = $attributes['wsale_price'][$key] ?? 0;
+	// 					$itemunit->min_quantity = $attributes['min_quantity'][$key] ?? 0;
+	// 					$itemunit->reorder_level = $attributes['reorder_level'][$key] ?? 0; //selvat
+	// 					$itemunit->vat = $attributes['selvat'][0] ?? 0;
+	// 					$itemunit->status = 1;
+	// 					$itemunit->cur_quantity = $attributes['opn_quantity'][$key] ?? 0;
+	// 					$itemunit->is_baseqty = ($c==1)?$is_baseqty=1:$is_baseqty=0;
+	// 					$itemunit->received_qty = $attributes['opn_quantity'][$key] ?? 0;
+	// 					$itemunit->last_purchase_cost = $attributes['opn_cost'][$key] ?? 0;
+	// 					$itemunit->pur_count = 1;
+	// 					$itemunit->cost_avg = $attributes['opn_cost'][$key] ?? 0;
+	// 					$itemunit->pkno = ($attributes['packing'][$key]=='')?1:$attributes['pkno'][$key];
+	// 					$this->itemmaster->itemUnits()->save($itemunit);
+	// 					if($c==1) {
+														
+	// 						//-----------ITEM LOG----------------		
+	// 						$dtrow = DB::table('parameter1')->select('from_date')->first();
+	// 						$log_id = DB::table('item_log')->insertGetId([
+	// 										 'document_type' => 'OQ',
+	// 										 'department_id'=>env('DEPARTMENT_ID'),
+	// 										 'item_id' 	  => $this->itemmaster->id,
+	// 										 'unit_id'    => ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key],
+	// 										 'quantity'   => $attributes['opn_quantity'][$key] ?? 0,
+	// 										 'unit_cost'  => $attributes['opn_cost'][$key] ?? 0,
+	// 										 'trtype'	  => 1,
+	// 										 'cur_quantity' => $attributes['opn_quantity'][$key] ?? 0,
+	// 										 'cost_avg' => $attributes['opn_cost'][$key] ?? 0,
+	// 										 'pur_cost' => $attributes['opn_cost'][$key] ?? 0,
+	// 										 'sale_cost' => '',
+	// 										 'packing' => 1,
+	// 										 'status'     => 1,
+	// 										 'created_at' => date('Y-m-d H:i:s'),
+	// 										 'created_by' => Auth::User()->id,
+	// 										 'voucher_date' => $dtrow->from_date
+	// 										 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
+	// 										]);
+	// 						//-------------ITEM LOG------------------
+						    
+						    
+	// 					    //---------------DEPARTMENT STOCK--------
+							
+	// 						$departmentId = env('DEPARTMENT_ID');
+	// 						if($attributes['unit'][0]!="") {
+    // 					        $unitdat = DB::table('units')->where('id',$attributes['unit'][0])->first();
+    // 						}
+    						
+    // 					    if($attributes['unit'][0]=='') {
+    // 					        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+    // 					        //echo $unitdat->unit_name;exit;
+    // 					    }
+	// 					    $unit=($attributes['unit'][0]=='')?$unitdat->id:$attributes['unit'][0];
+	// 						$packing= ($attributes['packing'][0]=='')?$unitdat->unit_name:$attributes['packing'][0];
+    //                         $openingQty   = isset($attributes['opn_quantity'][0]) ? (float)$attributes['opn_quantity'][0] : 0;
+    //                         $openingCost  = isset($attributes['opn_cost'][0]) ? (float)$attributes['opn_cost'][0] : 0;
+    //                         $sellPrice    = isset($attributes['sell_price'][0])?$attributes['sell_price'][0]:0;
+	// 						$wsalePrice   = isset($attributes['wsale_price'][0])?$attributes['wsale_price'][0]:0;
+	// 						$minqty       =  isset($attributes['min_quantity'][0])?$attributes['min_quantity'][0]:0;
+	// 						$reorder      =  isset($attributes['reorder_level'][0])?$attributes['reorder_level'][0]:''; 
+	// 						$vat          =isset($attributes['selvat'][0])?$attributes['selvat'][0]:0;
+	// 						$pkno = ($attributes['packing'][0]=='')?1:$attributes['pkno'][0];
+							
+    //                         $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
+
+    //                                   foreach ($departments as $dept) {
+    //                                            $isCurrent = ($dept->id == $departmentId);
+
+    //                                          DB::table('itemstock_department')->insert([
+    //                                                     'itemmaster_id'      => $this->itemmaster->id,
+    //                                                      'department_id'      => $dept->id,
+	// 													 'unit_id'         =>$unit,
+	// 													 'packing'         =>$packing,
+    //                                                       'opn_cost'       => $isCurrent ? $openingCost : 0,
+    //                                                       'opn_quantity'        => $isCurrent ? $openingQty : 0,
+    //                                                         'cur_quantity'            => $isCurrent ? $openingQty : 0,
+    //                                                         'received_qty'       => $isCurrent ? $openingQty : 0,
+    //                                                          'issued_qty'         => 0,
+	// 														 'min_quantity'        =>$isCurrent ? $minqty :0,
+	// 														 'reorder_level'       =>$isCurrent ? $reorder :0,
+	// 														 'vat'                =>$isCurrent ? $vat :$vat,
+	// 														 'is_baseqty'         =>1,
+	// 														 'pur_count'          => 1,
+    //                                                          'last_purchase_cost' => $isCurrent ? $openingCost : 0,
+    //                                                          'cost_avg'           => $isCurrent ? $openingCost : 0,
+	// 														 'status'             =>1,
+	// 														 'sell_price'          =>$isCurrent?$sellPrice:0,
+	// 														 'wsale_price'        =>$isCurrent?$wsalePrice:0,
+	// 														 'pkno'               =>  $isCurrent?$pkno:1,
+    //                                                        // 'created_at'         => date('Y-m-d H:i:s'),
+            
+    //                                                       ]);
+    //                                      }
+    //                          //------------------DEPT STOCK------------------------------------------------
+										
+    // 						//...............ITEM LOCATION........
+    // 						if(isset($attributes['locid']) && isset($attributes['locqty'])) {
+    // 							$arrLoc = [];
+    // 							foreach($attributes['locid'] as $k => $v) {
+    // 								if($c==1)
+    // 									$quantity = $attributes['locqty'][$k] ?? 0;
+    // 								else {
+    // 									$quantity = $attributes['locqty'][$k]/$attributes['packing'][$key];
+    // 								}
+    // 								$itemLocation = new ItemLocation();
+    // 								$itemLocation->location_id = $v;
+    // 								$itemLocation->item_id = $this->itemmaster->id;
+    // 								$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
+	// 								$itemLocation->department_id = env('DEPARTMENT_ID');
+    // 								$itemLocation->quantity = $quantity ?? 0;
+    // 								$itemLocation->status = 1;
+    // 								$itemLocation->opn_qty = $attributes['locqty'][$k] ?? 0;
+    // 								$itemLocation->bin_id = $attributes['binid'][$k] ?? 0;
+    // 								$itemLocation->save();
+    // 							}
+    							
+    // 							//ADD OTHER ITEMS TO OTHER LOCATIONS...
+    // 							$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+    // 							if($rows){
+    // 								foreach($rows as $row) {
+    // 									if(!in_array($row->id, $attributes['locid'])) {
+    // 										$itemLocation = new ItemLocation();
+    // 										$itemLocation->location_id = $row->id;
+    // 										$itemLocation->department_id = env('DEPARTMENT_ID');
+    // 										$itemLocation->item_id = $this->itemmaster->id;
+    // 										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
+    // 										$itemLocation->quantity = 0;
+    // 										$itemLocation->status = 1;
+    // 										$itemLocation->opn_qty = 0;
+    // 										$itemLocation->bin_id = $attributes['binid'][$k];
+    // 										$itemLocation->save();
+    // 									}
+    // 								}
+    // 							}
+    								
+    // 						} else {
+    // 							//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+    // 							if($c==1) {
+    // 								$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+    // 								if($rows){
+    // 									foreach($rows as $row) {
+    										
+    // 										$itemLocation = new ItemLocation();
+    // 										$itemLocation->location_id = $row->id;
+    // 										$itemLocation->department_id = env('DEPARTMENT_ID');
+    // 										$itemLocation->item_id = $this->itemmaster->id;
+    // 										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
+    // 										$itemLocation->quantity = ($row->is_default==1)?($attributes['opn_quantity'][0] ?? 0):0;
+    // 										$itemLocation->status = 1;
+    // 										$itemLocation->opn_qty = ($row->is_default==1)?($attributes['opn_quantity'][0] ?? 0):0;
+    // 										$itemLocation->bin_id = isset($attributes['binid'][$key])?$attributes['binid'][$key]:0;
+    // 										//$itemLocation->doc_type = 'OQ';
+    // 										$itemLocation->save();
+    // 									}
+    // 								}
+    // 							}
+    // 						}
+	// 				    }
+	// 					$c++;
+	// 				}
+					
+	// 			}
+				
+			
+	// 			//Manufacture item row materials add.....
+	// 			if($attributes['assembly']==1) { $a=1;
+	// 				foreach($attributes['item_id'] as $ky => $item) {
+	// 					if($item!='') { 
+	// 						DB::table('mfg_items')
+	// 								->insert([
+	// 									'item_id'	=> $this->itemmaster->id,
+	// 									'subitem_id'	=> $item,
+	// 									'quantity'	=> $attributes['quantity'][$ky] ?? 0,
+	// 									'unit_price'	=> $attributes['cost'][$ky] ?? 0,
+	// 									'total'	=> $attributes['line_total'][$ky] ?? 0
+	// 								]);
+	// 					}
+	// 				}
+	// 			}
+				
+	// 			//BATCH NO ENTRY............
+	// 			$isbatch = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
+	// 			if($isbatch==1 && $attributes['batchNos']!='' && $attributes['mfgDates']!='' && $attributes['qtyBatchs']!='') {
+				    
+	// 			    $batchArr = explode(',', $attributes['batchNos']);
+	// 			    $mfgArr = explode(',', $attributes['mfgDates']);
+	// 			    $expArr = explode(',', $attributes['expDates']);
+	// 			    $qtyArr = explode(',', $attributes['qtyBatchs']);
+				    
+	// 			    foreach($batchArr as $bkey => $bval) {
+				        
+	// 			        $batch_id = DB::table('item_batch')
+    //         				                ->insertGetId([
+    //         				                    'item_id' => $this->itemmaster->id,
+    //         				                    'batch_no' => $bval,
+    //         				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
+    //         				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
+    //         				                    'quantity' => $qtyArr[$bkey]
+    //         				                ]);
+            				                
+    //         			if($batch_id) {
+    //         			    DB::table('batch_log')
+    //     				                ->insert([
+    //     				                    'batch_id' => $batch_id,
+    //     				                    'item_id' => $this->itemmaster->id,
+    //     				                    'document_type' => 'OQ',
+    //     				                    'quantity' => $qtyArr[$bkey],
+    //     				                    'trtype' => 1,
+    //     				                    'invoice_date' => $dtrow->from_date,
+    //     				                    'log_id' => $log_id,
+    //     				                    'created_at' => date('Y-m-d h:i:s'),
+    //     				                    'created_by' => Auth::User()->id
+    //     				                    ]);
+    //         			}	                
+            				                
+            				                
+            				                
+	// 			    }
+				
+	// 			}
+	// 			//.....END BATCH ENTRY
+	// 			return true;
+	// 		}
+	// 	}
+		
+	// 	//throw new ValidationException('itemmaster validation error!', $this->getErrors());
+	// }
+
+
+
+	public function create($attributes) {
+		DB::beginTransaction();
+		try {
+			Log::info('Within save create - Raw attributes:', $attributes);
+			
+			// ✓ DIMENSION HANDLING - This was missing!
+			if (isset($attributes['dimension']) && $attributes['dimension'] == 1) {
+				$attributes['unit'] = $attributes['unit_d'];
+				$attributes['packing'] = $attributes['packing_d'];	
+				$attributes['opn_quantity'] = $attributes['opn_quantity_d'];	
+				$attributes['opn_cost'] = $attributes['opn_cost_d'];
+				$attributes['vat'] = $attributes['selvat'];
+				
+				Log::info('Dimension mode enabled - using _d fields');
 			}
 			
-			$this->itemmaster->item_code = $attributes['item_code'];
-			$this->itemmaster->description = $attributes['description'];
-			$this->itemmaster->description_ar =(isset($attributes['descriptionar']))?$attributes['descriptionar']:'';
-			$this->itemmaster->class_id = $attributes['item_class'];
-			$this->itemmaster->model_no = $attributes['model_no'];
-			$this->itemmaster->serial_no = $attributes['serial_no'];
-			$this->itemmaster->group_id = $attributes['group_id'] ?? 0;
-			$this->itemmaster->subgroup_id = $attributes['subgroup_id'] ?? 0;
-			$this->itemmaster->category_id = $attributes['category_id'] ?? 0;
-			$this->itemmaster->subcategory_id = $attributes['subcategory_id'] ?? 0;
-			$this->itemmaster->assembly = $attributes['assembly'] ?? 0;
-			$this->itemmaster->image = $image;
-			$this->itemmaster->status = 1;
-			$this->itemmaster->created_department = env('DEPARTMENT_ID');
-			$this->itemmaster->profit_per = $attributes['profit_per'] ?? 0;
-			$this->itemmaster->bin = $attributes['machine_model'] ?? '';
-			$this->itemmaster->weight = $attributes['size'] ?? 0;
-			$this->itemmaster->other_info = $attributes['other_info'] ?? '';
-			$this->itemmaster->created_at = date('Y-m-d H:i:s');
-			$this->itemmaster->created_by = Auth::User()->id;
-			$this->itemmaster->supersede_items = (isset($attributes['supersede']))?implode(',', $attributes['supersede']):'';
-			$this->itemmaster->surface_cost = (isset($attributes['surface_cost']))?$attributes['surface_cost']:'';
-			$this->itemmaster->other_cost = (isset($attributes['other_cost']))?$attributes['other_cost']:'';
-			$this->itemmaster->bin_location = (isset($attributes['bin_location']))?$attributes['bin_location']:'';//SP7
-
-			$this->itemmaster->itmHt = (isset($attributes['itmHt']))?$attributes['itmHt']:'';//SP7
-			$this->itemmaster->itmWd = (isset($attributes['itmWd']))?$attributes['itmWd']:'';//SP7
-			$this->itemmaster->itmLt = (isset($attributes['itmLt']))?$attributes['itmLt']:'';//SP7
-
-			$this->itemmaster->mpqty = (isset($attributes['mpqty']))?$attributes['mpqty']:'';
-            $this->itemmaster->p1_qty = (isset($attributes['opn_quantity'][1]))?$attributes['opn_quantity'][1]:'';
-            $this->itemmaster->p2_qty = (isset($attributes['opn_quantity'][2]))?$attributes['opn_quantity'][2]:'';  
-			$this->itemmaster->dimension = (isset($attributes['dimension']))?$attributes['dimension']:'';
-			$this->itemmaster->batch_req = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
+			Log::info('After dimension processing:', [
+				'unit' => $attributes['unit'] ?? null,
+				'opn_quantity' => $attributes['opn_quantity'] ?? null
+			]);
 			
-			$this->itemmaster->p1_formula = (isset($attributes['packing'][1]) && isset($attributes['pkno'][1]))?(($attributes['packing'][1]>$attributes['pkno'][1])?$attributes['packing'][1].',/':$attributes['pkno'][1].',*'):'';
-            $this->itemmaster->p2_formula = (isset($attributes['packing'][2]) && isset($attributes['pkno'][2]))?(($attributes['packing'][2]>$attributes['pkno'][2])?$attributes['packing'][2].',/':$attributes['pkno'][2].',*'):'';
-			//$this->itemmaster->fill($attributes)->save();
-			$this->itemmaster->save();
-			
-			if($this->itemmaster->id) {
-				$c = 1;
+			if ($this->isValid($attributes)) {
+				// Image handling
+				$image = '';
+				if (isset($attributes['image']) && $attributes['image']) {
+					$image = $this->handleImageUpload($attributes['image']);
+				}
 				
-				foreach($attributes['unit'] as $key => $val){
-					$itemunit = new ItemUnit();
-					if($attributes['unit'][$key]!="" || $c==1) {
-					     $unitdat = DB::table('units')->where('id',$attributes['unit'][$key])->first();
-					    if($attributes['unit'][$key]=='') {
-					        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
-					        //echo $unitdat->unit_name;exit;
-					    }
-					    
-						$itemunit->itemmaster_id = $this->itemmaster->id;
-						$itemunit->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];//$attributes['unit'][$key];
-						$itemunit->packing = ($attributes['packing'][$key]=='')?$unitdat->unit_name:$attributes['packing'][$key];
-						$itemunit->opn_quantity = $attributes['opn_quantity'][$key] ?? 0;
-						$itemunit->opn_cost = $attributes['opn_cost'][$key] ?? 0;
-						$itemunit->sell_price = isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:''; //($c==1)?(float)$attributes['sell_price'][$key]:((float)$attributes['sell_price'][$key] * (float)$attributes['packing'][$key]);
-						$itemunit->wsale_price = $attributes['wsale_price'][$key] ?? 0;
-						$itemunit->min_quantity = $attributes['min_quantity'][$key] ?? 0;
-						$itemunit->reorder_level = $attributes['reorder_level'][$key] ?? 0; //selvat
-						$itemunit->vat = $attributes['selvat'][0] ?? 0;
-						$itemunit->status = 1;
-						$itemunit->cur_quantity = $attributes['opn_quantity'][$key] ?? 0;
-						$itemunit->is_baseqty = ($c==1)?$is_baseqty=1:$is_baseqty=0;
-						$itemunit->received_qty = $attributes['opn_quantity'][$key] ?? 0;
-						$itemunit->last_purchase_cost = $attributes['opn_cost'][$key] ?? 0;
-						$itemunit->pur_count = 1;
-						$itemunit->cost_avg = $attributes['opn_cost'][$key] ?? 0;
-						$itemunit->pkno = ($attributes['packing'][$key]=='')?1:$attributes['pkno'][$key];
-						$this->itemmaster->itemUnits()->save($itemunit);
-						if($c==1) {
-														
-							//-----------ITEM LOG----------------		
-							$dtrow = DB::table('parameter1')->select('from_date')->first();
-							$log_id = DB::table('item_log')->insertGetId([
-											 'document_type' => 'OQ',
-											 'department_id'=>env('DEPARTMENT_ID'),
-											 'item_id' 	  => $this->itemmaster->id,
-											 'unit_id'    => ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key],
-											 'quantity'   => $attributes['opn_quantity'][$key] ?? 0,
-											 'unit_cost'  => $attributes['opn_cost'][$key] ?? 0,
-											 'trtype'	  => 1,
-											 'cur_quantity' => $attributes['opn_quantity'][$key] ?? 0,
-											 'cost_avg' => $attributes['opn_cost'][$key] ?? 0,
-											 'pur_cost' => $attributes['opn_cost'][$key] ?? 0,
-											 'sale_cost' => '',
-											 'packing' => 1,
-											 'status'     => 1,
-											 'created_at' => date('Y-m-d H:i:s'),
-											 'created_by' => Auth::User()->id,
-											 'voucher_date' => $dtrow->from_date
-											 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
-											]);
-							//-------------ITEM LOG------------------
-						    
-						    
-						    //---------------DEPARTMENT STOCK--------
-							
-							$departmentId = env('DEPARTMENT_ID');
-							if($attributes['unit'][0]!="") {
-    					        $unitdat = DB::table('units')->where('id',$attributes['unit'][0])->first();
-    						}
-    						
-    					    if($attributes['unit'][0]=='') {
-    					        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
-    					        //echo $unitdat->unit_name;exit;
-    					    }
-						    $unit=($attributes['unit'][0]=='')?$unitdat->id:$attributes['unit'][0];
-							$packing= ($attributes['packing'][0]=='')?$unitdat->unit_name:$attributes['packing'][0];
-                            $openingQty   = isset($attributes['opn_quantity'][0]) ? (float)$attributes['opn_quantity'][0] : 0;
-                            $openingCost  = isset($attributes['opn_cost'][0]) ? (float)$attributes['opn_cost'][0] : 0;
-                            $sellPrice    = isset($attributes['sell_price'][0])?$attributes['sell_price'][0]:0;
-							$wsalePrice   = isset($attributes['wsale_price'][0])?$attributes['wsale_price'][0]:0;
-							$minqty       =  isset($attributes['min_quantity'][0])?$attributes['min_quantity'][0]:0;
-							$reorder      =  isset($attributes['reorder_level'][0])?$attributes['reorder_level'][0]:''; 
-							$vat          =isset($attributes['selvat'][0])?$attributes['selvat'][0]:0;
-							$pkno = ($attributes['packing'][0]=='')?1:$attributes['pkno'][0];
-							
-                            $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
-
-                                      foreach ($departments as $dept) {
-                                               $isCurrent = ($dept->id == $departmentId);
-
-                                             DB::table('itemstock_department')->insert([
-                                                        'itemmaster_id'      => $this->itemmaster->id,
-                                                         'department_id'      => $dept->id,
-														 'unit_id'         =>$unit,
-														 'packing'         =>$packing,
-                                                          'opn_cost'       => $isCurrent ? $openingCost : 0,
-                                                          'opn_quantity'        => $isCurrent ? $openingQty : 0,
-                                                            'cur_quantity'            => $isCurrent ? $openingQty : 0,
-                                                            'received_qty'       => $isCurrent ? $openingQty : 0,
-                                                             'issued_qty'         => 0,
-															 'min_quantity'        =>$isCurrent ? $minqty :0,
-															 'reorder_level'       =>$isCurrent ? $reorder :0,
-															 'vat'                =>$isCurrent ? $vat :$vat,
-															 'is_baseqty'         =>1,
-															 'pur_count'          => 1,
-                                                             'last_purchase_cost' => $isCurrent ? $openingCost : 0,
-                                                             'cost_avg'           => $isCurrent ? $openingCost : 0,
-															 'status'             =>1,
-															 'sell_price'          =>$isCurrent?$sellPrice:0,
-															 'wsale_price'        =>$isCurrent?$wsalePrice:0,
-															 'pkno'               =>  $isCurrent?$pkno:1,
-                                                           // 'created_at'         => date('Y-m-d H:i:s'),
-            
-                                                          ]);
-                                         }
-                             //------------------DEPT STOCK------------------------------------------------
-										
-    						//...............ITEM LOCATION........
-    						if(isset($attributes['locid']) && isset($attributes['locqty'])) {
-    							$arrLoc = [];
-    							foreach($attributes['locid'] as $k => $v) {
-    								if($c==1)
-    									$quantity = $attributes['locqty'][$k] ?? 0;
-    								else {
-    									$quantity = $attributes['locqty'][$k]/$attributes['packing'][$key];
-    								}
-    								$itemLocation = new ItemLocation();
-    								$itemLocation->location_id = $v;
-    								$itemLocation->item_id = $this->itemmaster->id;
-    								$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
-									$itemLocation->department_id = env('DEPARTMENT_ID');
-    								$itemLocation->quantity = $quantity ?? 0;
-    								$itemLocation->status = 1;
-    								$itemLocation->opn_qty = $attributes['locqty'][$k] ?? 0;
-    								$itemLocation->bin_id = $attributes['binid'][$k] ?? 0;
-    								$itemLocation->save();
-    							}
-    							
-    							//ADD OTHER ITEMS TO OTHER LOCATIONS...
-    							$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-    							if($rows){
-    								foreach($rows as $row) {
-    									if(!in_array($row->id, $attributes['locid'])) {
-    										$itemLocation = new ItemLocation();
-    										$itemLocation->location_id = $row->id;
-    										$itemLocation->department_id = env('DEPARTMENT_ID');
-    										$itemLocation->item_id = $this->itemmaster->id;
-    										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
-    										$itemLocation->quantity = 0;
-    										$itemLocation->status = 1;
-    										$itemLocation->opn_qty = 0;
-    										$itemLocation->bin_id = $attributes['binid'][$k];
-    										$itemLocation->save();
-    									}
-    								}
-    							}
-    								
-    						} else {
-    							//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-    							if($c==1) {
-    								$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-    								if($rows){
-    									foreach($rows as $row) {
-    										
-    										$itemLocation = new ItemLocation();
-    										$itemLocation->location_id = $row->id;
-    										$itemLocation->department_id = env('DEPARTMENT_ID');
-    										$itemLocation->item_id = $this->itemmaster->id;
-    										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
-    										$itemLocation->quantity = ($row->is_default==1)?($attributes['opn_quantity'][0] ?? 0):0;
-    										$itemLocation->status = 1;
-    										$itemLocation->opn_qty = ($row->is_default==1)?($attributes['opn_quantity'][0] ?? 0):0;
-    										$itemLocation->bin_id = isset($attributes['binid'][$key])?$attributes['binid'][$key]:0;
-    										//$itemLocation->doc_type = 'OQ';
-    										$itemLocation->save();
-    									}
-    								}
-    							}
-    						}
-					    }
-						$c++;
+				$departmentId = env('DEPARTMENT_ID', 1);
+				
+				// Create item
+				$this->itemmaster->item_code = $attributes['item_code'];
+				$this->itemmaster->description = $attributes['description'];
+				$this->itemmaster->description_ar = $attributes['descriptionar'] ?? '';
+				$this->itemmaster->class_id = $attributes['item_class'] ?? 0;
+				$this->itemmaster->model_no = $attributes['model_no'] ?? '';
+				$this->itemmaster->serial_no = $attributes['serial_no'] ?? '';
+				$this->itemmaster->group_id = $attributes['group_id'] ?? 0;
+				$this->itemmaster->subgroup_id = $attributes['subgroup_id'] ?? 0;
+				$this->itemmaster->category_id = $attributes['category_id'] ?? 0;
+				$this->itemmaster->subcategory_id = $attributes['subcategory_id'] ?? 0;
+				$this->itemmaster->assembly = $attributes['assembly'] ?? 0;
+				$this->itemmaster->image = $image;
+				$this->itemmaster->status = 1;
+				$this->itemmaster->created_department = $departmentId;
+				$this->itemmaster->profit_per = $attributes['profit_per'] ?? 0;
+				$this->itemmaster->bin = $attributes['machine_model'] ?? '';
+				$this->itemmaster->weight = $attributes['size'] ?? 0;
+				$this->itemmaster->other_info = $attributes['other_info'] ?? '';
+				$this->itemmaster->created_at = now();
+				$this->itemmaster->created_by = Auth::id();
+				$this->itemmaster->supersede_items = isset($attributes['supersede']) ? implode(',', $attributes['supersede']) : '';
+				$this->itemmaster->surface_cost = $attributes['surface_cost'] ?? '';
+				$this->itemmaster->other_cost = $attributes['other_cost'] ?? '';
+				$this->itemmaster->bin_location = $attributes['bin_location'] ?? '';
+				$this->itemmaster->itmHt = $attributes['itmHt'] ?? '';
+				$this->itemmaster->itmWd = $attributes['itmWd'] ?? '';
+				$this->itemmaster->itmLt = $attributes['itmLt'] ?? '';
+				$this->itemmaster->mpqty = $attributes['mpqty'] ?? '';
+				$this->itemmaster->p1_qty = $attributes['opn_quantity'][1] ?? '';
+				$this->itemmaster->p2_qty = $attributes['opn_quantity'][2] ?? '';
+				$this->itemmaster->dimension = $attributes['dimension'] ?? 0;
+				$this->itemmaster->batch_req = $attributes['batch_req'] ?? 0;
+				
+				// Formulas
+				$this->itemmaster->p1_formula = (isset($attributes['packing'][1]) && isset($attributes['pkno'][1])) 
+					? (($attributes['packing'][1] > $attributes['pkno'][1]) ? $attributes['packing'][1].',/' : $attributes['pkno'][1].',*') 
+					: '';
+				$this->itemmaster->p2_formula = (isset($attributes['packing'][2]) && isset($attributes['pkno'][2])) 
+					? (($attributes['packing'][2] > $attributes['pkno'][2]) ? $attributes['packing'][2].',/' : $attributes['pkno'][2].',*') 
+					: '';
+				
+				$this->itemmaster->save();
+				
+				Log::info('Item created successfully:', [
+					'id' => $this->itemmaster->id,
+					'item_code' => $this->itemmaster->item_code
+				]);
+				
+				if ($this->itemmaster->id) {
+					// Create item units, locations, and department stock
+					$this->createItemUnitsAndRelated($this->itemmaster->id, $attributes, $departmentId);
+					
+					// Create manufacturing items if assembly
+					if (isset($attributes['assembly']) && $attributes['assembly'] == 1) {
+						$this->createMfgItems($this->itemmaster->id, $attributes);
 					}
 					
-				}
-				
-			
-				//Manufacture item row materials add.....
-				if($attributes['assembly']==1) { $a=1;
-					foreach($attributes['item_id'] as $ky => $item) {
-						if($item!='') { 
-							DB::table('mfg_items')
-									->insert([
-										'item_id'	=> $this->itemmaster->id,
-										'subitem_id'	=> $item,
-										'quantity'	=> $attributes['quantity'][$ky] ?? 0,
-										'unit_price'	=> $attributes['cost'][$ky] ?? 0,
-										'total'	=> $attributes['line_total'][$ky] ?? 0
-									]);
-						}
+					// Create batch entries if batch required
+					if (isset($attributes['batch_req']) && $attributes['batch_req'] == 1) {
+						$this->createBatchEntries($this->itemmaster->id, $attributes);
 					}
 				}
 				
-				//BATCH NO ENTRY............
-				$isbatch = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
-				if($isbatch==1 && $attributes['batchNos']!='' && $attributes['mfgDates']!='' && $attributes['qtyBatchs']!='') {
-				    
-				    $batchArr = explode(',', $attributes['batchNos']);
-				    $mfgArr = explode(',', $attributes['mfgDates']);
-				    $expArr = explode(',', $attributes['expDates']);
-				    $qtyArr = explode(',', $attributes['qtyBatchs']);
-				    
-				    foreach($batchArr as $bkey => $bval) {
-				        
-				        $batch_id = DB::table('item_batch')
-            				                ->insertGetId([
-            				                    'item_id' => $this->itemmaster->id,
-            				                    'batch_no' => $bval,
-            				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
-            				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
-            				                    'quantity' => $qtyArr[$bkey]
-            				                ]);
-            				                
-            			if($batch_id) {
-            			    DB::table('batch_log')
-        				                ->insert([
-        				                    'batch_id' => $batch_id,
-        				                    'item_id' => $this->itemmaster->id,
-        				                    'document_type' => 'OQ',
-        				                    'quantity' => $qtyArr[$bkey],
-        				                    'trtype' => 1,
-        				                    'invoice_date' => $dtrow->from_date,
-        				                    'log_id' => $log_id,
-        				                    'created_at' => date('Y-m-d h:i:s'),
-        				                    'created_by' => Auth::User()->id
-        				                    ]);
-            			}	                
-            				                
-            				                
-            				                
-				    }
-				
-				}
-				//.....END BATCH ENTRY
+				DB::commit();
 				return true;
 			}
-		}
-		
-		//throw new ValidationException('itemmaster validation error!', $this->getErrors());
-	}
-	
-	public function update($id, $attributes) //sell_price
-	{ //
-
-		//echo '<pre>';print_r($attributes);exit;
-		if($attributes['dimension']==1) {
-
-			$attributes['unit'] = $attributes['unit_d'];
-			$attributes['packing'] = $attributes['packing_d'];	
-			$attributes['opn_quantity'] = $attributes['opn_quantity_d'];	
-			$attributes['opn_cost'] = $attributes['opn_cost_d'];
-			//$attributes['vat'] = $attributes['vat_d'];
-
-			$attributes['vat'] = $attributes['selvat'];
-		}
-		
-		$this->itemmaster = $this->find($id);
-		if($this->isValid($attributes, ['item_code' => 'required'])) {
 			
-			$image = $attributes['current_image'];
-			$file = (isset($attributes['image'])) ? $attributes['image'] : null;
-		//	echo '<pre>';print_r($attributes['image']);exit;
-			//---------------image uploading section-----------------
-			if($file) {
-				//echo '<pre>';print_r($file->getClientOriginalExtension());exit;
-				$image = time().'.'.$file->getClientOriginalExtension();
-				
-				$destinationPath = public_path() . $this->imgDir.'/'.$image;
-				$destinationPathThumb = public_path() . $this->imgDir.'/thumb_'.$image;
+			DB::rollback();
+			return false;
+			
+		} catch(\Exception $e) {
+			DB::rollback();
+			Log::error('Item creation failed: ' . $e->getMessage(), [
+				'trace' => $e->getTraceAsString()
+			]);
+			throw $e;
+		}
+	}
 
-				// resizing an uploaded file
-				Image::make($file->getRealPath())->resize($this->width, $this->height, function($constraint) { $constraint->aspectRatio(); })->save($destinationPath);
 
-				// thumb
-				Image::make($file->getRealPath())->resize($this->thumbWidth, $this->thumbHeight, function($constraint) { $constraint->aspectRatio(); })->save($destinationPathThumb);
+	/**
+	 * Create item units and related data (locations, dept stock, logs)
+	 * This matches the old working logic exactly
+	 */
+	private function createItemUnitsAndRelated($itemmaster_id, $attributes, $departmentId)
+	{
+		$c = 1;
+		$dtrow = DB::table('parameter1')->select('from_date')->first();
+		
+		if (!isset($attributes['unit']) || !is_array($attributes['unit'])) {
+			Log::warning('No units array found');
+			return;
+		}
+		
+		foreach ($attributes['unit'] as $key => $val) {
+			// Skip empty units except first one
+			if (empty($val) && $c != 1) {
+				$c++;
+				continue;
 			}
 			
-			$this->itemmaster->item_code = $attributes['item_code']; //opn_quantity
-			$this->itemmaster->description = $attributes['description'];
-			$this->itemmaster->description_ar =(isset($attributes['descriptionar']))?$attributes['descriptionar']:'';
-			$this->itemmaster->class_id = $attributes['item_class'];
-			$this->itemmaster->model_no = $attributes['model_no'];
-			$this->itemmaster->serial_no = $attributes['serial_no'];
-			$this->itemmaster->group_id = $attributes['group_id'];
-			$this->itemmaster->subgroup_id = $attributes['subgroup_id'];
-			$this->itemmaster->category_id = $attributes['category_id'];
-			$this->itemmaster->subcategory_id = $attributes['subcategory_id'];
-			$this->itemmaster->assembly = $attributes['assembly'];
-			$this->itemmaster->image = $image;
-			$this->itemmaster->profit_per = $attributes['profit_per'];
-			$this->itemmaster->bin = $attributes['machine_model'];
-			$this->itemmaster->weight = $attributes['size'];
-			$this->itemmaster->other_info = $attributes['other_info'];
-			$this->itemmaster->modify_by = Auth::User()->id;
-			$this->itemmaster->modified_at = date('Y-m-d H:i:s');
-			$this->itemmaster->supersede_items = (isset($attributes['supersede']))?implode(',', $attributes['supersede']):'';
-			$this->itemmaster->bin_location = (isset($attributes['bin_location']))?$attributes['bin_location']:'';//SP7
-
-			$this->itemmaster->itmHt = (isset($attributes['itmHt']))?$attributes['itmHt']:'';//SP7
-			$this->itemmaster->itmWd = (isset($attributes['itmWd']))?$attributes['itmWd']:'';//SP7
-			$this->itemmaster->itmLt = (isset($attributes['itmLt']))?$attributes['itmLt']:'';//SP7
-			$this->itemmaster->mpqty = (isset($attributes['mpqty']))?$attributes['mpqty']:'';
-            $this->itemmaster->p1_qty = (isset($attributes['opn_quantity'][1]))?$attributes['opn_quantity'][1]:'';
-            $this->itemmaster->p2_qty = (isset($attributes['opn_quantity'][2]))?$attributes['opn_quantity'][2]:'';
-			$this->itemmaster->dimension = (isset($attributes['dimension']))?$attributes['dimension']:'';
+			// Get unit data
+			if (empty($val)) {
+				$unitdat = DB::table('units')->whereNull('deleted_at')->first();
+				$unit_id = $unitdat->id;
+				$unit_name = $unitdat->unit_name;
+			} else {
+				$unitdat = DB::table('units')->where('id', $val)->first();
+				$unit_id = $val;
+				$unit_name = $unitdat->unit_name;
+			}
 			
-			//$this->itemmaster->p1_formula = (isset($attributes['packing'][1]))?$attributes['packing'][1]:'';
-           // $this->itemmaster->p2_formula = (isset($attributes['packing'][2]))?$attributes['packing'][2]:'';   
-            
-            $this->itemmaster->p1_formula = (isset($attributes['packing'][1]) && isset($attributes['pkno'][1]))?(($attributes['packing'][1]>$attributes['pkno'][1])?$attributes['packing'][1].',/':$attributes['pkno'][1].',*'):'';
-            $this->itemmaster->p2_formula = (isset($attributes['packing'][2]) && isset($attributes['pkno'][2]))?(($attributes['packing'][2]>$attributes['pkno'][2])?$attributes['packing'][2].',/':$attributes['pkno'][2].',*'):'';
+			$packing = empty($attributes['packing'][$key]) ? $unit_name : $attributes['packing'][$key];
+			$pkno = empty($attributes['packing'][$key]) ? 1 : ($attributes['pkno'][$key] ?? 1);
 			
+			// Extract values
+			$opnQuantity = $attributes['opn_quantity'][$key] ?? 0;
+			$opnCost = $attributes['opn_cost'][$key] ?? 0;
+			$sellPrice = $attributes['sell_price'][$key] ?? '';
+			$wsalePrice = $attributes['wsale_price'][$key] ?? 0;
+			$minQuantity = $attributes['min_quantity'][$key] ?? 0;
+			$reorderLevel = $attributes['reorder_level'][$key] ?? 0;
+			$vat = $attributes['selvat'][0] ?? 0;
 			
+			Log::info("Creating unit {$c}", [
+				'key' => $key,
+				'unit_id' => $unit_id,
+				'packing' => $packing,
+				'quantity' => $opnQuantity,
+				'cost' => $opnCost
+			]);
 			
-			$this->itemmaster->fill($attributes)->save();
+			// Create item unit
+			$itemunit = new ItemUnit();
+			$itemunit->itemmaster_id = $itemmaster_id;
+			$itemunit->unit_id = $unit_id;
+			$itemunit->packing = $packing;
+			$itemunit->opn_quantity = $opnQuantity;
+			$itemunit->opn_cost = $opnCost;
+			$itemunit->sell_price = $sellPrice;
+			$itemunit->wsale_price = $wsalePrice;
+			$itemunit->min_quantity = $minQuantity;
+			$itemunit->reorder_level = $reorderLevel;
+			$itemunit->vat = $vat;
+			$itemunit->status = 1;
+			$itemunit->cur_quantity = $opnQuantity;
+			$itemunit->is_baseqty = ($c == 1) ? 1 : 0;
+			$itemunit->received_qty = $opnQuantity;
+			$itemunit->last_purchase_cost = $opnCost;
+			$itemunit->pur_count = 1;
+			$itemunit->cost_avg = $opnCost;
+			$itemunit->pkno = $pkno;
+			$itemunit->save();
 			
-			//$units = $this->getUnits($id);//echo '<pre>';print_r($units);exit;
-			$key = 0;
-			$currentDeptId = env('DEPARTMENT_ID');
-			
-			foreach($attributes['unit'] as $key => $val) {
+			// For base unit only (first unit)
+			if ($c == 1) {
+				// Create item log
+				$log_id = DB::table('item_log')->insertGetId([
+					'document_type' => 'OQ',
+					'department_id' => $departmentId,
+					'item_id' => $itemmaster_id,
+					'unit_id' => $unit_id,
+					'quantity' => $opnQuantity,
+					'unit_cost' => $opnCost,
+					'trtype' => 1,
+					'cur_quantity' => $opnQuantity,
+					'cost_avg' => $opnCost,
+					'pur_cost' => $opnCost,
+					'sale_cost' => '',
+					'packing' => 1,
+					'status' => 1,
+					'created_at' => now(),
+					'created_by' => Auth::id(),
+					'voucher_date' => $dtrow->from_date ?? now()
+				]);
 				
-				if(isset($attributes['item_unit_id'][$key]) && $attributes['item_unit_id'][$key]!='')
-					$itemunit = ItemUnit::find($attributes['item_unit_id'][$key]);
-				else
-					$itemunit = new ItemUnit();
+				// Get base unit data for department stock
+				$baseUnitId = empty($attributes['unit'][0]) ? $unitdat->id : $attributes['unit'][0];
+				$basePacking = empty($attributes['packing'][0]) ? $unit_name : $attributes['packing'][0];
+				$baseOpnQty = isset($attributes['opn_quantity'][0]) ? (float)$attributes['opn_quantity'][0] : 0;
+				$baseOpnCost = isset($attributes['opn_cost'][0]) ? (float)$attributes['opn_cost'][0] : 0;
+				$baseSellPrice = $attributes['sell_price'][0] ?? 0;
+				$baseWsalePrice = $attributes['wsale_price'][0] ?? 0;
+				$baseMinQty = $attributes['min_quantity'][0] ?? 0;
+				$baseReorder = $attributes['reorder_level'][0] ?? '';
+				$baseVat = $attributes['selvat'][0] ?? 0;
+				$basePkno = empty($attributes['packing'][0]) ? 1 : ($attributes['pkno'][0] ?? 1);
 				
-					$logs = DB::table('item_log')->where('document_type','!=','OQ')->where('item_id',$id)->where('department_id',$currentDeptId)->count();
-				if($attributes['unit'][$key]!="" || $key==0) {
-					if(isset($attributes['opn_quantity_cur'][$key])&& isset($attributes['opn_quantity'][$key])&&$attributes['opn_quantity_cur'][$key] != $attributes['opn_quantity'][$key]){
-						if($logs==0)
-							$itemunit->cur_quantity = $attributes['opn_quantity'][$key];// + $itemunit->cur_quantity;
+				// Create department stock for all departments
+				$departments = DB::table('department')->whereNull('deleted_at')->get();
+				
+				foreach ($departments as $dept) {
+					$isCurrent = ($dept->id == $departmentId);
+					
+					DB::table('itemstock_department')->insert([
+						'itemmaster_id' => $itemmaster_id,
+						'department_id' => $dept->id,
+						'unit_id' => $baseUnitId,
+						'packing' => $basePacking,
+						'opn_cost' => $isCurrent ? $baseOpnCost : 0,
+						'opn_quantity' => $isCurrent ? $baseOpnQty : 0,
+						'cur_quantity' => $isCurrent ? $baseOpnQty : 0,
+						'received_qty' => $isCurrent ? $baseOpnQty : 0,
+						'issued_qty' => 0,
+						'min_quantity' => $isCurrent ? $baseMinQty : 0,
+						'reorder_level' => $isCurrent ? $baseReorder : 0,
+						'vat' => $baseVat, // All depts get same VAT
+						'is_baseqty' => 1,
+						'pur_count' => 1,
+						'last_purchase_cost' => $isCurrent ? $baseOpnCost : 0,
+						'cost_avg' => $isCurrent ? $baseOpnCost : 0,
+						'status' => 1,
+						'sell_price' => $isCurrent ? $baseSellPrice : 0,
+						'wsale_price' => $isCurrent ? $baseWsalePrice : 0,
+						'pkno' => $isCurrent ? $basePkno : 1,
+					]);
+				}
+				
+				// Create item locations (only for first unit)
+				if (isset($attributes['locid']) && isset($attributes['locqty'])) {
+					// User specified locations
+					foreach ($attributes['locid'] as $k => $locationId) {
+						$quantity = $attributes['locqty'][$k] ?? 0;
+						
+						$itemLocation = new ItemLocation();
+						$itemLocation->location_id = $locationId;
+						$itemLocation->item_id = $itemmaster_id;
+						$itemLocation->unit_id = $unit_id;
+						$itemLocation->department_id = $departmentId;
+						$itemLocation->quantity = $quantity;
+						$itemLocation->status = 1;
+						$itemLocation->opn_qty = $quantity;
+						$itemLocation->bin_id = $attributes['binid'][$k] ?? 0;
+						$itemLocation->save();
 					}
 					
-					if($attributes['unit'][$key]=='') {
-				        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
-				    }
-                      //echo '<pre>';print_r($attributes['unit'][$key]);exit;
-                      $unitId = ($attributes['unit'][$key] == '') ? $unitdat->id : $attributes['unit'][$key];
-                     $opnQty = isset($attributes['opn_quantity'][$key]) ? (float)$attributes['opn_quantity'][$key] : 0;
-                     $opnCost = isset($attributes['opn_cost'][$key]) ? (float)$attributes['opn_cost'][$key] : 0;
-					  $sellPrice=isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:0;
-                       $wsalePrice=isset($attributes['wsale_price'][$key])?$attributes['wsale_price'][$key]:0;
-					   $minQty=    isset($attributes['min_quantity'][$key])?$attributes['min_quantity'][$key]:0;
-                     // ----------------------------------------------
-                       // DETERMINE WHETHER TO REPLACE OR ADD
-                     // ----------------------------------------------
-                         $existingDeptStock = DB::table('itemstock_department')->where('itemmaster_id', $id)
-						                           ->where('department_id', $currentDeptId)->first();
-
-                        $isSameDept = false;
-                        if ($existingDeptStock) {
-            // If this department already has non-zero stock, it’s the same dept
-			          if($existingDeptStock->opn_quantity > 0 || $existingDeptStock->opn_cost > 0)
-                        $isSameDept =true ;
-                       }
-                       //echo '<pre>';print_r($isSameDept);exit;
-        
-                      // UPDATE GLOBAL ITEM_UNIT TABLE
-        
-                        if ($isSameDept) {
-                            // SAME STORE → REPLACE
-                                $itemunit->opn_quantity = $opnQty;
-                                $itemunit->opn_cost = $opnCost;
-                                $itemunit->cur_quantity = $opnQty;
-								$itemunit->sell_price=$sellPrice;
-								$itemunit->wsale_price=$wsalePrice;
-								$itemunit->min_quantity=$minQty;
-								$itemunit->cost_avg = $opnCost;
-                        } else {
-                           // 🆕 DIFFERENT STORE → ADD
-                              $itemunit->opn_quantity = ($itemunit->opn_quantity ?: 0) + $opnQty;
-                               $itemunit->opn_cost = ($itemunit->opn_cost ?: 0) + $opnCost;
-                               $itemunit->cur_quantity = ($itemunit->cur_quantity ?: 0) + $opnQty;
-							   $itemunit->sell_price=($itemunit->sell_price ?: 0) + $sellPrice;
-							   $itemunit->wsale_price=($itemunit->wsell_price ?: 0) + $wsalePrice;
-							   $itemunit->min_quantity=($itemunit->min_quantity ?: 0) + $minQty;
-							   $itemunit->cost_avg =($itemunit->cost_avg ?: 0) + $opnCost;
-							   
-                        }
-
-                         //echo '<pre>';print_r($itemunit->opn_quantity);exit;
-                             // COMMON FIELD UPDATES
-        
-                    $itemunit->unit_id = $unitId;
-					$itemunit->packing = $attributes['packing'][$key];
-					//$itemunit->opn_quantity = $attributes['opn_quantity'][$key];
-					//$itemunit->opn_cost = $attributes['opn_cost'][$key];
-					//$itemunit->sell_price = isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:'';
-					//$itemunit->wsale_price = isset($attributes['wsale_price'][$key])?$attributes['wsale_price'][$key]:'';
-					//$itemunit->min_quantity = isset($attributes['min_quantity'][$key])?$attributes['min_quantity'][$key]:'';
-					$itemunit->reorder_level = isset($attributes['reorder_level'][$key])?$attributes['reorder_level'][$key]:'';
-					$itemunit->vat = isset($attributes['selvat'][0])?$attributes['selvat'][0]:'';
-					$itemunit->is_baseqty = ($key==0)?$is_baseqty=1:$is_baseqty=0;
-					//$itemunit->cost_avg = isset($attributes['opn_cost'][$key])?$attributes['opn_cost'][$key]:'';
-					$itemunit->pkno = isset($attributes['pkno'][$key])?$attributes['pkno'][$key]:'';
-					$itemunit->status = 1;
-					//$itemunit->received_qty = $attributes['opn_quantity'][$key];
-					//echo '<pre>';print_r($itemunit);exit;
-					if(isset($attributes['item_unit_id'][$key]) && $attributes['item_unit_id'][$key]!='')
-						
-						$itemunit->save();
-					else
-						$this->itemmaster->itemUnits()->save($itemunit);
-					// ----------------------------------------------
-        // UPDATE ITEMSTOCK_DEPARTMENT (per-store)
-        // ----------------------------------------------
-                       if ($existingDeptStock) {
-                  if ($isSameDept) {
-                            // ✅ SAME STORE → REPLACE
-                DB::table('itemstock_department')
-                    ->where('itemmaster_id', $id)
-                    ->where('department_id', $currentDeptId)
-                    ->update([
-                        'opn_quantity' => $opnQty,
-                        'opn_cost'     => $opnCost,
-                        'cur_quantity' => $opnQty,
-						'received_qty' =>$opnQty,
-                        'last_purchase_cost' => $opnCost,
-                        'cost_avg'     => $opnCost,
-                        
-                    ]);
-            } else {
-                // 🆕 DIFFERENT STORE → ADD stock to that department
-                DB::table('itemstock_department')
-                    ->where('itemmaster_id', $id)
-                    ->where('department_id', $currentDeptId)
-                    ->update([
-                        'opn_quantity' => DB::raw('opn_quantity + ' . $opnQty),
-                        'opn_cost'     => DB::raw('opn_cost + ' . $opnCost),
-                        'cur_quantity' => DB::raw('cur_quantity + ' . $opnQty),
-						'received_qty' =>DB::raw('received_qty + ' . $opnQty),
-                        'last_purchase_cost' => $opnCost,
-                        'cost_avg'     => $opnCost,
-
-                        
-                    ]);
-            }
-        }
-                    
-                           // END UPDATE ITEMSTOCK_DEPARTMENT (per-store)
-        
-        
-					if($key==0) {
-						//-----------ITEM LOG----------------							
-						DB::table('item_log')
-									->where('document_type', 'OQ')
-									->where('item_id', $this->itemmaster->id) 
-									->where('department_id', $currentDeptId)
-									->where('packing', 1)
-									->update([
-									     'unit_id' => $attributes['unit'][$key],
-										 'quantity'   => $attributes['opn_quantity'][$key],
-										 'unit_cost'  => $attributes['opn_cost'][$key],
-										 'cur_quantity' => $attributes['opn_quantity'][$key],
-										 'cost_avg' => $attributes['opn_cost'][$key],
-										 'pur_cost' => $attributes['opn_cost'][$key],
-										]);
-						//-------------ITEM LOG--------------
-					}		
-					$key++;
-
-					//-----------ITEM LOG----------------	
-					$log_count=DB::table('item_log')
-									->where('document_type', 'OQ')
-									->where('item_id', $this->itemmaster->id) 
-									->where('department_id', $currentDeptId)->count();
+					// Add other locations with zero quantity
+					$allLocations = DB::table('location')
+						->where('department_id', $departmentId)
+						->where('status', 1)
+						->whereNull('deleted_at')
+						->get();
 					
-                  if ($log_count==0) {	
-							$dtrow = DB::table('parameter1')->select('from_date')->first();
-							$log_id = DB::table('item_log')->insertGetId([
-											 'document_type' => 'OQ',
-											 'department_id'=>env('DEPARTMENT_ID'),
-											 'item_id' 	  => $this->itemmaster->id,
-											 'unit_id'    => $unitId,
-											 'quantity'   => isset($attributes['opn_quantity'][0])?$attributes['opn_quantity'][0]:0,
-											 'unit_cost'  => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
-											 'trtype'	  => 1,
-											 'cur_quantity' => isset($attributes['opn_quantity'][0])?$attributes['opn_quantity'][0]:0,
-											 'cost_avg' => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
-											 'pur_cost' => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
-											 'sale_cost' => '',
-											 'packing' => 1,
-											 'status'     => 1,
-											 'created_at' => date('Y-m-d H:i:s'),
-											 'created_by' => Auth::User()->id,
-											 'voucher_date' => $dtrow->from_date
-											 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
-											]);
-										}
+					foreach ($allLocations as $location) {
+						if (!in_array($location->id, $attributes['locid'])) {
+							$itemLocation = new ItemLocation();
+							$itemLocation->location_id = $location->id;
+							$itemLocation->department_id = $departmentId;
+							$itemLocation->item_id = $itemmaster_id;
+							$itemLocation->unit_id = $unit_id;
+							$itemLocation->quantity = 0;
+							$itemLocation->status = 1;
+							$itemLocation->opn_qty = 0;
+							$itemLocation->bin_id = 0;
+							$itemLocation->save();
+						}
+					}
+				} else {
+					// No specific locations - add to all locations
+					$allLocations = DB::table('location')
+						->where('department_id', $departmentId)
+						->where('status', 1)
+						->whereNull('deleted_at')
+						->get();
+					
+					foreach ($allLocations as $location) {
+						$itemLocation = new ItemLocation();
+						$itemLocation->location_id = $location->id;
+						$itemLocation->department_id = $departmentId;
+						$itemLocation->item_id = $itemmaster_id;
+						$itemLocation->unit_id = $unit_id;
+						$itemLocation->quantity = ($location->is_default == 1) ? $baseOpnQty : 0;
+						$itemLocation->status = 1;
+						$itemLocation->opn_qty = ($location->is_default == 1) ? $baseOpnQty : 0;
+						$itemLocation->bin_id = $attributes['binid'][0] ?? 0;
+						$itemLocation->save();
+					}
+				}
+			}
+			
+			$c++;
+		}
+		
+		Log::info("Item units and related data created for item {$itemmaster_id}");
+	}
+
+	/**
+	 * Calculate packing formula based on index
+	 */
+	private function calculatePackingFormula($attributes, $index)
+	{
+		if (!isset($attributes['packing'][$index]) || !isset($attributes['pkno'][$index])) {
+			return '';
+		}
+		
+		$packing = $attributes['packing'][$index];
+		$pkno = $attributes['pkno'][$index];
+		
+		if ($packing > $pkno) {
+			return $packing . ',/';
+		} else {
+			return $pkno . ',*';
+		}
+	}
+	/**```
+
+	## Also Check Your createItemLocations() Method
+
+	Looking at your payload, you have:
+	```
+	// locid[] = 1
+	// locqty[] = 13
+	// locid[] = 34
+	// locqty[] = 14
+	
+	
+	 * Create item units for the item
+	 */
+	private function createItemUnits($itemmaster_id, $attributes)
+	{
+		$dtrow = DB::table('parameter1')->select('from_date')->first();
+		$c = 1;
+		$departmentId = env('DEPARTMENT_ID', 1);
+		Log::info('with in save createItemUnits');
+		foreach($attributes['unit'] as $key => $val) {
+			if($attributes['unit'][$key] != "" || $c == 1) {
+				
+				// Get unit data
+				if($attributes['unit'][$key] == '') {
+					$unitdat = DB::table('units')
+						// ->where('deleted_at', '0000-00-00 00:00:00')
+						->whereNull('deleted_at')
+						->first();
+					$unit_id = $unitdat->id;
+					$packing = $unitdat->unit_name;
+				} else {
+					$unitdat = DB::table('units')
+						->where('id', $attributes['unit'][$key])
+						->first();
+					$unit_id = $attributes['unit'][$key];
+					$packing = $attributes['packing'][$key] ?? $unitdat->unit_name;
+				}
+				
+				// Create item unit
+				$itemunit = new ItemUnit();
+				$itemunit->itemmaster_id = $itemmaster_id;
+				$itemunit->unit_id = $unit_id;
+				$itemunit->packing = $packing;
+				$itemunit->opn_quantity = $attributes['opn_quantity'][$key] ?? 0;
+				$itemunit->opn_cost = $attributes['opn_cost'][$key] ?? 0;
+				$itemunit->sell_price = $attributes['sell_price'][$key] ?? 0;
+				$itemunit->wsale_price = $attributes['wsale_price'][$key] ?? 0;
+				$itemunit->min_quantity = $attributes['min_quantity'][$key] ?? 0;
+				$itemunit->reorder_level = $attributes['reorder_level'][$key] ?? 0;
+				$itemunit->vat = $attributes['selvat'][0] ?? 0;
+				$itemunit->status = 1;
+				$itemunit->cur_quantity = $attributes['opn_quantity'][$key] ?? 0;
+				$itemunit->is_baseqty = ($c == 1) ? 1 : 0;
+				$itemunit->received_qty = $attributes['opn_quantity'][$key] ?? 0;
+				$itemunit->last_purchase_cost = $attributes['opn_cost'][$key] ?? 0;
+				$itemunit->pur_count = 1;
+				$itemunit->cost_avg = $attributes['opn_cost'][$key] ?? 0;
+				$itemunit->pkno = $attributes['pkno'][$key] ?? 1;
+				$itemunit->save();
+				
+				// Create item log for base quantity only
+				if($c == 1) {
+					$log_id = DB::table('item_log')->insertGetId([
+						'document_type' => 'OQ',
+						'department_id' => $departmentId,
+						'item_id' => $itemmaster_id,
+						'unit_id' => $unit_id,
+						'quantity' => $attributes['opn_quantity'][$key] ?? 0,
+						'unit_cost' => $attributes['opn_cost'][$key] ?? 0,
+						'trtype' => 1,
+						'cur_quantity' => $attributes['opn_quantity'][$key] ?? 0,
+						'cost_avg' => $attributes['opn_cost'][$key] ?? 0,
+						'pur_cost' => $attributes['opn_cost'][$key] ?? 0,
+						'sale_cost' => '',
+						'packing' => 1,
+						'status' => 1,
+						'created_at' => now(),
+						'created_by' => Auth::id(),
+						'voucher_date' => $dtrow->from_date
+					]);
+					
+					// Create department stock entries
+					$this->createDepartmentStock($itemmaster_id, $attributes, $key, $log_id, $unit_id, $packing);
+				}
+				
+				$c++;
+			}
+		}
+	}
+
+	/**
+	 * Create department stock for all departments
+	 */
+	private function createDepartmentStock($itemmaster_id, $attributes, $key, $unit_id, $packing)
+	{
+		$departmentId = env('DEPARTMENT_ID', 1);
+		Log::info('with in save createDepartmentStock');
+		$openingQty = isset($attributes['opn_quantity'][0]) ? (float)$attributes['opn_quantity'][0] : 0;
+		$openingCost = isset($attributes['opn_cost'][0]) ? (float)$attributes['opn_cost'][0] : 0;
+		$sellPrice = isset($attributes['sell_price'][0]) ? $attributes['sell_price'][0] : 0;
+		$wsalePrice = isset($attributes['wsale_price'][0]) ? $attributes['wsale_price'][0] : 0;
+		$minqty = isset($attributes['min_quantity'][0]) ? $attributes['min_quantity'][0] : 0;
+		$reorder = isset($attributes['reorder_level'][0]) ? $attributes['reorder_level'][0] : 0;
+		$vat = isset($attributes['selvat'][0]) ? $attributes['selvat'][0] : 0;
+		$pkno = isset($attributes['pkno'][0]) ? $attributes['pkno'][0] : 1;
+		
+		$departments = DB::table('department')
+			// ->where('deleted_at', '0000-00-00 00:00:00')
+			->whereNull('deleted_at')
+			->get();
+		
+		foreach ($departments as $dept) {
+			$isCurrent = ($dept->id == $departmentId);
+			
+			DB::table('itemstock_department')->insert([
+				'itemmaster_id' => $itemmaster_id,
+				'department_id' => $dept->id,
+				'unit_id' => $unit_id,
+				'packing' => $packing,
+				'opn_cost' => $isCurrent ? $openingCost : 0,
+				'opn_quantity' => $isCurrent ? $openingQty : 0,
+				'cur_quantity' => $isCurrent ? $openingQty : 0,
+				'received_qty' => $isCurrent ? $openingQty : 0,
+				'issued_qty' => 0,
+				'min_quantity' => $isCurrent ? $minqty : 0,
+				'reorder_level' => $isCurrent ? $reorder : 0,
+				'vat' => $vat,
+				'is_baseqty' => 1,
+				'pur_count' => 1,
+				'last_purchase_cost' => $isCurrent ? $openingCost : 0,
+				'cost_avg' => $isCurrent ? $openingCost : 0,
+				'status' => 1,
+				'sell_price' => $isCurrent ? $sellPrice : 0,
+				'wsale_price' => $isCurrent ? $wsalePrice : 0,
+				'pkno' => $isCurrent ? $pkno : 1,
+			]);
+		}
+	}
+
+
+	private function handleImageUpload($file) {
+		Log::info('with in save handleImageUpload');
+		$image = time() . '.' . $file->getClientOriginalExtension();
+		$destinationPath = public_path() . $this->imgDir . '/' . $image;
+		
+		Image::make($file->getRealPath())
+			->resize($this->width, $this->height, function($constraint) {
+				$constraint->aspectRatio();
+			})
+			->save($destinationPath);
+		
+		return $image;
+	}
+
+	/**
+	 * Create item ajaxCreateations
+	 */
+	private function createItemLocations($itemmaster_id, $attributes)
+	{
+		Log::info('with in save createItemLocations');
+		$departmentId = env('DEPARTMENT_ID', 1);
+		$unitdat = DB::table('units')
+			// ->where('deleted_at', '0000-00-00 00:00:00')
+			->whereNull('deleted_at')
+			->first();
+		
+		$unit_id = isset($attributes['unit'][0]) && $attributes['unit'][0] != '' 
+			? $attributes['unit'][0] 
+			: $unitdat->id;
+		
+		if(isset($attributes['locid']) && isset($attributes['locqty'])) {
+			// User specified locations
+			foreach($attributes['locid'] as $k => $v) {
+				$itemLocation = new ItemLocation();
+				$itemLocation->location_id = $v;
+				$itemLocation->item_id = $itemmaster_id;
+				$itemLocation->unit_id = $unit_id;
+				$itemLocation->department_id = $departmentId;
+				$itemLocation->quantity = $attributes['locqty'][$k] ?? 0;
+				$itemLocation->status = 1;
+				$itemLocation->opn_qty = $attributes['locqty'][$k] ?? 0;
+				$itemLocation->bin_id = $attributes['binid'][$k] ?? 0;
+				$itemLocation->save();
+			}
+			
+			// Add other locations with zero quantity
+			$rows = DB::table('location')
+				->where('department_id', $departmentId)
+				->where('status', 1)
+				// ->where('deleted_at', '0000-00-00 00:00:00')
+				->whereNull('deleted_at')
+				->get();
+			
+			if($rows) {
+				foreach($rows as $row) {
+					if(!in_array($row->id, $attributes['locid'])) {
+						$itemLocation = new ItemLocation();
+						$itemLocation->location_id = $row->id;
+						$itemLocation->department_id = $departmentId;
+						$itemLocation->item_id = $itemmaster_id;
+						$itemLocation->unit_id = $unit_id;
+						$itemLocation->quantity = 0;
+						$itemLocation->status = 1;
+						$itemLocation->opn_qty = 0;
+						$itemLocation->bin_id = 0;
+						$itemLocation->save();
+					}
+				}
+			}
+		} else {
+			// Default: add to all locations
+			$rows = DB::table('location')
+				->where('department_id', $departmentId)
+				->where('status', 1)
+				// ->where('deleted_at', '0000-00-00 00:00:00')
+				->whereNull('deleted_at')
+				->get();
+			
+			if($rows) {
+				foreach($rows as $row) {
+					$itemLocation = new ItemLocation();
+					$itemLocation->location_id = $row->id;
+					$itemLocation->department_id = $departmentId;
+					$itemLocation->item_id = $itemmaster_id;
+					$itemLocation->unit_id = $unit_id;
+					$itemLocation->quantity = ($row->is_default == 1) 
+						? ($attributes['opn_quantity'][0] ?? 0) 
+						: 0;
+					$itemLocation->status = 1;
+					$itemLocation->opn_qty = ($row->is_default == 1) 
+						? ($attributes['opn_quantity'][0] ?? 0) 
+						: 0;
+					$itemLocation->bin_id = isset($attributes['binid'][0]) 
+						? $attributes['binid'][0] 
+						: 0;
+					$itemLocation->save();
+				}
+			}
+		}
+		Log::info('out from save createItemLocations rows:',$rows->toarray());
+	}
+
+	/**
+	 * Create manufacturing items (raw materials)
+	 */
+	private function createMfgItems($itemmaster_id, $attributes)
+	{
+		Log::info('with in save createMfgItems');
+		if(!isset($attributes['item_id'])) {
+			return;
+		}
+		
+		foreach($attributes['item_id'] as $ky => $item) {
+			if($item != '') {
+				DB::table('mfg_items')->insert([
+					'item_id' => $itemmaster_id,
+					'subitem_id' => $item,
+					'quantity' => $attributes['quantity'][$ky] ?? 0,
+					'unit_price' => $attributes['cost'][$ky] ?? 0,
+					'total' => $attributes['line_total'][$ky] ?? 0
+				]);
+			}
+		}
+	}
+
+	/**
+	 * Create batch entries
+	 */
+	private function createBatchEntries($itemmaster_id, $attributes)
+	{
+		Log::info('with in save createBatchEntries');
+		if(!isset($attributes['batchNos']) || $attributes['batchNos'] == '') {
+			return;
+		}
+		
+		if(!isset($attributes['mfgDates']) || !isset($attributes['qtyBatchs'])) {
+			return;
+		}
+		
+		$dtrow = DB::table('parameter1')->select('from_date')->first();
+		$logrow = DB::table('item_log')
+			->where('document_type', 'OQ')
+			->where('item_id', $itemmaster_id)
+			->where('packing', 1)
+			->select('id')
+			->first();
+		
+		$batchArr = explode(',', $attributes['batchNos']);
+		$mfgArr = explode(',', $attributes['mfgDates']);
+		$expArr = explode(',', $attributes['expDates']);
+		$qtyArr = explode(',', $attributes['qtyBatchs']);
+		
+		foreach($batchArr as $bkey => $bval) {
+			if($bval == '') continue;
+			
+			$batch_id = DB::table('item_batch')->insertGetId([
+				'item_id' => $itemmaster_id,
+				'batch_no' => $bval,
+				'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
+				'exp_date' => ($expArr[$bkey] != '') 
+					? date('Y-m-d', strtotime($expArr[$bkey])) 
+					: null,
+				'quantity' => $qtyArr[$bkey]
+			]);
+			
+			if($batch_id && $logrow) {
+				DB::table('batch_log')->insert([
+					'batch_id' => $batch_id,
+					'item_id' => $itemmaster_id,
+					'document_type' => 'OQ',
+					'quantity' => $qtyArr[$bkey],
+					'trtype' => 1,
+					'invoice_date' => $dtrow->from_date,
+					'log_id' => $logrow->id,
+					'created_at' => now(),
+					'created_by' => Auth::id()
+				]);
+			}
+		}
+	}
+
+	
+	// public function update($id, $attributes) //sell_price
+	// { //
+
+	// 	//echo '<pre>';print_r($attributes);exit;
+	// 	if($attributes['dimension']==1) {
+
+	// 		$attributes['unit'] = $attributes['unit_d'];
+	// 		$attributes['packing'] = $attributes['packing_d'];	
+	// 		$attributes['opn_quantity'] = $attributes['opn_quantity_d'];	
+	// 		$attributes['opn_cost'] = $attributes['opn_cost_d'];
+	// 		//$attributes['vat'] = $attributes['vat_d'];
+
+	// 		$attributes['vat'] = $attributes['selvat'];
+	// 	}
+		
+	// 	$this->itemmaster = $this->find($id);
+	// 	if($this->isValid($attributes, ['item_code' => 'required'])) {
+			
+	// 		$image = $attributes['current_image'];
+	// 		$file = (isset($attributes['image'])) ? $attributes['image'] : null;
+	// 	//	echo '<pre>';print_r($attributes['image']);exit;
+	// 		//---------------image uploading section-----------------
+	// 		if($file) {
+	// 			//echo '<pre>';print_r($file->getClientOriginalExtension());exit;
+	// 			$image = time().'.'.$file->getClientOriginalExtension();
+				
+	// 			$destinationPath = public_path() . $this->imgDir.'/'.$image;
+	// 			$destinationPathThumb = public_path() . $this->imgDir.'/thumb_'.$image;
+
+	// 			// resizing an uploaded file
+	// 			Image::make($file->getRealPath())->resize($this->width, $this->height, function($constraint) { $constraint->aspectRatio(); })->save($destinationPath);
+
+	// 			// thumb
+	// 			Image::make($file->getRealPath())->resize($this->thumbWidth, $this->thumbHeight, function($constraint) { $constraint->aspectRatio(); })->save($destinationPathThumb);
+	// 		}
+			
+	// 		$this->itemmaster->item_code = $attributes['item_code']; //opn_quantity
+	// 		$this->itemmaster->description = $attributes['description'];
+	// 		$this->itemmaster->description_ar =(isset($attributes['descriptionar']))?$attributes['descriptionar']:'';
+	// 		$this->itemmaster->class_id = $attributes['item_class'];
+	// 		$this->itemmaster->model_no = $attributes['model_no'];
+	// 		$this->itemmaster->serial_no = $attributes['serial_no'];
+	// 		$this->itemmaster->group_id = $attributes['group_id'];
+	// 		$this->itemmaster->subgroup_id = $attributes['subgroup_id'];
+	// 		$this->itemmaster->category_id = $attributes['category_id'];
+	// 		$this->itemmaster->subcategory_id = $attributes['subcategory_id'];
+	// 		$this->itemmaster->assembly = $attributes['assembly'];
+	// 		$this->itemmaster->image = $image;
+	// 		$this->itemmaster->profit_per = $attributes['profit_per'];
+	// 		$this->itemmaster->bin = $attributes['machine_model'];
+	// 		$this->itemmaster->weight = $attributes['size'];
+	// 		$this->itemmaster->other_info = $attributes['other_info'];
+	// 		$this->itemmaster->modify_by = Auth::User()->id;
+	// 		$this->itemmaster->modified_at = date('Y-m-d H:i:s');
+	// 		$this->itemmaster->supersede_items = (isset($attributes['supersede']))?implode(',', $attributes['supersede']):'';
+	// 		$this->itemmaster->bin_location = (isset($attributes['bin_location']))?$attributes['bin_location']:'';//SP7
+
+	// 		$this->itemmaster->itmHt = (isset($attributes['itmHt']))?$attributes['itmHt']:'';//SP7
+	// 		$this->itemmaster->itmWd = (isset($attributes['itmWd']))?$attributes['itmWd']:'';//SP7
+	// 		$this->itemmaster->itmLt = (isset($attributes['itmLt']))?$attributes['itmLt']:'';//SP7
+	// 		$this->itemmaster->mpqty = (isset($attributes['mpqty']))?$attributes['mpqty']:'';
+    //         $this->itemmaster->p1_qty = (isset($attributes['opn_quantity'][1]))?$attributes['opn_quantity'][1]:'';
+    //         $this->itemmaster->p2_qty = (isset($attributes['opn_quantity'][2]))?$attributes['opn_quantity'][2]:'';
+	// 		$this->itemmaster->dimension = (isset($attributes['dimension']))?$attributes['dimension']:'';
+			
+	// 		//$this->itemmaster->p1_formula = (isset($attributes['packing'][1]))?$attributes['packing'][1]:'';
+    //        // $this->itemmaster->p2_formula = (isset($attributes['packing'][2]))?$attributes['packing'][2]:'';   
+            
+    //         $this->itemmaster->p1_formula = (isset($attributes['packing'][1]) && isset($attributes['pkno'][1]))?(($attributes['packing'][1]>$attributes['pkno'][1])?$attributes['packing'][1].',/':$attributes['pkno'][1].',*'):'';
+    //         $this->itemmaster->p2_formula = (isset($attributes['packing'][2]) && isset($attributes['pkno'][2]))?(($attributes['packing'][2]>$attributes['pkno'][2])?$attributes['packing'][2].',/':$attributes['pkno'][2].',*'):'';
+			
+			
+			
+	// 		$this->itemmaster->fill($attributes)->save();
+			
+	// 		//$units = $this->getUnits($id);//echo '<pre>';print_r($units);exit;
+	// 		$key = 0;
+	// 		$currentDeptId = env('DEPARTMENT_ID');
+			
+	// 		foreach($attributes['unit'] as $key => $val) {
+				
+	// 			if(isset($attributes['item_unit_id'][$key]) && $attributes['item_unit_id'][$key]!='')
+	// 				$itemunit = ItemUnit::find($attributes['item_unit_id'][$key]);
+	// 			else
+	// 				$itemunit = new ItemUnit();
+				
+	// 				$logs = DB::table('item_log')->where('document_type','!=','OQ')->where('item_id',$id)->where('department_id',$currentDeptId)->count();
+	// 			if($attributes['unit'][$key]!="" || $key==0) {
+	// 				if(isset($attributes['opn_quantity_cur'][$key])&& isset($attributes['opn_quantity'][$key])&&$attributes['opn_quantity_cur'][$key] != $attributes['opn_quantity'][$key]){
+	// 					if($logs==0)
+	// 						$itemunit->cur_quantity = $attributes['opn_quantity'][$key];// + $itemunit->cur_quantity;
+	// 				}
+					
+	// 				if($attributes['unit'][$key]=='') {
+	// 			        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+	// 			    }
+    //                   //echo '<pre>';print_r($attributes['unit'][$key]);exit;
+    //                   $unitId = ($attributes['unit'][$key] == '') ? $unitdat->id : $attributes['unit'][$key];
+    //                  $opnQty = isset($attributes['opn_quantity'][$key]) ? (float)$attributes['opn_quantity'][$key] : 0;
+    //                  $opnCost = isset($attributes['opn_cost'][$key]) ? (float)$attributes['opn_cost'][$key] : 0;
+	// 				  $sellPrice=isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:0;
+    //                    $wsalePrice=isset($attributes['wsale_price'][$key])?$attributes['wsale_price'][$key]:0;
+	// 				   $minQty=    isset($attributes['min_quantity'][$key])?$attributes['min_quantity'][$key]:0;
+    //                  // ----------------------------------------------
+    //                    // DETERMINE WHETHER TO REPLACE OR ADD
+    //                  // ----------------------------------------------
+    //                      $existingDeptStock = DB::table('itemstock_department')->where('itemmaster_id', $id)
+	// 					                           ->where('department_id', $currentDeptId)->first();
+
+    //                     $isSameDept = false;
+    //                     if ($existingDeptStock) {
+    //         // If this department already has non-zero stock, it’s the same dept
+	// 		          if($existingDeptStock->opn_quantity > 0 || $existingDeptStock->opn_cost > 0)
+    //                     $isSameDept =true ;
+    //                    }
+    //                    //echo '<pre>';print_r($isSameDept);exit;
+        
+    //                   // UPDATE GLOBAL ITEM_UNIT TABLE
+        
+    //                     if ($isSameDept) {
+    //                         // SAME STORE → REPLACE
+    //                             $itemunit->opn_quantity = $opnQty;
+    //                             $itemunit->opn_cost = $opnCost;
+    //                             $itemunit->cur_quantity = $opnQty;
+	// 							$itemunit->sell_price=$sellPrice;
+	// 							$itemunit->wsale_price=$wsalePrice;
+	// 							$itemunit->min_quantity=$minQty;
+	// 							$itemunit->cost_avg = $opnCost;
+    //                     } else {
+    //                        // 🆕 DIFFERENT STORE → ADD
+    //                           $itemunit->opn_quantity = ($itemunit->opn_quantity ?: 0) + $opnQty;
+    //                            $itemunit->opn_cost = ($itemunit->opn_cost ?: 0) + $opnCost;
+    //                            $itemunit->cur_quantity = ($itemunit->cur_quantity ?: 0) + $opnQty;
+	// 						   $itemunit->sell_price=($itemunit->sell_price ?: 0) + $sellPrice;
+	// 						   $itemunit->wsale_price=($itemunit->wsell_price ?: 0) + $wsalePrice;
+	// 						   $itemunit->min_quantity=($itemunit->min_quantity ?: 0) + $minQty;
+	// 						   $itemunit->cost_avg =($itemunit->cost_avg ?: 0) + $opnCost;
+							   
+    //                     }
+
+    //                      //echo '<pre>';print_r($itemunit->opn_quantity);exit;
+    //                          // COMMON FIELD UPDATES
+        
+    //                 $itemunit->unit_id = $unitId;
+	// 				$itemunit->packing = $attributes['packing'][$key];
+	// 				//$itemunit->opn_quantity = $attributes['opn_quantity'][$key];
+	// 				//$itemunit->opn_cost = $attributes['opn_cost'][$key];
+	// 				//$itemunit->sell_price = isset($attributes['sell_price'][$key])?$attributes['sell_price'][$key]:'';
+	// 				//$itemunit->wsale_price = isset($attributes['wsale_price'][$key])?$attributes['wsale_price'][$key]:'';
+	// 				//$itemunit->min_quantity = isset($attributes['min_quantity'][$key])?$attributes['min_quantity'][$key]:'';
+	// 				$itemunit->reorder_level = isset($attributes['reorder_level'][$key])?$attributes['reorder_level'][$key]:'';
+	// 				$itemunit->vat = isset($attributes['selvat'][0])?$attributes['selvat'][0]:'';
+	// 				$itemunit->is_baseqty = ($key==0)?$is_baseqty=1:$is_baseqty=0;
+	// 				//$itemunit->cost_avg = isset($attributes['opn_cost'][$key])?$attributes['opn_cost'][$key]:'';
+	// 				$itemunit->pkno = isset($attributes['pkno'][$key])?$attributes['pkno'][$key]:'';
+	// 				$itemunit->status = 1;
+	// 				//$itemunit->received_qty = $attributes['opn_quantity'][$key];
+	// 				//echo '<pre>';print_r($itemunit);exit;
+	// 				if(isset($attributes['item_unit_id'][$key]) && $attributes['item_unit_id'][$key]!='')
+						
+	// 					$itemunit->save();
+	// 				else
+	// 					$this->itemmaster->itemUnits()->save($itemunit);
+	// 				// ----------------------------------------------
+    //     // UPDATE ITEMSTOCK_DEPARTMENT (per-store)
+    //     // ----------------------------------------------
+    //                    if ($existingDeptStock) {
+    //               if ($isSameDept) {
+    //                         // ✅ SAME STORE → REPLACE
+    //             DB::table('itemstock_department')
+    //                 ->where('itemmaster_id', $id)
+    //                 ->where('department_id', $currentDeptId)
+    //                 ->update([
+    //                     'opn_quantity' => $opnQty,
+    //                     'opn_cost'     => $opnCost,
+    //                     'cur_quantity' => $opnQty,
+	// 					'received_qty' =>$opnQty,
+    //                     'last_purchase_cost' => $opnCost,
+    //                     'cost_avg'     => $opnCost,
+                        
+    //                 ]);
+    //         } else {
+    //             // 🆕 DIFFERENT STORE → ADD stock to that department
+    //             DB::table('itemstock_department')
+    //                 ->where('itemmaster_id', $id)
+    //                 ->where('department_id', $currentDeptId)
+    //                 ->update([
+    //                     'opn_quantity' => DB::raw('opn_quantity + ' . $opnQty),
+    //                     'opn_cost'     => DB::raw('opn_cost + ' . $opnCost),
+    //                     'cur_quantity' => DB::raw('cur_quantity + ' . $opnQty),
+	// 					'received_qty' =>DB::raw('received_qty + ' . $opnQty),
+    //                     'last_purchase_cost' => $opnCost,
+    //                     'cost_avg'     => $opnCost,
+
+                        
+    //                 ]);
+    //         }
+    //     }
+                    
+    //                        // END UPDATE ITEMSTOCK_DEPARTMENT (per-store)
+        
+        
+	// 				if($key==0) {
+	// 					//-----------ITEM LOG----------------							
+	// 					DB::table('item_log')
+	// 								->where('document_type', 'OQ')
+	// 								->where('item_id', $this->itemmaster->id) 
+	// 								->where('department_id', $currentDeptId)
+	// 								->where('packing', 1)
+	// 								->update([
+	// 								     'unit_id' => $attributes['unit'][$key],
+	// 									 'quantity'   => $attributes['opn_quantity'][$key],
+	// 									 'unit_cost'  => $attributes['opn_cost'][$key],
+	// 									 'cur_quantity' => $attributes['opn_quantity'][$key],
+	// 									 'cost_avg' => $attributes['opn_cost'][$key],
+	// 									 'pur_cost' => $attributes['opn_cost'][$key],
+	// 									]);
+	// 					//-------------ITEM LOG--------------
+	// 				}		
+	// 				$key++;
+
+	// 				//-----------ITEM LOG----------------	
+	// 				$log_count=DB::table('item_log')
+	// 								->where('document_type', 'OQ')
+	// 								->where('item_id', $this->itemmaster->id) 
+	// 								->where('department_id', $currentDeptId)->count();
+					
+    //               if ($log_count==0) {	
+	// 						$dtrow = DB::table('parameter1')->select('from_date')->first();
+	// 						$log_id = DB::table('item_log')->insertGetId([
+	// 										 'document_type' => 'OQ',
+	// 										 'department_id'=>env('DEPARTMENT_ID'),
+	// 										 'item_id' 	  => $this->itemmaster->id,
+	// 										 'unit_id'    => $unitId,
+	// 										 'quantity'   => isset($attributes['opn_quantity'][0])?$attributes['opn_quantity'][0]:0,
+	// 										 'unit_cost'  => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
+	// 										 'trtype'	  => 1,
+	// 										 'cur_quantity' => isset($attributes['opn_quantity'][0])?$attributes['opn_quantity'][0]:0,
+	// 										 'cost_avg' => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
+	// 										 'pur_cost' => isset($attributes['opn_cost'][0])?$attributes['opn_cost'][0]:0,
+	// 										 'sale_cost' => '',
+	// 										 'packing' => 1,
+	// 										 'status'     => 1,
+	// 										 'created_at' => date('Y-m-d H:i:s'),
+	// 										 'created_by' => Auth::User()->id,
+	// 										 'voucher_date' => $dtrow->from_date
+	// 										 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
+	// 										]);
+	// 									}
 									
 
-									//echo '<pre>';print_r($log_id);exit;
-							//-------------ITEM LOG------------------
+	// 								//echo '<pre>';print_r($log_id);exit;
+	// 						//-------------ITEM LOG------------------
 						
 					
-					if(isset($attributes['locid']) && isset($attributes['locqty'])) {
-						foreach($attributes['locid'] as $k => $v) {
-							$itlocid = isset($attributes['itlocid'][$k])?$attributes['itlocid'][$k]:0;
-							if($itlocid!='')
-								DB::table('item_location')->where('id', $itlocid)->where('department_id', env('DEPARTMENT_ID'))->update(['quantity' => $attributes['locqty'][$k],'opn_qty' => $attributes['locqty'][$k], 'bin_id' => $attributes['binid'][$k]]);
-							else {
-							    $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
-								$itemLocation = new ItemLocation();
-								$itemLocation->location_id = $v;
-								$itemLocation->item_id = $this->itemmaster->id;
-								$itemLocation->department_id = env('DEPARTMENT_ID');
-								$itemLocation->unit_id = (isset($attributes['unit'][$key]) && $attributes['unit'][$key]!='')?$attributes['unit'][$key]:$unitdat->id;
-								$itemLocation->quantity = $attributes['locqty'][$k];
-								$itemLocation->status = 1;
-								$itemLocation->opn_qty = $attributes['locqty'][$k];
-								$itemLocation->bin_id = $attributes['binid'][$k];
-								//$itemLocation->doc_type = 'OQ';
-								$itemLocation->save();
-							}
-						}
-					}  
-				}
+	// 				if(isset($attributes['locid']) && isset($attributes['locqty'])) {
+	// 					foreach($attributes['locid'] as $k => $v) {
+	// 						$itlocid = isset($attributes['itlocid'][$k])?$attributes['itlocid'][$k]:0;
+	// 						if($itlocid!='')
+	// 							DB::table('item_location')->where('id', $itlocid)->where('department_id', env('DEPARTMENT_ID', 1))->update(['quantity' => $attributes['locqty'][$k],'opn_qty' => $attributes['locqty'][$k], 'bin_id' => $attributes['binid'][$k]]);
+	// 						else {
+	// 						    $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+	// 							$itemLocation = new ItemLocation();
+	// 							$itemLocation->location_id = $v;
+	// 							$itemLocation->item_id = $this->itemmaster->id;
+	// 							$itemLocation->department_id = env('DEPARTMENT_ID');
+	// 							$itemLocation->unit_id = (isset($attributes['unit'][$key]) && $attributes['unit'][$key]!='')?$attributes['unit'][$key]:$unitdat->id;
+	// 							$itemLocation->quantity = $attributes['locqty'][$k];
+	// 							$itemLocation->status = 1;
+	// 							$itemLocation->opn_qty = $attributes['locqty'][$k];
+	// 							$itemLocation->bin_id = $attributes['binid'][$k];
+	// 							//$itemLocation->doc_type = 'OQ';
+	// 							$itemLocation->save();
+	// 						}
+	// 					}
+	// 				}  
+	// 			}
 				
-			}
+	// 		}
 			
 			
-			//Manufacture item row materials add.....
-			if($attributes['assembly']==1) { $a=1;
-				foreach($attributes['item_id'] as $ky => $item) { 
-					if($attributes['row_id'][$ky]!='') {
+	// 		//Manufacture item row materials add.....
+	// 		if($attributes['assembly']==1) { $a=1;
+	// 			foreach($attributes['item_id'] as $ky => $item) { 
+	// 				if($attributes['row_id'][$ky]!='') {
 						
-						DB::table('mfg_items')
-									->where('id', $attributes['row_id'][$ky])
-									->update([
-										'subitem_id'	=> $attributes['item_id'][$ky],
-										'quantity'	=> $attributes['quantity'][$ky],
-										'unit_price'	=> $attributes['cost'][$ky],
-										'total'	=> $attributes['line_total'][$ky]
-									]);
+	// 					DB::table('mfg_items')
+	// 								->where('id', $attributes['row_id'][$ky])
+	// 								->update([
+	// 									'subitem_id'	=> $attributes['item_id'][$ky],
+	// 									'quantity'	=> $attributes['quantity'][$ky],
+	// 									'unit_price'	=> $attributes['cost'][$ky],
+	// 									'total'	=> $attributes['line_total'][$ky]
+	// 								]);
 						
-					} else {
+	// 				} else {
 						
-						if($item!='') { 
-							DB::table('mfg_items')
-									->insert([
-										'item_id'	=> $this->itemmaster->id,
-										'subitem_id'	=> $item,
-										'quantity'	=> $attributes['quantity'][$ky],
-										'unit_price'	=> $attributes['cost'][$ky],
-										'total'	=> $attributes['line_total'][$ky]
-									]);
-						}
-					}
-				}
+	// 					if($item!='') { 
+	// 						DB::table('mfg_items')
+	// 								->insert([
+	// 									'item_id'	=> $this->itemmaster->id,
+	// 									'subitem_id'	=> $item,
+	// 									'quantity'	=> $attributes['quantity'][$ky],
+	// 									'unit_price'	=> $attributes['cost'][$ky],
+	// 									'total'	=> $attributes['line_total'][$ky]
+	// 								]);
+	// 					}
+	// 				}
+	// 			}
 				
-				if($attributes['remove_item']!='') {
+	// 			if($attributes['remove_item']!='') {
 					
-					$arrids = explode(',', $attributes['remove_item']);
-					foreach($arrids as $row) {
-						DB::table('mfg_items')->where('id', $row)->update(['deleted_at' => date('Y-m-d H:i:s')]);
-					}
-				}
+	// 				$arrids = explode(',', $attributes['remove_item']);
+	// 				foreach($arrids as $row) {
+	// 					DB::table('mfg_items')->where('id', $row)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+	// 				}
+	// 			}
+	// 		}
+			
+	// 		$this->formatLogs($id);
+			
+			
+	// 		//BATCH NO ENTRY............
+	// 		$isbatch = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
+	// 		if($isbatch==1 && $attributes['batchNos']!='' && $attributes['mfgDates']!='' && $attributes['qtyBatchs']!='') {
+			    
+	// 		    $dtrow = DB::table('parameter1')->select('from_date')->first();
+	// 		    $logrow = DB::table('item_log')->where('document_type', 'OQ')->where('item_id', $this->itemmaster->id)->where('packing', 1)->select('id')->first();
+			    
+	// 		    $batchArr = explode(',', $attributes['batchNos']);
+	// 		    $mfgArr = explode(',', $attributes['mfgDates']);
+	// 		    $expArr = explode(',', $attributes['expDates']);
+	// 		    $qtyArr = explode(',', $attributes['qtyBatchs']);
+	// 		    $bthidsArr = explode(',', $attributes['batchIds']);
+	// 		    $remArr = explode(',', $attributes['batchRem']);
+	// 		    //echo '<pre>';print_r($batchArr);print_r($bthidsArr);exit;
+	// 		    foreach($batchArr as $bkey => $bval) {
+			        
+	// 		        if(isset($bthidsArr[$bkey]) && $bthidsArr[$bkey]!='') { //UPDATE...
+			            
+	// 		            DB::table('item_batch')
+	// 		                            ->where('id', $bthidsArr[$bkey])
+    //     				                ->update([
+    //     				                    'batch_no' => $bval,
+    //     				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
+    //     				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
+    //     				                    'quantity' => $qtyArr[$bkey]
+    //     				                ]);
+        				                
+    //     				DB::table('batch_log')
+    //     				                ->where('batch_id', $bthidsArr[$bkey])
+    //     				                ->where('document_type','OQ')
+    //     				                ->update([
+    //     				                    'quantity' => $qtyArr[$bkey],
+    //     				                    'modify_at' => date('Y-m-d h:i:s'),
+    //     				                    'modify_by' => Auth::User()->id
+    //     				                    ]);
+        				                    
+	// 		        } else {  //INSERT NEW....
+			        
+    // 			        $batch_id = DB::table('item_batch')
+    //         				                ->insertGetId([
+    //         				                    'item_id' => $this->itemmaster->id,
+    //         				                    'batch_no' => $bval,
+    //         				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
+    //         				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
+    //         				                    'quantity' => $qtyArr[$bkey]
+    //         				                ]);
+            				                
+    //         			if($batch_id) {
+    //         			    DB::table('batch_log')
+    //     				                ->insert([
+    //     				                    'batch_id' => $batch_id,
+    //     				                    'item_id' => $this->itemmaster->id,
+    //     				                    'document_type' => 'OQ',
+    //     				                    'quantity' => $qtyArr[$bkey],
+    //     				                    'trtype' => 1,
+    //     				                    'invoice_date' => $dtrow->from_date,
+    //     				                    'log_id' => $logrow->id,
+    //     				                    'created_at' => date('Y-m-d h:i:s'),
+    //     				                    'created_by' => Auth::User()->id
+    //     				                    ]);
+    //         			}	                
+        				                
+	// 		        }                
+        				                
+	// 		    }
+			    
+	// 		    //DELETE...
+	// 		    foreach($remArr as $rem) {
+			        
+	// 		        DB::table('item_batch')->where('id',$rem)->update(['deleted_at' => date('Y-m-d h:i:s')]);
+			        
+	// 		        DB::table('batch_log')->where('batch_id',$rem)->where('document_type','OQ')->update(['deleted_at' => date('Y-m-d h:i:s'), 'deleted_by' => Auth::User()->id]);
+	// 		    }
+			
+	// 		}
+
+	// 		return true;
+	// 	}
+	// 	//throw new ValidationException('Itemmaster validation error!', $this->getErrors());
+	// }
+
+
+	public function update($id, $attributes) {
+		DB::beginTransaction();
+		try {
+			if (!$this->isValid($attributes, ['item_code' => 'required'])) {
+				DB::rollback();
+				return false;
 			}
 			
+			$this->itemmaster = $this->find($id);
+			
+			// Update basic item info
+			$this->updateItemBasicInfo($attributes);
+			
+			// Update item units
+			$this->updateItemUnits($id, $attributes);
+			
+			// Update locations
+			$this->updateItemLocations($id, $attributes);
+			
+			// Update manufacturing items if assembly
+			if(isset($attributes['assembly']) && $attributes['assembly'] == 1) {
+				$this->updateMfgItems($id, $attributes);
+			}
+			
+			// Update batch entries if batch required
+			if(isset($attributes['batch_req']) && $attributes['batch_req'] == 1) {
+				$this->updateBatchEntries($id, $attributes);
+			}
+			
+			// Format item logs
 			$this->formatLogs($id);
 			
-			
-			//BATCH NO ENTRY............
-			$isbatch = (isset($attributes['batch_req']))?$attributes['batch_req']:'';
-			if($isbatch==1 && $attributes['batchNos']!='' && $attributes['mfgDates']!='' && $attributes['qtyBatchs']!='') {
-			    
-			    $dtrow = DB::table('parameter1')->select('from_date')->first();
-			    $logrow = DB::table('item_log')->where('document_type', 'OQ')->where('item_id', $this->itemmaster->id)->where('packing', 1)->select('id')->first();
-			    
-			    $batchArr = explode(',', $attributes['batchNos']);
-			    $mfgArr = explode(',', $attributes['mfgDates']);
-			    $expArr = explode(',', $attributes['expDates']);
-			    $qtyArr = explode(',', $attributes['qtyBatchs']);
-			    $bthidsArr = explode(',', $attributes['batchIds']);
-			    $remArr = explode(',', $attributes['batchRem']);
-			    //echo '<pre>';print_r($batchArr);print_r($bthidsArr);exit;
-			    foreach($batchArr as $bkey => $bval) {
-			        
-			        if(isset($bthidsArr[$bkey]) && $bthidsArr[$bkey]!='') { //UPDATE...
-			            
-			            DB::table('item_batch')
-			                            ->where('id', $bthidsArr[$bkey])
-        				                ->update([
-        				                    'batch_no' => $bval,
-        				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
-        				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
-        				                    'quantity' => $qtyArr[$bkey]
-        				                ]);
-        				                
-        				DB::table('batch_log')
-        				                ->where('batch_id', $bthidsArr[$bkey])
-        				                ->where('document_type','OQ')
-        				                ->update([
-        				                    'quantity' => $qtyArr[$bkey],
-        				                    'modify_at' => date('Y-m-d h:i:s'),
-        				                    'modify_by' => Auth::User()->id
-        				                    ]);
-        				                    
-			        } else {  //INSERT NEW....
-			        
-    			        $batch_id = DB::table('item_batch')
-            				                ->insertGetId([
-            				                    'item_id' => $this->itemmaster->id,
-            				                    'batch_no' => $bval,
-            				                    'mfg_date' => date('Y-m-d', strtotime($mfgArr[$bkey])),
-            				                    'exp_date' => ($expArr[$bkey]!='')?date('Y-m-d', strtotime($expArr[$bkey])):'',
-            				                    'quantity' => $qtyArr[$bkey]
-            				                ]);
-            				                
-            			if($batch_id) {
-            			    DB::table('batch_log')
-        				                ->insert([
-        				                    'batch_id' => $batch_id,
-        				                    'item_id' => $this->itemmaster->id,
-        				                    'document_type' => 'OQ',
-        				                    'quantity' => $qtyArr[$bkey],
-        				                    'trtype' => 1,
-        				                    'invoice_date' => $dtrow->from_date,
-        				                    'log_id' => $logrow->id,
-        				                    'created_at' => date('Y-m-d h:i:s'),
-        				                    'created_by' => Auth::User()->id
-        				                    ]);
-            			}	                
-        				                
-			        }                
-        				                
-			    }
-			    
-			    //DELETE...
-			    foreach($remArr as $rem) {
-			        
-			        DB::table('item_batch')->where('id',$rem)->update(['deleted_at' => date('Y-m-d h:i:s')]);
-			        
-			        DB::table('batch_log')->where('batch_id',$rem)->where('document_type','OQ')->update(['deleted_at' => date('Y-m-d h:i:s'), 'deleted_by' => Auth::User()->id]);
-			    }
-			
-			}
-
+			DB::commit();
 			return true;
+			
+		} catch(\Exception $e) {
+			DB::rollback();
+			Log::error('Item update failed: ' . $e->getMessage());
+			throw $e;
 		}
-		//throw new ValidationException('Itemmaster validation error!', $this->getErrors());
 	}
+
+	private function updateItemBasicInfo($attributes) {
+		// Handle image upload
+		$image = $attributes['current_image'];
+		if (isset($attributes['image']) && $attributes['image']) {
+			$image = $this->handleImageUpload($attributes['image']);
+		}
+		
+		$this->itemmaster->fill([
+			'item_code' => $attributes['item_code'],
+			'description' => $attributes['description'],
+			'description_ar' => $attributes['descriptionar'] ?? '',
+			'class_id' => $attributes['item_class'],
+			'model_no' => $attributes['model_no'],
+			'serial_no' => $attributes['serial_no'],
+			'group_id' => $attributes['group_id'],
+			'subgroup_id' => $attributes['subgroup_id'],
+			'category_id' => $attributes['category_id'],
+			'subcategory_id' => $attributes['subcategory_id'],
+			'assembly' => $attributes['assembly'],
+			'image' => $image,
+			'profit_per' => $attributes['profit_per'],
+			'bin' => $attributes['machine_model'],
+			'weight' => $attributes['size'],
+			'other_info' => $attributes['other_info'],
+			'modified_at' => now(),
+			'modify_by' => Auth::id(),
+			// ... other fields
+		]);
+		
+		$this->itemmaster->save();
+	}
+
+
+	/**
+	 * Update item units
+	 */
+	private function updateItemUnits($id, $attributes)
+	{
+		$departmentId = env('DEPARTMENT_ID', 1);
+		$dtrow = DB::table('parameter1')->select('from_date')->first();
+		$c = 1;
+		
+		// Get existing item units
+		$existingUnits = ItemUnit::where('itemmaster_id', $id)->get()->keyBy('id');
+		$processedUnitIds = [];
+		
+		if (!isset($attributes['unit']) || !is_array($attributes['unit'])) {
+			return;
+		}
+		
+		foreach ($attributes['unit'] as $key => $val) {
+			if (empty($val) && $c != 1) {
+				continue; // Skip empty units except first one
+			}
+			
+			// Determine unit ID
+			if (empty($val)) {
+				$unitdat = DB::table('units')->whereNull('deleted_at')->first();
+				$unit_id = $unitdat->id;
+				$packing = $unitdat->unit_name;
+			} else {
+				$unitdat = DB::table('units')->where('id', $val)->first();
+				$unit_id = $val;
+				$packing = $attributes['packing'][$key] ?? $unitdat->unit_name;
+			}
+			
+			// Check if this unit already exists
+			$itemUnitId = $attributes['item_unit_id'][$key] ?? null;
+			
+			if ($itemUnitId && isset($existingUnits[$itemUnitId])) {
+				// Update existing unit
+				$itemunit = $existingUnits[$itemUnitId];
+				$processedUnitIds[] = $itemUnitId;
+			} else {
+				// Create new unit
+				$itemunit = new ItemUnit();
+				$itemunit->itemmaster_id = $id;
+			}
+			
+			// Set unit data
+			$itemunit->unit_id = $unit_id;
+			$itemunit->packing = $packing;
+			$itemunit->sell_price = $attributes['sell_price'][$key] ?? 0;
+			$itemunit->wsale_price = $attributes['wsale_price'][$key] ?? 0;
+			$itemunit->min_quantity = $attributes['min_quantity'][$key] ?? 0;
+			$itemunit->reorder_level = $attributes['reorder_level'][$key] ?? 0;
+			$itemunit->vat = $attributes['selvat'][0] ?? 0;
+			$itemunit->pkno = $attributes['pkno'][$key] ?? 1;
+			$itemunit->status = 1;
+			
+			// Handle opening quantity/cost updates (only for base unit)
+			if ($c == 1) {
+				$itemunit->is_baseqty = 1;
+				
+				// Check if quantities changed
+				$newOpnQty = $attributes['opn_quantity'][$key] ?? 0;
+				$newOpnCost = $attributes['opn_cost'][$key] ?? 0;
+				
+				if ($itemunit->exists) {
+					// Calculate difference
+					$qtyDiff = $newOpnQty - $itemunit->opn_quantity;
+					$costDiff = $newOpnCost - $itemunit->opn_cost;
+					
+					// Update quantities
+					$itemunit->opn_quantity = $newOpnQty;
+					$itemunit->opn_cost = $newOpnCost;
+					$itemunit->cur_quantity = $itemunit->cur_quantity + $qtyDiff;
+					$itemunit->received_qty = $itemunit->received_qty + $qtyDiff;
+					
+					// Recalculate average cost
+					if ($itemunit->cur_quantity > 0) {
+						$totalCost = ($itemunit->cost_avg * ($itemunit->cur_quantity - $qtyDiff)) + ($newOpnCost * $qtyDiff);
+						$itemunit->cost_avg = $totalCost / $itemunit->cur_quantity;
+						$itemunit->last_purchase_cost = $newOpnCost;
+					}
+				} else {
+					// New unit - set initial values
+					$itemunit->opn_quantity = $newOpnQty;
+					$itemunit->opn_cost = $newOpnCost;
+					$itemunit->cur_quantity = $newOpnQty;
+					$itemunit->received_qty = $newOpnQty;
+					$itemunit->last_purchase_cost = $newOpnCost;
+					$itemunit->cost_avg = $newOpnCost;
+					$itemunit->pur_count = 1;
+				}
+			} else {
+				$itemunit->is_baseqty = 0;
+			}
+			
+			$itemunit->save();
+			
+			if ($c == 1 && !$itemunit->wasRecentlyCreated) {
+				// Update department stock for base unit
+				$this->updateDepartmentStockOnEdit($id, $attributes, $key, $unit_id, $departmentId);
+			}
+			
+			$c++;
+		}
+		
+		// Delete units that were removed
+		$unitsToDelete = array_diff($existingUnits->pluck('id')->toArray(), $processedUnitIds);
+		if (!empty($unitsToDelete)) {
+			ItemUnit::whereIn('id', $unitsToDelete)->delete();
+		}
+	}
+
+	/**
+	 * Update department stock when editing item
+	 */
+	private function updateDepartmentStockOnEdit($itemmaster_id, $attributes, $key, $unit_id, $departmentId)
+	{
+		$newOpnQty = $attributes['opn_quantity'][$key] ?? 0;
+		$newOpnCost = $attributes['opn_cost'][$key] ?? 0;
+		$sellPrice = $attributes['sell_price'][$key] ?? 0;
+		$wsalePrice = $attributes['wsale_price'][$key] ?? 0;
+		$minQty = $attributes['min_quantity'][$key] ?? 0;
+		$reorderLevel = $attributes['reorder_level'][$key] ?? 0;
+		$vat = $attributes['selvat'][0] ?? 0;
+		$pkno = $attributes['pkno'][$key] ?? 1;
+		
+		// Get current stock
+		$currentStock = DB::table('itemstock_department')
+			->where('itemmaster_id', $itemmaster_id)
+			->where('department_id', $departmentId)
+			->where('is_baseqty', 1)
+			->first();
+		
+		if ($currentStock) {
+			$qtyDiff = $newOpnQty - $currentStock->opn_quantity;
+			
+			DB::table('itemstock_department')
+				->where('itemmaster_id', $itemmaster_id)
+				->where('department_id', $departmentId)
+				->where('is_baseqty', 1)
+				->update([
+					'opn_quantity' => $newOpnQty,
+					'opn_cost' => $newOpnCost,
+					'cur_quantity' => $currentStock->cur_quantity + $qtyDiff,
+					'received_qty' => $currentStock->received_qty + $qtyDiff,
+					'sell_price' => $sellPrice,
+					'wsale_price' => $wsalePrice,
+					'min_quantity' => $minQty,
+					'reorder_level' => $reorderLevel,
+					'vat' => $vat,
+					'pkno' => $pkno,
+					'last_purchase_cost' => $newOpnCost,
+				]);
+		}
+	}
+
+	/**
+	 * Update item locations
+	 */
+	private function updateItemLocations($id, $attributes)
+	{
+		$departmentId = env('DEPARTMENT_ID', 1);
+		
+		// Get base unit
+		$baseUnit = ItemUnit::where('itemmaster_id', $id)
+			->where('is_baseqty', 1)
+			->first();
+		
+		if (!$baseUnit) {
+			return;
+		}
+		
+		$unit_id = $baseUnit->unit_id;
+		
+		// Delete existing locations
+		ItemLocation::where('item_id', $id)
+			->where('department_id', $departmentId)
+			->delete();
+		
+		if (isset($attributes['locid']) && isset($attributes['locqty'])) {
+			// User specified locations
+			foreach ($attributes['locid'] as $k => $v) {
+				$itemLocation = new ItemLocation();
+				$itemLocation->location_id = $v;
+				$itemLocation->item_id = $id;
+				$itemLocation->unit_id = $unit_id;
+				$itemLocation->department_id = $departmentId;
+				$itemLocation->quantity = $attributes['locqty'][$k] ?? 0;
+				$itemLocation->status = 1;
+				$itemLocation->opn_qty = $attributes['locqty'][$k] ?? 0;
+				$itemLocation->bin_id = $attributes['binid'][$k] ?? 0;
+				$itemLocation->save();
+			}
+			
+			// Add remaining locations with zero quantity
+			$allLocations = DB::table('location')
+				->where('department_id', $departmentId)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->pluck('id')
+				->toArray();
+			
+			$missingLocations = array_diff($allLocations, $attributes['locid']);
+			
+			foreach ($missingLocations as $locationId) {
+				$itemLocation = new ItemLocation();
+				$itemLocation->location_id = $locationId;
+				$itemLocation->item_id = $id;
+				$itemLocation->unit_id = $unit_id;
+				$itemLocation->department_id = $departmentId;
+				$itemLocation->quantity = 0;
+				$itemLocation->status = 1;
+				$itemLocation->opn_qty = 0;
+				$itemLocation->bin_id = 0;
+				$itemLocation->save();
+			}
+		} else {
+			// Add to all locations (default location gets opening quantity)
+			$locations = DB::table('location')
+				->where('department_id', $departmentId)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->get();
+			
+			$opnQty = $attributes['opn_quantity'][0] ?? 0;
+			
+			foreach ($locations as $location) {
+				$itemLocation = new ItemLocation();
+				$itemLocation->location_id = $location->id;
+				$itemLocation->item_id = $id;
+				$itemLocation->unit_id = $unit_id;
+				$itemLocation->department_id = $departmentId;
+				$itemLocation->quantity = ($location->is_default == 1) ? $opnQty : 0;
+				$itemLocation->status = 1;
+				$itemLocation->opn_qty = ($location->is_default == 1) ? $opnQty : 0;
+				$itemLocation->bin_id = 0;
+				$itemLocation->save();
+			}
+		}
+	}
+
+	/**
+	 * Update manufacturing items (BOM - Bill of Materials)
+	 */
+	private function updateMfgItems($id, $attributes)
+	{
+		// Delete existing manufacturing items
+		DB::table('mfg_items')->where('item_id', $id)->delete();
+		
+		if (!isset($attributes['item_id']) || !is_array($attributes['item_id'])) {
+			return;
+		}
+		
+		foreach ($attributes['item_id'] as $key => $item) {
+			if (empty($item)) {
+				continue;
+			}
+			
+			DB::table('mfg_items')->insert([
+				'item_id' => $id,
+				'subitem_id' => $item,
+				'quantity' => $attributes['quantity'][$key] ?? 0,
+				'unit_price' => $attributes['cost'][$key] ?? 0,
+				'total' => $attributes['line_total'][$key] ?? 0
+			]);
+		}
+	}
+
+	/**
+	 * Update batch entries
+	 */
+	private function updateBatchEntries($id, $attributes)
+	{
+		if (!isset($attributes['batchNos']) || empty($attributes['batchNos'])) {
+			return;
+		}
+		
+		if (!isset($attributes['mfgDates']) || !isset($attributes['qtyBatchs'])) {
+			return;
+		}
+		
+		// Delete existing batches
+		DB::table('item_batch')->where('item_id', $id)->delete();
+		DB::table('batch_log')->where('item_id', $id)->delete();
+		
+		$dtrow = DB::table('parameter1')->select('from_date')->first();
+		$batchArr = explode(',', $attributes['batchNos']);
+		$mfgArr = explode(',', $attributes['mfgDates']);
+		$expArr = explode(',', $attributes['expDates']);
+		$qtyArr = explode(',', $attributes['qtyBatchs']);
+		
+		foreach ($batchArr as $bkey => $bval) {
+			if (empty($bval)) {
+				continue;
+			}
+			
+			$mfgDate = isset($mfgArr[$bkey]) && !empty($mfgArr[$bkey]) 
+				? date('Y-m-d', strtotime($mfgArr[$bkey])) 
+				: null;
+			
+			$expDate = isset($expArr[$bkey]) && !empty($expArr[$bkey]) 
+				? date('Y-m-d', strtotime($expArr[$bkey])) 
+				: null;
+			
+			$quantity = isset($qtyArr[$bkey]) ? (float)$qtyArr[$bkey] : 0;
+			
+			$batch_id = DB::table('item_batch')->insertGetId([
+				'item_id' => $id,
+				'batch_no' => trim($bval),
+				'mfg_date' => $mfgDate,
+				'exp_date' => $expDate,
+				'quantity' => $quantity
+			]);
+			
+			if ($batch_id) {
+				// Create batch log
+				$logrow = DB::table('item_log')
+					->where('document_type', 'OQ')
+					->where('item_id', $id)
+					->where('packing', 1)
+					->select('id')
+					->first();
+				
+				if ($logrow) {
+					DB::table('batch_log')->insert([
+						'batch_id' => $batch_id,
+						'item_id' => $id,
+						'document_type' => 'OQ',
+						'quantity' => $quantity,
+						'trtype' => 1,
+						'invoice_date' => $dtrow ? $dtrow->from_date : now(),
+						'log_id' => $logrow->id,
+						'created_at' => now(),
+						'created_by' => Auth::id()
+					]);
+				}
+			}
+		}
+	}
+
 	
 	
 	public function delete($id)
@@ -792,48 +1872,69 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		$this->itemmaster->delete();
 	}
 	
-	public function getItemUnit($id)
-	{
-		$query = $this->itemmaster->where('itemmaster.id', $id);
-		
-		return $query->join('item_unit AS u', function($join) {
-							$join->on('u.itemmaster_id','=','itemmaster.id');
-						} )
-						->join('itemstock_department AS ID', function($join) {
-							$join->on('ID.itemmaster_id','=','itemmaster.id');
-						} )
-						->where('ID.department_id',env('DEPARTMENT_ID'))
-						->orderBy('u.id','ASC')
-						->select('ID.*','u.id AS iuid ')->get();
-	}
-
 	// public function getItemUnit($id)
 	// {
-	// 	return DB::table('item_unit as u')
-	// 		->join('itemstock_department as sd', function ($join) {
-	// 			$join->on('sd.itemmaster_id', '=', 'u.itemmaster_id');
-	// 			$join->on('sd.unit_id', '=', 'u.unit_id');
+	// 	return DB::table('item_unit AS u')
+	// 		->leftJoin('itemstock_department AS ID', function($join) {
+	// 			$join->on('ID.itemmaster_id', '=', 'u.itemmaster_id')
+	// 				->on('ID.unit_id', '=', 'u.unit_id')
+	// 				->on('ID.is_baseqty', '=', 'u.is_baseqty');
 	// 		})
 	// 		->where('u.itemmaster_id', $id)
-	// 		->where('sd.department_id', env('DEPARTMENT_ID'))
-	// 		// ->where('sd.deleted_at', '0000-00-00 00:00:00')
+	// 		->where('u.status', 1)
+	// 		->where(function($query) {
+	// 			$query->where('ID.department_id', env('DEPARTMENT_ID', 1))
+	// 				->orWhereNull('ID.department_id');
+	// 		})
 	// 		->orderBy('u.id', 'ASC')
-	// 		->select([
-	// 			'u.id as iuid',
+	// 		->select(
+	// 			'u.id as iuid', 
 	// 			'u.unit_id',
 	// 			'u.packing',
 	// 			'u.pkno',
-
-	// 			'sd.opn_quantity',
-	// 			'sd.opn_cost',
-	// 			'sd.sell_price',
-	// 			'sd.wsale_price',
-	// 			'sd.min_quantity',
-	// 			'sd.reorder_level',
-	// 			'sd.vat'
-	// 		])
+								
+				
+    //                    // All item_unit fields
+	// 			'ID.opn_quantity as dept_opn_quantity',
+	// 			'ID.opn_cost as dept_opn_cost',
+	// 			'ID.cur_quantity',
+	// 			'ID.received_qty',
+	// 			'ID.issued_qty',
+	// 			'ID.min_quantity as dept_min_quantity',
+	// 			'ID.reorder_level as dept_reorder_level',
+	// 			'ID.sell_price as dept_sell_price',
+	// 			'ID.wsale_price as dept_wsale_price'
+	// 		)
 	// 		->get();
 	// }
+
+	public function getItemUnit($id)
+	{
+		return DB::table('item_unit as u')
+			->join('itemstock_department as sd', function ($join) {
+				$join->on('sd.itemmaster_id', '=', 'u.itemmaster_id');
+				$join->on('sd.unit_id', '=', 'u.unit_id');
+			})
+			->where('u.itemmaster_id', $id)
+			->where('sd.department_id', env('DEPARTMENT_ID'))
+			// ->where('sd.deleted_at', '0000-00-00 00:00:00')
+			->orderBy('u.id', 'ASC')
+			->select([
+				'u.id as iuid',
+				'u.unit_id',
+				'u.packing',
+				'u.pkno',
+
+				'sd.opn_quantity',
+				'sd.opn_cost',
+				'sd.sell_price',
+				'sd.wsale_price',
+				'sd.min_quantity',
+				'sd.reorder_level',
+				'sd.vat'
+			])
+			->get();
+	}
 
 	
 	public function getItemUnits($id)
@@ -1250,7 +2351,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		if($itm->assembly==1) {
 			
 			return $result = DB::table('mfg_items')->where('item_id', $attributes['item_id'])
-									->where('deleted_at', '0000-00-00 00:00:00')
+									// ->where('deleted_at', '0000-00-00 00:00:00')
+									->whereNull('deleted_at')
 									->select(DB::raw('SUM(total) AS cost_avg'))->first();
 		} else {
 			$qry = DB::table('item_unit')
@@ -3700,127 +4802,328 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					->update(['cost_avg' => $avg_cost]);
 	}
 	
+	// public function ajaxCreate($attributes)
+	// {
+	// 	DB::beginTransaction();
+	// 	try { 
+			
+	// 		$check1 = $this->itemmaster->where('description', trim($attributes['description']))->where('status',1)->count();
+	// 		$check2 = $this->itemmaster->where('item_code', trim($attributes['item_code']))->where('status',1)->count();
+	// 		if(($check1 > 0) || ($check2 > 0))
+	// 			return 0;
+				
+	// 		$this->itemmaster->item_code = trim($attributes['item_code']);
+	// 		$this->itemmaster->description = trim($attributes['description']);
+	// 		$this->itemmaster->description_ar =isset($attributes['descriptionar'])?$attributes['descriptionar']:'';
+	// 		$this->itemmaster->class_id = $attributes['class_id'];
+	// 		$this->itemmaster->status = 1;
+	// 		$this->itemmaster->created_at = date('Y-m-d H:i:s');
+	// 		$this->itemmaster->created_by = Auth::User()->id;
+	// 		$this->itemmaster->fill($attributes)->save();
+			
+	// 		if($this->itemmaster->id) {
+	// 			$itemunit = new ItemUnit();
+	// 			$itemunit->itemmaster_id = $this->itemmaster->id;
+	// 			$itemunit->unit_id = $attributes['unit'];
+	// 			$itemunit->vat = $attributes['vat'];
+	// 			$itemunit->packing = $attributes['uname'];
+	// 			$itemunit->status = 1;
+	// 			$itemunit->is_baseqty = 1;
+	// 			$this->itemmaster->itemUnits()->save($itemunit);
+				
+	// 				//Item Stock Department
+	// 			$departmentId = env('DEPARTMENT_ID');
+	// 			 $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
+
+    //                                   foreach ($departments as $dept) {
+    //                                            $isCurrent = ($dept->id == $departmentId);
+
+    //                                          DB::table('itemstock_department')->insert([
+    //                                                     'itemmaster_id'      => $this->itemmaster->id,
+    //                                                      'department_id'      => $dept->id,
+	// 													 'unit_id'         => $attributes['unit'],
+	// 													 'packing'         =>$attributes['uname'],
+    //                                                       'is_baseqty'      =>1,
+    //                                                       'vat'            =>$attributes['vat'],
+	// 													 'status'             =>1
+	// 													 ]);
+                                         
+
+    //                                   } 
+	// 			//Item Stock Department End
+				
+	// 			$dtrow = DB::table('parameter1')->select('from_date')->first();
+	// 			DB::table('item_log')->insert([
+	// 							 'document_type' => 'OQ',
+	// 							 'item_id' 	  => $this->itemmaster->id,
+	// 							 'department_id'  =>env('DEPARTMENT_ID'),
+	// 							 'unit_id'    => $attributes['unit'],
+	// 							 'trtype'	  => 1,
+	// 							 'packing' => 1,
+	// 							 'status'     => 1,
+	// 							 'created_at' => date('Y-m-d H:i:s'),
+	// 							 'created_by' => Auth::User()->id,
+	// 							 'voucher_date' => $dtrow->from_date
+	// 							 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
+	// 							]);
+                        			
+	// 			//...............ITEM LOCATION........
+	// 			//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+	// 			$rows = DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->get();
+	// 			if($rows){
+	// 				foreach($rows as $row) {
+	// 					$loc_id = ($row->is_default==1)?$row->id:'';
+	// 					$itemLocation = new ItemLocation();
+	// 					$itemLocation->location_id = $row->id;
+	// 					$itemLocation->department_id = env('DEPARTMENT_ID');
+	// 					$itemLocation->item_id = $this->itemmaster->id;
+	// 					$itemLocation->unit_id = ($attributes['unit']=='')?2:$attributes['unit'];
+	// 					$itemLocation->status = 1;
+	// 					$itemLocation->save();
+						
+	// 					if($loc_id) {
+	// 						//API CALL...
+	// 						$attributes['location_id'] = $loc_id;
+	// 						$attributes['item_class'] = $attributes['class_id'];
+	// 						$attributes['via'] = 'ajax';
+	// 						$response = Curl::to($this->api_url.'itemadd.php')
+	// 									->withData($attributes)
+	// 									->asJson()
+	// 									->post();
+	// 					}
+	// 				}
+					
+	// 			}
+						
+	// 		}
+							
+	// 		DB::commit();
+	// 		return $this->itemmaster->id;
+			
+	// 	} catch(\Exception $e) {
+				
+	// 		DB::rollback();
+	// 		return -1;
+	// 	}
+	// }
+
+
+	/**
+	 * Create item via AJAX (for quick add from other modules)
+	 */
 	public function ajaxCreate($attributes)
 	{
 		DB::beginTransaction();
-		try { 
-			
-			$check1 = $this->itemmaster->where('description', trim($attributes['description']))->where('status',1)->count();
-			$check2 = $this->itemmaster->where('item_code', trim($attributes['item_code']))->where('status',1)->count();
-			if(($check1 > 0) || ($check2 > 0))
-				return 0;
-				
-			$this->itemmaster->item_code = trim($attributes['item_code']);
-			$this->itemmaster->description = trim($attributes['description']);
-			$this->itemmaster->description_ar =isset($attributes['descriptionar'])?$attributes['descriptionar']:'';
-			$this->itemmaster->class_id = $attributes['class_id'];
-			$this->itemmaster->status = 1;
-			$this->itemmaster->created_at = date('Y-m-d H:i:s');
-			$this->itemmaster->created_by = Auth::User()->id;
-			$this->itemmaster->fill($attributes)->save();
-			
-			if($this->itemmaster->id) {
-				$itemunit = new ItemUnit();
-				$itemunit->itemmaster_id = $this->itemmaster->id;
-				$itemunit->unit_id = $attributes['unit'];
-				$itemunit->vat = $attributes['vat'];
-				$itemunit->packing = $attributes['uname'];
-				$itemunit->status = 1;
-				$itemunit->is_baseqty = 1;
-				$this->itemmaster->itemUnits()->save($itemunit);
-				
-					//Item Stock Department
-				$departmentId = env('DEPARTMENT_ID');
-				 $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
-
-                                      foreach ($departments as $dept) {
-                                               $isCurrent = ($dept->id == $departmentId);
-
-                                             DB::table('itemstock_department')->insert([
-                                                        'itemmaster_id'      => $this->itemmaster->id,
-                                                         'department_id'      => $dept->id,
-														 'unit_id'         => $attributes['unit'],
-														 'packing'         =>$attributes['uname'],
-                                                          'is_baseqty'      =>1,
-                                                          'vat'            =>$attributes['vat'],
-														 'status'             =>1
-														 ]);
-                                         
-
-                                      } 
-				//Item Stock Department End
-				
-				$dtrow = DB::table('parameter1')->select('from_date')->first();
-				DB::table('item_log')->insert([
-								 'document_type' => 'OQ',
-								 'item_id' 	  => $this->itemmaster->id,
-								 'department_id'  =>env('DEPARTMENT_ID'),
-								 'unit_id'    => $attributes['unit'],
-								 'trtype'	  => 1,
-								 'packing' => 1,
-								 'status'     => 1,
-								 'created_at' => date('Y-m-d H:i:s'),
-								 'created_by' => Auth::User()->id,
-								 'voucher_date' => $dtrow->from_date
-								 //'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
-								]);
-                        			
-				//...............ITEM LOCATION........
-				//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-				$rows = DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->get();
-				if($rows){
-					foreach($rows as $row) {
-						$loc_id = ($row->is_default==1)?$row->id:'';
-						$itemLocation = new ItemLocation();
-						$itemLocation->location_id = $row->id;
-						$itemLocation->department_id = env('DEPARTMENT_ID');
-						$itemLocation->item_id = $this->itemmaster->id;
-						$itemLocation->unit_id = ($attributes['unit']=='')?2:$attributes['unit'];
-						$itemLocation->status = 1;
-						$itemLocation->save();
-						
-						if($loc_id) {
-							//API CALL...
-							$attributes['location_id'] = $loc_id;
-							$attributes['item_class'] = $attributes['class_id'];
-							$attributes['via'] = 'ajax';
-							$response = Curl::to($this->api_url.'itemadd.php')
-										->withData($attributes)
-										->asJson()
-										->post();
-						}
-					}
-					
-				}
-						
+		try {
+			// Validate required fields
+			if (empty($attributes['item_code']) || empty($attributes['description'])) {
+				DB::rollback();
+				return -1; // Missing required fields
 			}
-							
-			DB::commit();
-			return $this->itemmaster->id;
 			
-		} catch(\Exception $e) {
-				
+			// Sanitize inputs
+			$item_code = trim($attributes['item_code']);
+			$description = trim($attributes['description']);
+			
+			// Validate length constraints
+			if (strlen($item_code) > 120) {
+				DB::rollback();
+				return -2; // Item code too long
+			}
+			
+			if (strlen($description) > 1000) {
+				DB::rollback();
+				return -3; // Description too long
+			}
+			
+			// Check for existing items (item_code OR description)
+			$exists = $this->itemmaster
+				->where(function($query) use ($item_code, $description) {
+					$query->where('item_code', $item_code)
+						->orWhere('description', $description);
+				})
+				->where('status', 1)
+				->exists();
+			
+			if ($exists) {
+				DB::rollback();
+				return 0; // Duplicate found
+			}
+			
+			// Get default unit
+			$unitdat = DB::table('units')
+				->whereNull('deleted_at')
+				->orderBy('id')
+				->first();
+			
+			if (!$unitdat) {
+				DB::rollback();
+				return -4; // No unit available
+			}
+			
+			$departmentId = env('DEPARTMENT_ID', 1);
+			
+			// Create item
+			$this->itemmaster->fill([
+				'item_code' => $item_code,
+				'description' => $description,
+				'description_ar' => $attributes['description_ar'] ?? '',
+				'class_id' => $attributes['class_id'] ?? 0,
+				'group_id' => $attributes['group_id'] ?? 0,
+				'subgroup_id' => $attributes['subgroup_id'] ?? 0,
+				'category_id' => $attributes['category_id'] ?? 0,
+				'subcategory_id' => $attributes['subcategory_id'] ?? 0,
+				'assembly' => 0,
+				'status' => 1,
+				'created_at' => now(),
+				'created_by' => Auth::id(),
+				'created_department' => $departmentId,
+				'batch_req' => 0
+			]);
+			
+			$this->itemmaster->save();
+			$itemmaster_id = $this->itemmaster->id;
+			
+			if (!$itemmaster_id) {
+				DB::rollback();
+				return -5; // Save failed
+			}
+			
+			// Create default item unit
+			$this->createAjaxItemUnit($itemmaster_id, $unitdat->id, $departmentId);
+			
+			// Create item locations
+			$this->createAjaxItemLocations($itemmaster_id, $unitdat->id, $departmentId);
+			
+			// Create department stock entries
+			$this->createAjaxDepartmentStock($itemmaster_id, $unitdat->id, $departmentId);
+			
+			DB::commit();
+			return $itemmaster_id; // Success - return new item ID
+			
+		} catch (\Exception $e) {
 			DB::rollback();
-			return -1;
+			Log::error('AJAX item creation failed: ' . $e->getMessage(), [
+				'attributes' => $attributes,
+				'trace' => $e->getTraceAsString()
+			]);
+			return -99; // System error
 		}
 	}
+
+	/**
+	 * Create default item unit for AJAX created item
+	 */
+	private function createAjaxItemUnit($itemmaster_id, $unit_id, $departmentId)
+	{
+		$itemunit = new ItemUnit();
+		$itemunit->itemmaster_id = $itemmaster_id;
+		$itemunit->unit_id = $unit_id;
+		$itemunit->packing = DB::table('units')->where('id', $unit_id)->value('unit_name') ?? '';
+		$itemunit->opn_quantity = 0;
+		$itemunit->opn_cost = 0;
+		$itemunit->sell_price = 0;
+		$itemunit->wsale_price = 0;
+		$itemunit->min_quantity = 0;
+		$itemunit->reorder_level = 0;
+		$itemunit->vat = 0;
+		$itemunit->status = 1;
+		$itemunit->cur_quantity = 0;
+		$itemunit->is_baseqty = 1;
+		$itemunit->received_qty = 0;
+		$itemunit->last_purchase_cost = 0;
+		$itemunit->pur_count = 1;
+		$itemunit->cost_avg = 0;
+		$itemunit->pkno = 1;
+		$itemunit->save();
+	}
+
+	/**
+	 * Create item locations for AJAX created item
+	 */
+	private function createAjaxItemLocations($itemmaster_id, $unit_id, $departmentId)
+	{
+		$locations = DB::table('location')
+			->where('department_id', $departmentId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->get();
+		
+		foreach ($locations as $location) {
+			$itemLocation = new ItemLocation();
+			$itemLocation->location_id = $location->id;
+			$itemLocation->item_id = $itemmaster_id;
+			$itemLocation->unit_id = $unit_id;
+			$itemLocation->department_id = $departmentId;
+			$itemLocation->quantity = 0;
+			$itemLocation->status = 1;
+			$itemLocation->opn_qty = 0;
+			$itemLocation->bin_id = 0;
+			$itemLocation->save();
+		}
+	}
+
+	/**
+	 * Create department stock for AJAX created item
+	 */
+	private function createAjaxDepartmentStock($itemmaster_id, $unit_id, $departmentId)
+	{
+		$departments = DB::table('department')
+			->whereNull('deleted_at')
+			->get();
+		
+		$packing = DB::table('units')->where('id', $unit_id)->value('unit_name') ?? '';
+		
+		foreach ($departments as $dept) {
+			DB::table('itemstock_department')->insert([
+				'itemmaster_id' => $itemmaster_id,
+				'department_id' => $dept->id,
+				'unit_id' => $unit_id,
+				'packing' => $packing,
+				'opn_cost' => 0,
+				'opn_quantity' => 0,
+				'cur_quantity' => 0,
+				'received_qty' => 0,
+				'issued_qty' => 0,
+				'min_quantity' => 0,
+				'reorder_level' => 0,
+				'vat' => 0,
+				'is_baseqty' => 1,
+				'pur_count' => 1,
+				'last_purchase_cost' => 0,
+				'cost_avg' => 0,
+				'status' => 1,
+				'sell_price' => 0,
+				'wsale_price' => 0,
+				'pkno' => 1,
+			]);
+		}
+	}
+
+
 	
 	public function getLocation()
 	{
-		return DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('is_conloc',0)->where('deleted_at', '0000-00-00 00:00:00')->orderBy('id','ASC')->get();
+		return DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('is_conloc',0)->whereNull('deleted_at')->orderBy('id','ASC')->get();
 	}
 	
 	public function getStockLocation($id)
 	{
 		return DB::table('item_location')
-						->leftJoin('bin_location','bin_location.id','=','item_location.bin_id')
-						->where('item_location.status',1)->where('item_location.item_id',$id)
-						->where('item_location.department_id',env('DEPARTMENT_ID'))
-						->where('item_location.deleted_at', '0000-00-00 00:00:00')
-						->where('bin_location.deleted_at', null)
-						->select('item_location.*','bin_location.code')
-						->orderBy('item_location.location_id','ASC')
-						->get();
+			->leftJoin('bin_location', 'bin_location.id', '=', 'item_location.bin_id')
+			->leftJoin('location', 'location.id', '=', 'item_location.location_id')
+			->where('item_location.status', 1)
+			->where('item_location.item_id', $id)
+			->where('item_location.department_id', env('DEPARTMENT_ID', 1))
+			->whereNull('item_location.deleted_at')
+			->select(
+				'item_location.*','bin_location.code',
+				'bin_location.code as bin_code',
+				'location.name as location_name',
+				'location.code as location_code'
+			)
+			->orderBy('item_location.location_id', 'ASC')
+			->get();
 	}
 	
 	
@@ -4892,234 +6195,689 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		return $result;
 	}
 	
-	public function ImportItems($data)
-	{  ##################  EXCEL FORMAT:   Item Code|Description|Unit|Quantity|Rate|Sales Price|Item Class|Group|Image|Model|Subgroup|Serial No|Other Info|Weight|Wsales Price  ######################
-		DB::beginTransaction();
-		try { //echo '<pre>';print_r($data);exit;
-			//foreach($data as $value) { open_quantity cost_avg rate item_class
+	// public function ImportItems($data)
+	// {  ##################  EXCEL FORMAT:   Item Code|Description|Unit|Quantity|Rate|Sales Price|Item Class|Group|Image|Model|Subgroup|Serial No|Other Info|Weight|Wsales Price  ######################
+	// 	DB::beginTransaction();
+	// 	try { //echo '<pre>';print_r($data);exit;
+	// 		//foreach($data as $value) { open_quantity cost_avg rate item_class
 				
-				//echo $value;exit;
-                $item_id = null;
-				$mod_location = DB::table('parameter2')->where('keyname', 'mod_location')->where('status',1)->select('is_active')->first();
+	// 			//echo $value;exit;
+    //             $item_id = null;
+	// 			$mod_location = DB::table('parameter2')->where('keyname', 'mod_location')->where('status',1)->select('is_active')->first();
 
-				$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-				$vat = DB::table('vat_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('percentage')->first();
-				$dtrow = DB::table('parameter1')->select('from_date')->first();
-				foreach ($data as $row) { //
-				//	echo $row;exit;
+	// 			$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+	// 			$vat = DB::table('vat_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('percentage')->first();
+	// 			$dtrow = DB::table('parameter1')->select('from_date')->first();
+	// 			foreach ($data as $row) { //
+	// 			//	echo $row;exit;
 				 
-				 if($row->item_code!='' && $row->description!='') {
-					//CHECK ITEM EXIST OR NOT
-					$item = DB::table('itemmaster')->where( function ($query) use($row) {
-														$query->where('item_code', '=', $row->item_code);
-															  //->orWhere('description', '=', $row->description);
-												   })->select('id')->get();
-					if(!$item) {
+	// 			 if($row->item_code!='' && $row->description!='') {
+	// 				//CHECK ITEM EXIST OR NOT
+	// 				$item = DB::table('itemmaster')->where( function ($query) use($row) {
+	// 													$query->where('item_code', '=', $row->item_code);
+	// 														  //->orWhere('description', '=', $row->description);
+	// 											   })->select('id')->get();
+	// 				if(!$item) {
 						
-						//CHECK GROUP NAME EXIST OR NOT....
-						$group_id = $subgroup_id = '';
-						if($row->group!='') {
-							$group = DB::table('groupcat')->where('group_name', $row->group)->where('status',1)
-												->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
-							if($group)
-								$group_id = $group->id;
-							else {
-								$group_id = DB::table('groupcat')->insertGetId(['group_name' => $row->group, 'description' => $row->group, 'status'=>1]);
-							}
+	// 					//CHECK GROUP NAME EXIST OR NOT....
+	// 					$group_id = $subgroup_id = '';
+	// 					if($row->group!='') {
+	// 						$group = DB::table('groupcat')->where('group_name', $row->group)->where('status',1)
+	// 											->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+	// 						if($group)
+	// 							$group_id = $group->id;
+	// 						else {
+	// 							$group_id = DB::table('groupcat')->insertGetId(['group_name' => $row->group, 'description' => $row->group, 'status'=>1]);
+	// 						}
 
-							//SUBGROUP......
-							if($row->subgroup!='') {
-								$subgroup = DB::table('groupcat')->where('group_name', $row->subgroup)->where('status',1)->where('parent_id','!=',0)
-												->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+	// 						//SUBGROUP......
+	// 						if($row->subgroup!='') {
+	// 							$subgroup = DB::table('groupcat')->where('group_name', $row->subgroup)->where('status',1)->where('parent_id','!=',0)
+	// 											->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 
-								if($subgroup)
-									$subgroup_id = $subgroup->id;
-								else {
-									$subgroup_id = DB::table('groupcat')->insertGetId(['group_name' => $row->subgroup, 'description' => $row->subgroup, 'parent_id' => $group_id, 'status'=>1]);
-								}
-							}
+	// 							if($subgroup)
+	// 								$subgroup_id = $subgroup->id;
+	// 							else {
+	// 								$subgroup_id = DB::table('groupcat')->insertGetId(['group_name' => $row->subgroup, 'description' => $row->subgroup, 'parent_id' => $group_id, 'status'=>1]);
+	// 							}
+	// 						}
 						
-						}
+	// 					}
 						
-						//$imgurl = 'https://urban-vision.crm.elateapps.com/assets/uploads/products/Screen_Shot_2022-12-19_at_5_18_04_PM.png';
-						$image_name = '';
-						//IMAGE UPLOAD FROM URL.............
-						if(isset($row->image) && $row->image!='') {
-							$ar1 = explode('products/',$row->image); //IF PRODUCT PATH CONTAINS 'products/' ONLY
-							if(isset($ar1[1])) {
-								$ex = explode('.',$ar1[1]); //EXPLODE BY FILE EXTESION
-								$destinationPath = public_path() . $this->imgDir.'/';
-								$content = file_get_contents($ar1[0].'products/'.rawurlencode($ar1[1]));
-								if(isset($ex[1])) {
-									//$image_name = time().'.'.$ex[1];
-									$image_name = $ar1[1];//$row->item_code.'.'.$ex[1];
-									//Store in the filesystem.
-									$fp = fopen($destinationPath."/".$image_name, "w");
-									fwrite($fp, $content);
-									fclose($fp);
-								}
-							}
-						}
+	// 					//$imgurl = 'https://urban-vision.crm.elateapps.com/assets/uploads/products/Screen_Shot_2022-12-19_at_5_18_04_PM.png';
+	// 					$image_name = '';
+	// 					//IMAGE UPLOAD FROM URL.............
+	// 					if(isset($row->image) && $row->image!='') {
+	// 						$ar1 = explode('products/',$row->image); //IF PRODUCT PATH CONTAINS 'products/' ONLY
+	// 						if(isset($ar1[1])) {
+	// 							$ex = explode('.',$ar1[1]); //EXPLODE BY FILE EXTESION
+	// 							$destinationPath = public_path() . $this->imgDir.'/';
+	// 							$content = file_get_contents($ar1[0].'products/'.rawurlencode($ar1[1]));
+	// 							if(isset($ex[1])) {
+	// 								//$image_name = time().'.'.$ex[1];
+	// 								$image_name = $ar1[1];//$row->item_code.'.'.$ex[1];
+	// 								//Store in the filesystem.
+	// 								$fp = fopen($destinationPath."/".$image_name, "w");
+	// 								fwrite($fp, $content);
+	// 								fclose($fp);
+	// 							}
+	// 						}
+	// 					}
 						
-						//BATCH NO SECTION...
-						$batch_req = 0;
-						if($row->batch_no!='' && $row->mfg_date!='' && $row->exp_date!='' && $row->quantity!='') {
-						    $isbatch = DB::table('item_batch')->where('batch_no',$row->batch_no)->whereNull('deleted_at')->select('id')->first();
-						    if(!$isbatch)
-						        $batch_req = 1;
-						}
-						// end batch
+	// 					//BATCH NO SECTION...
+	// 					$batch_req = 0;
+	// 					if($row->batch_no!='' && $row->mfg_date!='' && $row->exp_date!='' && $row->quantity!='') {
+	// 					    $isbatch = DB::table('item_batch')->where('batch_no',$row->batch_no)->whereNull('deleted_at')->select('id')->first();
+	// 					    if(!$isbatch)
+	// 					        $batch_req = 1;
+	// 					}
+	// 					// end batch
 						
-						$insert = ['item_code' => $row->item_code, 
-									 'description' => $row->description,
-									 'class_id' => ($row->item_class=='')?1:$row->item_class, 
-									 'model_no' => $row->model,
-									 'serial_no' => $row->serial_no,
-									 'group_id' => $group_id,
-									 'subgroup_id' => $subgroup_id,
-									 'weight'	=> $row->weight,
-									 'image' => $image_name,
-									 'status'   => 1,
-									 'created_at' => date('Y-m-d H:i:s'),
-									 'other_info' => $row->other_info,
-									 'batch_req' => $batch_req
-								  ];
+	// 					$insert = ['item_code' => $row->item_code, 
+	// 								 'description' => $row->description,
+	// 								 'class_id' => ($row->item_class=='')?1:$row->item_class, 
+	// 								 'model_no' => $row->model,
+	// 								 'serial_no' => $row->serial_no,
+	// 								 'group_id' => $group_id,
+	// 								 'subgroup_id' => $subgroup_id,
+	// 								 'weight'	=> $row->weight,
+	// 								 'image' => $image_name,
+	// 								 'status'   => 1,
+	// 								 'created_at' => date('Y-m-d H:i:s'),
+	// 								 'other_info' => $row->other_info,
+	// 								 'batch_req' => $batch_req
+	// 							  ];
 						
-						if(isset($row->unit)) {
-							//GET UNIT ID
-							$unit = DB::table('units')->where('unit_name', strtoupper($row->unit))->select('id')->first();
-							if(!$unit) { //IF UNIT NOT EXIST...
-								if($row->unit!='')
-									$unit_id = DB::table('units')->insertGetId(['unit_name' => strtoupper($row->unit),'description' => strtoupper($row->unit),'status' => 1]);
-								else {
-									$unit_id = 2; $row->unit = 'PCS';
-								}
-							} else
-								$unit_id = $unit->id;
-						} else
-							$unit_id = 2;
+	// 					if(isset($row->unit)) {
+	// 						//GET UNIT ID
+	// 						$unit = DB::table('units')->where('unit_name', strtoupper($row->unit))->select('id')->first();
+	// 						if(!$unit) { //IF UNIT NOT EXIST...
+	// 							if($row->unit!='')
+	// 								$unit_id = DB::table('units')->insertGetId(['unit_name' => strtoupper($row->unit),'description' => strtoupper($row->unit),'status' => 1]);
+	// 							else {
+	// 								$unit_id = 2; $row->unit = 'PCS';
+	// 							}
+	// 						} else
+	// 							$unit_id = $unit->id;
+	// 					} else
+	// 						$unit_id = 2;
 						
-						$item_id = DB::table('itemmaster')->insertGetId($insert);
-						DB::table('item_unit')->insert(['itemmaster_id' => $item_id,
-														'unit_id' => $unit_id,
-														'packing' => strtoupper($row->unit),
-														'opn_quantity' => ($row->quantity=='')?0:$row->quantity,
-														'opn_cost' => ($row->rate=='')?0:$row->rate,
-														'sell_price' => ($row->sales_price=='')?0:$row->sales_price,
-														'wsale_price' => ($row->wsales_price=='')?0:$row->wsales_price,
-														'vat' => $vat->percentage,
-														'status' => 1,
-														'cur_quantity' => ($row->quantity=='')?0:$row->quantity,
-														'is_baseqty' => 1,
-														'cost_avg' => ($row->rate=='')?0:$row->rate
-														]);
+	// 					$item_id = DB::table('itemmaster')->insertGetId($insert);
+	// 					DB::table('item_unit')->insert(['itemmaster_id' => $item_id,
+	// 													'unit_id' => $unit_id,
+	// 													'packing' => strtoupper($row->unit),
+	// 													'opn_quantity' => ($row->quantity=='')?0:$row->quantity,
+	// 													'opn_cost' => ($row->rate=='')?0:$row->rate,
+	// 													'sell_price' => ($row->sales_price=='')?0:$row->sales_price,
+	// 													'wsale_price' => ($row->wsales_price=='')?0:$row->wsales_price,
+	// 													'vat' => $vat->percentage,
+	// 													'status' => 1,
+	// 													'cur_quantity' => ($row->quantity=='')?0:$row->quantity,
+	// 													'is_baseqty' => 1,
+	// 													'cost_avg' => ($row->rate=='')?0:$row->rate
+	// 													]);
 														
-						$log_id = DB::table('item_log')->insertGetId([
-    								'document_type' => 'OQ',
-    								'document_id' => 0,
-    								'item_id' => $item_id,
-    								'unit_id' => $unit_id,
-    								'quantity' => ($row->quantity=='')?0:$row->quantity,
-    								'unit_cost' => ($row->rate=='')?0:$row->rate,
-    								'trtype' => 1,
-    								'cur_quantity' => ($row->quantity=='')?0:$row->quantity,
-    								'cost_avg' => ($row->rate=='')?0:$row->rate,
-    								'pur_cost' => ($row->rate=='')?0:$row->rate,
-    								'packing' => 1,
-    								'status' => 1,
-    								'created_at' => date('Y-m-d H:i:s'),
-    								'voucher_date' => $dtrow->from_date
-    								//'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
-    								]);
+	// 					$log_id = DB::table('item_log')->insertGetId([
+    // 								'document_type' => 'OQ',
+    // 								'document_id' => 0,
+    // 								'item_id' => $item_id,
+    // 								'unit_id' => $unit_id,
+    // 								'quantity' => ($row->quantity=='')?0:$row->quantity,
+    // 								'unit_cost' => ($row->rate=='')?0:$row->rate,
+    // 								'trtype' => 1,
+    // 								'cur_quantity' => ($row->quantity=='')?0:$row->quantity,
+    // 								'cost_avg' => ($row->rate=='')?0:$row->rate,
+    // 								'pur_cost' => ($row->rate=='')?0:$row->rate,
+    // 								'packing' => 1,
+    // 								'status' => 1,
+    // 								'created_at' => date('Y-m-d H:i:s'),
+    // 								'voucher_date' => $dtrow->from_date
+    // 								//'voucher_date' => date('Y-m-d', strtotime('-1 day', strtotime($dtrow->from_date)))
+    // 								]);
 									
 						    
-						    //BATCH SECTION....
-						    if($batch_req==1) {
-    					    	$batch_id = DB::table('item_batch')
-                				                ->insertGetId([
-                				                    'item_id' => $item_id,
-                				                    'batch_no' => $row->batch_no,
-                				                    'mfg_date' => date('Y-m-d', strtotime($row->mfg_date)),
-                				                    'exp_date' => date('Y-m-d', strtotime($row->exp_date)),
-                				                    'quantity' => $row->quantity
-                				                ]);
+	// 					    //BATCH SECTION....
+	// 					    if($batch_req==1) {
+    // 					    	$batch_id = DB::table('item_batch')
+    //             				                ->insertGetId([
+    //             				                    'item_id' => $item_id,
+    //             				                    'batch_no' => $row->batch_no,
+    //             				                    'mfg_date' => date('Y-m-d', strtotime($row->mfg_date)),
+    //             				                    'exp_date' => date('Y-m-d', strtotime($row->exp_date)),
+    //             				                    'quantity' => $row->quantity
+    //             				                ]);
                 				                
-                        			if($batch_id) {
-                        			    DB::table('batch_log')
-                    				                ->insert([
-                    				                    'batch_id' => $batch_id,
-                    				                    'item_id' => $item_id,
-                    				                    'document_type' => 'OQ',
-                    				                    'quantity' => $row->quantity,
-                    				                    'trtype' => 1,
-                    				                    'invoice_date' => $dtrow->from_date,
-                    				                    'log_id' => $log_id,
-                    				                    'created_at' => date('Y-m-d h:i:s'),
-                    				                    'created_by' => Auth::User()->id
-                    				                    ]);
-                        			}
-						        }
-                    			//END BATCH
+    //                     			if($batch_id) {
+    //                     			    DB::table('batch_log')
+    //                 				                ->insert([
+    //                 				                    'batch_id' => $batch_id,
+    //                 				                    'item_id' => $item_id,
+    //                 				                    'document_type' => 'OQ',
+    //                 				                    'quantity' => $row->quantity,
+    //                 				                    'trtype' => 1,
+    //                 				                    'invoice_date' => $dtrow->from_date,
+    //                 				                    'log_id' => $log_id,
+    //                 				                    'created_at' => date('Y-m-d h:i:s'),
+    //                 				                    'created_by' => Auth::User()->id
+    //                 				                    ]);
+    //                     			}
+	// 					        }
+    //                 			//END BATCH
                     			
-						if($mod_location->is_active==0) {
-							if($location) {
-								foreach($location as $res) {
-									$itemLocation = new ItemLocation();
-									$itemLocation->location_id = $res->id;
-									$itemLocation->item_id = $item_id;
-									$itemLocation->unit_id = $unit_id;
-									$itemLocation->quantity = ($row->quantity=='')?0:$row->quantity;
-									$itemLocation->status = 1;
-									$itemLocation->opn_qty = ($row->quantity=='')?0:$row->quantity;
-									$itemLocation->save();
-								}
-							}
+	// 					if($mod_location->is_active==0) {
+	// 						if($location) {
+	// 							foreach($location as $res) {
+	// 								$itemLocation = new ItemLocation();
+	// 								$itemLocation->location_id = $res->id;
+	// 								$itemLocation->item_id = $item_id;
+	// 								$itemLocation->unit_id = $unit_id;
+	// 								$itemLocation->quantity = ($row->quantity=='')?0:$row->quantity;
+	// 								$itemLocation->status = 1;
+	// 								$itemLocation->opn_qty = ($row->quantity=='')?0:$row->quantity;
+	// 								$itemLocation->save();
+	// 							}
+	// 						}
 
-						} else {
+	// 					} else {
 
-							$locations = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_conloc',0)->get();
-							if($location) {
-								foreach($locations as $res) {
+	// 						$locations = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_conloc',0)->get();
+	// 						if($location) {
+	// 							foreach($locations as $res) {
 
-									$strcode = strtolower($res->code).'_qty';
-									$strbin = strtolower($res->code).'_bin';
-									//echo '<br>'.$row->{$strbin}; exit;
+	// 								$strcode = strtolower($res->code).'_qty';
+	// 								$strbin = strtolower($res->code).'_bin';
+	// 								//echo '<br>'.$row->{$strbin}; exit;
 
-									$brow = DB::table('bin_location')->where('code',$row->{$strbin})->first();
-									if($brow) {
-										$binid = $brow->id;
-									} else {
-										$binid = DB::table('bin_location')->insertGetId(['code' => $row->{$strbin}, 'name' => $row->{$strbin}]);
-									}
+	// 								$brow = DB::table('bin_location')->where('code',$row->{$strbin})->first();
+	// 								if($brow) {
+	// 									$binid = $brow->id;
+	// 								} else {
+	// 									$binid = DB::table('bin_location')->insertGetId(['code' => $row->{$strbin}, 'name' => $row->{$strbin}]);
+	// 								}
 
-									$itemLocation = new ItemLocation();
-									$itemLocation->location_id = $res->id;
-									$itemLocation->item_id = $item_id;
-									$itemLocation->unit_id = $unit_id;
-									$itemLocation->quantity = ($row->{$strcode}=='')?0:$row->{$strcode};
-									$itemLocation->status = 1;
-									$itemLocation->opn_qty = ($row->{$strcode}=='')?0:$row->{$strcode};
-									$itemLocation->bin_id = $binid;
-									$itemLocation->save();
-								}
-							}
+	// 								$itemLocation = new ItemLocation();
+	// 								$itemLocation->location_id = $res->id;
+	// 								$itemLocation->item_id = $item_id;
+	// 								$itemLocation->unit_id = $unit_id;
+	// 								$itemLocation->quantity = ($row->{$strcode}=='')?0:$row->{$strcode};
+	// 								$itemLocation->status = 1;
+	// 								$itemLocation->opn_qty = ($row->{$strcode}=='')?0:$row->{$strcode};
+	// 								$itemLocation->bin_id = $binid;
+	// 								$itemLocation->save();
+	// 							}
+	// 						}
 
-						}
-				   }
-				 }
+	// 					}
+	// 			   }
+	// 			 }
+	// 			}
+	// 		//}
+			
+	// 		DB::commit();
+	// 		return $item_id;
+			
+	// 	} catch(\Exception $e) { 
+		
+	// 		DB::rollback(); echo $e->getLine().' - '.$e->getMessage();exit;
+	// 		return false;
+	// 	}
+		
+	// }
+
+
+	/**
+	 * Import items from Excel/CSV
+	 * 
+	 * @param array $data Array of row objects with properties
+	 * @return array ['success' => bool, 'imported' => int, 'skipped' => int, 'errors' => array]
+	 */
+	public function ImportItems($data)
+	{
+		DB::beginTransaction();
+		
+		try {
+			$imported = 0;
+			$skipped = 0;
+			$errors = [];
+			$departmentId = env('DEPARTMENT_ID', 1);
+			
+			// Get default unit once
+			$defaultUnit = DB::table('units')
+				->whereNull('deleted_at')
+				->orderBy('id')
+				->first();
+			
+			if (!$defaultUnit) {
+				DB::rollback();
+				return [
+					'success' => false,
+					'imported' => 0,
+					'skipped' => 0,
+					'errors' => ['No units available in system']
+				];
+			}
+			
+			foreach ($data as $index => $row) {
+				$rowNumber = $index + 1;
+				
+				try {
+					// Validate required fields
+					$validationResult = $this->validateImportRow($row, $rowNumber);
+					if ($validationResult !== true) {
+						$errors[] = $validationResult;
+						$skipped++;
+						continue;
+					}
+					
+					// Sanitize inputs
+					$item_code = trim($row->item_code);
+					$description = trim($row->description);
+					$description_ar = isset($row->description_ar) ? trim($row->description_ar) : '';
+					
+					// Check for duplicate
+					$exists = DB::table('itemmaster')
+						->where('item_code', $item_code)
+						->exists();
+					
+					if ($exists) {
+						$errors[] = "Row $rowNumber: Item code '$item_code' already exists";
+						$skipped++;
+						continue;
+					}
+					
+					// Get or create group/category IDs
+					$groupData = $this->resolveImportGroupCategory($row);
+					
+					// Get unit ID
+					$unit_id = $this->resolveImportUnit($row, $defaultUnit->id);
+					
+					// Prepare item data
+					$itemData = $this->prepareImportItemData(
+						$row, 
+						$item_code, 
+						$description, 
+						$description_ar, 
+						$groupData, 
+						$departmentId
+					);
+					
+					// Insert item
+					$itemmaster_id = DB::table('itemmaster')->insertGetId($itemData);
+					
+					if (!$itemmaster_id) {
+						$errors[] = "Row $rowNumber: Failed to insert item";
+						$skipped++;
+						continue;
+					}
+					
+					// Create item unit
+					$this->createImportItemUnit($itemmaster_id, $unit_id, $row, $departmentId);
+					
+					// Create item locations
+					$this->createImportItemLocations($itemmaster_id, $unit_id, $departmentId);
+					
+					// Create department stock
+					$this->createImportDepartmentStock($itemmaster_id, $unit_id, $row, $departmentId);
+					
+					// Create item log if opening quantity exists
+					if (isset($row->opn_quantity) && $row->opn_quantity > 0) {
+						$this->createImportItemLog($itemmaster_id, $unit_id, $row, $departmentId);
+					}
+					
+					$imported++;
+					
+				} catch (\Exception $e) {
+					$errors[] = "Row $rowNumber: " . $e->getMessage();
+					$skipped++;
+					Log::error("Import row $rowNumber failed", [
+						'error' => $e->getMessage(),
+						'row' => $row
+					]);
 				}
-			//}
+			}
 			
 			DB::commit();
-			return $item_id;
 			
-		} catch(\Exception $e) { 
-		
-			DB::rollback(); echo $e->getLine().' - '.$e->getMessage();exit;
-			return false;
+			return [
+				'success' => true,
+				'imported' => $imported,
+				'skipped' => $skipped,
+				'errors' => $errors,
+				'total' => count($data)
+			];
+			
+		} catch (\Exception $e) {
+			DB::rollback();
+			Log::error('Import failed completely: ' . $e->getMessage());
+			
+			return [
+				'success' => false,
+				'imported' => 0,
+				'skipped' => 0,
+				'errors' => ['System error: ' . $e->getMessage()],
+				'total' => count($data)
+			];
+		}
+	}
+
+	/**
+	 * Validate import row data
+	 */
+	private function validateImportRow($row, $rowNumber)
+	{
+		// Check required fields
+		if (empty($row->item_code) || empty($row->description)) {
+			return "Row $rowNumber: Missing required fields (item_code or description)";
 		}
 		
+		// Validate item_code length
+		if (strlen(trim($row->item_code)) > 120) {
+			return "Row $rowNumber: Item code exceeds 120 characters";
+		}
+		
+		// Validate description length
+		if (strlen(trim($row->description)) > 1000) {
+			return "Row $rowNumber: Description exceeds 1000 characters";
+		}
+		
+		// Validate numeric fields if present
+		$numericFields = ['opn_quantity', 'opn_cost', 'sell_price', 'wsale_price', 'min_quantity', 'reorder_level'];
+		foreach ($numericFields as $field) {
+			if (isset($row->$field) && $row->$field !== '' && !is_numeric($row->$field)) {
+				return "Row $rowNumber: Invalid numeric value for $field";
+			}
+		}
+		
+		return true;
 	}
+
+	/**
+	 * Resolve group and category IDs from import data
+	 */
+	private function resolveImportGroupCategory($row)
+	{
+		$groupData = [
+			'group_id' => 0,
+			'subgroup_id' => 0,
+			'category_id' => 0,
+			'subcategory_id' => 0
+		];
+		
+		// Resolve group
+		if (isset($row->group_name) && !empty($row->group_name)) {
+			$group = DB::table('groupcat')
+				->where('group_name', trim($row->group_name))
+				->where('parent_id', 0)
+				->whereNull('deleted_at')
+				->first();
+			
+			if ($group) {
+				$groupData['group_id'] = $group->id;
+			} else {
+				// Create new group
+				$groupData['group_id'] = DB::table('groupcat')->insertGetId([
+					'group_name' => trim($row->group_name),
+					'parent_id' => 0,
+					'status' => 1,
+					'created_at' => now(),
+					'created_by' => Auth::id()
+				]);
+			}
+		}
+		
+		// Resolve subgroup
+		if (isset($row->subgroup_name) && !empty($row->subgroup_name) && $groupData['group_id'] > 0) {
+			$subgroup = DB::table('groupcat')
+				->where('group_name', trim($row->subgroup_name))
+				->where('parent_id', $groupData['group_id'])
+				->whereNull('deleted_at')
+				->first();
+			
+			if ($subgroup) {
+				$groupData['subgroup_id'] = $subgroup->id;
+			} else {
+				// Create new subgroup
+				$groupData['subgroup_id'] = DB::table('groupcat')->insertGetId([
+					'group_name' => trim($row->subgroup_name),
+					'parent_id' => $groupData['group_id'],
+					'status' => 1,
+					'created_at' => now(),
+					'created_by' => Auth::id()
+				]);
+			}
+		}
+		
+		// Resolve category
+		if (isset($row->category_name) && !empty($row->category_name)) {
+			$category = DB::table('category')
+				->where('category_name', trim($row->category_name))
+				->where('parent_id', 0)
+				->whereNull('deleted_at')
+				->first();
+			
+			if ($category) {
+				$groupData['category_id'] = $category->id;
+			} else {
+				// Create new category
+				$groupData['category_id'] = DB::table('category')->insertGetId([
+					'category_name' => trim($row->category_name),
+					'parent_id' => 0,
+					'status' => 1,
+					'created_at' => now(),
+					'created_by' => Auth::id()
+				]);
+			}
+		}
+		
+		// Resolve subcategory
+		if (isset($row->subcategory_name) && !empty($row->subcategory_name) && $groupData['category_id'] > 0) {
+			$subcategory = DB::table('category')
+				->where('category_name', trim($row->subcategory_name))
+				->where('parent_id', $groupData['category_id'])
+				->whereNull('deleted_at')
+				->first();
+			
+			if ($subcategory) {
+				$groupData['subcategory_id'] = $subcategory->id;
+			} else {
+				// Create new subcategory
+				$groupData['subcategory_id'] = DB::table('category')->insertGetId([
+					'category_name' => trim($row->subcategory_name),
+					'parent_id' => $groupData['category_id'],
+					'status' => 1,
+					'created_at' => now(),
+					'created_by' => Auth::id()
+				]);
+			}
+		}
+		
+		return $groupData;
+	}
+
+	/**
+	 * Resolve unit ID from import data
+	 */
+	private function resolveImportUnit($row, $defaultUnitId)
+	{
+		if (isset($row->unit_name) && !empty($row->unit_name)) {
+			$unit = DB::table('units')
+				->where('unit_name', trim($row->unit_name))
+				->whereNull('deleted_at')
+				->first();
+			
+			if ($unit) {
+				return $unit->id;
+			}
+		}
+		
+		return $defaultUnitId;
+	}
+
+	/**
+	 * Prepare item data array for import insert
+	 */
+	private function prepareImportItemData($row, $item_code, $description, $description_ar, $groupData, $departmentId)
+	{
+		return [
+			'item_code' => $item_code,
+			'description' => $description,
+			'description_ar' => $description_ar,
+			'class_id' => isset($row->class_id) ? (int)$row->class_id : 0,
+			'model_no' => isset($row->model_no) ? trim($row->model_no) : '',
+			'serial_no' => isset($row->serial_no) ? trim($row->serial_no) : '',
+			'group_id' => $groupData['group_id'],
+			'subgroup_id' => $groupData['subgroup_id'],
+			'category_id' => $groupData['category_id'],
+			'subcategory_id' => $groupData['subcategory_id'],
+			'assembly' => 0,
+			'status' => 1,
+			'created_at' => now(),
+			'created_by' => Auth::id(),
+			'created_department' => $departmentId,
+			'batch_req' => isset($row->batch_req) ? (int)$row->batch_req : 0,
+			'profit_per' => isset($row->profit_per) ? (float)$row->profit_per : 0,
+			'other_info' => isset($row->other_info) ? trim($row->other_info) : '',
+		];
+	}
+
+	/**
+	 * Create item unit for imported item
+	 */
+	private function createImportItemUnit($itemmaster_id, $unit_id, $row, $departmentId)
+	{
+		$unitName = DB::table('units')->where('id', $unit_id)->value('unit_name') ?? '';
+		
+		$opnQuantity = isset($row->opn_quantity) ? (float)$row->opn_quantity : 0;
+		$opnCost = isset($row->opn_cost) ? (float)$row->opn_cost : 0;
+		$sellPrice = isset($row->sell_price) ? (float)$row->sell_price : 0;
+		$wsalePrice = isset($row->wsale_price) ? (float)$row->wsale_price : 0;
+		$minQuantity = isset($row->min_quantity) ? (float)$row->min_quantity : 0;
+		$reorderLevel = isset($row->reorder_level) ? (float)$row->reorder_level : 0;
+		$vat = isset($row->vat) ? (float)$row->vat : 0;
+		
+		DB::table('item_unit')->insert([
+			'itemmaster_id' => $itemmaster_id,
+			'unit_id' => $unit_id,
+			'packing' => $unitName,
+			'opn_quantity' => $opnQuantity,
+			'opn_cost' => $opnCost,
+			'sell_price' => $sellPrice,
+			'wsale_price' => $wsalePrice,
+			'min_quantity' => $minQuantity,
+			'reorder_level' => $reorderLevel,
+			'vat' => $vat,
+			'status' => 1,
+			'cur_quantity' => $opnQuantity,
+			'is_baseqty' => 1,
+			'received_qty' => $opnQuantity,
+			'last_purchase_cost' => $opnCost,
+			'pur_count' => 1,
+			'cost_avg' => $opnCost,
+			'pkno' => 1,
+		]);
+	}
+
+	/**
+	 * Create item locations for imported item
+	 */
+	private function createImportItemLocations($itemmaster_id, $unit_id, $departmentId)
+	{
+		$locations = DB::table('location')
+			->where('department_id', $departmentId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->get();
+		
+		foreach ($locations as $location) {
+			DB::table('item_location')->insert([
+				'location_id' => $location->id,
+				'item_id' => $itemmaster_id,
+				'unit_id' => $unit_id,
+				'department_id' => $departmentId,
+				'quantity' => 0,
+				'status' => 1,
+				'opn_qty' => 0,
+				'bin_id' => 0,
+			]);
+		}
+	}
+
+	/**
+	 * Create department stock for imported item
+	 */
+	private function createImportDepartmentStock($itemmaster_id, $unit_id, $row, $departmentId)
+	{
+		$departments = DB::table('department')->whereNull('deleted_at')->get();
+		$unitName = DB::table('units')->where('id', $unit_id)->value('unit_name') ?? '';
+		
+		$opnQuantity = isset($row->opn_quantity) ? (float)$row->opn_quantity : 0;
+		$opnCost = isset($row->opn_cost) ? (float)$row->opn_cost : 0;
+		$sellPrice = isset($row->sell_price) ? (float)$row->sell_price : 0;
+		$wsalePrice = isset($row->wsale_price) ? (float)$row->wsale_price : 0;
+		$minQuantity = isset($row->min_quantity) ? (float)$row->min_quantity : 0;
+		$reorderLevel = isset($row->reorder_level) ? (float)$row->reorder_level : 0;
+		$vat = isset($row->vat) ? (float)$row->vat : 0;
+		
+		foreach ($departments as $dept) {
+			$isCurrentDept = ($dept->id == $departmentId);
+			
+			DB::table('itemstock_department')->insert([
+				'itemmaster_id' => $itemmaster_id,
+				'department_id' => $dept->id,
+				'unit_id' => $unit_id,
+				'packing' => $unitName,
+				'opn_cost' => $isCurrentDept ? $opnCost : 0,
+				'opn_quantity' => $isCurrentDept ? $opnQuantity : 0,
+				'cur_quantity' => $isCurrentDept ? $opnQuantity : 0,
+				'received_qty' => $isCurrentDept ? $opnQuantity : 0,
+				'issued_qty' => 0,
+				'min_quantity' => $isCurrentDept ? $minQuantity : 0,
+				'reorder_level' => $isCurrentDept ? $reorderLevel : 0,
+				'vat' => $vat,
+				'is_baseqty' => 1,
+				'pur_count' => 1,
+				'last_purchase_cost' => $isCurrentDept ? $opnCost : 0,
+				'cost_avg' => $isCurrentDept ? $opnCost : 0,
+				'status' => 1,
+				'sell_price' => $isCurrentDept ? $sellPrice : 0,
+				'wsale_price' => $isCurrentDept ? $wsalePrice : 0,
+				'pkno' => 1,
+			]);
+		}
+	}
+
+	/**
+	 * Create item log for imported item with opening quantity
+	 */
+	private function createImportItemLog($itemmaster_id, $unit_id, $row, $departmentId)
+	{
+		$dtrow = DB::table('parameter1')->select('from_date')->first();
+		$voucherDate = $dtrow ? $dtrow->from_date : now();
+		
+		$opnQuantity = (float)$row->opn_quantity;
+		$opnCost = isset($row->opn_cost) ? (float)$row->opn_cost : 0;
+		
+		DB::table('item_log')->insert([
+			'document_type' => 'OQ',
+			'department_id' => $departmentId,
+			'item_id' => $itemmaster_id,
+			'unit_id' => $unit_id,
+			'quantity' => $opnQuantity,
+			'unit_cost' => $opnCost,
+			'trtype' => 1,
+			'cur_quantity' => $opnQuantity,
+			'cost_avg' => $opnCost,
+			'pur_cost' => $opnCost,
+			'sale_cost' => '',
+			'packing' => 1,
+			'status' => 1,
+			'created_at' => now(),
+			'created_by' => Auth::id(),
+			'voucher_date' => $voucherDate
+		]);
+	}	
+
+
 	
 	public function addIteminAPI() {
 		
@@ -5703,7 +7461,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 
 			$itemlog = DB::table('item_log')
 								  ->where('item_id', $itemid)
-								  ->where('department_id', env('DEPARTMENT_ID'))
+								//   ->where('department_id', env('DEPARTMENT_ID'))
+								  ->where('department_id', env('DEPARTMENT_ID', 1))
 								  ->where('status',1)
 								  ->where('deleted_at','0000-00-00 00:00:00')
 								  ->select('item_log.*')

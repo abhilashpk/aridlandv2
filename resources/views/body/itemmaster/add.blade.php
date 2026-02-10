@@ -1233,7 +1233,7 @@ $(function() {
 		  
     });
 	  
-	  $(document).on('click', '.loc-info', function(e) { 
+	$(document).on('click', '.loc-info', function(e) { 
 	   e.preventDefault();
 	   
 		   var locUrl = "{{ url('location/get_loc') }}";
@@ -1243,8 +1243,27 @@ $(function() {
 			
 		   //$('.locPrntItm').toggle();
     });
+
+
+	// $(document).on('click', '.loc-info', function(e) { 
+	// 	e.preventDefault();
+		
+	// 	var itemId = $(this).data('item-id'); // Get item ID from data attribute
+		
+	// 	if (!itemId) {
+	// 		alert('Item ID not found');
+	// 		return;
+	// 	}
+		
+	// 	var locUrl = "{{ url('location/get_loc') }}/" + itemId;
+		
+	// 	$('#locData_1').load(locUrl, function(result) {
+	// 		$('#myModal').modal({show:true});
+	// 	});
+	// });
+
 	 
-	 $('input,select').keydown( function(e) {
+	$('input,select').keydown( function(e) {
         var key = e.charCode ? e.charCode : e.keyCode ? e.keyCode : 0;
         if(key == 13) {
             e.preventDefault();

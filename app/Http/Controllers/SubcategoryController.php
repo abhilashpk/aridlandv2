@@ -25,7 +25,9 @@ class SubcategoryController extends Controller
 	protected function index() {
 
 		$data = array();
-		$subcategories = $this->category->subcategoryList();
+		// $subcategories = $this->category->subcategoryList();
+		$subcategories = $this->category->allSubcategory();
+
 		//Session::flash('message', 'Category added successfully.');
 		return view('body.subcategory.index')
 					->withSubcategories($subcategories)
@@ -39,16 +41,34 @@ class SubcategoryController extends Controller
 					->withData($data);
 	}
 	
+	// public function save(Request $request) {
+	// 	//print_r($request->all());
+	// 	try {
+	// 		$this->category->create($request->all());
+	// 		Session::flash('message', 'Sub Category added successfully.');
+	// 		return redirect('subcategory/add');
+	// 	} catch(ValidationException $e) { 
+	// 		return Redirect::to('subcategory/add')->withErrors($e->getErrors());
+	// 	}
+	// }
+
 	public function save(Request $request) {
-		//print_r($request->all());
-		try {
-			$this->category->create($request->all());
-			Session::flash('message', 'Sub Category added successfully.');
-			return redirect('subcategory/add');
-		} catch(ValidationException $e) { 
-			return Redirect::to('subcategory/add')->withErrors($e->getErrors());
-		}
-	}
+        // ✓ Add validation
+        $validated = $request->validate([
+            'category_name' => 'required|max:120',
+            'parent_id' => 'required|integer|exists:category,id',
+            'description' => 'nullable|max:150'
+        ]);
+        
+        try {
+            $this->category->create($validated);
+            Session::flash('message', 'Sub Category added successfully.');
+            return redirect('subcategory/add');
+        } catch(\Exception $e) {
+            return redirect('subcategory/add')
+                ->withErrors(['error' => 'Failed to create subcategory: ' . $e->getMessage()]);
+        }
+    }
 	
 	public function edit($id) { 
 
@@ -75,14 +95,28 @@ class SubcategoryController extends Controller
 		return redirect('subcategory');
 	}
 	
-	public function checkname(Request $request) {
+	// public function checkname(Request $request) {
 
-		$check = $this->category->check_subcategory_name($request->get('category_name'), $request->get('id'));
-		$isAvailable = ($check) ? false : true;
-		echo json_encode(array(
-							'valid' => $isAvailable,
-						));
-	}
+	// 	$check = $this->category->check_subcategory_name($request->get('category_name'), $request->get('id'));
+	// 	$isAvailable = ($check) ? false : true;
+	// 	echo json_encode(array(
+	// 						'valid' => $isAvailable,
+	// 					));
+	// }
+
+	public function checkname(Request $request) {
+        // ✓ Include parent_id
+        $check = $this->category->check_subcategory_name(
+            $request->get('category_name'),
+            $request->get('parent_id'), // ✓ Required
+            $request->get('id')
+        );
+        
+        $isAvailable = !$check;
+        
+        return response()->json(['valid' => $isAvailable]);
+    }
+
 	public function destroyGroup(Request $request)
 	{
 		$ids = $request->get('ids');
@@ -93,5 +127,25 @@ class SubcategoryController extends Controller
 		}
 		return redirect('subcategory');
 	}
+
+	public function destroySubcategories(Request $request) {
+        $ids = $request->get('ids');
+        
+        if ($ids) {
+            // ✓ Validate IDs
+            $idarr = array_filter(explode(',', $ids), 'is_numeric');
+            
+            if (!empty($idarr)) {
+                DB::table('category')
+                    ->whereIn('id', $idarr)
+                    ->where('parent_id', '!=', 0) // ✓ Only subcategories
+                    ->update(['deleted_at' => now()]);
+                    
+                Session::flash('message', 'Subcategories deleted successfully.');
+            }
+        }
+        
+        return redirect('subcategory');
+    }
 }
 

@@ -22,7 +22,8 @@ class SubgroupController extends Controller
 	
 	public function index() {
 		$data = array();
-		$subgroups = $this->group->subgroupList();
+		// $subgroups = $this->group->subgroupList();
+		 $subgroups = $this->group->allSubgroup();
 		return view('body.subgroup.index')
 					->withSubgroups($subgroups)
 					->withData($data);
@@ -35,12 +36,30 @@ class SubgroupController extends Controller
 					->withData($data);
 	}
 	
+	// public function save(Request $request) {
+	// 	//print_r(Input::all());
+	// 	$this->group->create($request->all());
+	// 	Session::flash('message', 'Sub Group added successfully.');
+	// 	return redirect('subgroup/add');
+	// }
+
 	public function save(Request $request) {
-		//print_r(Input::all());
-		$this->group->create($request->all());
-		Session::flash('message', 'Sub Group added successfully.');
-		return redirect('subgroup/add');
-	}
+        // ✓ Add validation
+        $validated = $request->validate([
+            'group_name' => 'required|max:150',
+            'parent_id' => 'required|integer|exists:groupcat,id',
+            'description' => 'nullable|max:150'
+        ]);
+        
+        try {
+            $this->group->create($validated);
+            Session::flash('message', 'Sub Group added successfully.');
+            return redirect('subgroup/add');
+        } catch(\Exception $e) {
+            return redirect('subgroup/add')
+                ->withErrors(['error' => 'Failed to create subgroup: ' . $e->getMessage()]);
+        }
+    }
 	
 	public function edit($id) { 
 
@@ -67,14 +86,28 @@ class SubgroupController extends Controller
 		return redirect('subgroup');
 	}
 	
-	public function checkname(Request $request) {
+	// public function checkname(Request $request) {
 
-		$check = $this->group->check_subgroup_name($request->get('group_name'), $request->get('id'));
-		$isAvailable = ($check) ? false : true;
-		echo json_encode(array(
-							'valid' => $isAvailable,
-						));
-	}
+	// 	$check = $this->group->check_subgroup_name($request->get('group_name'), $request->get('id'));
+	// 	$isAvailable = ($check) ? false : true;
+	// 	echo json_encode(array(
+	// 						'valid' => $isAvailable,
+	// 					));
+	// }
+
+	public function checkname(Request $request) {
+        // ✓ Include parent_id
+        $check = $this->group->check_subgroup_name(
+            $request->get('group_name'),
+            $request->get('parent_id'), // ✓ Required
+            $request->get('id')
+        );
+        
+        $isAvailable = !$check;
+        
+        return response()->json(['valid' => $isAvailable]);
+    }
+
 	public function destroyGroup()
 	{
 		$ids = Input::get('ids');
@@ -85,5 +118,25 @@ class SubgroupController extends Controller
 		}
 		return redirect('subgroup');
 	}
+
+	public function destroySubgroups(Request $request) {
+        $ids = $request->get('ids');
+        
+        if ($ids) {
+            // ✓ Validate and use Request injection
+            $idarr = array_filter(explode(',', $ids), 'is_numeric');
+            
+            if (!empty($idarr)) {
+                DB::table('groupcat')
+                    ->whereIn('id', $idarr)
+                    ->where('parent_id', '!=', 0) // ✓ Only subgroups
+                    ->update(['deleted_at' => now()]);
+                    
+                Session::flash('message', 'Subgroups deleted successfully.');
+            }
+        }
+        
+        return redirect('subgroup');
+    }
 }
 

@@ -10,12 +10,14 @@ class Unit extends Model {
 	
 	protected $table = 'units';
 	protected $primaryKey = 'id';
-	protected $fillable = ['unit_name','description','fracount'];
+	protected $fillable = ['unit_name','description','fracount','status'];
 	public $timestamps = false;
 	protected $dates = ['deleted_at'];
 	
 		
-	
+	public function products() {
+        return $this->hasMany('App\Models\Product', 'unit_id');
+    }
 	
 
 }

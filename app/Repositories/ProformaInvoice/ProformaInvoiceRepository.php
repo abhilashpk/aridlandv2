@@ -882,7 +882,13 @@ class ProformaInvoiceRepository extends AbstractValidator implements ProformaInv
 					$orderitems =  (isset($attributes['order_item_id'][$key]))?$attributes['order_item_id'][$key]:'';
 					if($attributes['order_item_id'][$key]!='') {
 						
-						$tax_code = (isset($attributes['is_export']))?"ZR":isset($attributes['tax_code'][$key])?$attributes['tax_code'][$key]:'';
+						// $tax_code = (isset($attributes['is_export']))?"ZR":isset($attributes['tax_code'][$key])?$attributes['tax_code'][$key]:'';
+						if (isset($attributes['is_export'])) {
+							$tax_code = 'ZR';
+						} else {
+							$tax_code = $attributes['tax_code'][$key] ?? '';
+						}
+						
 						if( isset($attributes['is_fc']) ) {
 								$tax        = ( ($attributes['cost'][$key] * $attributes['line_vat'][$key]) / 100) * $attributes['currency_rate'];
 								$itemtotal = ( ($attributes['cost'][$key] * $attributes['quantity'][$key]) - $attributes['line_discount'][$key] ) * $attributes['currency_rate'];

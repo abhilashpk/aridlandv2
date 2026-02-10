@@ -1,4 +1,4 @@
-{{-- <br/>
+<br/>
 <div class="col-xs-4">
 	<table class="table table-bordered table-hover">
 		<thead>
@@ -22,9 +22,9 @@
 		@endforeach
 		</tbody>
 	</table>
-</div> --}}
+</div>
 
-<br/>
+{{-- <br/>
 <div class="col-xs-6">
     <table class="table table-bordered table-hover">
         <thead>
@@ -66,7 +66,7 @@
         @endif
         </tbody>
     </table>
-</div>
+</div> --}}
 
 
 <script>

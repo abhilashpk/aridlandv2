@@ -10,7 +10,8 @@
 		</tr>
 		</thead>
 		<tbody>
-		@foreach($items as $row)
+		{{-- @foreach($items as $row) --}}
+		@foreach($info as $row)
 		<tr>
 			<td>{{ $row->code }}</td>
 			<td>{{ $row->name }}</td>

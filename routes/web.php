@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 // ================================================
 //  Migrated from Laravel 5.2 routes.php and now in Laravel Framework 10.50.0
 // ================================================
-
+use Illuminate\Support\Facades\Auth;
 use \App\Http\Controllers\ReportController;
 use \App\Http\Controllers\SettingsController;
 use \App\Http\Controllers\DashboardController;
@@ -15,6 +15,7 @@ use \App\Http\Controllers\CategoryController;
 use \App\Http\Controllers\SubcategoryController;
 use \App\Http\Controllers\CompanyController;
 use \App\Http\Controllers\SysparameterController;
+
 use \App\Http\Controllers\GroupController;
 use \App\Http\Controllers\SubgroupController;
 use \App\Http\Controllers\UnitController;
@@ -193,6 +194,7 @@ use \App\Http\Controllers\SignController;
 use \App\Http\Controllers\MyOrderController;
 use \App\Http\Controllers\ApicallController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\PurchaseEnquiryController;
 
 // ===== Migrated Routes =====
 
@@ -208,7 +210,7 @@ use App\Http\Controllers\Auth\LoginController;
 */
 
 Route::middleware(['web'])->group(function () {
-
+Auth::routes();
     // ALWAYS redirect root to login
     Route::get('/', function () {
         return redirect('/login');
@@ -225,12 +227,15 @@ Route::middleware(['web'])->group(function () {
         ->middleware('guest');
 
     // LOGOUT
-	Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+	// Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-
+	Route::get('/logout', function () {
+		Auth::logout();
+		return redirect('/login');
+	});
 	
 	//STIMULSOFT ROUTES....
-Route::get('/report', [ReportController::class, 'showReport']);
+	Route::get('/report', [ReportController::class, 'showReport']);
 	Route::any('/stimulsoftV2/handler', function () {
 		require public_path('stimulsoftV2/handler.php');
 	});
@@ -265,9 +270,9 @@ Route::get('/report', [ReportController::class, 'showReport']);
 
 	//END HERE STIMULSOFT...
 	
-Route::get('/settings/dbswitch', [SettingsController::class, 'index']);
-Route::post('/settings/login', [SettingsController::class, 'SubmitLogin']);
-Route::post('/settings/submit_dbswitch', [SettingsController::class, 'SubmitDbswitch']);
+	Route::get('/settings/dbswitch', [SettingsController::class, 'index']);
+	Route::post('/settings/login', [SettingsController::class, 'SubmitLogin']);
+	Route::post('/settings/submit_dbswitch', [SettingsController::class, 'SubmitDbswitch']);
 	
 	Route::get('/config-cache', function() {
      $exitCode = Artisan::call('config:cache');
@@ -1738,29 +1743,64 @@ Route::post('/job_invoice/export', [JobInvoiceController::class, 'dataExport']);
 Route::get('/job_invoice/docs/{id}', [JobInvoiceController::class, 'getDocs']); //OCT24
 
 
-Route::get('/purchase_enquiry', "PurchaseEnquiryController@index");
-Route::get('/purchase_enquiry/add', "PurchaseEnquiryController@add");
-Route::post('/purchase_enquiry/save', 'PurchaseEnquiryController@save');
-Route::post('/purchase_enquiry/save/{id}','PurchaseEnquiryController@save');
-Route::get('/purchase_enquiry/edit/{id}', 'PurchaseEnquiryController@edit');
-Route::post('/purchase_enquiry/update/{id}', 'PurchaseEnquiryController@update');
-Route::get('/purchase_enquiry/delete/{id}', 'PurchaseEnquiryController@destroy');
-Route::get('/purchase_enquiry/print/{id}', 'PurchaseEnquiryController@getPrint');
-Route::get('/purchase_enquiry/item_details/{id}', "PurchaseEnquiryController@getItemDetails");
-Route::post('/purchase_enquiry/search', "PurchaseEnquiryController@getSearch");
-Route::post('/purchase_enquiry/export', 'PurchaseEnquiryController@dataExport');
-Route::post('/purchase_enquiry/paging', 'PurchaseEnquiryController@ajaxPaging');
-Route::post('/purchase_enquiry/set_session', 'PurchaseEnquiryController@setSessionVal');
-Route::get('/purchase_enquiry/add/{id}/{n}', 'PurchaseEnquiryController@add');
-Route::get('/purchase_enquiry/get_enquiry/{id}/{url}', "PurchaseEnquiryController@getEnquiry");
-Route::get('/purchase_enquiry/views/{id}','PurchaseEnquiryController@getViews');
-Route::get('/purchase_enquiry/approve/{id}', 'PurchaseEnquiryController@getApproval');
-Route::get('/purchase_enquiry/reject/{id}', 'PurchaseEnquiryController@getReject');
-Route::get('/purchase_enquiry/print/{id}/{n}', 'PurchaseEnquiryController@getPrint');
+// Route::get('/purchase_enquiry', "PurchaseEnquiryController@index");
+// Route::get('/purchase_enquiry/add', "PurchaseEnquiryController@add");
+// Route::post('/purchase_enquiry/save', 'PurchaseEnquiryController@save');
+// Route::post('/purchase_enquiry/save/{id}','PurchaseEnquiryController@save');
+// Route::get('/purchase_enquiry/edit/{id}', 'PurchaseEnquiryController@edit');
+// Route::post('/purchase_enquiry/update/{id}', 'PurchaseEnquiryController@update');
+// Route::get('/purchase_enquiry/delete/{id}', 'PurchaseEnquiryController@destroy');
+// Route::get('/purchase_enquiry/print/{id}', 'PurchaseEnquiryController@getPrint');
+// Route::get('/purchase_enquiry/item_details/{id}', "PurchaseEnquiryController@getItemDetails");
+// Route::post('/purchase_enquiry/search', "PurchaseEnquiryController@getSearch");
+// Route::post('/purchase_enquiry/export', 'PurchaseEnquiryController@dataExport');
+// Route::post('/purchase_enquiry/paging', 'PurchaseEnquiryController@ajaxPaging');
+// Route::post('/purchase_enquiry/set_session', 'PurchaseEnquiryController@setSessionVal');
+// Route::get('/purchase_enquiry/add/{id}/{n}', 'PurchaseEnquiryController@add');
+// Route::get('/purchase_enquiry/get_enquiry/{id}/{url}', "PurchaseEnquiryController@getEnquiry");
+// Route::get('/purchase_enquiry/views/{id}','PurchaseEnquiryController@getViews');
+// Route::get('/purchase_enquiry/approve/{id}', 'PurchaseEnquiryController@getApproval');
+// Route::get('/purchase_enquiry/reject/{id}', 'PurchaseEnquiryController@getReject');
+// Route::get('/purchase_enquiry/print/{id}/{n}', 'PurchaseEnquiryController@getPrint');
 
-Route::post('/purchase_enquiry/save_draft', "PurchaseEnquiryController@saveDraft");//Draft
-Route::get('/purchase_enquiry/edit_draft/{id}', "PurchaseEnquiryController@editDraft");
-Route::post('/purchase_enquiry/update_draft/{id}', "PurchaseEnquiryController@updateDraft");
+// Route::post('/purchase_enquiry/save_draft', "PurchaseEnquiryController@saveDraft");//Draft
+// Route::get('/purchase_enquiry/edit_draft/{id}', "PurchaseEnquiryController@editDraft");
+// Route::post('/purchase_enquiry/update_draft/{id}', "PurchaseEnquiryController@updateDraft");
+
+
+Route::get('/purchase_enquiry', [PurchaseEnquiryController::class, 'index']);
+Route::get('/purchase_enquiry/add', [PurchaseEnquiryController::class, 'add']);
+
+Route::post('/purchase_enquiry/save', [PurchaseEnquiryController::class, 'save']);
+Route::post('/purchase_enquiry/save/{id}', [PurchaseEnquiryController::class, 'save']);
+
+Route::get('/purchase_enquiry/edit/{id}', [PurchaseEnquiryController::class, 'edit']);
+Route::post('/purchase_enquiry/update/{id}', [PurchaseEnquiryController::class, 'update']);
+
+Route::get('/purchase_enquiry/delete/{id}', [PurchaseEnquiryController::class, 'destroy']);
+
+Route::get('/purchase_enquiry/print/{id}', [PurchaseEnquiryController::class, 'getPrint']);
+Route::get('/purchase_enquiry/print/{id}/{n}', [PurchaseEnquiryController::class, 'getPrint']);
+
+Route::get('/purchase_enquiry/item_details/{id}', [PurchaseEnquiryController::class, 'getItemDetails']);
+
+Route::post('/purchase_enquiry/search', [PurchaseEnquiryController::class, 'getSearch']);
+Route::post('/purchase_enquiry/export', [PurchaseEnquiryController::class, 'dataExport']);
+Route::post('/purchase_enquiry/paging', [PurchaseEnquiryController::class, 'ajaxPaging']);
+Route::post('/purchase_enquiry/set_session', [PurchaseEnquiryController::class, 'setSessionVal']);
+
+Route::get('/purchase_enquiry/add/{id}/{n}', [PurchaseEnquiryController::class, 'add']);
+
+Route::get('/purchase_enquiry/get_enquiry/{id}/{url}', [PurchaseEnquiryController::class, 'getEnquiry']);
+Route::get('/purchase_enquiry/views/{id}', [PurchaseEnquiryController::class, 'getViews']);
+
+Route::get('/purchase_enquiry/approve/{id}', [PurchaseEnquiryController::class, 'getApproval']);
+Route::get('/purchase_enquiry/reject/{id}', [PurchaseEnquiryController::class, 'getReject']);
+
+/* Draft routes */
+Route::post('/purchase_enquiry/save_draft', [PurchaseEnquiryController::class, 'saveDraft']);
+Route::get('/purchase_enquiry/edit_draft/{id}', [PurchaseEnquiryController::class, 'editDraft']);
+Route::post('/purchase_enquiry/update_draft/{id}', [PurchaseEnquiryController::class, 'updateDraft']);
 
 		
 // Route::get('/location_transfer', "LocationTransferController@index");

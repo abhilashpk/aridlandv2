@@ -73,7 +73,8 @@
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="item_id" value="{{ $itemrow->id }}">
 								<input type="hidden" name="fromurl" value="{{ $fromurl }}">
-								<input type="hidden" name="formd" id="formd" value="{{$formdata['simple_entry']}}">
+								{{-- <input type="hidden" name="formd" id="formd" value="{{$formdata['simple_entry']}}"> --}}
+								<input type="hidden" name="formd" id="formd" value="{{ $formdata['simple_entry'] ?? 0 }}">
 
 								<input type="hidden" name="itmHt" id="itmHt" value="{{ $itemrow->itmHt }}">
 								<input type="hidden" name="itmWd" id="itmWd" value="{{ $itemrow->itmWd }}">
@@ -699,7 +700,7 @@
                                     </div>
                                 </div>-->
 								
-								{{-- <?php if($formdata['location']==1) { ?>
+								{{-- <?//php if($formdata['location']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">
@@ -872,7 +873,7 @@
 								<input type="hidden" name="supersede[]" id="supersede">
 								<?php } ?>
 								
-								<?php if($formdata['rowmaterial']==1) { ?>
+								<?php if($formdata['rowmaterials']==1) { ?>
 								<div id="rMat">
 									<fieldset>
 									<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Raw Materials</span></h5></legend>

@@ -32,11 +32,13 @@ class CustomerLeadsController extends Controller
 		
 		//Getting Salesman id...
 		//Session::put('salesman_id',Auth::User()->id);
-		if(Auth::user()->roles[0]->name=='Salesman') {
-		    $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
-		    if($srec)
-		        Session::put('salesman_id',$srec->id);
-		}
+		// if(Auth::user()->roles[0]->name=='Salesman') {
+		//     $srec = DB::table('salesman')->where('name',Auth::user()->name)->select('id')->first();
+		//     if($srec)
+		//         Session::put('salesman_id',$srec->id);
+		// }
+
+		$this->middleware(['auth', 'salesman.session']);
 	}
 	
 	public function index() { 

@@ -14,6 +14,8 @@ class UnitRepository extends AbstractValidator implements UnitInterface {
 	
 	protected static $rules = [
 		'unit_name' => 'required',
+		'description' => 'nullable|max:120',
+        'fracount' => 'nullable|integer|min:0|max:127'
 	];
 	
 	public function __construct(Unit $unit) {
@@ -58,7 +60,8 @@ class UnitRepository extends AbstractValidator implements UnitInterface {
 			return true;
 		}
 
-		return false;
+		// return false;
+		 throw new ValidationException('Unit validation failed', $this->getErrors());
 	}
 
 	
