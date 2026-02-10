@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('journal', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('voucher_type', 10);
+            $table->string('voucher_no', 45);
+            $table->date('voucher_date');
+            $table->decimal('debit', 10, 2);
+            $table->decimal('credit', 10, 2);
+            $table->float('difference')->nullable();
+            $table->tinyInteger('status');
+            $table->dateTime('created_at');
+            $table->integer('created_by');
+            $table->dateTime('modify_at');
+            $table->integer('modify_by');
+            $table->dateTime('deleted_at')->nullable();
+            $table->integer('deleted_by');
+            $table->string('supplier_name', 80)->nullable();
+            $table->string('trn_no', 100)->nullable();
+            $table->string('group_id', 45)->nullable();
+            $table->tinyInteger('is_transfer')->nullable()->default("0");
+            $table->double('balance_amount')->nullable();
+            $table->integer('department_id');
+            $table->index(["voucher_type", "voucher_no", "voucher_date", "status", "deleted_at", "group_id", "is_transfer"], 'voucher_type');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('journal');
+    }
+};

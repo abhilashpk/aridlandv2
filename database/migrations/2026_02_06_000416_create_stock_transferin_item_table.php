@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('stock_transferin_item', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('stock_transferin_id');
+            $table->integer('item_id');
+            $table->string('item_name', 80);
+            $table->integer('unit_id');
+            $table->float('quantity');
+            $table->float('price');
+            $table->decimal('item_total', 10, 2);
+            $table->tinyInteger('status');
+            $table->dateTime('deleted_at')->nullable();
+            $table->float('othercost_unit');
+            $table->float('netcost_unit');
+            $table->index(["stock_transferin_id", "item_id", "unit_id", "status", "deleted_at"], 'stock_transferin_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('stock_transferin_item');
+    }
+};

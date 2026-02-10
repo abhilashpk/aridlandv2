@@ -699,7 +699,7 @@
                                     </div>
                                 </div>-->
 								
-								{{-- <?php if($formdata['location']==1) { ?>
+								{{-- <?php if($formdata['location']==1)  ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">

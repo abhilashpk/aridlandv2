@@ -70,11 +70,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->op_balance = $attributes['op_balance'];
 				$this->accountmaster->cl_balance = $attributes['op_balance'];
 				$this->accountmaster->fcop_balance = $attributes['fcop_balance'];
-				$this->accountmaster->department_id = env('DEPARTMENT_ID');
+				$this->accountmaster->department_id = Auth::user()->department_id ?? 0;
 				$this->accountmaster->currency_id = $attributes['currency_id'];
 				$this->accountmaster->salesman_id = $attributes['salesman_id'];
-				$this->accountmaster->credit_limit = $attributes['credit_limit'];
-				$this->accountmaster->duedays = $attributes['duedays'];
+				$this->accountmaster->credit_limit = isset($attributes['credit_limit']) && $attributes['credit_limit'] !== '' ? $attributes['credit_limit'] : 0;
+				$this->accountmaster->duedays = isset($attributes['duedays']) && $attributes['duedays'] !== '' ? $attributes['duedays'] : 0;
 				$this->accountmaster->terms_id = $attributes['terms_id'];
 				$this->accountmaster->country_id = isset($attributes['country_id'])?$attributes['country_id']:'';
 				$this->accountmaster->area_id = isset($attributes['area_id'])?$attributes['area_id']:'';
@@ -447,7 +447,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									'invoice_date'		=> $attributes['invoice_date'],
 									'fc_amount'			=> $fcamount,
 									'is_fc'				=> $fc,
-									'department_id'		=> env('DEPARTMENT_ID'),
+									'department_id'		=> Auth::user()->department_id ?? 0,
 									'loc_proj'			=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
 									'eqp_type'			=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
 									'lpo_no'			=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:''
@@ -484,7 +484,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->op_balance = $attributes['op_balance'];
 				$this->accountmaster->cl_balance = $attributes['cl_balance'];
 				$this->accountmaster->fcop_balance = $attributes['fcop_balance'];
-				$this->accountmaster->department_id = env('DEPARTMENT_ID');
+				$this->accountmaster->department_id = Auth::user()->department_id ?? 0;
 				$this->accountmaster->currency_id = $attributes['currency_id'];
 				$this->accountmaster->salesman_id = isset($attributes['salesman_id']);
 				$this->accountmaster->credit_limit = isset($attributes['credit_limit']);
@@ -1094,9 +1094,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterList($type,$start,$limit,$order,$dir,$search,$arrtype=null)
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		$deptid = Auth::user()->department_id ?? 0;
 		
-		$query = DB::table('account_master')->where('account_master.status',1)->where('account_master.department_id',env('DEPARTMENT_ID'))
+		$query = DB::table('account_master')->where('account_master.status',1)
 		                ->where(function ($q) {
                               $q->whereNull('account_master.deleted_at')
                               ->orWhere('account_master.deleted_at', '0000-00-00 00:00:00');
@@ -1124,10 +1124,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 		$dept = (isset($arrtype['dept']))?$arrtype['dept']:'';
 		
 		if($deptid!=0) //dept chk
-			$query->where('account_master.department_id', env('DEPARTMENT_ID'));
+			$query->where('account_master.department_id', $deptid);
 		else {
 			if($dept!='' && $dept!=0) {
-				$query->where('account_master.department_id', env('DEPARTMENT_ID'));
+				$query->where('account_master.department_id', $dept);
 			}
 		}
 
@@ -1225,7 +1225,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterListCount()
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = DB::table('account_master')->where('account_master.status',1)
 		            ->where(function ($q) {
@@ -1234,7 +1234,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
                         });
 		
 		if($deptid!=0)
-			$query->where('account_master.department_id', env('DEPARTMENT_ID'));
+			$query->where('account_master.department_id', $deptid);
 			if( Auth::user()->roles[0]->name != "Admin") {	
 			
 				$query->where('account_master.is_hide', 0);
@@ -1256,7 +1256,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterCusList($type,$start,$limit,$order,$dir,$search,$dept=null)
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','CUSTOMER');
 		$query->join('account_category AS ac', function($join) {
@@ -1310,7 +1310,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterCusListCount()
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','CUSTOMER');
 		
@@ -1337,7 +1337,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterSupList($type,$start,$limit,$order,$dir,$search,$dept=null)
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','SUPPLIER');
 		$query->join('account_category AS ac', function($join) {
@@ -1391,7 +1391,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterSupListCount()
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','SUPPLIER');
 		
@@ -1418,7 +1418,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterBankList($type,$start,$limit,$order,$dir,$search,$dept=null)
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','BANK');
 		$query->join('account_category AS ac', function($join) {
@@ -1472,7 +1472,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterBankListCount()
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','BANK');
 		
@@ -1499,7 +1499,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
     public function accountMasterCashList($type,$start,$limit,$order,$dir,$search,$dept=null)
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','CASH');
 		$query->join('account_category AS ac', function($join) {
@@ -1553,7 +1553,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function accountMasterCashListCount()
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = env('DEPARTMENT_ID');
+		$deptid = Auth::user()->department_id ?? 0;
 		
 		$query = $this->accountmaster->where('account_master.status',1)->where('account_master.category','CASH');
 		
@@ -9245,7 +9245,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$this->accountmaster->category = $attributes['category'];
 			$this->accountmaster->vat_assign =  isset($attributes['vtas'])?$attributes['vtas']:0;
 			$this->accountmaster->vat_percentage = isset($attributes['vtpr'])?$attributes['vtpr']:0;
-			$this->accountmaster->department_id = env('DEPARTMENT_ID');//isset($attributes['department_id'])?$attributes['department_id']:'';
+			$this->accountmaster->department_id = Auth::user()->department_id ?? 0; // user department
 			$this->accountmaster->fill($attributes)->save();
 			
 			DB::table('account_transaction')
@@ -9320,7 +9320,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$this->accountmaster->created_by = Auth::User()->id;
 			$this->accountmaster->status = 1;
 			$this->accountmaster->category = $attributes['category'];
-			$this->accountmaster->department_id = env('DEPARTMENT_ID');//isset($attributes['department_id'])?$attributes['department_id']:'';
+			$this->accountmaster->department_id = Auth::user()->department_id ?? 0; // user department
 			$this->accountmaster->fill($attributes)->save();
 			
 			DB::table('account_transaction')
@@ -9335,7 +9335,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									'description' 		=> '',
 									'reference'			=> '',
 									'invoice_date'		=> $settings->from_date,
-									'department_id'		=> env('DEPARTMENT_ID')//isset($attributes['department_id'])?$attributes['department_id']:''
+									'department_id'		=> Auth::user()->department_id ?? 0 // user department
 								]);
 			
 			DB::table('account_master')->where('id', $this->accountmaster->id)->update(['account_id' => 'ACM'.$this->accountmaster->id]);
@@ -10249,5 +10249,3 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	}
 	
 }
-
-

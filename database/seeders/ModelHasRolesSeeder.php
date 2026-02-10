@@ -1,0 +1,31 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class ModelHasRolesSeeder extends Seeder
+{
+    public function run(): void
+    {
+        DB::table('model_has_roles')->insert([
+                ['role_id' => 1, 'model_id' => 4, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 3, 'model_id' => 6, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 3, 'model_id' => 9, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 1, 'model_id' => 10, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 3, 'model_id' => 11, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 2, 'model_id' => 12, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 1, 'model_id' => 13, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 2, 'model_id' => 14, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 2, 'model_id' => 15, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 3, 'model_id' => 16, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 3, 'model_id' => 18, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 4, 'model_id' => 19, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 5, 'model_id' => 20, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 3, 'model_id' => 21, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 1, 'model_id' => 22, 'model_type' => 'App\\Models\\User'],
+                ['role_id' => 2, 'model_id' => 23, 'model_type' => 'App\\Models\\User'],
+        ]);
+    }
+}

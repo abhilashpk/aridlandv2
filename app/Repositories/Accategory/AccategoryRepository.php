@@ -34,20 +34,22 @@ class AccategoryRepository extends AbstractValidator implements AccategoryInterf
 	
 	public function create($attributes)
 	{
-		if($this->isValid($attributes)) { 
-			
-			$this->accategory->parent_id = $attributes['parent_id'];
-			$this->accategory->name = $attributes['name'];
-			$this->accategory->status = 1;
-			$this->accategory->fill($attributes)->save();
-			return true;
+		if(!$this->isValid($attributes)) {
+			throw new ValidationException('Accategory validation error!', $this->getErrors());
 		}
-		
-		//throw new ValidationException('Accategory validation error!', $this->getErrors());
+
+		$this->accategory->parent_id = $attributes['parent_id'];
+		$this->accategory->name = $attributes['name'];
+		$this->accategory->status = 1;
+		$this->accategory->fill($attributes)->save();
+		return true;
 	}
 	
 	public function update($id, $attributes)
 	{
+		if(!$this->isValid($attributes)) {
+			throw new ValidationException('Accategory validation error!', $this->getErrors());
+		}
 		$this->accategory = $this->find($id);
 		$this->accategory->fill($attributes)->save();
 		return true;
@@ -215,4 +217,3 @@ class AccategoryRepository extends AbstractValidator implements AccategoryInterf
     //       }
 	
 }
-

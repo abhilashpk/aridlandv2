@@ -178,14 +178,16 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	// 			->get();
 	// }
 
-	public function locationList()
+	public function locationList($itemId = null)
 	{
-		$query = $this->location
-			->with(['itemLocations' => function ($q) use ($itemId) {
+		$query = $this->location->where('status', 1);
+
+		if ($itemId !== null) {
+			$query->with(['itemLocations' => function ($q) use ($itemId) {
 				$q->select('location_id', 'item_id', 'quantity', 'opn_qty')
-				->where('item_id', $itemId);
-			}])
-			->where('status', 1);
+					->where('item_id', $itemId);
+			}]);
+		}
 
 		if (Auth::check() && Auth::user()->location_id > 0) {
 			$query->where('id', Auth::user()->location_id);
@@ -267,4 +269,3 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	}
 	
 }
-
