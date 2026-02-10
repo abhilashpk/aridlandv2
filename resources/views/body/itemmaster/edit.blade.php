@@ -746,8 +746,8 @@
 														}
 													?>
 													<tr>
-														<td>{{ $row->name }}<input type="hidden" name="locid[]" value="{{$row->id}}"></td>
-														<td><input type="number" value="{{$opnqty}}" name="locqty[]" class="locqty" @if(auth()->user()->can('item-qty-cost-edit')) console.log('') @else readonly @endif > 
+														<td>{{ $row->name }}<input type="hidden" name="locid[]" value="{{$row->id}}"></td> {{--@if(auth()->user()->can('item-qty-cost-edit')) console.log('') @else readonly @endif--}}
+														<td><input type="number" value="{{$opnqty}}" name="locqty[]" class="locqty"> 
 															<input type="hidden" name="itlocid[]" value="{{$id}}">
 														</td>
 														<td>{{ $qty }}
@@ -1373,9 +1373,14 @@ $(function() {
 			bv.getInvalidFields().each(function() {
 				invalidFields.push($(this).attr('name'));
 			});
+
 			console.log('Invalid fields:', invalidFields);
-			alert('Please fix these fields: ' + invalidFields.join(', '));
-			return false;
+
+			if (invalidFields.length > 0) {
+				alert('Please fix these fields: ' + invalidFields.join(', '));
+				return false; // stop submit ONLY when there are invalid fields
+			}
+			 return true;
 		}
 	});
 // ----------------------------------error check end-------------------------------------------
