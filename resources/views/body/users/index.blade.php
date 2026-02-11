@@ -74,17 +74,10 @@
                                     </thead>
                                     <tbody>
 									@foreach($users as $user)
-									<?php if(Auth::User()->id != $user->id) { ?>
                                     <tr>
                                         <td>{{ $user->name }}</td>
 										<td>{{ $user->email }}</td>
-										<td>
-											@if(!empty($user->roles))
-												@foreach($user->roles as $v)
-													<label class="label label-success">{{ $v->display_name }}</label>
-												@endforeach
-											@endif
-										</td>
+										<td>{{ $user->role ? $user->role->display_name : '' }}</td>
 										<td>
 											<p>
 												<button class="btn btn-primary btn-xs" onClick="location.href='{{ url('users/'.$user->id.'/edit') }}'">
@@ -98,7 +91,6 @@
 											</p>
 										</td>
                                     </tr>
-									<?php } ?>
 									@endforeach
                                     </tbody>
                                 </table>

@@ -54,6 +54,28 @@
 								</span>
 							@endif
                         </div>
+
+                        @if(isset($departments) && count($departments))
+                        <div class="form-group{{ $errors->has('department_id') ? ' has-error' : '' }}">
+                            <label for="department_id" class="sr-only">BRANCH</label>
+                            <div class="input-group">
+                                <span class="input-group-addon"><i class="fa fa-building text-primary"></i></span>
+                                <select class="form-control form-control-lg" id="department_id" name="department_id">
+                                    <option value="">Select Branch</option>
+                                    @foreach($departments as $department)
+                                        <option value="{{ $department->id }}" {{ old('department_id') == $department->id ? 'selected' : '' }}>
+                                            {{ $department->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @if ($errors->has('department_id'))
+                                <span class="help-block">
+                                    <strong>{{ $errors->first('department_id') }}</strong>
+                                </span>
+                            @endif
+                        </div>
+                        @endif
 						
                         <div class="form-group{{ $errors->has('password') ? ' has-error' : '' }}">
                             <div class="input-group">

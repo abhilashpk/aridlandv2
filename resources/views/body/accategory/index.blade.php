@@ -118,7 +118,7 @@
                                 </tbody>
                             </table>
                             <form class="form-horizontal" role="form" method="POST" name="frmUnits" id="frmUnits">
-                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                @csrf
                                 <input type="hidden" name="ids" id="chkids">
                             </form>
                         </div>
@@ -131,7 +131,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                         <h4 class="modal-title custom_align" id="Heading5">Delete this entry</h4>
                     </div>
                     <div class="modal-body">

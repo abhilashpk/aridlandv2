@@ -15,7 +15,7 @@ class User extends Authenticatable
     protected $primaryKey = 'id';
 
     protected $fillable = [
-        'name','email','password','department_id','location_id'
+        'name','email','password','department_id','location_id','role_id'
     ];
 
     protected $hidden = [
@@ -25,4 +25,9 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
 }

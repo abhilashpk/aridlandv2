@@ -524,4 +524,3 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	}
 	
 }
-

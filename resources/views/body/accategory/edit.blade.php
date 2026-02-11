@@ -50,8 +50,8 @@
                         </div>
                         <div class="panel-body">
                             <form class="form-horizontal" role="form" method="POST" name="frmCategory" id="frmCategory" action="{{ url('accategory/update/'.$catrow->id) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="category_id" value="<?php echo $catrow->id; ?>">
+                                @csrf
+								<input type="hidden" name="category_id" value="{{ $catrow->id }}">
                                 <div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Account Type</label>
                                     <div class="col-sm-10">

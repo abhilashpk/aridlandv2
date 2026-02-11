@@ -39,6 +39,15 @@
         </section>
         <!--section ends-->
         <section class="content">
+            @if($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <div class="row">
                 <div class="col-md-12">
                     <div class="panel panel-primary">
@@ -49,9 +58,8 @@
                            
                         </div>
                         <div class="panel-body">
-							{!! Form::open(array('route' => 'users.store','method'=>'POST')) !!}
-							<!--<form class="form-horizontal" role="form" method="POST" name="frmUsers" id="frmUsers" action="{{ url('users/store') }}">-->
-							<input type="hidden" name="_token" value="{{ csrf_token() }}">
+							<form role="form" method="POST" action="{{ route('users.store') }}">
+                                @csrf
 							<div class="row">
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
@@ -79,32 +87,37 @@
 								</div>
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
-										<strong>Role<font color="red">*</font>:</strong>
-										<select id="roles" class="form-control select2"  style="width:100%; background-color:#85d3ef;"  name="roles[]" required>
+                                        <strong>Role<font color="red">*</font>:</strong>
+                                        <select id="role_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="role_id" required>
                                             <option value="">Select Role...</option>
-											@foreach ($roles as $key => $row)
-											<option value="{{$key}}">{{ $row }}</option>
-											@endforeach
+                                            @foreach ($roles as $key => $row)
+                                            <option value="{{$key}}">{{ $row }}</option>
+                                            @endforeach
                                         </select>
-									</div>
-								</div>
-								
+                                    </div>
+                                </div>
+
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Department:</strong>
-										<select id="roles" class="form-control select2" style="width:100%" name="department_id">
+										<select id="department_id" class="form-control select2" style="width:100%" name="department_id" disabled>
                                             <option value="">Department None</option>
 											@foreach ($depts as $row)
-											<option value="{{$row->id}}">{{ $row->name }}</option>
+											<option value="{{$row->id}}" {{ (Auth::check() && Auth::user()->department_id == $row->id) ? 'selected' : '' }}>
+                                                {{ $row->name }}
+                                            </option>
 											@endforeach
                                         </select>
+                                        @if(isset($depts[0]))
+                                            <input type="hidden" name="department_id" value="{{ $depts[0]->id }}">
+                                        @endif
 									</div>
 								</div>
 								
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Location:</strong>
-										<select id="roles" class="form-control select2" style="width:100%" name="location_id">
+										<select id="location_id" class="form-control select2" style="width:100%" name="location_id">
                                             <option value="">All Location</option>
 											@foreach ($loc as $row)
 											<option value="{{$row->id}}">{{ $row->name }}</option>
@@ -117,7 +130,7 @@
 										<button type="submit" class="btn btn-primary">Submit</button>
 								</div>
 							</div>
-							{!! Form::close() !!}
+							</form>
 							<!--</form>-->
                         </div>
                     </div>

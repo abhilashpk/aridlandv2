@@ -39,6 +39,15 @@
         </section>
         <!--section ends-->
         <section class="content">
+            @if($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <div class="row">
                 <div class="col-md-12">
                     <div class="panel panel-primary">
@@ -49,55 +58,65 @@
                            
                         </div>
                         <div class="panel-body">
-							{!! Form::model(['method' => 'PATCH','route' => ['users.update', $user->id]]) !!}
+							<form role="form" method="POST" action="{{ route('users.update', $user->id) }}">
+                                @csrf
+                                @method('PATCH')
 							<div class="row">
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Name:</strong>
-										{!! Form::text('name', $user->name, array('placeholder' => 'Name','class' => 'form-control')) !!}
+										<input type="text" class="form-control" name="name" placeholder="Name" value="{{ $user->name }}">
 									</div>
 								</div>
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Email:</strong>
-										{!! Form::text('email',  $user->email, array('placeholder' => 'Email','class' => 'form-control')) !!}
+										<input type="text" class="form-control" name="email" placeholder="Email" value="{{ $user->email }}">
 									</div>
 								</div>
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Password:</strong>
-										{!! Form::password('password', array('placeholder' => 'Password','class' => 'form-control')) !!}
+										<input type="password" class="form-control" name="password" placeholder="Password">
 									</div>
 								</div>
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Confirm Password:</strong>
-										{!! Form::password('confirm-password', array('placeholder' => 'Confirm Password','class' => 'form-control')) !!}
+										<input type="password" class="form-control" name="confirm-password" placeholder="Confirm Password">
 									</div>
 								</div>
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Role:</strong>
-										{!! Form::select('roles[]', $roles,$userRole, array('class' => 'form-control')) !!}
-									</div>
-								</div>
-								
-								<div class="col-xs-12 col-sm-12 col-md-12">
-									<div class="form-group">
-										<strong>Department:</strong>
-										<select id="roles" class="form-control select2" style="width:100%" name="department_id">
-                                            <option value="">Department None</option>
-											@foreach ($depts as $row)
-											<option value="{{$row->id}}" <?php echo ($user->department_id==$row->id)?'selected':'';?>>{{ $row->name }}</option>
-											@endforeach
+										<select class="form-control select2" style="width:100%" name="role_id" required>
+                                            <option value="">Select Role...</option>
+                                            @foreach ($roles as $key => $row)
+                                                <option value="{{ $key }}" {{ ($user->role_id == $key) ? 'selected' : '' }}>{{ $row }}</option>
+                                            @endforeach
                                         </select>
 									</div>
 								</div>
 								
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
+										<strong>Department:</strong>
+										<select id="department_id" class="form-control select2" style="width:100%" name="department_id" disabled>
+                                            <option value="">Department None</option>
+											@foreach ($depts as $row)
+											<option value="{{$row->id}}" <?php echo ($user->department_id==$row->id)?'selected':'';?>>{{ $row->name }}</option>
+											@endforeach
+                                        </select>
+                                        @if(isset($depts[0]))
+                                            <input type="hidden" name="department_id" value="{{ $depts[0]->id }}">
+                                        @endif
+									</div>
+								</div>
+								
+								<div class="col-xs-12 col-sm-12 col-md-12">
+									<div class="form-group">
 										<strong>Location:</strong>
-										<select id="roles" class="form-control select2" style="width:100%" name="location_id">
+										<select id="location_id" class="form-control select2" style="width:100%" name="location_id">
                                             <option value="">All Location</option>
 											@foreach ($loc as $row)
 											<option value="{{$row->id}}" <?php echo ($user->location_id==$row->id)?'selected':'';?>>{{ $row->name }}</option>
@@ -110,7 +129,7 @@
 										<button type="submit" class="btn btn-primary">Submit</button>
 								</div>
 							</div>
-							{!! Form::close() !!}
+							</form>
 							<!--</form>-->
                         </div>
                     </div>
