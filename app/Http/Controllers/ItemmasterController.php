@@ -2050,6 +2050,14 @@ private function getDefaultFormData()
                     ->withBatches($batches);
 					
     }
+
+	public function viewIntraLocInfo($id,$n=null)
+	{
+		$info = $this->itemmaster->getStockIntraLocInfo($id,$inv_id=null,$type=null);
+		return view('body.itemmaster.viewintralocinfo')
+					->withNum($n)
+					->withInfo($info);
+	}
     
 }
 

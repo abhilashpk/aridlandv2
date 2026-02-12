@@ -1999,7 +1999,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						} )
 						->join('itemstock_department AS ISD', function($join) {
 							$join->on('ISD.itemmaster_id','=','itemmaster.id');
-							$join->where('ISD.department_id','=',env('DEPARTMENT_ID'));
+							$join->where('ISD.department_id','=',auth()->user()->department_id);
 						} )
 						->join('units AS u', function($join) {
 							$join->on('u.id','=','iu.unit_id');
@@ -2041,7 +2041,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				})
 				->join('itemstock_department AS ID', function($join) {
 					$join->on('ID.itemmaster_id', '=', 'itemmaster.id')
-						->where('ID.department_id', env('DEPARTMENT_ID')); // ← MOVED HERE
+						->where('ID.department_id', auth()->user()->department_id); // ← MOVED HERE
 				})
 				->leftJoin('groupcat AS GC', function($join) {
 					$join->on('GC.id', '=', 'itemmaster.group_id');
@@ -5127,229 +5127,462 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	}
 	
 	
-	public function getStockLocInfo($id,$invid,$type)
-	{
-		/* return DB::table('item_location')->where('item_location.status',1)
-							->leftJoin('location AS L', function($join){
-										$join->on('L.id','=','item_location.location_id');
-							})
-							->where('item_location.item_id',$id)
-							->where('item_location.deleted_at', '0000-00-00 00:00:00')
-							->select('L.name','item_location.quantity')
-							->get(); */
-		if(!$invid) {				
-			$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-							->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// public function getStockLocInfo($id,$invid,$type)
+	// {
+	// 	/* return DB::table('item_location')->where('item_location.status',1)
+	// 						->leftJoin('location AS L', function($join){
+	// 									$join->on('L.id','=','item_location.location_id');
+	// 						})
+	// 						->where('item_location.item_id',$id)
+	// 						->where('item_location.deleted_at', '0000-00-00 00:00:00')
+	// 						->select('L.name','item_location.quantity')
+	// 						->get(); */
+	// 	if(!$invid) {				
+	// 		$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 						->where('location.deleted_at','=', '0000-00-00 00:00:00');
 							
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
 								
-			return $qry->select('location.code','location.name','IL.quantity','location.id','BL.code AS bin')->orderBy('location.id')->get();
+	// 		return $qry->select('location.code','location.name','IL.quantity','location.id','BL.code AS bin')->orderBy('location.id')->get();
+			
+	// 	} else {
+	// 		if($type=='PI') {
+				
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
+	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
+	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('PI.is_sdo','=', 0);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
+								
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+								
+	// 		} else if($type=='SI') {
+				
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) use($id){
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
+	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
+	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('SI.is_do','=', 0);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
+								
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+			
+	// 		} else if($type=='CDO') {
+				
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
+	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
+	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('SI.is_do','=', 1);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
+								
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+				
+	// 		} elseif($type=='SDO') {
+				
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
+	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
+	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('PI.is_sdo','=', 1);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+								
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
+								
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','PI.qty_entry','BL.code AS bin')->orderBy('location.id')->get();
+								
+	// 		}
+	// 	}
+	// }
+
+
+	public function getStockLocInfo($id, $invid = null, $type = null)
+	{
+		$deptId = auth()->user()->department_id;
+		
+		Log::info('getStockLocInfo called', [
+			'item_id' => $id,
+			'invoice_id' => $invid,
+			'type' => $type,
+			'department_id' => $deptId
+		]);
+		
+		// Base query - always start with locations
+		$qry = DB::table('location')
+			->where('location.status', 1)
+			->where('location.is_conloc', 0)
+			->where('location.department_id', $deptId)
+			->whereNull('location.deleted_at');
+		
+		// Filter by user's assigned location if applicable
+		if (Auth::check() && Auth::user()->location_id > 0) {
+			$qry->where('location.id', Auth::user()->location_id);
+		}
+		
+		// Join item_location to get current quantity per location
+		$qry->leftJoin('item_location AS IL', function($join) use ($id, $deptId) {
+			$join->on('IL.location_id', '=', 'location.id')
+				->where('IL.item_id', '=', $id)
+				->where('IL.department_id', '=', $deptId)
+				->where('IL.status', '=', 1)
+				->whereNull('IL.deleted_at');
+		});
+		
+		// Join bin_location
+		$qry->leftJoin('bin_location AS BL', function($join) {
+			$join->on('BL.id', '=', 'IL.bin_id')
+				->whereNull('BL.deleted_at');
+		});
+		
+		// Add type-specific joins and selects
+		if (!$invid) {
+			// No invoice - just show item locations with current quantity
+			$result = $qry->select(
+				'location.id',
+				'location.code',
+				'location.name',
+				'IL.quantity',           // Current quantity in this location
+				'IL.opn_qty',            // Opening quantity
+				'BL.code AS bin',
+				'IL.id as item_location_id'
+			)
+			->orderBy('location.id')
+			->get();
 			
 		} else {
-			if($type=='PI') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_pi AS PI', function($join) use($invid){
-									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('PI.is_sdo','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
-								
-			} else if($type=='SI') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) use($id){
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_si AS SI', function($join) use($invid){
-									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('SI.is_do','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
-			
-			} else if($type=='CDO') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_si AS SI', function($join) use($invid){
-									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('SI.is_do','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
-				
-			} elseif($type=='SDO') {
-				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_pi AS PI', function($join) use($invid){
-									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('PI.is_sdo','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
-								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
-								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','PI.qty_entry','BL.code AS bin')->orderBy('location.id')->get();
-								
+			switch ($type) {
+				case 'PI':
+					// Purchase Invoice
+					$qry->leftJoin('item_location_pi AS PI', function($join) use ($invid) {
+						$join->on('PI.location_id', '=', 'location.id')
+							->where('PI.invoice_id', '=', $invid)
+							->where('PI.is_sdo', '=', 0)
+							->whereNull('PI.deleted_at');
+					});
+					
+					$result = $qry->select(
+						'location.id',
+						'location.code',
+						'location.name',
+						'IL.quantity',           // Current stock in location
+						'PI.quantity AS curqty', // Quantity in this invoice
+						'BL.code AS bin',
+						'IL.id as item_location_id'
+					)
+					->orderBy('location.id')
+					->get();
+					break;
+					
+				case 'SI':
+					// Sales Invoice
+					$qry->leftJoin('item_location_si AS SI', function($join) use ($invid) {
+						$join->on('SI.location_id', '=', 'location.id')
+							->where('SI.invoice_id', '=', $invid)
+							->where('SI.is_do', '=', 0)
+							->whereNull('SI.deleted_at');
+					});
+					
+					$result = $qry->select(
+						'location.id',
+						'location.code',
+						'location.name',
+						'IL.quantity',           // Current stock in location
+						'SI.quantity AS curqty', // Quantity in this invoice
+						'BL.code AS bin',
+						'IL.id as item_location_id'
+					)
+					->orderBy('location.id')
+					->get();
+					break;
+					
+				case 'CDO':
+					// Customer Delivery Order
+					$qry->leftJoin('item_location_si AS SI', function($join) use ($invid) {
+						$join->on('SI.location_id', '=', 'location.id')
+							->where('SI.invoice_id', '=', $invid)
+							->where('SI.is_do', '=', 1)
+							->whereNull('SI.deleted_at');
+					});
+					
+					$result = $qry->select(
+						'location.id',
+						'location.code',
+						'location.name',
+						'IL.quantity',           // Current stock in location
+						'SI.quantity AS curqty', // Quantity in this delivery
+						'BL.code AS bin',
+						'IL.id as item_location_id'
+					)
+					->orderBy('location.id')
+					->get();
+					break;
+					
+				case 'SDO':
+					// Supplier Delivery Order
+					$qry->leftJoin('item_location_pi AS PI', function($join) use ($invid) {
+						$join->on('PI.location_id', '=', 'location.id')
+							->where('PI.invoice_id', '=', $invid)
+							->where('PI.is_sdo', '=', 1)
+							->whereNull('PI.deleted_at');
+					});
+					
+					$result = $qry->select(
+						'location.id',
+						'location.code',
+						'location.name',
+						'IL.quantity',           // Current stock in location
+						'PI.quantity AS curqty', // Quantity in this delivery
+						'PI.qty_entry',
+						'BL.code AS bin',
+						'IL.id as item_location_id'
+					)
+					->orderBy('location.id')
+					->get();
+					break;
+					
+				default:
+					$result = $qry->select(
+						'location.id',
+						'location.code',
+						'location.name',
+						'IL.quantity',
+						'BL.code AS bin',
+						'IL.id as item_location_id'
+					)
+					->orderBy('location.id')
+					->get();
+					break;
 			}
 		}
+		
+		Log::info('getStockLocInfo result', [
+			'item_id' => $id,
+			'invoice_id' => $invid,
+			'type' => $type,
+			'count' => $result->count(),
+			'sample_data' => $result->first()
+		]);
+		
+		return $result;
 	}
 	
 
-	public function getStockIntraLocInfo($id,$invid,$type)
-	{
+	// public function getStockIntraLocInfo($id,$invid,$type)
+	// {
 		
-		if(!$invid) {				
-			$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-							->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 	if(!$invid) {				
+	// 		$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 						->where('location.deleted_at','=', '0000-00-00 00:00:00');
 							
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
 								
-			return $qry->select('location.code','location.name','IL.quantity','location.id','BL.code AS bin')->orderBy('location.id')->get();
+	// 		return $qry->select('location.code','location.name','IL.quantity','location.id','BL.code AS bin')->orderBy('location.id')->get();
 			
-		} else {
-			if($type=='PI') {
+	// 	} else {
+	// 		if($type=='PI') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_pi AS PI', function($join) use($invid){
-									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('PI.is_sdo','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
+	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
+	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('PI.is_sdo','=', 0);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
 								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
 								
-			} else if($type=='SI') {
+	// 		} else if($type=='SI') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) use($id){
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_si AS SI', function($join) use($invid){
-									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('SI.is_do','=', 0);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) use($id){
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
+	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
+	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('SI.is_do','=', 0);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
 								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
 			
-			} else if($type=='CDO') {
+	// 		} else if($type=='CDO') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_si AS SI', function($join) use($invid){
-									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('SI.is_do','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
+	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
+	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('SI.is_do','=', 1);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
 								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','SI.quantity AS curqty','BL.code AS bin')->orderBy('location.id')->get();
 				
-			} elseif($type=='SDO') {
+	// 		} elseif($type=='SDO') {
 				
-				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
-								->leftJoin('item_location AS IL', function($join) use($id){
-									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
-								})
-								->leftJoin('bin_location AS BL', function($join) {
-									$join->on('BL.id','=','IL.bin_id');
-								})
-								->leftJoin('item_location_pi AS PI', function($join) use($invid){
-									$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-									->where('PI.deleted_at','=', '0000-00-00 00:00:00')
-									->where('PI.is_sdo','=', 1);
-								})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 							->leftJoin('item_location AS IL', function($join) use($id){
+	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
+	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})
+	// 							->leftJoin('bin_location AS BL', function($join) {
+	// 								$join->on('BL.id','=','IL.bin_id');
+	// 							})
+	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
+	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
+	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->where('PI.is_sdo','=', 1);
+	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
 								
-					if(Auth::user()->location_id > 0)
-						$qry->where('location.id', Auth::user()->location_id);
+	// 				if(Auth::user()->location_id > 0)
+	// 					$qry->where('location.id', Auth::user()->location_id);
 								
-				return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','PI.qty_entry','BL.code AS bin')->orderBy('location.id')->get();
+	// 			return $qry->select('location.code','location.name','IL.quantity','location.id','PI.quantity AS curqty','PI.qty_entry','BL.code AS bin')->orderBy('location.id')->get();
 								
-			}
+	// 		}
+	// 	}
+	// }
+
+
+	public function getStockIntraLocInfo($id, $invid = null, $type = null)
+	{
+		$deptId = auth()->user()->department_id;
+		
+		Log::info('getStockIntraLocInfo called', [
+			'item_id' => $id,
+			'invoice_id' => $invid,
+			'type' => $type,
+			'department_id' => $deptId
+		]);
+		
+		// Base query - locations from OTHER departments
+		$qry = DB::table('location')
+			->where('location.status', 1)
+			->where('location.is_conloc', 0)
+			->where('location.department_id', '!=', $deptId)  // Different department
+			->whereNull('location.deleted_at');
+		
+		// Filter by user's assigned location if applicable
+		if (Auth::check() && Auth::user()->location_id > 0) {
+			$qry->where('location.id', Auth::user()->location_id);
 		}
+		
+		// Join item_location - need to match department too
+		$qry->leftJoin('item_location AS IL', function($join) use ($id) {
+			$join->on('IL.location_id', '=', 'location.id')
+				->where('IL.item_id', '=', $id)
+				->where('IL.status', '=', 1)
+				->whereNull('IL.deleted_at');
+		});
+		
+		// Join bin_location
+		$qry->leftJoin('bin_location AS BL', function($join) {
+			$join->on('BL.id', '=', 'IL.bin_id')
+				->whereNull('BL.deleted_at');
+		});
+		
+		// Rest is same as getStockLocInfo...
+		if (!$invid) {
+			$result = $qry->select(
+				'location.id',
+				'location.code',
+				'location.name',
+				'IL.quantity',
+				'BL.code AS bin',
+				'location.department_id'
+			)
+			->orderBy('location.id')
+			->get();
+		} else {
+			// ... same switch logic as above
+		}
+		
+		Log::info('getStockIntraLocInfo result', [
+			'count' => $result->count()
+		]);
+		
+		return $result;
 	}
+
 	
 	public function getcnItemLocations() {
 		
@@ -7617,7 +7850,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			return $result;
 		
 		}
-	}
+	}	
 	
 }
 

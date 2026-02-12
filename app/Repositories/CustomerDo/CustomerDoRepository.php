@@ -440,7 +440,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				$dept = env('DEPARTMENT_ID');
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -470,7 +470,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							$dept = env('DEPARTMENT_ID');
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -1415,7 +1415,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	public function customerDOListCount()
 	{
-		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
+		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',auth()->user()->department_id)
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','customer_do.customer_id');
 						} )
@@ -1424,7 +1424,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	public function customerDOList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'))
+		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',auth()->user()->department_id)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','customer_do.customer_id');
 						} );
@@ -1685,7 +1685,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
-								->where('SOI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
+								->where('SOI.status',1)->where('customer_do.department_id',auth()->user()->department_id);
 								
 						if( $date_from!='' && $date_to!='' ) { 
 							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
@@ -1720,7 +1720,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
-								->where('SOI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
+								->where('SOI.status',1)->where('customer_do.department_id',auth()->user()->department_id);
 								
 						if( $date_from!='' && $date_to!='' ) { 
 							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
@@ -1760,7 +1760,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
-								->where('SOI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
+								->where('SOI.status',1)->where('customer_do.department_id',auth()->user()->department_id);
 								
 						if( $date_from!='' && $date_to!='' ) { 
 							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));
@@ -1798,7 +1798,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','customer_do.job_id');
 								})
-								->where('QSI.status',1)->where('customer_do.department_id',env('DEPARTMENT_ID'));
+								->where('QSI.status',1)->where('customer_do.department_id',auth()->user()->department_id);
 								
 						if( $date_from!='' && $date_to!='' ) { 
 							$query->whereBetween('customer_do.voucher_date', array($date_from, $date_to));

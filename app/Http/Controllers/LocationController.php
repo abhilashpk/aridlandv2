@@ -229,12 +229,24 @@ class LocationController extends Controller
 	// 		->with('info', $info);
 	// }
 
+	// public function getCode($id)
+	// {
+	// 	$loc = DB::table('location')->where('id', $id)->first();
+
+	// 	return $loc ? $loc->code : '';
+	// }
+
 	public function getCode($id)
 	{
+		\Log::info('Location ID:', ['id' => $id]);
+
 		$loc = DB::table('location')->where('id', $id)->first();
+
+		\Log::info('Location Result:', ['data' => $loc]);
 
 		return $loc ? $loc->code : '';
 	}
+
 
 	public function getBin($num,$mod=null)
 	{

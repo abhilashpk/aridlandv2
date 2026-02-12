@@ -527,8 +527,9 @@
 <script src="{{asset('assets/vendors/mark.js/jquery.mark.js')}}" charset="UTF-8"></script>
 <script src="{{asset('assets/vendors/datatablesmark.js/js/datatables.mark.min.js')}}" charset="UTF-8"></script>
 <script src="{{asset('assets/js/custom_js/responsive_datatables.js')}}" type="text/javascript"></script>
+
 <script>
-"use strict";
+"use strict"
 
 $(document).ready(function () { 
 	$('.locPrntItm').toggle();

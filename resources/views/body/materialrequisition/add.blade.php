@@ -111,27 +111,27 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmMaterialRequisition" id="frmMaterialRequisition" action="{{ url('material_requisition/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
                                  
-								 <div class="form-group">
+								<div class="form-group">
                                 <font color="#16A085"> <label class="col-sm-2 control-label"><b>Location From</b><span class="text-danger">*</span></label></font>
-                               <div class="col-sm-10">
-                                 <div id="locationRadioGroup">
-                                   @foreach($location as $loc)
-                                <label class="radio-inline">
-                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
-                                 </label>
-                                 @endforeach
-								  <small class="text-muted" id="locfrom-hint">
-                                             Select one location — once chosen, it becomes fixed.
-                                    </small>
-                                 </div>
-                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{(old('locfrom_id'))?old('locfrom_id'):''}}">
+								<div class="col-sm-10">
+									<div id="locationRadioGroup">
+										@foreach($location as $loc)
+										<label class="radio-inline">
+											<input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+										</label>
+										@endforeach
+										<small class="text-muted" id="locfrom-hint">
+												Select one location — once chosen, it becomes fixed.
+										</small>
+									</div>
+                               		<input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{(old('locfrom_id'))?old('locfrom_id'):''}}">
                                   
 									<small class="text-muted" id="locfrom-mand">
                                              '*' is mandatory fields
                                     </small>
-                             </div>
+                            	</div>
 							 
-                        </div>
+                       			</div>
 								
 							 
 								<div class="form-group">

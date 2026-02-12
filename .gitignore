@@ -8,3 +8,7 @@ bootstrap/cache/*
 docker-data/
 .idea
 .vscode
+aridland-new.sql
+app/Repositories/Location/LocationRepository11.php
+resources/views/body/materialrequisition/add11.blade.php
+

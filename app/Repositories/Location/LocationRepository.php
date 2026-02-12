@@ -34,7 +34,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	public function allLoc()
 	{
 		return $this->location->leftJoin('account_master','account_master.id','=','location.customer_id')
-					->where('location.status',1)->where('location.department_id',env('DEPARTMENT_ID'))
+					->where('location.status',1)->where('location.department_id',auth()->user()->department_id)
 					->select('account_master.master_name','location.*')
 					->get();
 	}
@@ -84,7 +84,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 			
 	// 		$this->location->code = $attributes['code'];
 	// 		$this->location->name = $attributes['name'];
-	// 		$this->location->department_id = env('DEPARTMENT_ID');
+	// 		$this->location->department_id = auth()->user()->department_id;
 	// 		$this->location->is_default = $attributes['default'];
 	// 		$this->location->is_conloc = $attributes['is_conloc'];
 	// 		$this->location->customer_id = $attributes['customer_id'];
@@ -151,7 +151,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 			$this->location->fill([
 				'code' => $attributes['code'],
 				'name' => $attributes['name'],
-				'department_id' => env('DEPARTMENT_ID', 1),
+				'department_id' => auth()->user()->department_id,
 				'is_default' => $attributes['default'] ?? 0,
 				'is_conloc' => $attributes['is_conloc'],
 				'customer_id' => $customer_id,
@@ -187,7 +187,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	 */
 	private function createItemLocationsForAllItems($location_id)
 	{
-		$departmentId = env('DEPARTMENT_ID', 1);
+		$departmentId = auth()->user()->department_id;
 		
 		$items = DB::table('item_unit')
 			->where('status', 1)
@@ -295,9 +295,9 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	public function locationList()
 	{
 		if(Auth::user()->location_id > 0)
-			return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id', config('app.department_id'))->get();
+			return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id', auth()->user()->department_id)->get();
 		else			 
-			return $this->location->where('status',1)->where('is_conloc',0)->where('department_id', config('app.department_id'))->get();	
+			return $this->location->where('status',1)->where('is_conloc',0)->where('department_id', auth()->user()->department_id)->get();	
 	}
 
 
@@ -318,7 +318,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 
 	// public function locationList($itemId = null)
 	// {
-	// 	$departmentId = env('DEPARTMENT_ID', 1);
+	// 	$departmentId = auth()->user()->department_id;
 		
 	// 	$query = $this->location
 	// 		->where('status', 1)
@@ -346,7 +346,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 
 	// public function getItemStockByLocation($itemId)
 	// {
-	// 	$deptId = env('DEPARTMENT_ID');
+	// 	$deptId = auth()->user()->department_id;
 		
 	// 	return DB::table('item_location AS IL')
 	// 		->leftJoin('location AS L', 'L.id', '=', 'IL.location_id')
@@ -374,15 +374,15 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	// 		->orderBy('IL.location_id', 'ASC')
 	// 		->get();
 	// 	if(Auth::user()->location_id > 0)
-	// 		return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id',env('DEPARTMENT_ID'))->get();
+	// 		return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id',auth()->user()->department_id)->get();
 	// 	else
-	// 		return $this->location->where('status',1)->where('is_conloc',0)->where('department_id',env('DEPARTMENT_ID'))->get();
+	// 		return $this->location->where('status',1)->where('is_conloc',0)->where('department_id',auth()->user()->department_id)->get();
 	// }
 
 
 	public function getItemStockByLocation($itemId)
 	{
-		$deptId = env('DEPARTMENT_ID', 1);
+		$deptId = auth()->user()->department_id;
 		
 		$query = DB::table('item_location AS IL')
 			->leftJoin('location AS L', 'L.id', '=', 'IL.location_id')
@@ -418,7 +418,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 
 	// public function getItemStockByLocation($itemId)
 	// {
-	// 	$deptId = env('DEPARTMENT_ID', 1);
+	// 	$deptId = auth()->user()->department_id;
 		
 	// 	return DB::table('item_location AS IL')
 	// 		->leftJoin('location AS L', 'L.id', '=', 'IL.location_id')
@@ -446,7 +446,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 
 	public function getAllLocationsForEntry()
 	{
-		$deptId = env('DEPARTMENT_ID', 1);
+		$deptId = auth()->user()->department_id;
 		
 		$query = $this->location
 			->where('status', 1)
@@ -467,12 +467,12 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 
 	public function locationFrom()
 	{
-		return $this->location->where('status',1)->where('department_id','!=',env('DEPARTMENT_ID'))->get();
+		return $this->location->where('status',1)->where('department_id','!=',auth()->user()->department_id)->get();
 
 	}
 	public function locationTo()
 	{
-     	return $this->location->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->get();
+     	return $this->location->where('status',1)->where('department_id',auth()->user()->department_id)->get();
 
 	}
 	public function activeLocationList()
@@ -524,3 +524,4 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	}
 	
 }
+
