@@ -106,13 +106,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('pi-print')
+								{{-- @permission('pi-print') --}}
 								 <a href="{{ url('purchase_invoice/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endpermission
+								{{-- @endpermission --}}
 							<?php } ?>
 							</div>
 							
@@ -121,7 +121,7 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmPurchaseInvoice" id="frmPurchaseInvoice" enctype="multipart/form-data" action="{{ url('purchase_invoice/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="default_location" id="default_location" value="{{ $locdefault->id }}">
+								{{-- <input type="hidden" name="default_location" id="default_location" value="{{ $locdefault->id }}"> --}}
 								@if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
 								@else
@@ -1117,9 +1117,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('purchase_invoice') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('purchase_invoice/add') }}" class="btn btn-warning">Clear</a>
-										@permission('pi-history')
+										{{-- @permission('pi-history') --}}
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endpermission
+										{{-- @endpermission --}}
                                     </div>
                                 </div>
 								<div id="purchase_modal" class="modal fade animated" role="dialog">
@@ -1456,7 +1456,7 @@ $(document).ready(function () {
 		$('#locationRadio').show();
     
 
-	   let locID   = {{$interid}};
+	   let locID   = "{{$interid}}";
         let locCode = "{{$intercode}}";
 		let prefix ='IPI';
 		let newPrefix = prefix + locCode; 

@@ -100,7 +100,7 @@ class PurchaseInvoiceController extends Controller
 		
 		//DEPT CHECK...
 		if(Session::get('department')==1) {
-			$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			$is_dept = true;
 		} else {
 			$departments = []; $is_dept = false;
@@ -109,17 +109,19 @@ class PurchaseInvoiceController extends Controller
 		$supplier = [];//$this->accountmaster->getSupplierList();
 		//echo '<pre>';print_r($suppliers);exit;
 	
-        $item = DB::table('itemmaster')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+        $item = DB::table('itemmaster')->where('status',1)->whereNull('deleted_at')->get();
 		
-		$category = [];//DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subcategory = [];//DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$group = [];//DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subgroup = [];//DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$category = [];//DB::table('category')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subcategory = [];//DB::table('category')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		$group = [];//DB::table('groupcat')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subgroup = [];//DB::table('groupcat')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
 		$jobs = $this->jobmaster->activeJobmasterList();
-		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->whereNull('deleted_at')
 		->select('id','master_name')->get(); 
+		// $mod_purchase_enquiry= DB::table('parameter2')->where('keyname', 'mod_purchase_enquiry')->where('status',1)->select('is_active')->first();
 
 		return view('body.purchaseinvoice.index')
+					// ->withModpurenq($mod_purchase_enquiry->is_active)
 					->withOrders($orders)
 					->withCategory($category)
 		            ->withSubcategory($subcategory)
@@ -258,14 +260,14 @@ class PurchaseInvoiceController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id)
                          ->where('is_default', 1) ->first();
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1);//'Purchase Stock' voucher from account settings...
 		if($this->mod_location->is_active==1) {
 			$lcrow = DB::table('default_loc')->select('pur_loc AS id')->first();
 			$locdefault = ($lcrow)?$lcrow:0;
 		} else
-			$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+			$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->whereNull('deleted_at')->select('id')->first();
 
 		$pur_location = DB::table('parameter3')
 							 ->join('location', 'location.id', '=', 'parameter3.location_id')
@@ -277,8 +279,8 @@ class PurchaseInvoiceController extends Controller
 							  ->select('currency.code')
 							 ->first();					 
 					 
-		$lastid = DB::table('purchase_invoice')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
-	    $footertxt = DB::table('header_footer')->where('doc','PI')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+		$lastid = DB::table('purchase_invoice')->where('status',1)->where('department_id',auth()->user()->department_id)->whereNull('deleted_at')->orderBy('id','DESC')->select('id')->first();
+	    $footertxt = DB::table('header_footer')->where('doc','PI')->where('status',1)->whereNull('deleted_at')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','PI')
@@ -296,9 +298,9 @@ class PurchaseInvoiceController extends Controller
 			$deptid = Auth::user()->department_id;
 				
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$deptid = ($pideptid!='')?$pideptid:$deptid;
@@ -309,12 +311,12 @@ class PurchaseInvoiceController extends Controller
 			$deptid = '';
 		}
 		$is_dept = true;
-		$deptid =env('DEPARTMENT_ID');
+		$deptid =auth()->user()->department_id;
 		
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1,$is_dept,$deptid); //'Purchase Stock' voucher from account settings...
 		
 		$cid=$this->acsettings->bcurrency_id;
-	    $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
+	    $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->whereNull('deleted_at')->select('id','name','code')->get();
 	
 	//echo '<pre>';print_r($vouchers);exit;
 		if($id) {
@@ -569,30 +571,33 @@ class PurchaseInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($request->input());exit;
 		
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
-			'location_id' =>'required','location_id' => 'required',
-			 'supplier_name' => 'required','supplier_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required',
-			 'dr_acnt' => 'sometimes|required'
+		$this->validate(
+			$request,
+			[
+				'location_id' => 'required|not_in:0',
+				'supplier_name' => 'required',
+				'supplier_id' => 'required',
+				'item_code.*' => 'required',
+				'item_id.*' => 'required',
+				'unit_id.*' => 'required',
+				'quantity.*' => 'required',
+				'cost.*' => 'required',
+				'dr_acnt.*' => 'sometimes|required'
 			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
-			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.',
-			 'dr_acnt.required' => 'Debit a/c. is required.',
+			[
+				'location_id.required' => 'Location is required.',
+				'location_id.not_in' => 'Location is invalid.',
+				'supplier_name.required' => 'Supplier name is required.',
+				'supplier_id.required' => 'Supplier name is invalid.',
+				'item_code.*.required' => 'Item code is required.',
+				'item_id.*.required' => 'Item code is invalid.',
+				'unit_id.*.required' => 'Item unit is required.',
+				'quantity.*.required' => 'Item quantity is required.',
+				'cost.*.required' => 'Item cost is required.',
+				'dr_acnt.*.required' => 'Debit a/c. is required.',
 			]
-		)) {
-
-			return redirect('purchase_invoice/add')->withInput()->withErrors();
-		  }
+		);
+		
 		
 		if(Session::has('dpt_id')) 
 			Session::forget('dpt_id');
@@ -648,7 +653,7 @@ class PurchaseInvoiceController extends Controller
 						   $join->on('users.id','=','purchase_invoice.created_by');
 							})
 						->where('PI.status', 1)
-						->where('PI.deleted_at', '0000-00-00 00:00:00')
+						->whereNull('PI.deleted_at')
 						->select('PI.*','IM.item_code','U.unit_name','purchase_invoice.voucher_no','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount','purchase_invoice.created_at','users.name')
 						 ->orderBY('PI.id','ASC')->get();
 					   //echo '<pre>';print_r($data['salesitems']);exit;
@@ -689,7 +694,7 @@ class PurchaseInvoiceController extends Controller
 		$ispdc = false; 
 		$ar = [1,2]; $rv_amount = 0; $voucherno = '';
 		$remrv = (isset($attributes['remove_rv']))?$attributes['remove_rv']:'';
-		$vt = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id',env('DEPARTMENT_ID'))
+		$vt = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id',auth()->user()->department_id)
 		                                  ->select('voucher_name')->first();
 		foreach($ar as $val) {
 			if($val==1) {
@@ -768,7 +773,7 @@ class PurchaseInvoiceController extends Controller
 		$request->merge(['credit' => $rv_amount]);
 		$request->merge(['currency_id' => $pmode]);
 		
-		DB::table('purchase_invoice')->where('id',$id)->where('department_id',env('DEPARTMENT_ID'))->update(['advance' => $rv_amount,
+		DB::table('purchase_invoice')->where('id',$id)->where('department_id',auth()->user()->department_id)->update(['advance' => $rv_amount,
 								'balance_amount' => DB::raw('net_amount - '.$rv_amount) ]);
 		/* DB::table('sales_invoice')->where('id',$id)->update(['advance' => DB::raw('advance + '.$rv_amount),
 							'balance' => (DB::raw('balance' > 0)?DB::raw('balance - '.$rv_amount):DB::raw('net_total - '.$rv_amount) ]); */
@@ -862,15 +867,15 @@ class PurchaseInvoiceController extends Controller
 							->select('report_view_detail.id')
 							->first();
 			$cid=$this->acsettings->bcurrency_id;				
-		 $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
+		 $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->whereNull('deleted_at')->select('id','name','code')->get();
 		//echo '<pre>';print_r($fcurrency);exit;
 		//CHECK DEPARTMENT.......
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0) {
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			} else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -1025,7 +1030,7 @@ class PurchaseInvoiceController extends Controller
 						   $join->on('users.id','=','purchase_invoice.modify_by');
 							})
 						->where('PI.status', 1)
-						->where('PI.deleted_at', '0000-00-00 00:00:00')
+						->whereNull('PI.deleted_at')
 						->select('PI.*','IM.item_code','U.unit_name','purchase_invoice.voucher_no','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount','purchase_invoice.modify_at','users.name')
 						 ->orderBY('PI.id','ASC')->get();
 					   //echo '<pre>';print_r($data['purchaseitems']);exit;
@@ -1123,9 +1128,9 @@ class PurchaseInvoiceController extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0) {
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			} else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -1281,13 +1286,13 @@ class PurchaseInvoiceController extends Controller
 		$splitbills = $this->purchase_invoice->getSplitBills($supplier_id);
 		
 		if($pvid) {
-			$pvdat = DB::table('payment_voucher_entry')->where('id', $pvid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			$pvdat = DB::table('payment_voucher_entry')->where('id', $pvid)->where('status',1)->whereNull('deleted_at')->first();
 			
 			if($pvdat) {
-				$pvref = DB::table('payment_voucher_entry')->where('entry_type', 'Cr')->where('payment_voucher_id',$pvdat->payment_voucher_id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference')->first();
+				$pvref = DB::table('payment_voucher_entry')->where('entry_type', 'Cr')->where('payment_voucher_id',$pvdat->payment_voucher_id)->where('status',1)->whereNull('deleted_at')->select('reference')->first();
 				$pvrefdat = ($pvref)?explode(',',$pvref->reference):[];
 				
-				$pvarr = $this->makeArr(DB::table('payment_voucher_entry')->where('entry_type', 'Dr')->where('payment_voucher_id',$pvdat->payment_voucher_id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference','amount')->get());
+				$pvarr = $this->makeArr(DB::table('payment_voucher_entry')->where('entry_type', 'Dr')->where('payment_voucher_id',$pvdat->payment_voucher_id)->where('status',1)->whereNull('deleted_at')->select('reference','amount')->get());
 			}
 			
 		}
@@ -1314,10 +1319,10 @@ class PurchaseInvoiceController extends Controller
 		$pinbills = $this->purchase_invoice->getPINbills($supplier_id,null,null);
 		$ocbills = $this->purchase_invoice->getOtherCostBills($supplier_id,null,null);
 		
-		$pvref = DB::table('payment_voucher_entry')->where('entry_type', 'Cr')->where('payment_voucher_id',$pvid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference')->first();
+		$pvref = DB::table('payment_voucher_entry')->where('entry_type', 'Cr')->where('payment_voucher_id',$pvid)->where('status',1)->whereNull('deleted_at')->select('reference')->first();
 		$pvrefdat = ($pvref)?explode(',',$pvref->reference):[];
 		
-		$pvarr = $this->makeArr(DB::table('payment_voucher_entry')->where('entry_type', 'Dr')->where('payment_voucher_id',$pvid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference','amount')->get());
+		$pvarr = $this->makeArr(DB::table('payment_voucher_entry')->where('entry_type', 'Dr')->where('payment_voucher_id',$pvid)->where('status',1)->whereNull('deleted_at')->select('reference','amount')->get());
 		
 		return view('body.purchaseinvoice.supinvoiceedit')
 					->withNum($no)
@@ -1521,7 +1526,7 @@ class PurchaseInvoiceController extends Controller
 	
 			$data = DB::table('purchase_invoice')->where('purchase_invoice.supplier_id',$id)
 			                    ->join('jobmaster', 'jobmaster.id', '=', 'purchase_invoice.job_id')
-			                   ->where('purchase_invoice.status',1)->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+			                   ->where('purchase_invoice.status',1)->whereNull('purchase_invoice.deleted_at')
 			                   ->select('jobmaster.id','jobmaster.code')->orderBy('jobmaster.id', 'DESC')->get();
 			return $data;
 		}
@@ -1876,7 +1881,7 @@ class PurchaseInvoiceController extends Controller
 				$lcrow = DB::table('default_loc')->select('pur_loc AS id')->first();
 				$locdefault = ($lcrow)?$lcrow:0;
 			} else
-				$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+				$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->whereNull('deleted_at')->select('id')->first();
 
 			$path = $request->file('import_file')->getRealPath();
 			$data = Excel::load($path, function($reader) { })->get();
@@ -2097,11 +2102,11 @@ class PurchaseInvoiceController extends Controller
 	//	echo '<pre>';print_r($subgroup);exit;
 		//$category= $this->category->categoryList();
 		//echo '<pre>';print_r($category);exit;
-		//  $category = DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		//  $subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		// //  $group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		//  $category = DB::table('category')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		//  $subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		// //  $group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
 		//  //echo '<pre>';print_r($group);exit;
-		//  $subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		//  $subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
 		
 		return view('body.purchaseinvoice.multiselect')
 		            //     ->withCategory($category)
@@ -2249,7 +2254,7 @@ class PurchaseInvoiceController extends Controller
 			    //$id = $row->document_id;
 			    if($row->document_type=='SDO' && $row->doc_row_id != 0) {
 			        
-    			    $doRow = DB::table('supplier_do_item')->where('id',$row->doc_row_id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','quantity','balance_quantity')->first();
+    			    $doRow = DB::table('supplier_do_item')->where('id',$row->doc_row_id)->where('status',1)->whereNull('deleted_at')->select('id','quantity','balance_quantity')->first();
     			    //echo '<pre>';print_r($doRow);
     			    if($doRow) {
     			        
@@ -2262,7 +2267,7 @@ class PurchaseInvoiceController extends Controller
     			            $balqty = ($doRow->balance_quantity > $row->quantity)?($doRow->balance_quantity - $row->quantity):($row->quantity - $doRow->balance_quantity);
     						
     					    //CHECKE ANY MORE SI IS CREATED AGAINST THIS DO IEM....
-    					    $siRow = DB::table('purchase_invoice_item')->where('doc_row_id',$doRow->id)->where('purchase_invoice_id','!=',$siId)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    					    $siRow = DB::table('purchase_invoice_item')->where('doc_row_id',$doRow->id)->where('purchase_invoice_id','!=',$siId)->where('status',1)->whereNull('deleted_at')->count();
     					    if($siRow==0) {
     					        DB::table('supplier_do_item')->where('id',$doRow->id)
     									->update(['is_transfer' => 0, 'balance_quantity' => 0]);

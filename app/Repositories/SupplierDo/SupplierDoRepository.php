@@ -16,6 +16,7 @@ use DB;
 use Session;
 use Auth;
 use Storage;
+use Illuminate\Support\Facades\Log;
 
 
 class SupplierDoRepository extends AbstractValidator implements SupplierDoInterface {
@@ -65,7 +66,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 		$this->supplier_do->prefix = isset($attributes['prefix'])?$attributes['prefix']:'';
 		$this->supplier_do->is_intercompany = isset($attributes['is_intercompany'])?$attributes['is_intercompany']:'';
 		$this->supplier_do->doc_nos = isset($attributes['document'])?$attributes['document']:'';
-		$this->supplier_do->department_id = env('DEPARTMENT_ID');
+		$this->supplier_do->department_id = auth()->user()->department_id;
 
 		
 		return true;
@@ -276,8 +277,8 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 			$ids = explode(',', $attributes['document_id']);
 			foreach($ids as $id) {
 				DB::table('purchase_order')->where('id', $id)->update(['is_editable' => 1]);
-				$count1 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-				$count2 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$count1 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+				$count2 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
 				if($count1 == $count2)
 					DB::table('purchase_order')->where('id', $id)->update(['is_transfer' => 1]);
 			} 
@@ -285,8 +286,8 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 			$ids = explode(',', $attributes['document_id']);
 			foreach($ids as $id) {
 				//DB::table('material_requisition')->where('id', $id)->update(['is_editable' => 1]);
-				$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-				$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+				$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
 				if($count1 == $count2)
 					DB::table('material_requisition')->where('id', $id)->update(['is_transfer' => 1]);
 			} 
@@ -318,7 +319,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 								$join->on('J.id','=','supplier_do.job_id');
 							})
 							->where('POI.status',1)
-							->where('POI.deleted_at','0000-00-00 00:00-00')
+							->whereNull('POI.deleted_at')
 							->where('supplier_do.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -367,7 +368,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','supplier_do.job_id');
 								})
-								->where('supplier_do.department_id', env('DEPARTMENT_ID'))
+								->where('supplier_do.department_id', auth()->user()->department_id)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -408,7 +409,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','supplier_do.job_id');
 								})
-								->where('supplier_do.department_id', env('DEPARTMENT_ID'))
+								->where('supplier_do.department_id', auth()->user()->department_id)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -450,7 +451,7 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','supplier_do.job_id');
 								})
-								->where('supplier_do.department_id', env('DEPARTMENT_ID'))
+								->where('supplier_do.department_id', auth()->user()->department_id)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -495,9 +496,9 @@ public function getReportExcel($attributes)
 							->join('account_master AS AM', function($join) {
 								$join->on('AM.id','=','supplier_do.supplier_id');
 							})->where('POI.status',1)
-							->where('POI.deleted_at','0000-00-00 00:00-00')
+							->whereNull('POI.deleted_at')
 							->where('supplier_do.status',1)
-							->where('supplier_do.deleted_at','0000-00-00 00:00-00');
+							->whereNull('supplier_do.deleted_at');
 							
 						
 								
@@ -540,7 +541,7 @@ public function getReportExcel($attributes)
 									   $join->on('IM.id','=','SI.item_id');
 								   })
 								   ->where('SI.status',1)
-								   ->where('SI.deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('SI.deleted_at')
 								   ->where('supplier_do.status',1);
 							
 							if($date_from !='' && $date_to != '')	   
@@ -671,10 +672,10 @@ public function getReportExcel($attributes)
 		 try {
 
 			//VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -701,10 +702,10 @@ public function getReportExcel($attributes)
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = env('DEPARTMENT_ID');
+							$dept = auth()->user()->department_id;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -792,15 +793,15 @@ public function getReportExcel($attributes)
                         		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                         		}
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $locid[$key][$lk])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('location_id', $locid[$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+													          ->whereNull('deleted_at')->select('id')->first();
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 								} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $locid[$key][$lk];
-									$itemLocation->department_id =env('DEPARTMENT_ID');
+									$itemLocation->department_id =auth()->user()->department_id;
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty;
@@ -810,7 +811,7 @@ public function getReportExcel($attributes)
 								
 								$itemLocationPI = new ItemLocationPI();
 								$itemLocationPI->location_id = $locid[$key][$lk];
-								$itemLocationPI->department_id =env('DEPARTMENT_ID');
+								$itemLocationPI->department_id =auth()->user()->department_id;
 								$itemLocationPI->item_id = $value;
 								$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 								$itemLocationPI->quantity = $lcqty; //MAY25 $lq; 
@@ -827,9 +828,9 @@ public function getReportExcel($attributes)
 					//Item default location add...
 					if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 							
-						$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
+						$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('location_id', $attributes['default_location'])
 														  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-														  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+														  ->whereNull('deleted_at')->select('id')->first();
 														  
 						$lcqty = $attributes['quantity'][$key];
                 		if($attributes['packing'][$key]=="1") 
@@ -841,11 +842,11 @@ public function getReportExcel($attributes)
                 		}
 						
 						if($qtys) {
-							DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+							DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 						} else {
 								$itemLocation = new ItemLocation();
 								$itemLocation->location_id = $attributes['default_location'];
-								$itemLocation->department_id =env('DEPARTMENT_ID');
+								$itemLocation->department_id =auth()->user()->department_id;
 								$itemLocation->item_id = $value;
 								$itemLocation->unit_id = $attributes['unit_id'][$key];
 								$itemLocation->quantity = $lcqty;
@@ -855,7 +856,7 @@ public function getReportExcel($attributes)
 							
 						$itemLocationPI = new ItemLocationPI();
 						$itemLocationPI->location_id = $attributes['default_location'];
-						$itemLocationPI->department_id =env('DEPARTMENT_ID');
+						$itemLocationPI->department_id =auth()->user()->department_id;
 						$itemLocationPI->item_id = $value;
 						$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 						$itemLocationPI->quantity = $lcqty; //MAY25  $attributes['quantity'][$key];
@@ -1208,29 +1209,29 @@ public function getReportExcel($attributes)
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
                         		
-									$edit = DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',1)->first();
-									$idloc = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
+									$edit = DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',1)->first();
+									$idloc = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 																 
 									if($edit) {
 										
 										if($edit->quantity < $lcqty) {
 											$balqty = $lcqty - $edit->quantity;
-											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',auth()->user()->department_id)->update(['quantity' => DB::raw('quantity + '.$balqty)]);
 										} else {
 											$balqty = $edit->quantity - $lcqty;
-											DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$balqty)]);
+											DB::table('item_location')->where('id', $idloc->id)->where('department_id',auth()->user()->department_id)->update(['quantity' => DB::raw('quantity - '.$balqty)]);
 										}
 										
 									} else {
 										//NOV24
-										DB::table('item_location')->where('id', $idloc->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
-										$sdolog = DB::table('item_location_pi')->where('item_id',$value)->where('department_id',env('DEPARTMENT_ID'))->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_sdo',1)->first();
+										DB::table('item_location')->where('id', $idloc->id)->where('department_id',auth()->user()->department_id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+										$sdolog = DB::table('item_location_pi')->where('item_id',$value)->where('department_id',auth()->user()->department_id)->where('unit_id',$attributes['unit_id'][$key])->where('invoice_id', $attributes['order_item_id'][$key])->where('is_sdo',1)->first();
 
 										$itemLocationPI = new ItemLocationPI();
 										$itemLocationPI->location_id = $attributes['locid'][$key][$lk];
-										$itemLocationPI->department_id =env('DEPARTMENT_ID');
+										$itemLocationPI->department_id =auth()->user()->department_id;
 										$itemLocationPI->item_id = $value;
 										$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 										$itemLocationPI->quantity =  $lcqty;//$lq;
@@ -1243,10 +1244,10 @@ public function getReportExcel($attributes)
 
 									}
 									
-									DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => '0000-00-00 00:00:00','qty_entry' => $lq]);
+									DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => null,'qty_entry' => $lq]);
 
 								} else { //NOV24
-									//DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 0, 'deleted_at' => date('Y-m-d h:i:s'), 'qty_entry' => $lq]);
+									//DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 0, 'deleted_at' => date('Y-m-d h:i:s'), 'qty_entry' => $lq]);
 								}
 							}
 
@@ -1256,9 +1257,9 @@ public function getReportExcel($attributes)
 						//Item default location add...
 						if(($attributes['location_id']!='') && ($updated == false)) {
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['location_id'])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('location_id', $attributes['location_id'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+																  ->whereNull('deleted_at')->select('*')->first();
 																  
 								//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 								
@@ -1272,10 +1273,10 @@ public function getReportExcel($attributes)
                         		}
                         		
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 									DB::table('item_location_pi')->where('invoice_id', $attributes['order_item_id'][$key] )
 																 ->where('location_id', $qtys->location_id)
-																 ->where('department_id',env('DEPARTMENT_ID'))
+																 ->where('department_id',auth()->user()->department_id)
 																 ->where('item_id', $qtys->item_id)
 																 ->where('unit_id', $qtys->unit_id)
 																 ->update(['quantity' => DB::raw('quantity + '.$lcqty), 'qty_entry' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
@@ -1283,7 +1284,7 @@ public function getReportExcel($attributes)
 								
 								$itemLocationPI = new ItemLocationPI();
 								$itemLocationPI->location_id = $attributes['location_id'];
-								$itemLocationPI->department_id=env('DEPARTMENT_ID');
+								$itemLocationPI->department_id=auth()->user()->department_id;
 								$itemLocationPI->item_id = $value;
 								$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 								$itemLocationPI->quantity = $lcqty; //$attributes['quantity'][$key] * $attributes['packing'][$key];
@@ -1440,15 +1441,15 @@ public function getReportExcel($attributes)
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
                             		
-									$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
+									$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 									if($qtys) {
-										DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+										DB::table('item_location')->where('department_id',auth()->user()->department_id)->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 									} else {
 										$itemLocation = new ItemLocation();
 										$itemLocation->location_id = $attributes['locid'][$key][$lk];
-										$itemLocation->department_id =env('DEPARTMENT_ID');
+										$itemLocation->department_id =auth()->user()->department_id;
 										$itemLocation->item_id = $value;
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
 										$itemLocation->quantity = $lcqty;
@@ -1458,7 +1459,7 @@ public function getReportExcel($attributes)
 									
 									$itemLocationPI = new ItemLocationPI();
 									$itemLocationPI->location_id = $attributes['locid'][$key][$lk];
-									$itemLocationPI->department_id =env('DEPARTMENT_ID');
+									$itemLocationPI->department_id =auth()->user()->department_id;
 									$itemLocationPI->item_id = $value;
 									$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 									$itemLocationPI->quantity =  $lcqty; //$lq * $attributes['packing'][$key];
@@ -1475,9 +1476,9 @@ public function getReportExcel($attributes)
 						//Item default location add...
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 								
-							$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
+							$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('location_id', $attributes['default_location'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-															  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+															  ->whereNull('deleted_at')->select('id')->first();
 															  
 							//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 							
@@ -1491,11 +1492,11 @@ public function getReportExcel($attributes)
                     		}
                     		
 							if($qtys) {
-								DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
+								DB::table('item_location')->where('department_id',auth()->user()->department_id)->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 							} else {
 									$itemLocation = new ItemLocation();
 									$itemLocation->location_id = $attributes['default_location'];
-									$itemLocation->department_id =env('DEPARTMENT_ID');
+									$itemLocation->department_id =auth()->user()->department_id;
 									$itemLocation->item_id = $value;
 									$itemLocation->unit_id = $attributes['unit_id'][$key];
 									$itemLocation->quantity = $lcqty;
@@ -1505,7 +1506,7 @@ public function getReportExcel($attributes)
 								
 							$itemLocationPI = new ItemLocationPI();
 							$itemLocationPI->location_id = $attributes['default_location'];
-							$itemLocationPI->department_id =env('DEPARTMENT_ID');
+							$itemLocationPI->department_id =auth()->user()->department_id;
 							$itemLocationPI->item_id = $value;
 							$itemLocationPI->unit_id = $attributes['unit_id'][$key];
 							$itemLocationPI->quantity =  $lcqty; //$attributes['quantity'][$key] * $attributes['packing'][$key];
@@ -1578,11 +1579,11 @@ public function getReportExcel($attributes)
 					DB::table('supplier_do_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					//$itm = DB::table('supplier_do_item')->where('id', $row)->first();
 					
-					$pirow = DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('invoice_id',$row)->where('is_sdo',1)->get();
+					$pirow = DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('invoice_id',$row)->where('is_sdo',1)->get();
 					foreach($pirow as $prow) {
-						DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+						DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 						
-						DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+						DB::table('item_location')->where('department_id',auth()->user()->department_id)->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 									->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 					}
 					
@@ -1599,7 +1600,7 @@ public function getReportExcel($attributes)
 				
 				//if($this->supplier_do->voucher_date != date('Y-m-d', strtotime($attributes['voucher_date']))) {
 					//VOUCHER DATE UPDATE IN LOG...
-					DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id',$this->supplier_do->id)
+					DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$this->supplier_do->id)
 										 ->update(['voucher_date' => date('Y-m-d', strtotime($attributes['voucher_date'])) ]);
 				//}
 				
@@ -1771,12 +1772,12 @@ public function getReportExcel($attributes)
 			    DB::table('purchase_order_item')->where('purchase_order_id',$this->supplier_do->document_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
 								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 0 ]);
 			    
-				$pirow = DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('invoice_id',$item->id)->where('is_sdo',1)->get();
+				$pirow = DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('invoice_id',$item->id)->where('is_sdo',1)->get();
 				
 				foreach($pirow as $prow) {
-					DB::table('item_location_pi')->where('department_id',env('DEPARTMENT_ID'))->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+					DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 					
-					DB::table('item_location')->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+					DB::table('item_location')->where('department_id',auth()->user()->department_id)->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 								->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 				}
 			}
@@ -1803,7 +1804,7 @@ public function getReportExcel($attributes)
 	
 	public function suppliersDOList()
 	{
-		$query = $this->supplier_do->where('supplier_do.status',1)->where('supplier_do.department_id',env('DEPARTMENT_ID'));
+		$query = $this->supplier_do->where('supplier_do.status',1)->where('supplier_do.department_id',auth()->user()->department_id);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','supplier_do.supplier_id');
 						} )
@@ -1829,7 +1830,7 @@ public function getReportExcel($attributes)
 	
 	public function findSDOdata($id)
 	{
-		$query = $this->supplier_do->where('supplier_do.id', $id)->where('supplier_do.department_id',env('DEPARTMENT_ID'));
+		$query = $this->supplier_do->where('supplier_do.id', $id)->where('supplier_do.department_id',auth()->user()->department_id);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','supplier_do.supplier_id');
 						} )
@@ -1859,7 +1860,7 @@ public function getReportExcel($attributes)
 		
 	public function getSDOitems($id)
 	{
-		$query = $this->supplier_do->whereIn('supplier_do.id',$id)->where('supplier_do.department_id',env('DEPARTMENT_ID'));
+		$query = $this->supplier_do->whereIn('supplier_do.id',$id)->where('supplier_do.department_id',auth()->user()->department_id);
 		
 		return $query->join('supplier_do_item AS poi', function($join) {
 							$join->on('poi.supplier_do_id','=','supplier_do.id');
@@ -1877,10 +1878,10 @@ public function getReportExcel($attributes)
 					   ->join('itemstock_department AS isd', function($join){
 						  $join->on('isd.itemmaster_id','=','im.id');
 					  })
-					  ->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->where('isd.department_id',auth()->user()->department_id)
 					->where('poi.status',1)
 					->whereIn('poi.is_transfer',[0,2])
-					->where('poi.deleted_at', '0000-00-00 00:00:00')
+					->whereNull('poi.deleted_at')
 					->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.packing','iu.pkno')
 					->orderBY('poi.id')->groupBy('poi.id')
 					->get();
@@ -1906,7 +1907,7 @@ public function getReportExcel($attributes)
 	
 	public function getItems($id)
 	{
-		$query = $this->supplier_do->where('supplier_do.id',$id)->where('supplier_do.department_id',env('DEPARTMENT_ID'));;
+		$query = $this->supplier_do->where('supplier_do.id',$id)->where('supplier_do.department_id',auth()->user()->department_id);;
 		
 		return $query->join('supplier_do_item AS poi', function($join) {
 							$join->on('poi.supplier_do_id','=','supplier_do.id');
@@ -1927,9 +1928,9 @@ public function getReportExcel($attributes)
 					  ->leftjoin('purchase_order_item AS ci', function($join){
 						  $join->on('ci.id','=','poi.doc_row_id');
 					  })
-					  ->where('isd.department_id',env('DEPARTMENT_ID'))
+					//   ->where('isd.department_id',auth()->user()->department_id)
 					  ->where('poi.status',1)
-					  ->where('poi.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.packing','ci.balance_quantity as po_balance_quantity','isd.pkno')
 					  ->orderBY('poi.id')
 					  ->groupBY('poi.id')
@@ -1956,7 +1957,7 @@ public function getReportExcel($attributes)
 	
 	public function findPOdata($id)
 	{
-		$query = $this->supplier_do->where('supplier_do.id', $id)->where('supplier_do.department_id', env('DEPARTMENT_ID'));
+		$query = $this->supplier_do->where('supplier_do.id', $id)->where('supplier_do.department_id', auth()->user()->department_id);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','supplier_do.supplier_id');
 						} )
@@ -1970,7 +1971,7 @@ public function getReportExcel($attributes)
 	
 	private function setPurchaseLog($attributes, $key, $document_id, $cost_avg, $action, $other_cost, $item=null)
 	{
-		$irow = DB::table('itemstock_department') ->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
+		$irow = DB::table('itemstock_department') ->where('department_id',auth()->user()->department_id)->where('itemmaster_id', $attributes['item_id'][$key])->select('cur_quantity')->first();
 		
 		//JUN25
 		$unit_cost = (isset($attributes['is_fc']))?($attributes['cost'][$key]*$attributes['currency_rate']):($attributes['cost'][$key]);
@@ -1997,7 +1998,7 @@ public function getReportExcel($attributes)
 			$logid = DB::table('item_log')->insertGetId([
 							 'document_type' => 'SDO',
 							 'document_id'   => $document_id,
-							 'department_id'  =>env('DEPARTMENT_ID'),
+							 'department_id'  =>auth()->user()->department_id,
 							 'item_id' 	  => $attributes['item_id'][$key],
 							 'unit_id'    => $attributes['unit_id'][$key],
 							 'quantity'   => $quantity, //$attributes['quantity'][$key] * $attributes['packing'][$key],
@@ -2019,14 +2020,14 @@ public function getReportExcel($attributes)
 		} else if($action=='update') {
 		    
 		    //MAY25
-		    $slog = DB::table('item_log')->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
+		    $slog = DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id', $document_id)->where('item_id', $item->item_id)->where('unit_id', $item->unit_id)->where('item_row_id', $attributes['order_item_id'][$key])
 		                ->select('id')->first();
 			$logid = $slog->id;
 			
 			//-----------ITEM LOG----------------							
 			DB::table('item_log')->where('document_type','SDO')
 							->where('document_id', $document_id)
-							->where('department_id',env('DEPARTMENT_ID'))
+							->where('department_id',auth()->user()->department_id)
 							->where('item_id', $item->item_id)
 							->where('unit_id', $item->unit_id)
 							->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
@@ -2049,10 +2050,10 @@ public function getReportExcel($attributes)
 	{
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
-										->where('department_id',env('DEPARTMENT_ID'))
+										->where('department_id',auth()->user()->department_id)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('cur_quantity','pur_cost')
 										->get();
 										
@@ -2073,7 +2074,7 @@ public function getReportExcel($attributes)
 						  'pur_count' 		   => DB::raw('pur_count + 1')
 						  //'cost_avg'		   => $cost_avg
 						]);
-			DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+			DB::table('itemstock_department')->where('department_id',auth()->user()->department_id)
 				->where('itemmaster_id', $attributes['item_id'][$key])
 				->where('unit_id', $attributes['unit_id'][$key])
 				->update([//'last_purchase_cost' => $cost + $other_cost,
@@ -2106,13 +2107,13 @@ public function getReportExcel($attributes)
 				->update([ 'cur_quantity' => $item->cur_quantity + $baseqty,
 						   'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
 			
-			$items = DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
+			$items = DB::table('itemstock_department')->where('department_id',auth()->user()->department_id)->where('itemmaster_id', $attributes['item_id'][$key])
 									  ->where('is_baseqty', 1)->first();
 									  
 			if($items) {
 				$qty = $attributes['quantity'][$key];
 				$baseqty = ($qty * $attributes['packing'][$key]);
-				DB::table('itemstock_department')->where('department_id',env('DEPARTMENT_ID'))
+				DB::table('itemstock_department')->where('department_id',auth()->user()->department_id)
 					->where('id', $items->id)
 					->update([ 'cur_quantity' => $items->cur_quantity + $baseqty,
 							'received_qty' => DB::raw('received_qty + '.$baseqty) ]);
@@ -2125,14 +2126,17 @@ public function getReportExcel($attributes)
 	}
 	
 	private function updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, $other_cost)
-	{	
-		$pid = $attributes['purchase_invoice_id'];
+	{
+		Log::info('$attributes:',[$attributes]);	
+		// $pid = $attributes['purchase_invoice_id'];
+		$pid = $attributes['supplier_do_id'];
+
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
-										->where('department_id',env('DEPARTMENT_ID'))
+										->where('department_id',auth()->user()->department_id)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->where(function ($query) use($pid) {
 											$query->where('document_id','!=',$pid)
 												  ->orWhere('document_type','!=','SDO');
@@ -2187,7 +2191,7 @@ public function getReportExcel($attributes)
 					
 			}
 
-			$items = DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))->where('itemmaster_id', $attributes['item_id'][$key])
+			$items = DB::table('itemstock_department')->where('department_id', auth()->user()->department_id)->where('itemmaster_id', $attributes['item_id'][$key])
 										  ->where('is_baseqty', 1)->first();
 										  
 			if($items) {
@@ -2202,7 +2206,7 @@ public function getReportExcel($attributes)
 					$cur_quantity = $items->cur_quantity - $diffqty;
 				}
 				
-				DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))
+				DB::table('itemstock_department')->where('department_id', auth()->user()->department_id)
 					->where('itemmaster_id',  $attributes['item_id'][$key])
 					->where('is_baseqty',1)
 					->update([ 'cur_quantity' => $cur_quantity,
@@ -2216,7 +2220,7 @@ public function getReportExcel($attributes)
 	
 	public function getPOitems($id)
 	{
-		$query = $this->supplier_do->whereIn('supplier_do.id',$id)->where('supplier_do.department_id', env('DEPARTMENT_ID'));
+		$query = $this->supplier_do->whereIn('supplier_do.id',$id)->where('supplier_do.department_id', auth()->user()->department_id);
 		
 		return $query->join('supplier_do_item AS poi', function($join) {
 							$join->on('poi.supplier_do_id','=','supplier_do.id');
@@ -2233,10 +2237,10 @@ public function getReportExcel($attributes)
 					  ->join('itemstock_department AS isd', function($join){
 						  $join->on('isd.itemmaster_id','=','im.id');
 					  })
-					  ->where('isd.department_id', env('DEPARTMENT_ID'))
+					  ->where('isd.department_id', auth()->user()->department_id)
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
 					  ->orderBY('poi.id')
 					  ->get();
@@ -2248,13 +2252,13 @@ public function getReportExcel($attributes)
 		foreach($items as $item) {
 									
 			//COST AVG Updating on DELETE section....
-			DB::table('item_log')->where('document_id', $id)->where('document_type','SDO')->where('department_id',env('DEPARTMENT_ID'))
+			DB::table('item_log')->where('document_id', $id)->where('document_type','SDO')->where('department_id',auth()->user()->department_id)
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
 								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);
-			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id',env('DEPARTMENT_ID'))->where('unit_id',$item->unit_id)
+			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id',auth()->user()->department_id)->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity - '.$item->quantity)]);						  
 		}
 	}

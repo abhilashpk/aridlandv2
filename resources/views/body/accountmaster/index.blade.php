@@ -569,18 +569,29 @@ $(function() {
 				type: 'get',
 				data: 'account_id='+ac+'&master_name='+name+'&address='+adrs+'&area_id='+ar+'&country_id='+cn+'&phone='+ph+'&vat_no='+vt+'&category=CUSTOMER&contact_name='+pn+'&email='+em+'&department_id='+dpt,
 				success: function(data) { 
+				  console.log('Response:', data); 
 					if(data > 0) {
 						$('#sucessmsg').toggle();
 					} else if(data == 0){
 						$('#addressDtls').toggle();
 						alert('Customer name already exist!');
 						return false;
+					 } else if(data == -2) {
+						$('#addressDtls').show();
+						alert('Account group not found for CUSTOMER category!');
 					} else {
 						$('#addressDtls').toggle();
 						alert('Something went wrong, Account failed to add!');
 						return false;
 					}
+				},
+					error: function(xhr, status, error) {
+					$('#addressDtls').show();
+					console.error('AJAX Error:', error);
+					console.error('Response:', xhr.responseText);
+					alert('Server error occurred! Check console for details.');
 				}
+				
 			})
 		}
 	});

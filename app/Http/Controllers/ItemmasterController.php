@@ -1599,6 +1599,10 @@ private function getDefaultFormData()
 	
 	public function getLocqty($id)
 	{
+
+		if (!$id || $id == 'undefined' || !is_numeric($id)) {
+			return '<div class="text-danger text-center">Select any item first</div>';
+		}
 		/* $itemLogs = $this->sumLoc($this->groupItemLoc($this->groupLoc( $this->itemmaster->ItemLogLocation($id) )));
 		foreach($itemLogs as $loc => $rows) {
 		   foreach($rows as $row) {
@@ -1609,6 +1613,18 @@ private function getDefaultFormData()
 		
 		$items = $this->itemmaster->getLocQuantity($id); //echo '<pre>';print_r($items);exit;
 		return view('body.itemmaster.locqty')
+					->withItems($items);
+	}
+
+	public function getinLocqty($id)
+	{	
+		if (!$id || $id == 'undefined' || !is_numeric($id)) {
+			return '<div class="text-danger text-center">Select any item first</div>';
+		}
+			
+		$items = $this->itemmaster->getInLocQuantity($id);
+		
+		return view('body.itemmaster.other_branch_locqty')
 					->withItems($items);
 	}
 	

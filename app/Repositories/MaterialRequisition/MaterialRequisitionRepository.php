@@ -41,7 +41,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 		$this->material_requisition->voucher_no = $attributes['voucher_no']; 
 		$this->material_requisition->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->material_requisition->job_id = isset($attributes['job_id'])?$attributes['job_id']:'';
-		$this->material_requisition->department_id = env('DEPARTMENT_ID');
+		$this->material_requisition->department_id = auth()->user()->department_id;
 		$this->material_requisition->locfrom_id = isset($attributes['locfrom_id'])?$attributes['locfrom_id']:'';
 		$this->material_requisition->description = isset($attributes['description'])?$attributes['description']:'';
 		$this->material_requisition->salesman_id = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
@@ -79,10 +79,10 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 			try {
 
 				//VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('material_requisition')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('material_requisition')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -109,10 +109,10 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = env('DEPARTMENT_ID');
+							$dept = auth()->user()->department_id;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('material_requisition')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('material_requisition')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -169,7 +169,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 					/*if($this->material_requisition->id) {
 						 DB::table('voucher_no')
 							->where('voucher_type', 'MR')
-							->where('department_id', env('DEPARTMENT_ID'))
+							->where('department_id', auth()->user()->department_id)
 							->update(['no' => $attributes['voucher_no'] + 1]);
 					}*/
 					
@@ -179,8 +179,10 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 				return true;
 				
 			} catch(\Exception $e) { 
-			
-				DB::rollback(); echo $e->getLine().'-'.$e->getMessage();exit;
+				DB::rollback();
+				\Log::error('Material Requisition Creation Error: ' . $e->getMessage() . ' at line ' . $e->getLine());
+				\Log::error('Stack trace: ' . $e->getTraceAsString());
+				\Log::error('Attributes: ' . json_encode($attributes));
 				return false;
 			}
 		}
@@ -376,7 +378,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 						  $join->on('im.id','=','GI.item_id');
 					  })
 					  ->where('GI.status',1)
-					  ->where('GI.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('GI.deleted_at')
 					  ->select('GI.*','u.unit_name','im.item_code')->get();
 	}
 	
@@ -448,7 +450,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 					  })
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
 					  ->orderBY('poi.id')->groupBy('poi.id')
 					  ->get();
@@ -522,7 +524,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 					  })
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty') //AP16
 					  ->orderBY('poi.id')
 					  ->get();
@@ -552,7 +554,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
-							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
+							->where('material_requisition.department_id',auth()->user()->department_id)
 							->where('POI.status',1);
 							
 					if( $date_from!='' && $date_to!='' ) { 
@@ -598,7 +600,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
-							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
+							->where('material_requisition.department_id',auth()->user()->department_id)
 							->where('POI.is_transfer','!=',1)
 							->where('POI.status',1);
 							
@@ -640,7 +642,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
-							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
+							->where('material_requisition.department_id',auth()->user()->department_id)
 							->where('POI.status',1);
 							
 					if( $date_from!='' && $date_to!='' ) { 
@@ -681,7 +683,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 							->leftJoin('salesman AS S', function($join) {
 								$join->on('S.id','=','material_requisition.salesman_id');
 							})
-							->where('material_requisition.department_id',env('DEPARTMENT_ID'))
+							->where('material_requisition.department_id',auth()->user()->department_id)
 							->where('POI.is_transfer','!=',1)
 							->where('POI.status',1);
 							
@@ -719,7 +721,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	
 	public function materialReqList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->material_requisition->where('material_requisition.status',1)->where('material_requisition.department_id',env('DEPARTMENT_ID'));
+		$query = $this->material_requisition->where('material_requisition.status',1)->where('material_requisition.department_id',auth()->user()->department_id);
 		$query->leftjoin('jobmaster AS J', function($join) {
 							$join->on('J.id','=','material_requisition.job_id');
 						} )

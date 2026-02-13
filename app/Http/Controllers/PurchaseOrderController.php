@@ -17,6 +17,8 @@ use App\Repositories\MaterialRequisition\MaterialRequisitionInterface;
 use App\Repositories\Location\LocationInterface;
 use App\Repositories\SalesOrder\SalesOrderInterface;
 use App\Repositories\PurchaseEnquiry\PurchaseEnquiryInterface;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Http\Request;
 
@@ -74,12 +76,34 @@ class PurchaseOrderController extends Controller
 	}
 	
     public function index() {
+
+		// Debug: Check if purchase orders exist
+		$totalPO = DB::table('purchase_order')->count();
+		\Log::info('Total Purchase Orders in DB: ' . $totalPO);
+		
+		$activePO = DB::table('purchase_order')
+					->where('status', 1)
+					->count();
+		\Log::info('Active Purchase Orders: ' . $activePO);
+		
+		$userDeptPO = DB::table('purchase_order')
+					->where('status', 1)
+					->where('department_id', auth()->user()->department_id)
+					->count();
+		\Log::info('User Dept Purchase Orders: ' . $userDeptPO . ' (dept_id: ' . auth()->user()->department_id . ')');
+		
+		$notDeletedPO = DB::table('purchase_order')
+					->where('status', 1)
+					->where('department_id', auth()->user()->department_id)
+					->whereNull('deleted_at')
+					->count();
+		\Log::info('Not Deleted User Dept PO: ' . $notDeletedPO);
 		
 		$data = array();
 		$orders = [];//$this->purchase_order->purchaseOrderList1();
 		$jobs = $this->jobmaster->activeJobmasterList();
 		//$sup = $this->accountmaster->supplierList();
-		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->whereNull('deleted_at')
 		->select('id','master_name')->get(); 
 		$mod_purchase_enquiry= DB::table('parameter2')->where('keyname', 'mod_purchase_enquiry')->where('status',1)->select('is_active')->first();
 		//echo '<pre>';print_r($sup);exit;
@@ -104,8 +128,11 @@ class PurchaseOrderController extends Controller
                             6=>'approval',
 							7=>'status'
                         );
+		
+		 \Log::info('ajaxPaging called', $request->all());
 						
 		$totalData = $this->purchase_order->purchaseOrderListCount();
+		 \Log::info('Total Data Count: ' . $totalData);
             
         $totalFiltered = $totalData; 
 
@@ -114,9 +141,17 @@ class PurchaseOrderController extends Controller
         $order = 'purchase_order.id';
         $dir = 'desc';
 		$search = (empty($request->input('search.value')))?null:$request->input('search.value');
+
+		\Log::info('Query params', [
+			'start' => $start,
+			'limit' => $limit,
+			'search' => $search
+		]);
         
 		$invoices = $this->purchase_order->purchaseOrderList('get', $start, $limit, $order, $dir, $search);
-		
+		 \Log::info('Invoices retrieved: ' . count($invoices));
+    	\Log::info('Sample invoice data:', $invoices->toArray());
+
 		if($search)
 			$totalFiltered =  $this->purchase_order->purchaseOrderList('count', $start, $limit, $order, $dir, $search);
 		
@@ -357,43 +392,107 @@ class PurchaseOrderController extends Controller
 					->withIntername($defaultInter? $defaultInter->name : null);
 	}
 	
+	// public function save(Request $request) {
+		
+	// 	//echo '<pre>';print_r($request->all());exit;
+	// 	if( $this->validate(
+	// 		$request, 
+	// 		[//'reference_no' => 'required',
+	// 		 'supplier_name' => 'required','supplier_id' => 'required',
+	// 		 'location_id' => 'required','location_id' => 'required',
+	// 		 'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 		 'unit_id.*' => 'required',
+	// 		 'quantity.*' => 'required',
+	// 		 'cost.*' => 'required'
+	// 		],
+	// 		[//'reference_no.required' => 'Reference no. is required.',
+	// 		 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+	// 		 'location_id.required' => 'Location is required.','location_id.required' => 'Location is invalid.',
+	// 		 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 		 'unit_id.*' => 'Item unit is required.',
+	// 		 'quantity.*' => 'Item quantity is required.',
+	// 		 'cost.*' => 'Item cost is required.'
+	// 		]
+	// 	)) {
+
+	// 		return redirect('purchase_order/add')->withInput();
+
+	// 	}
+	// 	if($request->input('total')==0){
+	// 	    Session::flash('error', 'Cost is invalid, Invoice failed to add!');
+	// 	    return redirect('purchase_order/add');
+	// 	};
+	// 	if( $this->purchase_order->create($request->all()) )
+	// 		Session::flash('message', 'Purchase order added successfully.');
+	// 	else
+	// 		Session::flash('error', 'Something went wrong, Invoice failed to add!');
+		
+	// 	return redirect('purchase_order/add');
+	// }
+
+
 	public function save(Request $request) {
 		
-		//echo '<pre>';print_r($request->all());exit;
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'supplier_name' => 'required','supplier_id' => 'required',
-			 'location_id' => 'required','location_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
+		// Validate the request
+		$validator = Validator::make($request->all(), 
+			[
+				'supplier_name' => 'required',
+				'supplier_id' => 'required',
+				'location_id' => 'required',
+				'item_code.*' => 'required',
+				'item_id.*' => 'required',
+				'unit_id.*' => 'required',
+				'quantity.*' => 'required',
+				'cost.*' => 'required'
 			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
-			 'location_id.required' => 'Location is required.','location_id.required' => 'Location is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
+			[
+				'supplier_name.required' => 'Supplier name is required.',
+				'supplier_id.required' => 'Supplier name is invalid.',
+				'location_id.required' => 'Location is required.',
+				'item_code.*.required' => 'Item code is required.',
+				'item_id.*.required' => 'Item code is invalid.',
+				'unit_id.*.required' => 'Item unit is required.',
+				'quantity.*.required' => 'Item quantity is required.',
+				'cost.*.required' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('purchase_order/add')->withInput()->withErrors();
-		}
-		if($request->input('total')==0){
-		    Session::flash('error', 'Cost is invalid, Invoice failed to add!');
-		    return redirect('purchase_order/add');
-		};
-		if( $this->purchase_order->create($request->all()) )
-			Session::flash('message', 'Purchase order added successfully.');
-		else
-			Session::flash('error', 'Something went wrong, Invoice failed to add!');
+		);
 		
-		return redirect('purchase_order/add');
+		// Check if validation fails
+		if ($validator->fails()) {
+			return redirect('purchase_order/add')
+					->withInput()
+					->withErrors($validator);
+		}
+		
+		// Check if total is zero
+		if ($request->input('total') == 0) {
+			Session::flash('error', 'Cost is invalid, Invoice failed to add!');
+			return redirect('purchase_order/add')->withInput();
+		}
+		
+		// Debug: Log the request data
+		\Log::info('Purchase Order Request Data:', $request->all());
+		
+		// Attempt to create purchase order
+		try {
+			$result = $this->purchase_order->create($request->all());
+			
+			if ($result) {
+				Session::flash('message', 'Purchase order added successfully.');
+				return redirect('purchase_order/add');
+			} else {
+				Session::flash('error', 'Something went wrong, Invoice failed to add!');
+				\Log::error('Purchase order creation returned false');
+				return redirect('purchase_order/add')->withInput();
+			}
+		} catch (\Exception $e) {
+			Session::flash('error', 'Error: ' . $e->getMessage());
+			\Log::error('Purchase Order Save Error: ' . $e->getMessage() . ' at line ' . $e->getLine());
+			return redirect('purchase_order/add')->withInput();
+		}
 	}
 	
+
 	public function Settlement($id){
 		    DB::table('purchase_order')->where('id',$id)->update(['is_settled' => 1]);
 		    Session::flash('message', 'Purchase order is settled.');
