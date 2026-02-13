@@ -89,16 +89,9 @@
 										<td class="del"><?php if($row->is_default==0) { ?> <button class="btn btn-danger btn-xs delete">
 											<span class="glyphicon glyphicon-trash"></span></button><?php } ?>
 										</td>
-                                        @php $stimulsoft_v = config('app.stimulsoft_ver'); @endphp
-                                        @if($stimulsoft_v==2)
 										<td><a href="{{ URL::to('designer/'.$row->rid) }}" target="_blank" class="btn btn-warning btn-xs design">
 											<span class="glyphicon glyphicon-wrench"></span></a>
 										</td>
-                                        @else
-                                        <td><a href="{{ url('design/'.$row->rid) }}" target="_blank" class="btn btn-warning btn-xs design">
-											<span class="glyphicon glyphicon-wrench"></span></a>
-										</td>
-                                        @endif
                                     </tr>
 									@endforeach
                                    
@@ -187,11 +180,7 @@ $(document).on('click', '.design', function(e)  {
 			return true;
 		}
 	})
-    @if($stimulsoft_v==2)
-        window.open("{{ url('designer') }}", "_blank")
-    @else
-	    window.open("{{ url('design') }}", "_blank")
-    @endif
+    window.open("{{ url('designer') }}", "_blank")
 });
 
 </script>

@@ -73,7 +73,8 @@
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="item_id" value="{{ $itemrow->id }}">
 								<input type="hidden" name="fromurl" value="{{ $fromurl }}">
-								<input type="hidden" name="formd" id="formd" value="{{$formdata['simple_entry']}}">
+								{{-- <input type="hidden" name="formd" id="formd" value="{{$formdata['simple_entry']}}"> --}}
+								<input type="hidden" name="formd" id="formd" value="{{ $formdata['simple_entry'] ?? 0 }}">
 
 								<input type="hidden" name="itmHt" id="itmHt" value="{{ $itemrow->itmHt }}">
 								<input type="hidden" name="itmWd" id="itmWd" value="{{ $itemrow->itmWd }}">
@@ -382,7 +383,7 @@
 													<option value="{{ $unit['id'] }}" <?php if($itemunits[0]->unit_id==$unit['id']) echo 'selected';?>>{{ $unit['unit_name'] }}</option>
 													@endforeach
 												</select>
-												<input type="hidden" name="item_unit_id[]" id="item_unit_id_1" class="form-control" value="{{ $itemunits[0]->iuid }}">
+												<input type="hidden" name="item_unit_id[]" id="item_unit_id_1" class="form-control" value="{{ $itemunits[0]['iuid'] }}">
 											</td>
 											<td><input type="hidden" name="pkno[]" id="pkno_1" value="1">
 												<input type="text" name="packing[]" id="packing_1" class="form-control" value="{{ $itemunits[0]->packing }}" readonly placeholder="Packing">
@@ -699,7 +700,7 @@
                                     </div>
                                 </div>-->
 								
-								{{-- <?php if($formdata['location']==1) { ?>
+								{{-- <?//php if($formdata['location']==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"></label>
                                     <div class="col-sm-10">
@@ -745,8 +746,8 @@
 														}
 													?>
 													<tr>
-														<td>{{ $row->name }}<input type="hidden" name="locid[]" value="{{$row->id}}"></td>
-														<td><input type="number" value="{{$opnqty}}" name="locqty[]" class="locqty" @if(auth()->user()->can('item-qty-cost-edit')) console.log('') @else readonly @endif > 
+														<td>{{ $row->name }}<input type="hidden" name="locid[]" value="{{$row->id}}"></td> {{--@if(auth()->user()->can('item-qty-cost-edit')) console.log('') @else readonly @endif--}}
+														<td><input type="number" value="{{$opnqty}}" name="locqty[]" class="locqty"> 
 															<input type="hidden" name="itlocid[]" value="{{$id}}">
 														</td>
 														<td>{{ $qty }}
@@ -872,7 +873,7 @@
 								<input type="hidden" name="supersede[]" id="supersede">
 								<?php } ?>
 								
-								<?php if($formdata['rowmaterial']==1) { ?>
+								<?php if($formdata['rowmaterials']==1) { ?>
 								<div id="rMat">
 									<fieldset>
 									<legend style="margin-bottom:0px !important;"><h5><span class="itmDtls">Raw Materials</span></h5></legend>
@@ -1372,9 +1373,14 @@ $(function() {
 			bv.getInvalidFields().each(function() {
 				invalidFields.push($(this).attr('name'));
 			});
+
 			console.log('Invalid fields:', invalidFields);
-			alert('Please fix these fields: ' + invalidFields.join(', '));
-			return false;
+
+			if (invalidFields.length > 0) {
+				alert('Please fix these fields: ' + invalidFields.join(', '));
+				return false; // stop submit ONLY when there are invalid fields
+			}
+			 return true;
 		}
 	});
 // ----------------------------------error check end-------------------------------------------

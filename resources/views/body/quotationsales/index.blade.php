@@ -65,16 +65,8 @@
                     <div class="panel-heading clearfix">
                         <h3 class="panel-title pull-left m-t-6">
                             <i class="fa fa-fw fa-list-alt"></i> Quotation Sales
-                        </h3>
-                        {{-- <div class="pull-right">
-							@permission('qs-create')
-                             <a href="{{ url('quotation_sales/add') }}" class="btn btn-primary btn-sm">
-									<span class="btn-label">
-									<i class="glyphicon glyphicon-plus"></i>
-								</span> Add New
-							</a>
-							@endpermission
-                        </div> --}}
+<<<<<<< HEAD
+            							
 						<div class="pull-right">
 							@can('qs-create')
 								<a href="{{ url('quotation_sales/add') }}" class="btn btn-primary btn-sm">
@@ -83,9 +75,18 @@
 									</span>
 									Add New
 								</a>
+=======
+                        </h3>
+                        <div class="pull-right">
+							@can('qs-create')
+                             <a href="{{ url('quotation_sales/add') }}" class="btn btn-primary btn-sm">
+									<span class="btn-label">
+									<i class="glyphicon glyphicon-plus"></i>
+								</span> Add New
+							</a>
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
 							@endcan
-						</div>
-
+                        </div>
                     </div>
                     <div class="panel-body">
 						 <div class="row">
@@ -257,11 +258,18 @@ $(function() {
 			{ "data": "net_total" },
 			//{ "data": "approval" },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } ?>
-			@permission('qs-edit'){ "data": "edit","bSortable": false },@endpermission
-				@permission('qs-view'){ "data": "viewonly","bSortable": false },@endpermission
-			@permission('qs-print'){ "data": "print","bSortable": false },@endpermission
+			@can('qs-edit'){ "data": "edit","bSortable": false },@endcan
+				@can('qs-view'){ "data": "viewonly","bSortable": false },@endcan
+			@can('qs-print'){ "data": "print","bSortable": false },@endcan
 			//{ "data": "view","bSortable": false },
-			@permission('qs-delete'){ "data": "delete","bSortable": false },@endpermission
+			@can('qs-delete'){ "data": "delete","bSortable": false },@endcan
+<<<<<<< HEAD
+an
+			@can('qs-print'){ "data": "print","bSortable": false },@endcan
+			//{ "data": "view","bSortable": false },
+			@can('qs-delete'){ "data": "delete","bSortable": false },@endcan
+=======
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
 		],
 			/*"createdRow": function( row, data, dataIndex){
                             if( data["approval_status"] == 1  ){

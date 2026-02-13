@@ -81,13 +81,13 @@
 							@endif
 							
                         <div class="pull-right">
-							@permission('si-create')
+							@can('si-create')
                              <a href="{{ url('sales_invoice/addc') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
+							@endcan
                         </div>
                     </div>
                     <div class="panel-body">
@@ -104,11 +104,11 @@
 									<th>Customer</th>
 									<th>Amount</th>
 									<?php if($settings->doc_approve==1) { ?><th>Status</th><?php } ?>
-									@permission('si-edit')<th></th>@endpermission
-									@permission('si-view')<th></th>@endpermission
-									@permission('si-print')<th></th>@endpermission
-									@permission('si-delete')<th></th>@endpermission
-									@permission('do-print')<th></th>@endpermission
+									@can('si-edit')<th></th>@endcan
+									@can('si-view')<th></th>@endcan
+									@can('si-print')<th></th>@endcan
+									@can('si-delete')<th></th>@endcan
+									@can('do-print')<th></th>@endcan
 									<th></th>
 								</tr>
 								</thead>
@@ -168,7 +168,7 @@
                                         <select id="select21" multiple style="width:100%" class="form-control select2" name="customer_id[]">
                                         <option value="">Select Customers...</option> 
 										@foreach($customer as $row)
-												<option value="{{$row['id']}}">{{$row['master_name']}}</option>
+												<option value="{{$row->id}}">{{$row->master_name}}</option>
 											@endforeach				
 										
                                      </select>
@@ -420,11 +420,11 @@ $(function() {
 			{ "data": "net_total" },
 			{ "data": "history","bSortable": false },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } ?>
-			@permission('si-edit'){ "data": "edit","bSortable": false },@endpermission
-			@permission('si-view'){ "data": "viewonly","bSortable": false },@endpermission
-			@permission('si-print'){ "data": "print","bSortable": false },@endpermission
-			@permission('si-delete'){ "data": "delete","bSortable": false },@endpermission
-			@permission('do-print'){ "data": "amtview","bSortable": false }@endpermission
+			@can('si-edit'){ "data": "edit","bSortable": false },@endcan
+			@can('si-view'){ "data": "viewonly","bSortable": false },@endcan
+			@can('si-print'){ "data": "print","bSortable": false },@endcan
+			@can('si-delete'){ "data": "delete","bSortable": false },@endcan
+			@can('do-print'){ "data": "amtview","bSortable": false }@endcan
 		]	
 		  
 		});

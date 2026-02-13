@@ -258,7 +258,7 @@ class PurchaseInvoiceController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', Auth::user()->department_id)
                          ->where('is_default', 1) ->first();
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1);//'Purchase Stock' voucher from account settings...
 		if($this->mod_location->is_active==1) {
@@ -309,7 +309,7 @@ class PurchaseInvoiceController extends Controller
 			$deptid = '';
 		}
 		$is_dept = true;
-		$deptid =env('DEPARTMENT_ID');
+		$deptid =Auth::user()->department_id;
 		
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1,$is_dept,$deptid); //'Purchase Stock' voucher from account settings...
 		
@@ -493,12 +493,9 @@ class PurchaseInvoiceController extends Controller
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withBanks($banks)
 					->withFcurrency($fcurrency)
-					// ->withInterid($defaultInter->id)
-                    // ->withIntercode($defaultInter->code)
-					// ->withIntername($defaultInter->name)
-					->withInterid($defaultInter ? $defaultInter->id : null)
-                    ->withIntercode($defaultInter? $defaultInter->code : null)
-					->withIntername($defaultInter? $defaultInter->name : null)
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
@@ -569,7 +566,7 @@ class PurchaseInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($request->input());exit;
 		
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
 			'location_id' =>'required','location_id' => 'required',
@@ -589,10 +586,7 @@ class PurchaseInvoiceController extends Controller
 			 'cost.*' => 'Item cost is required.',
 			 'dr_acnt.required' => 'Debit a/c. is required.',
 			]
-		)) {
-
-			return redirect('purchase_invoice/add')->withInput()->withErrors();
-		  }
+		);
 		
 		if(Session::has('dpt_id')) 
 			Session::forget('dpt_id');
@@ -961,7 +955,7 @@ class PurchaseInvoiceController extends Controller
 	public function update(Request $request)
 	{ 	//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('purchase_invoice_id');
-		if( $this->validate(
+		 $this->validate(
 			$request, 
 			[//'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
 			'location_id' =>'required','location_id' => 'required',
@@ -979,10 +973,7 @@ class PurchaseInvoiceController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('purchase_invoice/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		if( $this->purchase_invoice->update($id, $request->all()) ) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT

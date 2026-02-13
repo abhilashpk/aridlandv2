@@ -10,7 +10,7 @@ class MaterialRequisitionItem extends Model {
 	
 	protected $table = 'material_requisition_item';
 	protected $primaryKey = 'id';
-	protected $fillable = ['material_requisition_id','item_id','item_name','unit_id','quantity','unit_price','total_price'];
+	protected $fillable = ['material_requisition_id','item_id','item_name','unit_id','quantity','unit_price','total_price','remarks'];
 	public $timestamps = false;
 	protected $dates = ['deleted_at'];
 	

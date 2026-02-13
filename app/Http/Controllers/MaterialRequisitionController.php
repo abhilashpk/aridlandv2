@@ -261,7 +261,7 @@ class MaterialRequisitionController extends Controller
 	    
 		//echo '<pre>';print_r($request->all());exit;
 		//echo '<pre>';print_r($this->material_requisition->create($request->all()));exit;
-		if( $this->validate(
+		$this->validate(
 				$request, 
 				[ 
 				// 'supplier_name' => 'required','supplier_id' => 'required',
@@ -284,10 +284,7 @@ class MaterialRequisitionController extends Controller
 				 'quantity.*' => 'Item quantity is required.',
 				 //'cost.*' => 'Item cost is required.' 
 				]
-			)) {
-			    
-				return redirect('material_requisition/add')->withInput()->withErrors();
-			}
+			);
 		$this->material_requisition->create($request->all());
 		Session::flash('message', 'Material requisition added successfully.');
 		return redirect('material_requisition');
@@ -317,7 +314,7 @@ class MaterialRequisitionController extends Controller
 	
 	public function update(Request $request,$id)
 	{
-	    if( $this->validate(
+	    $this->validate(
 				$request, 
 				[ 
 				 //'supplier_name' => 'required','supplier_id' => 'required',
@@ -340,10 +337,7 @@ class MaterialRequisitionController extends Controller
 				 'quantity.*' => 'Item quantity is required.',
 				 //'cost.*' => 'Item cost is required.' 
 				]
-			)) {
-			    
-				return redirect('material_requisition/edit/'.$id)->withInput()->withErrors();
-			}
+			);
 	    
 		$this->material_requisition->update($id, $request->all());
 		Session::flash('message', 'Material Requisition updated successfully');

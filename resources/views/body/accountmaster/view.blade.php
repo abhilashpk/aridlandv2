@@ -138,7 +138,7 @@
                                 </tr>
                                 <tr>
 								@if($masterrow->job_compulsary==0)
-									@php/ $chk = "No";
+									@php $chk = "No";
 											
 									@endphp
 									@else

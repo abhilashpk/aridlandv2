@@ -5,10 +5,13 @@ use Illuminate\Http\Request;
 use App\Repositories\Accategory\AccategoryInterface; 
 
 use App\Http\Requests;
+use App\Exceptions\Validation\ValidationException;
 use Notification;
 use Session;
 use App;
 use DB;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Http\JsonResponse;
 
 class AccategoryController extends Controller
 {
@@ -24,7 +27,7 @@ class AccategoryController extends Controller
 
 	}
 
-	protected function index() {
+	public function index() {
 		//echo 'hi';exit;
 		//return view('simple_tables');
 		$data = array();
@@ -52,7 +55,7 @@ class AccategoryController extends Controller
 			Session::flash('message', 'Category added successfully.');
 			return redirect('accategory/add');
 		} catch(ValidationException $e) { 
-			return Redirect::to('accategory/add')->withErrors($e->getErrors());
+			return Redirect::to('accategory/add')->withErrors($e->getErrors())->withInput();
 		}
 	}
 	
@@ -69,20 +72,26 @@ class AccategoryController extends Controller
 	
 	public function update($id, Request $request)
 	{
-		$this->accategory->update($id, $request->all());//print_r(Input::all());exit;
-		Session::flash('message', 'Category updated successfully');
-		return redirect('accategory');
+		try {
+			$this->accategory->update($id, $request->all());//print_r(Input::all());exit;
+			Session::flash('message', 'Category updated successfully');
+			return redirect('accategory');
+		} catch(ValidationException $e) {
+			return Redirect::to('accategory/edit/'.$id)->withErrors($e->getErrors())->withInput();
+		}
 	}
 	
-	public function ajax_getcategory($type_id)
+	public function ajax_getcategory($type_id): JsonResponse
 	{
-		return $categories = $this->accategory->getCategorybyType($type_id);
+		$categories = $this->accategory->getCategorybyType($type_id);
+		return response()->json($categories);
 
 	}
 	
-	public function ajax_getParent($type_id)
+	public function ajax_getParent($type_id): JsonResponse
 	{
-		return $categories = $this->accategory->find($type_id);
+		$categories = $this->accategory->find($type_id);
+		return response()->json($categories);
 
 	}
 	
@@ -110,9 +119,9 @@ class AccategoryController extends Controller
 
 		if($ids) {
 			$idarr = explode(',', $ids);
-		   $row = DB::table('account_master')->whereIn('account_category_id',$idarr)
+		    $row = DB::table('account_master')->whereIn('account_category_id',$idarr)
 		                  ->where('status', 1)
-			              ->where('deleted_at', '0000-00-00 00:00:00')
+			              ->whereNull('deleted_at')
 						 ->count();
             if( $row > 0 )
 			           Session::flash('errors', 'Category is already in use, you can\'t delete this!');
@@ -120,23 +129,21 @@ class AccategoryController extends Controller
 			    DB::table('account_group')->whereIn('category_id', $idarr)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 				DB::table('account_category')->whereIn('id',$idarr)->update(['deleted_at' => date('Y-m-d H:i:s')]);
 				Session::flash('message', 'Category deleted successfully.');
-			
-		}	
-	}
+		    }
+	    }
 		return redirect('accategory');
 	
 	}
 	
-	public function checkname(Request $request) {
+	public function checkname(Request $request): JsonResponse {
 
 		$check = $this->accategory->check_accategory_name($request->get('name'), $request->get('id'));
 		$isAvailable = ($check) ? false : true;
-		echo json_encode(array(
-							'valid' => $isAvailable,
-						));
+		return response()->json([
+			'valid' => $isAvailable,
+		]);
 	}
 
 
 	
 }
-

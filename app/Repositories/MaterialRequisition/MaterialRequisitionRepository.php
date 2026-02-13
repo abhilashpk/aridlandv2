@@ -64,7 +64,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 		$objMaterialReqItem->quantity = isset($attributes['quantity'][$key])?$attributes['quantity'][$key]:0;
 		$objMaterialReqItem->unit_price = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
 		$objMaterialReqItem->total_price = isset($attributes['line_total'][$key])?$attributes['line_total'][$key]:0;
-		$objMaterialReqItem->remarks = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
+		$objMaterialReqItem->remarks = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:'';
 		
 		return array('line_total' => $line_total);
 		
@@ -206,7 +206,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 					$items['unit_id'] = $attributes['unit_id'][$key];
 					$items['quantity'] = isset($attributes['quantity'][$key])?$attributes['quantity'][$key]:0;
 					$items['unit_price'] = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
-					$items['remarks'] = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
+					$items['remarks'] = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:'';
 					$items['total_price'] = $lntotal;
 					$objMaterialReqItem->update($items);
 						$zero = DB::table('material_requisition_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();

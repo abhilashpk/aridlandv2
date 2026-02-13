@@ -53,13 +53,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Material Transfer List
                         </h3>
                         <div class="pull-right">
-							@permission('loc-tran-create')
+							@can('loc-tran-create')
                              <a href="{{ url('location_transfer/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
+							@endcan
                         </div>
                     </div>
                     <div class="panel-body">
@@ -83,17 +83,17 @@
 										<td>{{ $location->locfrom }}</td>
 										<td>{{ $location->locto }}</td>
 										<td>
-											@permission('loc-tran-edit')<p>
+											@can('loc-tran-edit')<p>
 												<button class="btn btn-primary btn-xs" onClick="location.href='{{ url('location_transfer/edit/'.$location->id) }}'">
 												<span class="glyphicon glyphicon-pencil"></span></button>
-											</p>@endpermission
+											</p>@endcan
 										</td>
 										<td>
-											@permission('loc-tran-delete')<p>
+											@can('loc-tran-delete')<p>
 												<button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $location->id }}')"><span
 															class="glyphicon glyphicon-trash"></span></button>
 											</p>
-											@endpermission
+											@endcan
 										</td>
 										<td>
 											<p><a href="{{url('location_transfer/print/'.$location->id)}}" class="btn btn-primary btn-xs" target="_blank"><span class="fa fa-fw fa-print"></span></a></p>

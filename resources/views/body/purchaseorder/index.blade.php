@@ -67,15 +67,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Order
                         </h3>
                         <div class="pull-right">
-							{{-- @permission('po-create') --}}
 							@can('po-create')
                              <a href="{{ url('purchase_order/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							{{-- @endpermission --}}
-							 @endcan
+							@endcan
                         </div>
                     </div>
                     <div class="panel-body">
@@ -245,11 +243,11 @@ $(function() {
 			{ "data": "supplier" },
 			{ "data": "net_total" },
 			@if($modpurenq==1)	{ "data": "approval" },@endif
-			@permission('po-edit'){ "data": "edit","bSortable": false },@endpermission
-			@permission('po-view'){ "data": "viewonly","bSortable": false },@endpermission
-			@permission('po-print'){ "data": "print","bSortable": false },@endpermission
+			@can('po-edit'){ "data": "edit","bSortable": false },@endcan
+			@can('po-view'){ "data": "viewonly","bSortable": false },@endcan
+			@can('po-print'){ "data": "print","bSortable": false },@endcan
 				@if($modpurenq==1){ "data": "view","bSortable": false },@endif
-			@permission('po-delete'){ "data": "delete","bSortable": false }@endpermission
+			@can('po-delete'){ "data": "delete","bSortable": false }@endcan
 		],
 			@if($modpurenq==1)	"createdRow": function( row, data, dataIndex){
                             if( data["status"] == 1  ){

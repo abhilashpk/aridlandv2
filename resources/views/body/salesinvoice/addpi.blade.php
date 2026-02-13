@@ -302,9 +302,9 @@
                                             <option value="">Select Terms...</option>
 											@foreach ($terms as $term)
 											@if($docrow->terms_id==$term['id'])
-											{{--*/ $sel = "selected" /*--}}
+											@php $sel = "selected" @endphp
 											@else
-											{{--*/ $sel = "" /*--}}	
+											@php $sel = "" @endphp	
 											@endif
 											<option value="{{ $term['id'] }}" {{$sel}}>{{ $term['description'] }}</option>
 											@endforeach
@@ -349,11 +349,11 @@
 									<div class="col-xs-10">
 										<div class="col-xs-1">
 										@if($docrow->is_fc==1)
-										{{--*/ $chk = "checked";
-										/*--}}
+										@php $chk = "checked";
+										@endphp
 										@else
-										{{--*/ $chk = "";
-										/*--}}
+										@php $chk = "";
+										@endphp
 										@endif
 											<label class="radio-inline iradio">
 											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}>
@@ -364,9 +364,9 @@
 												<option value="">Select Foreign Currency...</option>
 												@foreach($currency as $curr)
 												@if($docrow->currency_id==$curr['id'])
-												{{--*/ $sel = "selected" /*--}}
+												@php $sel = "selected" @endphp
 												@else
-												{{--*/ $sel = "" /*--}}	
+												@php $sel = "" @endphp	
 												@endif
 												<option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option>
 												@endforeach
@@ -429,7 +429,7 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($docitems);$total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php $i = 0; $num = count($docitems);$total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -690,7 +690,7 @@
 									</div>
 								<?php $i++; } } else { ?>
 								@foreach($docitems as $item)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								
 									<div class="itemdivChld">	
 										<?php 
@@ -1102,7 +1102,7 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" value="{{(old('total'))?old('total'):($docrow->is_fc==1)?$docrow->total_fc:$docrow->total}}" class="form-control spl" readonly placeholder="0">
+										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" value="{{ old('total') ? old('total') : ($docrow->is_fc == 1 ? $docrow->total_fc : $docrow->total) }}" class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
 										<span class="small" id="c_label">Currency Dhs</span>	<input type="number" id="total_fc" value="{{(old('total_fc'))?old('total_fc'):$docrow->total}}" step="any" name="total_fc" class="form-control spl" value="{{$total_dh}}" readonly placeholder="0">
@@ -1137,7 +1137,8 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="discount" autocomplete="off" name="discount" class="form-control spl discount-cal" value="{{(old('discount'))?old('discount'):($docrow->is_fc==1)?$docrow->discount_fc:$docrow->discount}}" placeholder="0">
+											<input type="number" step="any" id="discount" autocomplete="off" name="discount" class="form-control spl discount-cal" value="{{ old('discount') ? old('discount') : ($docrow->is_fc == 1 ? $docrow->discount_fc : $docrow->discount) }}
+" placeholder="0">
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="discount_fc" name="discount_fc" class="form-control spl" value="{{(old('discount_fc'))?old('discount_fc'):$docrow->discount}}" placeholder="0">
@@ -1222,7 +1223,8 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly value="{{(old('subtotal'))?old('subtotal'):($docrow->is_fc==1)?$docrow->subtotal_fc:$docrow->subtotal}}">
+											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly value="{{ old('subtotal') ? old('subtotal') : ($docrow->is_fc == 1 ? $docrow->subtotal_fc : $docrow->subtotal) }}
+">
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="subtotal_fc" name="subtotal_fc" class="form-control spl" value="{{(old('subtotal_fc'))?old('subtotal_fc'):$docrow->subtotal}}" readonly placeholder="0">
@@ -1238,7 +1240,8 @@
 										</div>
 										<div class="col-xs-2">
 											<input type="hidden" id="vatcur" name="vatcur" value="<?php echo (old('vatcur'))?old('vatcur'):$docrow->vat_amount;?>">
-											<input type="number" step="any" id="vat" name="vat" class="form-control spl" placeholder="0" value="{{(old('vat'))?old('vat'):($docrow->is_fc==1)?$docrow->vat_amount_fc:$docrow->vat_amount}}" readonly>
+											<input type="number" step="any" id="vat" name="vat" class="form-control spl" placeholder="0" value="{{ old('vat') ? old('vat') : ($docrow->is_fc == 1 ? $docrow->vat_amount_fc : $docrow->vat_amount) }}
+" readonly>
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="vat_fc" name="vat_fc" class="form-control spl" value="{{(old('vat_fc'))?old('vat_fc'):$docrow->vat_amount}}" placeholder="0" readonly>
@@ -1257,7 +1260,8 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
 											<input type="hidden" id="net_amount_hid" name="net_amount_hid" value="<?php echo (old('net_amount_hid'))?old('net_amount_hid'):$docrow->net_total;?>">
-											<input type="number" step="any" id="net_amount" name="net_amount" value="{{(old('net_amount'))?old('net_amount'):($docrow->is_fc==1)?$docrow->net_total_fc:$docrow->net_total}}" class="form-control spl" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount" name="net_amount" value="{{ old('net_amount') ? old('net_amount') : ($docrow->is_fc == 1 ? $docrow->net_total_fc : $docrow->net_total) }}
+" class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
 										    <input type="hidden" step="any" id="other_cost" name="other_cost">

@@ -37,11 +37,28 @@ class GroupController extends Controller
 					->withData($data);
 	}
 	
+	// public function save(Request $request) {
+	// 	//print_r($request->all());
+	// 	$this->group->create($request->all());
+	// 	Session::flash('message', 'Group added successfully.');
+	// 	return redirect('group/add');
+	// }
+
 	public function save(Request $request) {
-		//print_r($request->all());
-		$this->group->create($request->all());
-		Session::flash('message', 'Group added successfully.');
-		return redirect('group/add');
+		$request->validate([
+			'group_name' => 'required|max:150',
+			'parent_id' => 'required|integer',
+			'description' => 'nullable|max:150'
+		]);
+		
+		try {
+			$this->group->create($request->all());
+			Session::flash('message', 'Group added successfully.');
+		} catch(\Exception $e) {
+			Session::flash('error', 'Failed to add group.');
+		}
+		
+		return redirect('group');
 	}
 	
 	public function edit($id) { 
@@ -77,13 +94,27 @@ class GroupController extends Controller
 							'valid' => $isAvailable,
 						));
 	}
-	public function destroyGroup(Request $request)
-	{
+	// public function destroyGroup(Request $request)
+	// {
+	// 	$ids = $request->get('ids');
+	// 	if($ids) {
+	// 		$idarr = explode(',', $ids);
+	// 		DB::table('groupcat')->whereIn('id',$idarr)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+	// 		Session::flash('message', 'Groups deleted successfully.');
+	// 	}
+	// 	return redirect('group');
+	// }
+
+	public function destroyGroup(Request $request) {
 		$ids = $request->get('ids');
 		if($ids) {
-			$idarr = explode(',', $ids);
-			DB::table('groupcat')->whereIn('id',$idarr)->update(['deleted_at' => date('Y-m-d H:i:s')]);
-			Session::flash('message', 'Groups deleted successfully.');
+			$idarr = array_filter(explode(',', $ids), 'is_numeric'); // Validate
+			if(!empty($idarr)) {
+				DB::table('groupcat')
+					->whereIn('id', $idarr)
+					->update(['deleted_at' => now()]);
+				Session::flash('message', 'Groups deleted successfully.');
+			}
 		}
 		return redirect('group');
 	}

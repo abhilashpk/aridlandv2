@@ -49,7 +49,39 @@ class CompanyRepository extends AbstractValidator implements CompanyInterface {
 	
 	public function create($attributes)
 	{
-		
+		if($this->isValid($attributes)) {
+			$image = '';
+			$file = (isset($attributes['image'])) ? $attributes['image'] : null;
+			if($file) {
+		        $image = time().'.'.$file->getClientOriginalExtension();
+				$destinationPath = public_path() . $this->imgDir.'/'.$image;
+				$destinationPathThumb = public_path() . $this->imgDir.'/thumb_'.$image;
+	            Intervention\Image\Facades\Image::make($file->getRealPath())->resize($this->width, $this->height, function($constraint) { $constraint->aspectRatio(); })->save($destinationPath);
+	            Intervention\Image\Facades\Image::make($file->getRealPath())->resize($this->thumbWidth, $this->thumbHeight, function($constraint) { $constraint->aspectRatio(); })->save($destinationPathThumb);
+			}
+
+			$this->company->company_name = $attributes['company_name'];
+			$this->company->email = $attributes['email'];
+			$this->company->phone = $attributes['phone'];
+			$this->company->address = $attributes['address'];
+			$this->company->address2 = isset($attributes['address2']) ? $attributes['address2'] : '';
+			$this->company->address3 = isset($attributes['address3']) ? $attributes['address3'] : '';
+			$this->company->city = $attributes['city'];
+			$this->company->state = $attributes['state'];
+			$this->company->country = $attributes['country'];
+			$this->company->vat_no = isset($attributes['vat_no']) ? $attributes['vat_no'] : '';
+			$this->company->pin = $attributes['pin'];
+			$this->company->website = $attributes['website'];
+			$this->company->logo = $image;
+			$this->company->status = 1;
+			$this->company->department_id = isset($attributes['department_id']) ? $attributes['department_id'] : 0;
+			$this->company->activate_date = date('Y-m-d');
+			$this->company->active_days = 0;
+			$this->company->active_status = 1;
+
+			$this->company->save();
+			return true;
+		}
 	}
 	
 	public function update($id, $company)
@@ -93,9 +125,13 @@ class CompanyRepository extends AbstractValidator implements CompanyInterface {
 			
 	}
 
-	public function getCompany()
+	public function getCompany($departmentId = null)
 	{
-		return $this->company->first();
+		$query = $this->company->newQuery();
+		if ($departmentId !== null && $departmentId !== '') {
+			$query->where('department_id', $departmentId);
+		}
+		return $query->first();
 	}
 	
 	public function getDashboardData()
@@ -163,4 +199,3 @@ class CompanyRepository extends AbstractValidator implements CompanyInterface {
 	}
 	
 }
-

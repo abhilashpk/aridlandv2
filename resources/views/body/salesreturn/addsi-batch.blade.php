@@ -122,12 +122,11 @@
 								@endif
 								
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">SR. No.1</label>
+                                    <label for="input-text" class="col-sm-2 control-label">SR. No.</label>
 									<input type="hidden" name="curno" id="curno" value="<?php echo $vouchers[0]['voucher_no']; ?>">
                                     <div class="col-sm-10">
 										<div class="input-group">
-										@if($vouchers[0]['is_prefix']==1)<span class="input-group-addon">{{$vouchers[0]['prefix']}}</span>@endif
-                                        <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" placeholder="<?php echo $vouchers[0]['voucher_no']; ?>">
+                                        <input type="text" class="form-control" id="voucher_no" readonly name="voucher_no" value="<?php echo $vouchers[0]['voucher_no']; ?>">
 										<span class="input-group-addon"><i class="fa fa-fw fa-edit"></i></span>
 										</div>
                                     </div>
@@ -230,9 +229,13 @@
                                     <label for="input-text" class="col-sm-2 control-label"> Foreign Currency</label>
 									<div class="col-xs-10">
 										<div class="col-xs-1">
-										@php
-											$chk = (($orderrow?->is_fc ?? 0) == 1) ? 'checked' : '';
-										@endphp
+										@if($orderrow->is_fc==1)
+										{{--*/ $chk = "checked";
+										/*--}}
+										@else
+										{{--*/ $chk = "";
+										/*--}}
+										@endif
 											<label class="radio-inline iradio">
 											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}>
 										</label>
@@ -242,9 +245,9 @@
 												<option value="">Select Foreign Currency...</option>
 												@foreach($currency as $curr)
 												@if($orderrow->currency_id==$curr['id'])
-												@php $sel = "selected" @endphp
+												{{--*/ $sel = "selected" /*--}}
 												@else
-												@php $sel = "" @endphp	
+												{{--*/ $sel = "" /*--}}	
 												@endif
 												<option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option>
 												@endforeach
@@ -316,7 +319,7 @@
 									</tr>
 									</thead>
 								</table>
-								@php $i = 0; $num = count($pitems); @endphp
+								{{--*/ $i = 0; $num = count($pitems); /*--}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -506,7 +509,7 @@
 								<?php $i++; } } else { ?>
 								
 								@foreach($pitems as $item)
-								@php $i++; @endphp
+								{{--*/ $i++; /*--}}
 								
 									<div class="itemdivChld">	
 										<?php 
@@ -653,9 +656,9 @@
 											<!--MAY25-->
             								<div id="batchdiv_1" style="float:left; padding-right:5px;" class="addBatchBtn">
             								<!--	<button type="button" id="btnBth_{{$i}}" class="btn btn-primary btn-xs batch-add" data-toggle="modal" data-target="#batch_modal">Add Batch</button>-->
-            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches'] ?? ''}}"></div>
-            									<input type="hidden" id="bthSelIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids'] ?? ''}}"> 
-                                                <input type="hidden" id="bthSelQty_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys'] ?? ''}}">
+            									<div class="form-group"><input type="text" name="batchNos[]" id="bthSelNos_{{$i}}" style="border:none;color:#FFF;" value="{{$batchitems[$item->id]['batches']}}"></div>
+            									<input type="hidden" id="bthSelIds_{{$i}}" name="batchIds[]" value="{{$batchitems[$item->id]['ids']}}"> 
+                                                <input type="hidden" id="bthSelQty_{{$i}}" name="qtyBatchs[]" value="{{$batchitems[$item->id]['qtys']}}">
                                                 <input type="hidden" id="batchRem_{{$i}}" name="batchRem[]">
             								</div>
             								
@@ -1681,7 +1684,7 @@ $(function() {
 		var vchr_id = e.target.value; 
 		
 		$.get("{{ url('sales_return/getvoucher/') }}/" + vchr_id, function(data) {
-			$('#voucher_no').attr('placeholder', data.voucher_no); //$('#voucher_no').val(data.voucher_no);
+			$('#voucher_no').val(data.voucher_no);
 			$('#sales_ret_account').val(data.account_id+'-'+data.account_name);
 			$('#cr_account_id').val(data.id);
 		});
@@ -2013,15 +2016,6 @@ $(function() {
 		$(this).parent().parent().remove();
 		
 	});
-
-	$(document).on('blur', '#voucher_no', function(e) {  
-		if(parseInt($(this).val()) > parseInt($('#curno').val())) {
-			alert('Voucher no is greater than current range!');
-			$('#voucher_no').val('');
-		}
-	});
-
-	
 	//VOUCHER NO DUPLICATE OR NOT
 	$(document).on('blur', '#voucher_no', function() {
 		

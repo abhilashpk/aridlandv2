@@ -10,10 +10,9 @@ class Category extends Model {
 	
 	protected $table = 'category';
 	protected $primaryKey = 'id';
-	protected $fillable = ['category_name','description'];
+	protected $fillable = ['category_name','description', 'parent_id','status'];
 	public $timestamps = false;
-	protected $dates = ['deleted_at'];
-	
+	protected $dates = ['deleted_at'];	
 		
 	public function subcategory()
 	{

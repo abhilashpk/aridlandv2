@@ -328,7 +328,7 @@ class CustomersDOController extends Controller
 		
 		//echo '<pre>';print_r($request->all());exit;
 		
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[  'location_id' =>'required','location_id' => 'required',
 			    'customer_name' => 'required','customer_id' => 'required',
@@ -344,10 +344,7 @@ class CustomersDOController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.' 
 			]
-		)) {
-
-			return redirect('customers_do/add')->withInput()->withErrors();
-		}
+		);
 		
 		$id = $this->customerdo->create($request->all());
 		if($id) {
@@ -534,7 +531,7 @@ class CustomersDOController extends Controller
 	public function update(Request $request)
 	{	//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('customer_do_id');
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			 'location_id' =>'required','location_id' => 'required',
@@ -552,10 +549,7 @@ class CustomersDOController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.' 
 			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('customers_do/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		$this->customerdo->update($id, $request->all());
 		
@@ -800,12 +794,12 @@ class CustomersDOController extends Controller
 		
 	}
 	
-	public function setSessionVal()
+	public function setSessionVal(Request $request)
 	{
-		Session::set('voucher_no', $request->get('vchr_no'));
-		Session::set('reference_no', $request->get('ref_no'));
-		Session::set('voucher_date', $request->get('vchr_dt'));
-		Session::set('lpo_date', $request->get('lpo_dt'));
+		Session::put('voucher_no', $request->get('vchr_no'));
+		Session::put('reference_no', $request->get('ref_no'));
+		Session::put('voucher_date', $request->get('vchr_dt'));
+		Session::put('lpo_date', $request->get('lpo_dt'));
 	}
 	
 	protected function makeTree($result)

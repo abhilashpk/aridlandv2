@@ -84,13 +84,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('pr-print')
+								@can('pr-print')
 								 <a href="{{ url('purchase_return/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
 							
@@ -293,11 +293,11 @@
 									</thead>
 								</table>
 								<div class="itemdivPrnt">
-									{{--*/ $i = 0; $num = count($orditems); /*--}}
+									@php $i = 0; $num = count($orditems); @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								@foreach($orditems as $item)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								<?php 
 								$vat_amount_net=0;
 								if($orderrow->is_fc==1) {

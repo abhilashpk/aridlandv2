@@ -85,13 +85,13 @@
                             </h3>
 							
 							<div class="pull-right">
-							@permission('si-print')
+							@can('si-print')
 							 <a href="{{ url('sales_invoice/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endpermission
+							@endcan
 							</div>
                         </div>
 						
@@ -235,9 +235,9 @@
 											</div>
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											<div class="col-xs-1"><br/>
-												@permission('si-history')
+												@can('si-history')
 												<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 										
@@ -264,12 +264,12 @@
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											
 											<div class="col-xs-1"><br/>
-												<!--@permission('si-history')
+												<!--@can('si-history')
 												<a href="" class="btn btn-info cust-history" data-toggle="modal" data-target="#custhistory_modal">History</a>
-												@endpermission-->
-												@permission('siph-history')
+												@endcan-->
+												@can('siph-history')
 												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 										
@@ -498,7 +498,7 @@
 									</thead>
 								</table>
 								<!-- ROWCHNG -->
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php $i = 0; $num = count($orditems); @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -733,7 +733,7 @@
 								<?php $i++; } } else { ?>
 								
 								@foreach($orditems as $item)
-								{{--*/ $i++; /*--}}
+								@php/ $i++; @endphp
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price / $orderrow->currency_rate;
 										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
@@ -1615,7 +1615,7 @@
 								</div>
 								<br/>
 								
-								@permission('qs-aprv')
+								@can('qs-aprv')
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
@@ -1636,7 +1636,7 @@
                                     </div>
                                 </div>
 								<?php } ?>
-								@endpermission
+								@endcan
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">

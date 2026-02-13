@@ -102,13 +102,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('po-print')
+								@can('po-print')
 								 <a href="{{ url('suppliers_do/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span>
 								</a>
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
 							
@@ -644,14 +644,12 @@
 											<?php } else { ?>
 								              <input type="hidden" name="netcost" id="netcost">
 								            <?php } ?>
-								            <?php if($formdata['location_item']==1) { ?>
+								            
 											<div id="loc" style="float:left; padding-right:5px;">
 												<button type="button" id="loc_1" class="btn btn-primary btn-xs loc-info">Location</button>
 												<div class="form-group"><input type="text" name="iloc[]" id="iloc_1" style="border:none;color:#FFF;"></div><!-- NOV24 -->
 											</div>
-											<?php } else { ?>
-								              <input type="hidden" name="item_loc" id="item_loc">
-								            <?php } ?>
+											
 								            <?php if($formdata['supersede']==1) { ?>
 											
 											<div id="ssede">
@@ -967,9 +965,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('suppliers_do') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('suppliers_do/add') }}" class="btn btn-warning">Clear</a>
-										@permission('pi-history')
+										@can('pi-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endpermission
+										@endcan
                                     </div>
                                 </div>
 								<div id="purchase_modal" class="modal fade animated" role="dialog">
@@ -1344,7 +1342,7 @@ $(document).ready(function () {
             },
 			reference_no: {
                 validators: {
-                  // notEmpty: {  message: 'The reference no is required and cannot be empty!' }, 
+                   notEmpty: {  message: 'The reference no is required and cannot be empty!' }, 
 					remote: {
                         url: urlcode,
                         data: function(validator) {
@@ -1997,7 +1995,7 @@ $(function() {
 		
 		//DEC24
 		$('#itmqty_'+num).val('');
-		var locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+itm_id+"/"+num
+		var locUrl = "{{ url('itemmaster/view_locinfo/') }}/"+itm_id+"/"+num
 	   $('#locData_'+num).load(locUrl, function(result) {
 		  $('#myModal').modal({show:true});
 	   });
@@ -2385,7 +2383,7 @@ $(function() {
 	   var curNum = res[1];  
 	   var item_id = $('#itmid_'+curNum).val();
 	   if(item_id!='') {
-		   var locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+item_id+"/"+curNum
+		   var locUrl = "{{ url('itemmaster/view_locinfo/') }}/"+item_id+"/"+curNum
 		   $('#locData_'+curNum).load(locUrl, function(result) {
 			  $('#myModal').modal({show:true});
 		   });

@@ -106,9 +106,9 @@ class SalesmanRepository extends AbstractValidator implements SalesmanInterface 
 				
 			$this->salesman->salesman_id = trim($attributes['salesman_id']);
 			$this->salesman->name = trim($attributes['name']);
-			$this->salesman->address1 = trim($attributes['address1']);
-			$this->salesman->address2 = trim($attributes['address2']);
-			$this->salesman->telephone = trim($attributes['telephone']);
+			$this->salesman->address1 = trim($attributes['address1'] ?? ''); 
+			$this->salesman->address2 = trim($attributes['address2'] ?? '');
+			$this->salesman->telephone = trim($attributes['telephone'] ?? '');
 			$this->salesman->status = 1;
 			$this->salesman->fill($attributes)->save();
 			

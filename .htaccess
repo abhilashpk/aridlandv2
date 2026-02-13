@@ -1,0 +1,45 @@
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteBase /aridlandv2_Ghub/
+    
+#     RewriteCond %{REQUEST_FILENAME} !-f
+#     RewriteCond %{REQUEST_FILENAME} !-d
+#     RewriteRule ^(.*)$ public/$1 [L]
+# </IfModule>
+
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+    
+#     # Set base for subdirectory
+#     RewriteBase /aridlandv2_Ghub/
+    
+#     # Don't rewrite if already in public directory
+#     RewriteCond %{REQUEST_URI} !^/aridlandv2_Ghub/public/
+    
+#     # Don't rewrite if the file exists
+#     RewriteCond %{REQUEST_FILENAME} !-f
+#     RewriteCond %{REQUEST_FILENAME} !-d
+    
+#     # Rewrite to public directory
+#     RewriteRule ^(.*)$ public/$1 [L]
+# </IfModule>
+
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If file or directory exists, serve it
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Otherwise redirect everything to public/
+    RewriteRule ^ public/$1 [L]
+</IfModule>
+
+
+
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteRule ^(.*)$ public/$1 [L]
+# </IfModule>

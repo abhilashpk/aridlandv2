@@ -70,7 +70,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		$this->purchase_invoice->location_id = $attributes['location_id'] ?? 0;
 		$this->purchase_invoice->po_no = (isset($attributes['po_no']))?$attributes['po_no'] ?? 0:'';
 		$this->purchase_invoice->supplier_name = isset($attributes['suppliername'])?$attributes['suppliername']:$attributes['supplier_name'];
-		$this->purchase_invoice->department_id   = isset($attributes['department_id'])?$attributes['department_id']:'';
+		$this->purchase_invoice->department_id   = env('DEPARTMENT_ID');
 		$this->purchase_invoice->foot_description = (isset($attributes['foot_description']))?$attributes['foot_description'] ?? null:'';
 		$this->purchase_invoice->is_pventry	= isset($attributes['is_pv'])?$attributes['is_pv']:0;
 		$this->purchase_invoice->document_no = isset($attributes['document_no'])?$attributes['document_no']:'';
@@ -475,7 +475,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		if($amount!=0) {
 			
 			if($amount_type=='VAT' || $amount_type=='VATOC') {
-				$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); 
+				$vatrow = $this->getVatAccounts(env('DEPARTMENT_ID')); 
 				
 				//if(isset($attributes['is_import']) && $amount_type=='VAT') { //if vat import is checked....
 				if( (isset($attributes['is_import']) && $amount_type=='VAT') || ($amount_type=='VATOC' && $attributes['tax_sr'][$key]=='RC') ) {
@@ -526,7 +526,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 				$dr_acnt_id = $attributes['dr_acnt_id'][$key];
 			} else if($amount_type == 'DIS') {
 				if(Session::get('department')==1) { 
-					$vatrow = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('purdis_acid')->first();
+					$vatrow = DB::table('department_accounts')->where('department_id', env('DEPARTMENT_ID'))->select('purdis_acid')->first();
 					if($vatrow)
 						$cr_acnt_id = $vatrow->purdis_acid;
 					else {
@@ -2917,7 +2917,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		if($id)
 			return $this->purchase_invoice->where('reference_no',$refno)->where('id', '!=', $id)->count();
 		else
-			return $this->purchase_invoice->where('reference_no',$refno)->count();
+			return $this->purchase_invoice->where('reference_no',$refno)->where('department_id',env('DEPARTMENT_ID'))->count();
 	}
 	
 	public function check_invoice_id($invoice_id) { 

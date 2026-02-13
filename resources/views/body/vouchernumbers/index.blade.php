@@ -70,7 +70,8 @@
 										</div>
 										<div class="col-sm-3">
 											<input type="text" name="no[]" value="{{$row->no}}" class="form-control" autocomplete="off">
-											<input type="hidden" name="id[]" value="{{$row->id}}">
+											<input type="hidden" name="voucher_type[]" value="{{$row->voucher_type}}">
+											<input type="hidden" name="name[]" value="{{$row->name}}">
 										</div>
 										<div class="col-sm-3">
 											<input type="checkbox" name="autoincrement[{{$i}}]" <?php if($row->autoincrement==1) echo 'checked'; ?> value="1">
@@ -125,4 +126,3 @@
         <!-- end of page level js -->
 
 @stop
-

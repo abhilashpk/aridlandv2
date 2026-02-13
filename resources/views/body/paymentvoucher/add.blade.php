@@ -146,7 +146,7 @@
                                     <div class="col-sm-10">
                                         <select id="voucher" class="form-control select2" style="width:100%" name="voucher">
 											@foreach($vouchers as $voucher)
-											<option value="{{$voucher->id}}">{{$voucher->voucher_name}}</option>
+											<option value="{{$voucher->vid}}">{{$voucher->voucher_name}}</option>
 											@endforeach
 										</select>
                                     </div>
@@ -156,8 +156,8 @@
 									<label for="input-text" class="col-sm-2 control-label">PV. No.</label>
 									<input type="hidden" name="curno" id="curno">
 									<input type="hidden" value="{{$vchrdata['vno']}}" name="vno">
-									{{--<input type="hidden" value="{{$voucher->prefix}}" name="prefix">
-									<input type="hidden" value="{{$voucher->is_prefix}}" name="is_prefix">--}}
+									<input type="hidden" value="{{$voucher->prefix}}" name="prefix">
+									<input type="hidden" value="{{$voucher->is_prefix}}" name="is_prefix">
 
 									<div class="col-sm-10">
 										<div class="input-group">

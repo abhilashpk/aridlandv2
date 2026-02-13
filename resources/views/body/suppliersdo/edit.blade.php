@@ -76,13 +76,13 @@
                             </h3>
 							
 							<div class="pull-right">
-							@permission('so-print')
+							@can('so-print')
 							 <a href="{{ url('suppliers_do/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endpermission
+							@endcan
 							</div>
                         </div>
                         <div class="panel-body">
@@ -335,7 +335,7 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php $i = 0; $num = count($orditems); @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -518,7 +518,7 @@
 									
 								@foreach($orditems as $item)
 								    @php $max_quantity = $item->po_balance_quantity + $item->quantity; @endphp
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								<div class="itemdivChld">							
 										
 											<table border="0" class="table-dy-row">

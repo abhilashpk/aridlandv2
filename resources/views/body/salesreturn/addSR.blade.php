@@ -131,7 +131,7 @@
                                 </div>
 								
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label">SR. No.q</label>
+                                    <label for="input-text" class="col-sm-2 control-label">SR. No.</label>
 									<input type="hidden" name="curno" id="curno">
                                     <div class="col-sm-10">
 										<div class="input-group">

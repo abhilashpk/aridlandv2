@@ -43,6 +43,11 @@
 			<p>{{ Session::get('message') }}</p>
 		</div>
 		@endif
+		@if(Session::has('error'))
+		<div class="alert alert-danger">
+			<p>{{ Session::get('error') }}</p>
+		</div>
+		@endif
 		
         <section class="content">
             <div class="row">
@@ -53,11 +58,11 @@
                             <i class="fa fa-fw fa-list-alt"></i> Role List
                         </h3>
                         <div class="pull-right">
-                            <!--<a href="{{ url('user/add') }}" class="btn btn-primary btn-sm">
+                            <a href="{{ route('roles.create') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
-							</a>-->
+							</a>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -94,10 +99,13 @@
 											</p>-->
 										</td>
 										<td>
-											<!--<p>
-												<button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $role->id }}')"><span
-															class="glyphicon glyphicon-trash"></span></button>
-											</p>-->
+											<form method="POST" action="{{ route('roles.destroy', $role->id) }}" style="display:inline;">
+												@csrf
+												@method('DELETE')
+												<button class="btn btn-danger btn-xs" onclick="return confirm('Delete this role?');">
+													<span class="glyphicon glyphicon-trash"></span>
+												</button>
+											</form>
 										</td>
                                     </tr>
 									@endforeach

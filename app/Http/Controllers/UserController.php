@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\User;
+use App\Models\User;
+<<<<<<< HEAD
 use App\Role;
+=======
+use App\Models\Role;
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
 use DB;
 use Hash;
+use Illuminate\Support\Arr;
 use Session;
 use Auth;
 
@@ -25,7 +30,12 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $data = array();
-		$users = User:: all();//orderBy('id','DESC')->paginate(5);
+        $authUser = Auth::user();
+        $usersQuery = User::query()->with(['roles', 'department']);
+        if ($authUser && $authUser->department_id !== null) {
+            $usersQuery->where('department_id', $authUser->department_id);
+        }
+		$users = $usersQuery->get(); //orderBy('id','DESC')->paginate(5);
         /* return view('users.index',compact('data'))
             ->with('i', ($request->input('page', 1) - 1) * 5); */
 			//echo '<pre>';print_r($users);exit;
@@ -42,9 +52,9 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::lists('display_name','id'); //echo '<pre>';print_r($roles);exit;
-		$depts = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
-		$loc = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+        $roles = Role::pluck('display_name', 'id');
+		$depts = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
+		$loc = DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
         return view('body.users.add',compact('roles','depts'),compact('loc','loc'));
     }
 
@@ -66,12 +76,14 @@ class UserController extends Controller
 
 
         $input = $request->all();
+        // Ensure optional location defaults to 0 instead of null/empty.
+        if (!isset($input['location_id']) || $input['location_id'] === '' || $input['location_id'] === null) {
+            $input['location_id'] = 0;
+        }
         $input['password'] = Hash::make($input['password']);
 
-        $user = User::create($input); 
-        foreach ($request->input('roles') as $key => $value) {
-            $user->attachRole($value);
-        }
+        $user = User::create($input);
+        $user->syncRoles($request->input('roles', []));
 
         return redirect()->route('users.index')
                         ->with('success','User created successfully');
@@ -100,13 +112,13 @@ class UserController extends Controller
     public function edit($id)
     {
         $user = User::find($id);
-        $roles = Role::lists('display_name','id');
-        $userRole = $user->roles->lists('id','id')->toArray();
-		$depts = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
-		$loc = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+        $roles = Role::pluck('display_name', 'id');
+        $userRole = $user->roles->pluck('id', 'id')->toArray();
+		$depts = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
+		$loc = DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
         //return view('users.edit',compact('user','roles','userRole'));
 		
-		$roles = Role::lists('display_name','id'); //echo '<pre>';print_r($roles);exit;
+		$roles = Role::pluck('display_name', 'id');
         return view('body.users.edit',compact('roles','user','userRole','depts','loc'));
     }
 
@@ -129,21 +141,20 @@ class UserController extends Controller
 
 
         $input = $request->all();
+        // Ensure optional location defaults to 0 instead of null/empty.
+        if (!isset($input['location_id']) || $input['location_id'] === '' || $input['location_id'] === null) {
+            $input['location_id'] = 0;
+        }
         if(!empty($input['password'])){ 
             $input['password'] = Hash::make($input['password']);
         }else{
-            $input = array_except($input,array('password'));    
+            $input = Arr::except($input, ['password']);
         }
 
 
         $user = User::find($id);
         $user->update($input);
-        DB::table('role_user')->where('user_id',$id)->delete();
-
-        
-        foreach ($request->input('roles') as $key => $value) {
-            $user->attachRole($value);
-        }
+        $user->syncRoles($request->input('roles', []));
 
 
         return redirect()->route('users.index')

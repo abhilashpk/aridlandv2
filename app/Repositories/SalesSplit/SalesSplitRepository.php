@@ -50,7 +50,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		$this->sales_split->is_fc = isset($attributes['is_fc'])?1:0;
 		$this->sales_split->currency_id = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
 		$this->sales_split->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
-		$this->sales_split->department_id   = isset($attributes['department_id'])?$attributes['department_id']:'';
+		$this->sales_split->department_id   =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:'';
 		$this->sales_split->is_pettycash   = isset($attributes['is_pettycash'])?$attributes['is_pettycash']:'';
 		$this->sales_split->vehicle_id   = isset($attributes['vehicle_id'])?$attributes['vehicle_id']:'';
 		
@@ -180,7 +180,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=> env('DEPARTMENT_ID'),//(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> $attributes['jobid'][$key],
 								'other_info'		=> $itemid,
 								'version_no'		=> $attributes['version_no']
@@ -266,7 +266,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				$dr_acnt_id = $attributes['customer_id'];
 			} else if($amount_type == 'DIS') {
 				if(Session::get('department')==1) { 
-					$vatrow = DB::table('department_accounts')->where('department_id', $attributes['department_id'])->select('purdis_acid')->first();
+					$vatrow = DB::table('department_accounts')->where('department_id', env('DEPARTMENT_ID'))->select('purdis_acid')->first();
 					$dr_acnt_id = $vatrow->purdis_acid;
 				} else {
 					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
@@ -291,7 +291,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								'reference_from'	=> $attributes['reference_no'],
 								'fc_amount'			=> $fc_amount,
 								'is_fc'				=> isset($attributes['is_fc'])?1:0,
-								'department_id'		=> (isset($attributes['department_id']))?$attributes['department_id']:'',
+								'department_id'		=>env('DEPARTMENT_ID'), //(isset($attributes['department_id']))?$attributes['department_id']:'',
 								'job_id'			=> (isset($attributes['job_id']))?$attributes['job_id']:'',
 								'version_no'		=> $attributes['version_no']
 							]);
@@ -490,14 +490,14 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 			// 2️⃣ Get the highest numeric part from voucher_master
 			$maxNumeric = DB::table('sales_split')
 				->where('deleted_at', '0000-00-00 00:0:00')
-				//->where('department_id', $departmentId)
+				->where('department_id', env('DEPARTMENT_ID'))
 				->where('status', 1)
 				->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
 				->value('max_no');
 			
-			$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-			$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->first();//echo '<pre>';print_r($accset);
-			$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+			$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+			$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id', env('DEPARTMENT_ID'))->first();//echo '<pre>';print_r($accset);
+			$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 			//VOUCHER NO LOGIC.....................
 			//exit;
 			$maxRetries = 5; // prevent infinite loop
@@ -522,14 +522,14 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 
 						$maxNumeric = DB::table('sales_split')
 							->where('deleted_at', '0000-00-00 00:0:00')
-							//->where('department_id', $departmentId)
+							->where('department_id', env('DEPARTMENT_ID'))
 							->where('status', 1)
 							->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
 							->value('max_no');
 						
-						$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-						$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->first();
-						$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+						$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+						$accset = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id', env('DEPARTMENT_ID'))->first();
+						$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 						$retryCount++;
 					} else {
@@ -795,11 +795,11 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 					DB::table('sales_split_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					
 					//REMOVE FROM TRANSACTION TABLE..
-					DB::table('account_transaction')->where('voucher_type','SS')->where('voucher_type_id',$itm->sales_split_id)->where('account_master_id',$itm->account_id)
+					DB::table('account_transaction')->where('voucher_type','SS')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$itm->sales_split_id)->where('account_master_id',$itm->account_id)
 							->where('other_info',$itm->id)->update(['status'=>0,'deleted_at'=> date('Y-m-d h:i:s')]);
 							
 					//IF VAT ALSO
-					DB::table('account_transaction')->where('voucher_type','SS')->where('voucher_type_id',$itm->sales_split_id)->where('account_master_id',$itm->account_id)
+					DB::table('account_transaction')->where('voucher_type','SS')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$itm->sales_split_id)->where('account_master_id',$itm->account_id)
 							->where('other_info',$itm->id.'VAT')->update(['status'=>0,'deleted_at'=> date('Y-m-d h:i:s')]);
 				}
 			}
@@ -879,7 +879,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		DB::beginTransaction();
 		try {
 			//Transaction update....
-			DB::table('account_transaction')->where('voucher_type', 'SS')->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+			DB::table('account_transaction')->where('voucher_type', 'SS')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			
 			$this->objUtility->tallyClosingBalance( $this->sales_split->customer_id );
 			
@@ -909,7 +909,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	{
 		$query = $this->sales_split->where('sales_split.status',1)->where('sales_split.is_transfer',0);
 		if($dept)
-			$query->where('sales_split.department_id', $dept);
+			$query->where('sales_split.department_id', env('DEPARTMENT_ID'));
 				
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_split.customer_id');
@@ -928,7 +928,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 							$join->on('V.id','=','sales_split.vehicle_id');
 						} );
 				if($dept && $dept!=null)
-					$query->where('sales_split.department_id', $dept);
+					$query->where('sales_split.department_id', env('DEPARTMENT_ID'));
 				
 				if($search) {
 					
@@ -974,7 +974,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	{
 		$query = $this->sales_split->where('sales_split.status',1);
 		if($did)
-			$query->where('sales_split.department_id', $did);
+			$query->where('sales_split.department_id', env('DEPARTMENT_ID'));
 				
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_split.customer_id');
@@ -1155,7 +1155,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	
 	public function findPOdata($id)
 	{
-		$query = $this->sales_split->where('sales_split.id', $id);
+		$query = $this->sales_split->where('sales_split.id', $id)->where('sales_split.department_id',env('DEPARTMENT_ID'));
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_split.customer_id');
 						} )
@@ -1322,7 +1322,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
 		$invoice_from =(isset($attributes['invoice_from']))?$attributes['invoice_from']:'';	
 		$invoice_to = (isset($attributes['invoice_to']))?$attributes['invoice_to']:'';	
-		$department_id = (isset($attributes['department_id']))?$attributes['department_id']:'';	
+		$department_id =env('DEPARTMENT_ID'); //(isset($attributes['department_id']))?$attributes['department_id']:'';	
 		$query = $this->sales_split
 					->join('sales_split_item AS POI', function($join) {
 							$join->on('POI.sales_split_id','=','sales_split.id');
@@ -1335,6 +1335,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 						->leftJoin('jobmaster AS J', function($join) {
 		 					$join->on('J.id','=','sales_split.job_id');
 						 })
+						 ->where('sales_split.department_id',env('DEPARTMENT_ID'))
 	 					->where('POI.status',1);
 									
 		if( $date_from!='' && $date_to!='' ) { 
@@ -1361,7 +1362,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		$department = (Session::get('department')==1)?$attributes['department_id']:null;
+		$department =env('DEPARTMENT_ID'); //(Session::get('department')==1)?$attributes['department_id']:null;
 		//echo '<pre>';print_r($date_to);exit;
 		$query = $this->sales_split
 						->join('sales_split_item AS POI', function($join) {
@@ -1512,6 +1513,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 						->join('account_transaction', 'account_transaction.account_master_id', '=', 'account_master.id')
 						->where('account_transaction.voucher_type','!=','OBD')
 						->where('account_transaction.status',1)
+						->where('account_transaction.department_id',env('DEPARTMENT_ID'))
 						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
 						->where('account_master.status',1)
 						->where('account_master.deleted_at','0000-00-00 00:00:00')
@@ -1574,7 +1576,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	public function purchaseInvoiceListCount()
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		$deptid = env('DEPARTMENT_ID');//(Session::get('department')==1)?Auth::user()->department_id:0;
 		
 		$query = $this->sales_split->where('sales_split.status',1);
 		if($deptid!=0)
@@ -1589,7 +1591,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	public function purchaseInvoiceList($type,$start,$limit,$order,$dir,$search,$dept=null)
 	{
 		//CHECK DEPARTMENT.......
-		$deptid = (Session::get('department')==1)?Auth::user()->department_id:0;
+		$deptid = env('DEPARTMENT_ID');//(Session::get('department')==1)?Auth::user()->department_id:0;
 		
 		$query = $this->sales_split->where('sales_split.status',1)
 						->join('account_master AS am', function($join) {

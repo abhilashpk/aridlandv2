@@ -1,0 +1,141 @@
+<?php namespace App\Repositories\Location;
+
+use App\Models\Location;
+use App\Models\ItemLocation;
+use App\Repositories\AbstractValidator;
+use App\Exceptions\Validation\ValidationException;
+use Config;
+use Auth;
+use DB;
+
+class LocationRepository extends AbstractValidator implements LocationInterface {
+	
+	protected $location;
+	
+	protected static $rules = [
+		//'code' => 'required|unique:location',
+		//'name' => 'required|unique:location',
+	];
+	
+	public function __construct(Location $location) {
+		$this->location = $location;
+		
+	}
+	
+	public function all()
+	{
+		return $this->location->where('status',1)->get();
+	}
+
+	public function allLoc()
+	{
+		return $this->location->leftJoin('account_master','account_master.id','=','location.customer_id')
+					->where('location.status',1)->where('location.department_id',env('DEPARTMENT_ID'))
+					->select('account_master.master_name','location.*')
+					->get();
+	}
+	
+	public function find($id)
+	{
+		return $this->location->where('id', $id)->first();
+	}
+	
+	public function create($attributes)
+	{
+		if($this->isValid($attributes)) { 
+			
+			$this->location->code = $attributes['code'];
+			$this->location->name = $attributes['name'];
+			$this->location->department_id = env('DEPARTMENT_ID');
+			$this->location->is_default = $attributes['default'];
+			$this->location->is_conloc = $attributes['is_conloc'];
+			$this->location->customer_id = $attributes['customer_id'];
+			$this->location->status = 1;
+			$this->location->fill($attributes)->save();
+			
+			//...............ITEM LOCATION........
+			$items = DB::table('item_unit')->where('status',1)->where('is_baseqty',1)->where('deleted_at','0000-00-00 00:00:00')->select('itemmaster_id','unit_id')->get();
+			if($items){
+				foreach($items as $row) {
+					
+					$itemLocation = new ItemLocation();
+					$itemLocation->location_id = $this->location->id;
+					$itemLocation->item_id = $row->itemmaster_id;
+					$itemLocation->unit_id = $row->unit_id;
+					$itemLocation->quantity = 0;
+					$itemLocation->status = 1;
+					$itemLocation->opn_qty = 0;
+					$itemLocation->save();
+				}
+			}
+			
+			return true;
+		}
+		
+		//throw new ValidationException('location validation error!', $this->getErrors());
+	}
+	
+	public function update($id, $attributes)
+	{	
+		if($attributes['default']==1)
+			DB::table('location')->where('is_default',1)->update(['is_default' => 0]);
+		
+		$this->location = $this->find($id);
+		$this->location->is_default = $attributes['default'];
+		$this->location->is_conloc = $attributes['is_conloc'];
+		$this->location->customer_id = $attributes['customer_id'];
+		$this->location->fill($attributes)->save();
+		return true;
+	}
+	
+	
+	public function delete($id)
+	{
+		$this->location = $this->location->find($id);
+		$this->location->delete();
+	}
+	
+	public function locationList()
+	{
+		if(Auth::user()->location_id > 0)
+			return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id',env('DEPARTMENT_ID'))->get();
+		else
+			return $this->location->where('status',1)->where('is_conloc',0)->where('department_id',env('DEPARTMENT_ID'))->get();
+	}
+	public function locationFrom()
+	{
+return $this->location->where('status',1)->where('department_id','!=',env('DEPARTMENT_ID'))->get();
+
+	}
+	public function locationTo()
+	{
+     return $this->location->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->get();
+
+	}
+	public function activeLocationList()
+	{
+		return $this->location->select('id','name')->where('status', 1)->orderBy('name', 'ASC')->get()->toArray();
+	}
+	
+	public function check_location_code($code, $id = null) {
+		
+		if($id)
+			return $this->location->where('code',$code)->where('id', '!=', $id)->count();
+		else
+			return $this->location->where('code',$code)->count();
+	}
+		
+	public function check_location_name($name, $id = null) {
+		
+		if($id)
+			return $this->location->where('name',$name)->where('id', '!=', $id)->count();
+		else
+			return $this->location->where('name',$name)->count();
+	}
+	
+	public function locationListAll()
+	{
+		return $this->location->where('status',1)->get();
+	}
+	
+}

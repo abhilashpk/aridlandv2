@@ -115,7 +115,7 @@ class SalesInvoiceController extends Controller
 		$invoices = [];
 		$salesmans = $this->salesman->getSalesmanList();
 		
-		$customer = $this->accountmaster->getCustomerList();
+		$customer = $this->accountmaster->getCustomerList();//echo '<pre>';print_r($customer);exit;
 		$jobs = $this->jobmaster->activeJobmasterList();
 	
         $item = DB::table('itemmaster')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
@@ -585,7 +585,7 @@ class SalesInvoiceController extends Controller
 			$deptid = '';
 		}
          $is_dept = true;
-		 $deptid =env('DEPARTMENT_ID');
+		 $deptid = Auth::user()->department_id;
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -683,9 +683,9 @@ class SalesInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount;
 			$is_dept = true;
-		    $deptid =env('DEPARTMENT_ID');
+		    $deptid = Auth::user()->department_id;
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
-			//echo '<pre>';print_r($docItems);exit;
+		
 			return view('body.salesinvoice.addpi') //addpi  addpisp
 						->withItems($itemmaster)
 						->withTerms($terms)
@@ -867,7 +867,7 @@ class SalesInvoiceController extends Controller
 			$deptid = '';
 		}
          $is_dept = true;
-		 $deptid =env('DEPARTMENT_ID');
+		 $deptid =Auth::user()->department_id;
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -965,7 +965,7 @@ class SalesInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount;
 			$is_dept = true;
-		    $deptid =env('DEPARTMENT_ID');
+		    $deptid =Auth::user()->department_id;
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
 			//echo '<pre>';print_r($docItems);exit;
 			return view('body.salesinvoice.addcpi') //addpi  addpisp

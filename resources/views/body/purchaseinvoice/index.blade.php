@@ -78,26 +78,15 @@
 							</select>
 							@endif
 							
-                        {{-- <div class="pull-right">
-							@permission('pi-create')
+                        <div class="pull-right">
+							@can('pi-create')
                              <a href="{{ url('purchase_invoice/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
-                        </div> --}}
-						<div class="pull-right">
-							@can('pi-create')
-								<a href="{{ url('purchase_invoice/add') }}" class="btn btn-primary btn-sm">
-									<span class="btn-label">
-										<i class="glyphicon glyphicon-plus"></i>
-									</span>
-									Add New
-								</a>
 							@endcan
-						</div>
-
+                        </div>
                     </div>
                     <div class="panel-body">
 						 
@@ -276,10 +265,10 @@ $(function() {
 			{ "data": "job" },
 			{ "data": "supplier" },
 			{ "data": "net_total" },
-			@permission('pi-edit'){ "data": "edit","bSortable": false },@endpermission
-			@permission('pi-view'){ "data": "viewonly","bSortable": false },@endpermission
-			@permission('pi-print'){ "data": "print","bSortable": false },@endpermission
-			@permission('pi-delete'){ "data": "delete","bSortable": false }@endpermission
+			@can('pi-edit'){ "data": "edit","bSortable": false },@endcan
+			@can('pi-view'){ "data": "viewonly","bSortable": false },@endcan
+			@can('pi-print'){ "data": "print","bSortable": false },@endcan
+			@can('pi-delete'){ "data": "delete","bSortable": false }@endcan
 		]	
 		  
 		});

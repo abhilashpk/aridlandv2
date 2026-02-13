@@ -1,7 +1,5 @@
 <?php 
-declare(strict_types=1);
 namespace App\Repositories\PurchaseEnquiry;
-
 
 use App\Models\PurchaseEnquiry;
 use App\Models\PurchaseEnquiryItem;

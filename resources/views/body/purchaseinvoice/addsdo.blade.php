@@ -37,7 +37,7 @@
         <section class="content-header">
             <!--section starts-->
             <h1>
-                Purchase Invoice1
+                Purchase Invoice
             </h1>
             <ol class="breadcrumb">
                 <li>
@@ -346,7 +346,7 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -462,7 +462,7 @@
 									</div>
 								<?php $i++; } } else { ?>
 								@foreach($docitems as $poitem)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								
 									<div class="itemdivChld">
 										<?php 
@@ -1314,10 +1314,10 @@ $('.dimnInfodivPrntItm').toggle();
 			//voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},
 			reference_no: {
                 validators: {
-                   /*  notEmpty: {
+                     notEmpty: {
                         message: 'The reference no id is required and cannot be empty!'
-                    }, */
-					/*remote: {
+                    }, 
+					remote: {
                         url: urlcode,
                         data: function(validator) {
                             return {
@@ -1325,7 +1325,7 @@ $('.dimnInfodivPrntItm').toggle();
                             };
                         },
                         message: 'The reference no is not available'
-                    }*/
+                    }
                 }
             },
 			//voucher_date: { validators: { notEmpty: { message: 'The voucher date is required and cannot be empty!' } }},

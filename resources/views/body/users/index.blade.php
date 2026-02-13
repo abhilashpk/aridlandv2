@@ -66,18 +66,17 @@
                                     <thead>
                                     <tr>
                                         <th>Name</th>
-										<th>Email</th>
+										<th>Department</th>
 										<th>Role</th>
-										<th></th>
-										<th></th>
+										<th>Edit</th>
+										<th>Delete</th>
                                     </tr>
                                     </thead>
                                     <tbody>
 									@foreach($users as $user)
-									<?php if(Auth::User()->id != $user->id) { ?>
                                     <tr>
                                         <td>{{ $user->name }}</td>
-										<td>{{ $user->email }}</td>
+										<td>{{ optional($user->department)->name }}</td>
 										<td>
 											@if(!empty($user->roles))
 												@foreach($user->roles as $v)
@@ -98,7 +97,6 @@
 											</p>
 										</td>
                                     </tr>
-									<?php } ?>
 									@endforeach
                                     </tbody>
                                 </table>

@@ -9,6 +9,7 @@ use App\Http\Requests;
 use Session;
 use Redirect;
 use App;
+use Illuminate\Support\Facades\Auth;
 
 class VoucherNumbersController extends Controller
 {
@@ -24,7 +25,8 @@ class VoucherNumbersController extends Controller
 	
 	public function index() { 
 		$data = array();
-		$vouchers = $this->voucherno->getVoucherNoSetting();
+		$departmentId = Auth::user() ? Auth::user()->department_id : null;
+		$vouchers = $this->voucherno->getVoucherNoSetting($departmentId);
 		return view('body.vouchernumbers.index')
 					->withVouchers($vouchers)
 					->withData($data);
@@ -32,9 +34,9 @@ class VoucherNumbersController extends Controller
 	
 	public function update(Request $request)
 	{ 
-		$this->voucherno->update($id=null,$request->all());
+		$departmentId = Auth::user() ? Auth::user()->department_id : null;
+		$this->voucherno->update($id=null,$request->all(),$departmentId);
 		Session::flash('message', 'Voucher No. updated successfully');
 		return redirect('voucher_numbers');
 	}
 }
-

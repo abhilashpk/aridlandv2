@@ -43,6 +43,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 		$this->pettycash->supplier_name = isset($attributes['supplier_name'])?$attributes['supplier_name']:'';
 		$this->pettycash->trn_no = isset($attributes['trn_no'])?$attributes['trn_no']:'';
 		$this->pettycash->group_id = $attributes['group_id'][0];
+		$this->pettycash->department_id = env('DEPARTMENT_ID');
 		
 		return true;
 	}
@@ -133,7 +134,8 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 							'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 							'reference_from'	=> $attributes['reference'][$key],
 							'department_id'    => isset($attributes['department'][$key])?$attributes['department'][$key]:'',
-							'version_no'		=> $attributes['version_no']
+							'version_no'		=> $attributes['version_no'],
+							'department_id'    => env('DEPARTMENT_ID')//isset($attributes['department'][$key])?$attributes['department'][$key]:''
 							]);
 		
 		return true;
@@ -184,14 +186,14 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 				// 2️⃣ Get the highest numeric part from voucher_master
 				$maxNumeric = DB::table('petty_cash')
 					->where('deleted_at', '0000-00-00 00:0:00')
-					//->where('department_id', $departmentId)
+					->where('department_id', env('DEPARTMENT_ID'))
 					->where('status', 1)
 					->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
 					->value('max_no');
 				
-				$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-				$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+				$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+				$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				//exit;
 				$maxRetries = 5; // prevent infinite loop
@@ -217,14 +219,14 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 
 							$maxNumeric = DB::table('petty_cash')
 								->where('deleted_at', '0000-00-00 00:0:00')
-								//->where('department_id', $departmentId)
+								->where('department_id', env('DEPARTMENT_ID'))
 								->where('status', 1)
 								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
 								->value('max_no');
 							
-							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-							$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no']);
+							$dept =env('DEPARTMENT_ID'); //isset($attributes['department_id'])?$attributes['department_id']:0;
+							$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->first();
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -400,6 +402,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 				$this->pettycash->debit = $dr_amount;
 				$this->pettycash->credit = $cr_amount;
 				$this->pettycash->difference = $difference;
+				$this->pettycash->department_id = env('DEPARTMENT_ID');
 				$this->pettycash->modify_at = date('Y-m-d H:i:s');
 				$this->pettycash->modify_by = 1;
 				$this->pettycash->fill($attributes)->save();
@@ -425,7 +428,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 			$rows = DB::table('petty_cash_entry')->where('petty_cash_id', $id)->select('id','account_id','entry_type','amount')->get();
 			foreach($rows as $row) {
 				//Transaction update....
-				DB::table('account_transaction')->where('voucher_type', 'PC')->where('voucher_type_id', $row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
+				DB::table('account_transaction')->where('voucher_type', 'PC')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id', $row->id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s') ]);
 			
 				$this->objUtility->tallyClosingBalance($row->account_id);
 				/* if($row->entry_type=='Dr')
@@ -467,7 +470,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 	
 		public function pettycashListCount()
 	{
-		$result = $this->pettycash->where('petty_cash.status', 1)
+		$result = $this->pettycash->where('petty_cash.status', 1)->where('petty_cash.department_id',env('DEPARTMENT_ID'))
 							 /*->join('petty_cash_entry AS PE', function($join) {
 								 $join->on('PE.petty_cash_id', '=', 'petty_cash.id');
 							 })
@@ -484,7 +487,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 	
 		public function pettycashList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->pettycash->where('petty_cash.status', 1)
+		$query = $this->pettycash->where('petty_cash.status', 1)->where('petty_cash.department_id',env('DEPARTMENT_ID'))
 							 ->join('petty_cash_entry AS PE', function($join) {
 								 $join->on('PE.petty_cash_id', '=', 'petty_cash.id');
 							 });

@@ -202,15 +202,15 @@ class SuppliersDOController extends Controller
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withBcurrency(($bcurrency!='')?$bcurrency->code:'')
 					->withFcurrency($fcurrency)
-					->withInterid($defaultInter ? $defaultInter->id : null)
-                    ->withIntercode($defaultInter ? $defaultInter->code : null)
-					->withIntername($defaultInter ? $defaultInter->name : null)
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
 	public function save(Request $request, $id = null) {
 		
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
@@ -226,10 +226,7 @@ class SuppliersDOController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('suppliers_do/add')->withInput()->withErrors();
-		}
+		);
 		
 		if( $this->supplierdo->create($request->all()) ) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
@@ -767,7 +764,7 @@ class SuppliersDOController extends Controller
 		
 	public function update(Request $request, $id)
 	{
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
@@ -783,10 +780,7 @@ class SuppliersDOController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('suppliers_do/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		//echo '<pre>';print_r($sup_udate);exit;
 		if($this->supplierdo->update($id, $request->all())) {

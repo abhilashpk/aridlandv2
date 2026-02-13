@@ -71,5 +71,10 @@ protected $middlewareAliases = [
     'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
 ];
 
+protected $routeMiddleware = [
+    // ...
+    'salesman.session' => \App\Http\Middleware\SetSalesmanSession::class,
+];
+
 }
 

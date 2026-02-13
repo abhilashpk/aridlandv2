@@ -252,11 +252,11 @@
 									<div class="col-xs-10">
 										<div class="col-xs-1">
 										@if($quoterow->is_fc==1)
-										{{--*/ $chk = "checked";
-										/*--}}
+										@php $chk = "checked";
+										@endphp
 										@else
-										{{--*/ $chk = "";
-										/*--}}
+										@php $chk = "";
+										@endphp
 										@endif
 											<label class="radio-inline iradio">
 											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}>
@@ -267,9 +267,9 @@
 												<option value="">Select Foreign Currency...</option>
 												@foreach($currency as $curr)
 												@if($quoterow->currency_id==$curr['id'])
-												{{--*/ $sel = "selected" /*--}}
+												@php $sel = "selected" @endphp
 												@else
-												{{--*/ $sel = "" /*--}}	
+												@php $sel = "" @endphp	
 												@endif
 												<option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option>
 												@endforeach
@@ -334,7 +334,7 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0;/*--}}
+								@php $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0;@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -476,7 +476,7 @@
 									</div>
 								<?php $i++; } } else { $vat_amount = $subtotal = 0;?>
 								@foreach($quoteitems as $item)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 									
 									<div class="itemdivChld">
 										<?php

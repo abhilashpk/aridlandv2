@@ -49,7 +49,7 @@
                           
                         </div>
                         <div class="panel-body">
-                            <form class="form-horizontal" role="form" method="POST" name="frmCompany" enctype="multipart/form-data" id="frmCompany" action="{{ url('company/update/'.$company->id) }}">
+                            <form class="form-horizontal" role="form" method="POST" name="frmCompany" enctype="multipart/form-data" id="frmCompany" action="{{ $isNew ? url('company/store') : url('company/update/'.$company->id) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="id" value="{{ $company->id }}">
 								<div class="form-group">

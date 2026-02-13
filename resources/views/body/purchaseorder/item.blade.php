@@ -78,7 +78,7 @@
 <!-- end of page level js -->
 <script>
 function selectItem(e) { 
-	
+	  event.preventDefault();
 	 if (window.opener != null && !window.opener.closed) { 
 	 
 		var no = window.opener.document.getElementById("num").value;

@@ -65,27 +65,15 @@
                         <h3 class="panel-title pull-left m-t-6">
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Return
                         </h3>
-                        {{-- <div class="pull-right">
-							@permission('pr-create')
+                        <div class="pull-right">
+							@can('pr-create')
                              <a href="{{ url('purchase_return/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
-                        </div> --}}
-
-						<div class="pull-right">
-							@can('pr-create')
-								<a href="{{ url('purchase_return/add') }}" class="btn btn-primary btn-sm">
-									<span class="btn-label">
-										<i class="glyphicon glyphicon-plus"></i>
-									</span>
-									Add New
-								</a>
 							@endcan
-						</div>
-
+                        </div>
                     </div>
                     <div class="panel-body">
 						 <div class="row">
@@ -253,10 +241,10 @@ $(function() {
 		{ "data": "invoice_no" },
 		{ "data": "supplier" },
 		{ "data": "net_amount" },
-		@permission('sr-edit'){ "data": "edit","bSortable": false },@endpermission
-		@permission('sr-edit'){ "data": "viewonly","bSortable": false },@endpermission
-		@permission('sr-print'){ "data": "print","bSortable": false },@endpermission
-		@permission('sr-delete'){ "data": "delete","bSortable": false },@endpermission
+		@can('sr-edit'){ "data": "edit","bSortable": false },@endcan
+		@can('sr-edit'){ "data": "viewonly","bSortable": false },@endcan
+		@can('sr-print'){ "data": "print","bSortable": false },@endcan
+		@can('sr-delete'){ "data": "delete","bSortable": false },@endcan
 	]	
 	  
 	});

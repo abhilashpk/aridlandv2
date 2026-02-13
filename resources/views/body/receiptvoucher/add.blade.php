@@ -145,8 +145,8 @@
                                     <label for="input-text" class="col-sm-2 control-label">RV. No.</label>
                                     <input type="hidden" name="curno" id="curno" value="{{$vchrdata['voucher_no']}}">
 
-                                    {{--<input type="hidden" value="{{$voucher->prefix}}" name="prefix">
-                                    <input type="hidden" value="{{$voucher->is_prefix}}" name="is_prefix">--}}
+                                    <input type="hidden" value="{{$voucher->prefix}}" name="prefix">
+                                    <input type="hidden" value="{{$voucher->is_prefix}}" name="is_prefix">
                                     <input type="hidden" value="{{$vchrdata['vno']}}" name="vno">
                                     
 
@@ -476,7 +476,7 @@
         highlight: function(el){ $(el).addClass('is-invalid').removeClass('is-valid'); },
         unhighlight: function(el){ $(el).removeClass('is-invalid').addClass('is-valid'); },
 
-        // 👇 NEW: when *any* field is invalid (e.g., Debit≠Credit),
+        // ðŸ‘‡ NEW: when *any* field is invalid (e.g., Debitâ‰ Credit),
         // also validate every row so all row errors show together.
         invalidHandler: function(event, v){
             validateAllRows();                 // <-- your existing function
@@ -500,7 +500,7 @@ submitHandler: function(form) {
     return false;
 }
 
-    // 🔹 Check debit and credit equality before submit
+    // ðŸ”¹ Check debit and credit equality before submit
     var debit  = parseFloat($("#debit").val())  || 0;
     var credit = parseFloat($("#credit").val()) || 0;
 
@@ -510,7 +510,7 @@ submitHandler: function(form) {
         return false;
     }
 
-    // ✅ All good → submit form
+    // âœ… All good â†’ submit form
     form.submit();
 }
 
@@ -694,7 +694,7 @@ $(document).on('click', '.btn-add-item', function(e){
         $('#chkdate_'+rowNum).datepicker({ autoClose:true ,dateFormat: 'dd-mm-yyyy' });
     }
 
-    // ✅ just basic validation + refresh
+    // âœ… just basic validation + refresh
     addRulesForRow(rowNum);
     getNetTotal();
     refreshRowButtons();
@@ -938,7 +938,7 @@ $(document).on('click', '.btn-add-item', function(e){
             window.validator.element('#chkno_'+n);
         });
 
-        // 🔹 Recheck duplicates whenever these fields change
+        // ðŸ”¹ Recheck duplicates whenever these fields change
         $(document).on('keyup blur change',
             'input[name="cheque_no[]"], select[name="bank_id[]"], input[name="party_name[]"]',
             function() {
@@ -982,7 +982,7 @@ $(document).on('click', '.btn-add-item', function(e){
             }
         });
     }
-    // 🔹 Real-time duplicate cheque number check
+    // ðŸ”¹ Real-time duplicate cheque number check
 function checkDuplicateChequeNo() {
     var duplicates = [];
     var seen = {};

@@ -74,7 +74,7 @@ class AcgroupController extends Controller
 	public function update($id, Request $request)
 	{
 		$this->acgroup->update($id, $request->all());//print_r(Input::all());exit;
-		//Session::flash('message', 'Acgroup updated successfully');
+		Session::flash('message', 'Acgroup updated successfully.');
 		return redirect('acgroup');
 	}
 	
@@ -120,4 +120,3 @@ class AcgroupController extends Controller
 						));
 	}
 }
-

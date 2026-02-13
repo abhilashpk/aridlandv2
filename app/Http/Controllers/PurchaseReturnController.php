@@ -218,13 +218,13 @@ class PurchaseReturnController extends Controller
 		$itemmaster = $this->itemmaster->activeItemmasterList();
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
-		$dept=env('DEPARTMENT_ID');
+		$dept=Auth::user()->department_id;
 		$vouchers = $this->accountsetting->getAccountSettingsPR($vid=2,$dept);//echo '<pre>';print_r($vouchers);exit;
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', Auth::user()->department_id)
                          ->where('is_default', 1) ->first();
-		$lastid = DB::table('purchase_return')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('purchase_return')->where('status',1)->where('department_id',Auth::user()->department_id)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 		$footertxt = DB::table('header_footer')->where('doc','PR')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -343,12 +343,9 @@ class PurchaseReturnController extends Controller
 					->withDeptid($deptid)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withIsmpqty($this->mod_mpqty->is_active)
-					// ->withInterid($defaultInter->id)
-                    //  ->withIntercode($defaultInter->code)
-					// ->withIntername($defaultInter->name)
-					->withInterid($defaultInter ? $defaultInter->id : null)
-                    ->withIntercode($defaultInter ? $defaultInter->code : null)
-					->withIntername($defaultInter ? $defaultInter->name : null)
+					->withInterid($defaultInter->id)
+                     ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
@@ -374,7 +371,7 @@ class PurchaseReturnController extends Controller
 	public function save(Request $request) {
 		
 		//echo '<pre>';print_r($request->all());exit;
-		if( $this->validate(
+	 $this->validate(
 			$request, 
 			['purchase_invoice_id' => 'required',
 			 'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
@@ -394,11 +391,7 @@ class PurchaseReturnController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('purchase_return/add')->withInput()->withErrors();
-		}
-		
+		);
 		
 		if($this->purchase_return->create($request->all())) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
@@ -535,7 +528,7 @@ class PurchaseReturnController extends Controller
 	public function update(Request $request)
 	{
 		$id = $request->input('purchase_return_id');
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			['purchase_invoice_id' => 'required',
 			 'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
@@ -553,10 +546,7 @@ class PurchaseReturnController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('purchase_return/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		if( $this->purchase_return->update($id, $request->all()) ) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT

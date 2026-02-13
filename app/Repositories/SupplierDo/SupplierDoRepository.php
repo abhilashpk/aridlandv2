@@ -11,6 +11,9 @@ use App\Repositories\AbstractValidator;
 use App\Exceptions\Validation\ValidationException;
 use App\Models\SupplierDoOtherCost; 
 use App\Repositories\UpdateUtility;
+
+use Illuminate\Support\Facades\Cache;
+
 use Config;
 use DB;
 use Session;
@@ -30,6 +33,16 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 		$this->supplier_do = $supplier_do;
 		$this->objUtility = new UpdateUtility();
 		$this->mod_sdo_qty = DB::table('parameter2')->where('keyname', 'mod_sdo_qty_update')->where('status',1)->select('is_active')->first();
+	    /*$this->mod_sdo_qty = Cache::remember(
+                                'mod_sdo_qty_update',
+                                3600, // 1 hour
+                                function () {
+                                    return DB::table('parameter2')
+                                        ->where('keyname', 'mod_sdo_qty_update')
+                                        ->where('status', 1)
+                                        ->value('is_active');
+                                }
+                            );*/
 	}
 	
 	public function all()
@@ -1852,9 +1865,9 @@ public function getReportExcel($attributes)
 	public function check_reference_no($refno, $id = null) { 
 		
 		if($id)
-			return $this->supplier_do->where('reference_no',$refno)->where('id', '!=', $id)->count();
+			return $this->supplier_do->where('reference_no',$refno)->where('department_id',env('DEPARTMENT_ID'))->where('id', '!=', $id)->count();
 		else
-			return $this->supplier_do->where('reference_no',$refno)->count();
+			return $this->supplier_do->where('reference_no',$refno)->where('department_id',env('DEPARTMENT_ID'))->count();
 	}
 		
 	public function getSDOitems($id)
@@ -2126,6 +2139,8 @@ public function getReportExcel($attributes)
 	
 	private function updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, $other_cost)
 	{	
+		if(isset($attributes['purchase_invoice_id'])) {
+		
 		$pid = $attributes['purchase_invoice_id'];
 		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
 										->where('status', 1)
@@ -2158,6 +2173,7 @@ public function getReportExcel($attributes)
 						]); */
 							
 		return $cost_avg;
+		}
 	}
 	
 	private function updateItemQuantityonEdit($attributes, $key)

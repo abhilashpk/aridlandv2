@@ -61,7 +61,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 	}
 	
 	public function create($attributes)
-	{
+	{ 
 		if($this->isValid($attributes)) {
 			
 		  DB::beginTransaction();
@@ -90,7 +90,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 					$this->location_transfer->status = 1;
 					$this->location_transfer->created_at = date('Y-m-d H:i:s');
 					$this->location_transfer->created_by = 1;
-					$this->location_transfer->fill($attributes)->save();
+					$this->location_transfer->save();
 				
 							$saved = true;
 						}
@@ -153,8 +153,8 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 				
 		  } catch(\Exception $e) {
 				
-				DB::rollback();
-				return false;
+				DB::rollback();echo $e->getLine().'-'.$e->getMessage();exit;
+				//return false;
 		  }
 		  
 		}
@@ -186,7 +186,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
         }
 
         // Prevent negative stock
-        if ($row->quantity < $quantity) {
+        if ($row->quantity < $quantity) { //echo 'q1: '.$row->quantity.' < '.$quantity.'<br>';
             throw new \Exception("Insufficient stock at location.");
         }
 

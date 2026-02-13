@@ -288,11 +288,11 @@
 									</thead>
 								</table>
 								<div class="itemdivPrnt">
-									{{--*/ $i = 0; $num = count($orditems); /*--}}
+									@php $i = 0; $num = count($orditems); @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								@foreach($orditems as $item)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								<?php 
 								$vat_amount_net=0;
 								if($orderrow->is_fc==1) {

@@ -1,154 +1,79 @@
 <?php
+
 namespace App\Http\Controllers;
 
-
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Models\Role;
-use App\Permission;
-use DB;
-
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index(Request $request)
     {
-        $roles = Role::orderBy('id','DESC')->paginate(50); //echo '<pre>';print_r($roles);exit;
-        return view('body.roles.index',compact('roles'))
-            ->with('i', ($request->input('page', 1) - 1) * 5);
+        $roles = Role::orderBy('id', 'ASC')->get();
+        $i = 0;
+        return view('body.roles.index', compact('roles', 'i'));
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
-        $permission = Permission::get();
-        return view('roles.create',compact('permission'));
+        return view('body.roles.create');
     }
 
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         $this->validate($request, [
             'name' => 'required|unique:roles,name',
-            'display_name' => 'required',
-            'description' => 'required',
-            'permission' => 'required',
+            'display_name' => 'required'
         ]);
 
+        Role::create([
+            'name' => $request->input('name'),
+            'guard_name' => 'web',
+            'display_name' => $request->input('display_name'),
+            'description' => $request->input('description')
+        ]);
 
-        $role = new Role();
-        $role->name = $request->input('name');
-        $role->display_name = $request->input('display_name');
-        $role->description = $request->input('description');
-        $role->save();
-
-
-        foreach ($request->input('permission') as $key => $value) {
-            $role->attachPermission($value);
-        }
-
-
-        return redirect()->route('roles.index')
-                        ->with('success','Role created successfully');
+        Session::flash('message', 'Role created successfully.');
+        return redirect('roles');
     }
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function show($id)
     {
-        $role = Role::find($id);
-        $rolePermissions = Permission::join("permission_role","permission_role.permission_id","=","permissions.id")
-            ->where("permission_role.role_id",$id)
-            ->get();
-
-
-        return view('roles.show',compact('role','rolePermissions'));
+        return redirect('roles');
     }
 
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
-        $role = Role::find($id);
-        $permission = Permission::get();
-        $rolePermissions = DB::table("permission_role")->where("permission_role.role_id",$id)
-            ->lists('permission_role.permission_id','permission_role.permission_id');
-
- 
-
-
-        return view('roles.edit',compact('role','permission','rolePermissions'));
+        return redirect('roles');
     }
 
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, $id)
     {
-        $this->validate($request, [
-            'display_name' => 'required',
-            'description' => 'required',
-            'permission' => 'required',
-        ]);
-
-
-        $role = Role::find($id);
-        $role->display_name = $request->input('display_name');
-        $role->description = $request->input('description');
-        $role->save();
-
-
-        DB::table("permission_role")->where("permission_role.role_id",$id)
-            ->delete();
-
-
-        foreach ($request->input('permission') as $key => $value) {
-            $role->attachPermission($value);
-        }
-
-
-        return redirect()->route('roles.index')
-                        ->with('success','Role updated successfully');
+        Session::flash('message', 'Role update is not enabled.');
+        return redirect('roles');
     }
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy($id)
     {
-        DB::table("roles")->where('id',$id)->delete();
-        return redirect()->route('roles.index')
-                        ->with('success','Role deleted successfully');
+        $role = Role::find($id);
+        if (!$role) {
+            Session::flash('error', 'Role not found.');
+            return redirect('roles');
+        }
+
+        $assignedUsers = DB::table('model_has_roles')
+            ->where('role_id', $id)
+            ->count();
+
+        if ($assignedUsers > 0) {
+            Session::flash('error', 'Role cannot be deleted because users are assigned to it.');
+            return redirect('roles');
+        }
+
+        $role->delete();
+        Session::flash('message', 'Role deleted successfully.');
+        return redirect('roles');
     }
 }

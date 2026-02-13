@@ -84,7 +84,7 @@ class AccountMasterController extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$department = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$department = DB::table('department')->where('id',$deptid)->where('status',1)->wherenull('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
 			else {
 				$department = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
 				$deptid = '';

@@ -1,11 +1,11 @@
-{{-- <br/>
+<br/>
 <div class="col-xs-4">
 	<table class="table table-bordered table-hover">
 		<thead>
 		<tr>
 			<th>Location</th>
 			<th>Quantity</th>
-			<th>Bin</th>
+			{{--<th>Bin</th>--}}
 		</tr>
 		</thead>
 		<tbody>
@@ -13,18 +13,20 @@
 		@foreach($info as $row)
 		<tr>
 			<td>{{ $row->name }}<input type="hidden" name="locid[]" value="{{$row->id}}"></td>
-			<td><input type="number" name="locqty[]" class="locqty"></td>
-			<td><input type="text" name="bin[]" class="bin" id="bin_{{$i}}" autocomplete="off" data-toggle="modal" data-target="#bin_modal">
+			<td><input type="number" name="locqty[]" class="locqty"></td><input type="hidden" name="bin[]" class="bin" id="bin_{{$i}}" autocomplete="off" data-toggle="modal" data-target="#bin_modal">
 			<input type="hidden" name="binid[]" id="binid_{{$i}}">
-			</td>
+			{{--<td>
+			</td>--}}
 		</tr>
 		@php $i++; @endphp
 		@endforeach
 		</tbody>
 	</table>
-</div> --}}
+</div>
+<<<<<<< HEAD
+=======
 
-<br/>
+{{-- <br/>
 <div class="col-xs-6">
     <table class="table table-bordered table-hover">
         <thead>
@@ -66,7 +68,9 @@
         @endif
         </tbody>
     </table>
-</div>
+</div> --}}
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
+
 
 
 <script>

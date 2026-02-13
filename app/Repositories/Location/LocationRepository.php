@@ -33,8 +33,18 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 
 	public function allLoc()
 	{
+		$departmentId = (Auth::check()) ? Auth::user()->department_id : null;
+		if ($departmentId === null || $departmentId === '') {
+			return collect();
+		}
+
 		return $this->location->leftJoin('account_master','account_master.id','=','location.customer_id')
+<<<<<<< HEAD
+					->where('location.status',1)->where('location.department_id',env('DEPARTMENT_ID'))
+=======
 					->where('location.status',1)
+					->where('location.department_id', $departmentId)
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
 					->select('account_master.master_name','location.*')
 					->get();
 	}
@@ -78,58 +88,210 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	// 	//throw new ValidationException('location validation error!', $this->getErrors());
 	// }
 
+	// public function create($attributes)
+	// {
+	// 	if($this->isValid($attributes)) { 
+			
+	// 		$this->location->code = $attributes['code'];
+	// 		$this->location->name = $attributes['name'];
+	// 		$this->location->department_id = env('DEPARTMENT_ID');
+	// 		$this->location->is_default = $attributes['default'];
+	// 		$this->location->is_conloc = $attributes['is_conloc'];
+	// 		$this->location->customer_id = $attributes['customer_id'];
+	// 		$this->location->status = 1;
+	// 		$this->location->fill($attributes)->save();
+			
+	// 		//...............ITEM LOCATION........
+	// 		$items = DB::table('item_unit')->where('status',1)->where('is_baseqty',1)->where('deleted_at','0000-00-00 00:00:00')->select('itemmaster_id','unit_id')->get();
+	// 		if($items){
+	// 			foreach($items as $row) {
+					
+	// 				$itemLocation = new ItemLocation();
+	// 				$itemLocation->location_id = $this->location->id;
+	// 				$itemLocation->item_id = $row->itemmaster_id;
+	// 				$itemLocation->unit_id = $row->unit_id;
+	// 				$itemLocation->quantity = 0;
+	// 				$itemLocation->status = 1;
+	// 				$itemLocation->opn_qty = 0;
+	// 				$itemLocation->save();
+	// 			}
+	// 		}
+			
+	// 		return true;
+	// 	}
+
+	// 	$this->location->status = 1;
+	// 	$this->location->save();
+
+	// 	// ITEM LOCATION CREATION
+	// 	$items = DB::table('item_unit')
+	// 		->where('status',1)
+	// 		->where('is_baseqty',1)
+	// 		->whereNull('deleted_at')
+	// 		->select('itemmaster_id','unit_id')
+	// 		->get();
+
+	// 	foreach ($items as $row) {
+	// 		ItemLocation::firstOrCreate([
+	// 			'location_id' => $this->location->id,
+	// 			'item_id'     => $row->itemmaster_id,
+	// 			'unit_id'     => $row->unit_id,
+	// 			'quantity'    => 0,
+	// 			'opn_qty'     => 0,
+	// 			'status'      => 1
+	// 		]);
+	// 	}
+
+	// 	return true;
+	// }
+
+
 	public function create($attributes)
 	{
-		$this->location->code = $attributes['code'];
-		$this->location->name = $attributes['name'];
-		$this->location->is_default = $attributes['default'] ?? 0;
-		$this->location->is_conloc = $attributes['is_conloc'];
-
-		// IMPORTANT CONDITION
-		if ($attributes['is_conloc'] == 1) {
-			$this->location->customer_id = $attributes['customer_id'];
-		} else {
-			$this->location->customer_id = null;
+		$departmentId = (Auth::check()) ? Auth::user()->department_id : null;
+		if ($departmentId === null || $departmentId === '') {
+			throw new \Exception('Department is required to create a location.');
 		}
-
-		$this->location->status = 1;
-		$this->location->save();
-
-		// ITEM LOCATION CREATION
-		$items = DB::table('item_unit')
-			->where('status',1)
-			->where('is_baseqty',1)
-			->whereNull('deleted_at')
-			->select('itemmaster_id','unit_id')
-			->get();
-
-		foreach ($items as $row) {
-			ItemLocation::firstOrCreate([
-				'location_id' => $this->location->id,
-				'item_id'     => $row->itemmaster_id,
-				'unit_id'     => $row->unit_id,
-				'quantity'    => 0,
-				'opn_qty'     => 0,
-				'status'      => 1
+		DB::beginTransaction();
+		try {
+			// Validation happens in controller now
+			
+			// Set default customer_id if not consignment location
+			$customer_id = ($attributes['is_conloc'] == 1) 
+				? $attributes['customer_id'] 
+				: 0;
+			
+			// Create location
+			$this->location->fill([
+				'code' => $attributes['code'],
+				'name' => $attributes['name'],
+				'department_id' => $departmentId,
+				'is_default' => $attributes['default'] ?? 0,
+				'is_conloc' => $attributes['is_conloc'],
+				'customer_id' => $customer_id,
+				'status' => 1,
+				'is_minus_qty' => 0
 			]);
+			
+			$this->location->save();
+			
+			// If this is set as default, unset other defaults in this department
+			if ($this->location->is_default == 1) {
+				DB::table('location')
+					->where('id', '!=', $this->location->id)
+					->where('department_id', $this->location->department_id)
+					->update(['is_default' => 0]);
+			}
+			
+			// Create item locations for all existing items
+			$this->createItemLocationsForAllItems($this->location->id);
+			
+			DB::commit();
+			return true;
+			
+		} catch(\Exception $e) {
+			DB::rollback();
+			Log::error('Location creation failed: ' . $e->getMessage());
+			throw $e;
 		}
+	}
 
-		return true;
+	/**
+	 * Create item locations for all existing items
+	 */
+	private function createItemLocationsForAllItems($location_id)
+	{
+		$departmentId = (Auth::check()) ? Auth::user()->department_id : null;
+		if ($departmentId === null || $departmentId === '') {
+			return;
+		}
+		
+		$items = DB::table('item_unit')
+			->where('status', 1)
+			->where('is_baseqty', 1)
+			->whereNull('deleted_at')
+			->select('itemmaster_id', 'unit_id')
+			->get();
+		
+		foreach ($items as $row) {
+			// Check if already exists (safety check)
+			$exists = DB::table('item_location')
+				->where('location_id', $location_id)
+				->where('item_id', $row->itemmaster_id)
+				->where('department_id', $departmentId)
+				->exists();
+			
+			if (!$exists) {
+				DB::table('item_location')->insert([
+					'location_id' => $location_id,
+					'item_id' => $row->itemmaster_id,
+					'unit_id' => $row->unit_id,
+					'department_id' => $departmentId,
+					'quantity' => 0,
+					'opn_qty' => 0,
+					'status' => 1,
+					'bin_id' => 0
+				]);
+			}
+		}
 	}
 
 	
+	// public function update($id, $attributes)
+	// {	
+	// 	if($attributes['default']==1)
+	// 		DB::table('location')->where('is_default',1)->update(['is_default' => 0]);
+		
+	// 	$this->location = $this->find($id);
+	// 	$this->location->is_default = $attributes['default'];
+	// 	$this->location->is_conloc = $attributes['is_conloc'];
+	// 	$this->location->customer_id = $attributes['customer_id'];
+	// 	$this->location->fill($attributes)->save();
+	// 	return true;
+	// }
+
+
 	public function update($id, $attributes)
 	{	
-		if($attributes['default']==1)
-			DB::table('location')->where('is_default',1)->update(['is_default' => 0]);
-		
-		$this->location = $this->find($id);
-		$this->location->is_default = $attributes['default'];
-		$this->location->is_conloc = $attributes['is_conloc'];
-		$this->location->customer_id = $attributes['customer_id'];
-		$this->location->fill($attributes)->save();
-		return true;
+		DB::beginTransaction();
+		try {
+			$this->location = $this->find($id);
+			
+			if (!$this->location) {
+				throw new \Exception('Location not found');
+			}
+			
+			// Set default customer_id if not consignment location
+			$customer_id = ($attributes['is_conloc'] == 1) 
+				? $attributes['customer_id'] 
+				: 0;
+			
+			// If setting as default, unset other defaults in same department
+			if (isset($attributes['default']) && $attributes['default'] == 1) {
+				DB::table('location')
+					->where('id', '!=', $id)
+					->where('department_id', $this->location->department_id)
+					->update(['is_default' => 0]);
+			}
+			
+			// Update location
+			$this->location->code = $attributes['code'];
+			$this->location->name = $attributes['name'];
+			$this->location->is_default = $attributes['default'] ?? 0;
+			$this->location->is_conloc = $attributes['is_conloc'];
+			$this->location->customer_id = $customer_id;
+			$this->location->save();
+			
+			DB::commit();
+			return true;
+			
+		} catch(\Exception $e) {
+			DB::rollback();
+			Log::error('Location update failed: ' . $e->getMessage());
+			throw $e;
+		}
 	}
+
 	
 	
 	public function delete($id)
@@ -145,6 +307,20 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	// 	else
 	// 		return $this->location->where('status',1)->where('is_conloc',0)->get();
 	// }
+	
+
+	public function locationList()
+	{
+		if (!Auth::check() || Auth::user()->department_id === null || Auth::user()->department_id === '') {
+			return collect();
+		}
+		$departmentId = Auth::user()->department_id;
+		if(Auth::user()->location_id > 0)
+			return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id', $departmentId)->get();
+		else			 
+			return $this->location->where('status',1)->where('is_conloc',0)->where('department_id', $departmentId)->get();	
+	}
+
 
 	// public function locationList()
 	// {
@@ -160,55 +336,184 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	// 			->get();
 	// }
 
-	public function locationList()
-	{
-		$query = $this->location
-			->with(['itemLocations' => function ($q) use ($itemId) {
-				$q->select('location_id', 'item_id', 'quantity', 'opn_qty')
-				->where('item_id', $itemId);
-			}])
-			->where('status', 1);
 
-		if (Auth::check() && Auth::user()->location_id > 0) {
-			$query->where('id', Auth::user()->location_id);
-		} else {
-			$query->where('is_conloc', 0);
-		}
+	// public function locationList($itemId = null)
+	// {
+	// 	$departmentId = env('DEPARTMENT_ID', 1);
+		
+	// 	$query = $this->location
+	// 		->where('status', 1)
+	// 		->where('department_id', $departmentId);
+		
+	// 	// If item ID provided, eager load item locations
+	// 	if ($itemId) {
+	// 		$query->with(['itemLocations' => function ($q) use ($itemId) {
+	// 			$q->select('location_id', 'item_id', 'quantity', 'opn_qty', 'bin_id')
+	// 			->where('item_id', $itemId)
+	// 			->where('status', 1);
+	// 		}]);
+	// 	}
+		
+	// 	// Filter by user location if applicable
+	// 	if (Auth::check() && Auth::user()->location_id > 0) {
+	// 		$query->where('id', Auth::user()->location_id);
+	// 	} else {
+	// 		$query->where('is_conloc', 0);
+	// 	}
 
-		return $query->get();
-	}
+	// 	return $query->get();
+	// }
+
+
+	// public function getItemStockByLocation($itemId)
+	// {
+	// 	$deptId = env('DEPARTMENT_ID');
+		
+	// 	return DB::table('item_location AS IL')
+	// 		->leftJoin('location AS L', 'L.id', '=', 'IL.location_id')
+	// 		->leftJoin('bin_location AS BL', 'BL.id', '=', 'IL.bin_id')
+	// 		->where('IL.item_id', $itemId)
+	// 		// FIX: Check for NULL or matching department_id
+	// 		->where(function($query) use ($deptId) {
+	// 			$query->where('IL.department_id', $deptId)
+	// 				->orWhereNull('IL.department_id');
+	// 		})
+	// 		->where('IL.status', 1)
+	// 		->where(function($query) {
+	// 			$query->where('IL.deleted_at', '0000-00-00 00:00:00')
+	// 				->orWhereNull('IL.deleted_at');
+	// 		})
+	// 		->select(
+	// 			'IL.id',
+	// 			'IL.location_id',
+	// 			'IL.quantity',
+	// 			'IL.bin_id',
+	// 			'L.name as location_name',
+	// 			'L.code as location_code',
+	// 			'BL.code as bin_code'
+	// 		)
+	// 		->orderBy('IL.location_id', 'ASC')
+	// 		->get();
+	// 	if(Auth::user()->location_id > 0)
+	// 		return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id',env('DEPARTMENT_ID'))->get();
+	// 	else
+	// 		return $this->location->where('status',1)->where('is_conloc',0)->where('department_id',env('DEPARTMENT_ID'))->get();
+	// }
+
 
 	public function getItemStockByLocation($itemId)
 	{
-		$deptId = env('DEPARTMENT_ID');
+		$deptId = (Auth::check()) ? Auth::user()->department_id : null;
+		if ($deptId === null || $deptId === '') {
+			return collect();
+		}
 		
-		return DB::table('item_location AS IL')
+		$query = DB::table('item_location AS IL')
 			->leftJoin('location AS L', 'L.id', '=', 'IL.location_id')
 			->leftJoin('bin_location AS BL', 'BL.id', '=', 'IL.bin_id')
 			->where('IL.item_id', $itemId)
-			// FIX: Check for NULL or matching department_id
 			->where(function($query) use ($deptId) {
 				$query->where('IL.department_id', $deptId)
 					->orWhereNull('IL.department_id');
 			})
 			->where('IL.status', 1)
-			->where(function($query) {
-				$query->where('IL.deleted_at', '0000-00-00 00:00:00')
-					->orWhereNull('IL.deleted_at');
-			})
+			->whereNull('IL.deleted_at')
 			->select(
 				'IL.id',
 				'IL.location_id',
 				'IL.quantity',
 				'IL.bin_id',
-				'L.name as location_name',
+				'L.name',           // Location name
 				'L.code as location_code',
-				'BL.code as bin_code'
-			)
-			->orderBy('IL.location_id', 'ASC')
-			->get();
+				'BL.code'           // Bin code
+			);
+		
+		// Filter by user's assigned location if applicable
+		if (Auth::check() && Auth::user()->location_id > 0) {
+			$query->where('L.id', Auth::user()->location_id);
+		} else {
+			// Only show non-consignment locations
+			$query->where('L.is_conloc', 0);
+		}
+		 Log::info('locationList returned get item' . $locations->count() . ' locations');
+		return $query->orderBy('L.name', 'ASC')->get();
 	}
-	
+
+
+	// public function getItemStockByLocation($itemId)
+	// {
+	// 	$deptId = env('DEPARTMENT_ID', 1);
+		
+	// 	return DB::table('item_location AS IL')
+	// 		->leftJoin('location AS L', 'L.id', '=', 'IL.location_id')
+	// 		->leftJoin('bin_location AS BL', 'BL.id', '=', 'IL.bin_id')
+	// 		->where('IL.item_id', $itemId)
+	// 		->where(function($query) use ($deptId) {
+	// 			$query->where('IL.department_id', $deptId)
+	// 				->orWhereNull('IL.department_id');
+	// 		})
+	// 		->where('IL.status', 1)
+	// 		->whereNull('IL.deleted_at')
+	// 		->select(
+	// 			'IL.id',
+	// 			'IL.location_id',
+	// 			'IL.quantity',
+	// 			'IL.bin_id',
+	// 			'L.name as location_name',
+	// 			'L.code as location_code',
+	// 			'BL.code as bin_code'
+	// 		)
+	// 		->orderBy('IL.location_id', 'ASC')
+	// 		->get();
+	// }
+
+
+	public function getAllLocationsForEntry()
+	{
+		$deptId = (Auth::check()) ? Auth::user()->department_id : null;
+		if ($deptId === null || $deptId === '') {
+			return collect();
+		}
+		
+		$query = $this->location
+			->where('status', 1)
+			->where('department_id', $deptId)
+			->select('id', 'code', 'name', 'is_default', 'is_conloc');
+		
+		// Filter by user's assigned location if applicable
+		if (Auth::check() && Auth::user()->location_id > 0) {
+			$query->where('id', Auth::user()->location_id);
+		} else {
+			// Only show non-consignment locations
+			$query->where('is_conloc', 0);
+		}
+		
+		return $query->orderBy('name', 'ASC')->get();
+	}
+
+
+	public function locationFrom()
+	{
+		$deptId = (Auth::check()) ? Auth::user()->department_id : null;
+		if ($deptId === null || $deptId === '') {
+			return collect();
+		}
+		return $this->location->where('status',1)->where('department_id','!=', $deptId)->get();
+
+	}
+	public function locationTo()
+	{
+		$deptId = (Auth::check()) ? Auth::user()->department_id : null;
+		if ($deptId === null || $deptId === '') {
+			return collect();
+		}
+     	return $this->location->where('status',1)->where('department_id', $deptId)->get();
+
+	}
+<<<<<<< HEAD
+
+=======
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
 	public function activeLocationList()
 	{
 		return $this->location->select('id','name')->where('status', 1)->orderBy('name', 'ASC')->get()->toArray();
@@ -234,6 +539,27 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	{
 		return $this->location->where('status',1)->get();
 	}
+
+
+	// Add this method to LocationRepository
+	public function isLocationInUse($id)
+	{
+		// Check if location has any item locations with quantity
+		$hasStock = DB::table('item_location')
+			->where('location_id', $id)
+			->where('quantity', '>', 0)
+			->exists();
+		
+		if ($hasStock) {
+			return true;
+		}
+		
+		// Check if location is used in any transactions
+		$usedInTransactions = DB::table('item_log')
+			->where('location_id', $id)
+			->exists();
+		
+		return $usedInTransactions;
+	}
 	
 }
-

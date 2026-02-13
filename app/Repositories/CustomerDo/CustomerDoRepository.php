@@ -152,7 +152,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		return array('line_total' => $line_total, 'tax_total' => $tax_total, 'type' => $type, 'item_total' => $item_total);
 	}
 	
-	private function setTransferStatusItem($attributes, $key, $doctype)
+	private function setTransferStatusItem($attributes, $key, $doctype, $mode=null)
 	{
 		//if quantity partially deliverd, update pending quantity.
 		if($doctype=='SQ') {
@@ -762,7 +762,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	{
 		//echo '<pre>';print_r($attributes);exit;
 		$this->customer_do = $this->find($id);
-		$line_total = $tax_total = $line_total_new = $tax_total_new = $item_total = 0;
+		$line_total = $tax_total = $line_total_new = $tax_total_new = $item_total = $cost_value = 0;
 		
 		DB::beginTransaction();
 		try {
@@ -1512,10 +1512,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					  ->join('itemmaster AS im', function($join){
 						  $join->on('im.id','=','poi.item_id');
 					  })
-					   ->join('item_unit AS iu', function($join){
-						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on(DB::raw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)'), DB::raw(''), DB::raw('')); //$join->on('iu.unit_id','=','poi.unit_id');
-					  })
+					   ->join('item_unit AS iu', function ($join) {
+                            $join->on('iu.itemmaster_id', '=', 'im.id')
+                                 ->whereRaw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)');
+                        })
 					   ->leftjoin('itemstock_department AS isd', function($join){
 						  $join->on('isd.itemmaster_id','=','im.id');
 					  })

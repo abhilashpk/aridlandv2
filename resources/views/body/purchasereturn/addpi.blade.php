@@ -292,7 +292,7 @@
 									</thead>
 								</table>
 								
-								{{--*/ $i = 0; $num = count($pitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php $i = 0; $num = count($pitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -424,7 +424,7 @@
 									
 									<?php $i++; } } else { ?>
 								@foreach($pitems as $item)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 									<div class="itemdivChld">
 									<?php 
 											if($item->balance_quantity==0) {

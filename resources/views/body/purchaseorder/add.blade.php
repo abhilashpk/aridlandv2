@@ -92,13 +92,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('po-print')
+								@can('po-print')
 								 <a href="{{ url('purchase_order/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> Print
 								</a>
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
                         </div>
@@ -933,9 +933,9 @@
                                          <button type="button" value="button" name="btn" onclick="submitDraft()"class="btn btn-success">Draft</button>
 										<a href="{{ url('purchase_order') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('purchase_order/add') }}" class="btn btn-warning">Clear</a>
-										@permission('po-history')
+										@can('po-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endpermission
+										@endcan
                                     </div>
                                 </div>
                                          
@@ -1191,7 +1191,7 @@ $(document).ready(function () {
 		$('#locationRadio').show();
     
 
-	   let locID   = {{$interid}};
+	    let locID  =" {{$interid}}";
         let locCode = "{{$intercode}}";
 		let prefix ='IPO';
 		let newPrefix = prefix + locCode; 
@@ -1807,14 +1807,12 @@ $(function() {
             .removeClass('btn-default').addClass('btn-danger')
             .removeClass('btn-add-oc').addClass('btn-remove-oc')
             .html('<span class="glyphicon glyphicon-minus" aria-hidden="true"></span> ');
-    }).on('click', '.btn-remove-oc', function(e)
-    { 
-		$(this).parents('.OCdivChld:first').remove();
-		
+    })
+	.on('click', '.btn-remove-oc', function(e) { 
 		e.preventDefault();
+		$(this).parents('.OCdivChld:first').remove();
 		return false;
-	});
-	
+	});	
 	
 	var joburl = "{{ url('jobmaster/job_data/') }}";
 	$('#jobname').click(function() {
@@ -1970,6 +1968,7 @@ $(function() {
 	//new change............
 	var itmurl = "{{ url('itemmaster/item_data/') }}";
 	$(document).on('click', 'input[name="item_code[]"]', function(e) {
+		console.log('clicked');
 		var res = this.id.split('_');
 		var curNum = res[1]; 
 		$('#item_data').load(itmurl+'/'+curNum, function(result){ 

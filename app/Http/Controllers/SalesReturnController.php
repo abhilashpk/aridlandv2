@@ -27,6 +27,7 @@ use Auth;
 use Mail;
 use PDF;
 
+
 class SalesReturnController extends Controller
 {
 
@@ -67,8 +68,8 @@ class SalesReturnController extends Controller
 		
 		if(Session::get('cost_accounting')==1) {
 			$this->cost_accounts = $this->accountsetting->getCostAccounts();
-			Session::put('stock', $this->cost_accounts['stock']);
-			Session::put('cost_of_sale', $this->cost_accounts['cost_of_sale']);
+			Session::set('stock', $this->cost_accounts['stock']);
+			Session::set('cost_of_sale', $this->cost_accounts['cost_of_sale']);
 		}
 		
 		$this->mod_autocost = DB::table('parameter2')->where('keyname', 'mod_autocost_refresh')->where('status',1)->select('is_active')->first();
@@ -218,7 +219,10 @@ class SalesReturnController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$vouchers = $this->accountsetting->getAccountSettingsSR($vid=4); //echo '<pre>';print_r($vouchers);exit;
 		$location = $this->location->locationList();
-		$lastid = DB::table('sales_return')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$defaultInter = DB::table('location')
+                         ->where('department_id', Auth::user()->department_id)
+                         ->where('is_default', 1) ->first();
+		$lastid = DB::table('sales_return')->where('status',1)->where('department_id',Auth::user()->department_id)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 		$footertxt = DB::table('header_footer')->where('doc','SR')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -304,7 +308,7 @@ class SalesReturnController extends Controller
         		$batch_items[$key] = ['ids' => $idArr, 'batches' => $batchArr, 'qtys' => $qtyArr];
     	    }
     			//echo '<pre>';print_r($batchs);print_r($batch_items);exit;
-			return view('body.salesreturn.'.$view) //addsi  addsi-batch
+			return view('body.salesreturn.addsi') //addsi  addsi-batch
 						->withItems($itemmaster)
 						->withJobs($jobs)
 						->withCurrency($currency)
@@ -335,6 +339,9 @@ class SalesReturnController extends Controller
 						->withIsmpqty($this->mod_mpqty->is_active)
 						->withBatchitems($batch_items) //MAY25
 						->withItemcat($itemcat)
+						->withInterid($defaultInter->id)
+                         ->withIntercode($defaultInter->code)
+						 ->withIntername($defaultInter->name)
 						->withData($data);
 		}
 		return view('body.salesreturn.add')
@@ -356,6 +363,9 @@ class SalesReturnController extends Controller
 					->withIsmpqty($this->mod_mpqty->is_active)
 					->withFooter(isset($footertxt)?$footertxt->description:'')
 					->withItemcat($itemcat)
+					->withInterid($defaultInter->id)
+                    ->withIntercode($defaultInter->code)
+					->withIntername($defaultInter->name)
 					->withData($data);
 	}
 	
@@ -410,11 +420,12 @@ class SalesReturnController extends Controller
 		
 		
 		
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			['sales_invoice_id' => 'required',
 			 //'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
-			 //'customer_name' => 'required','customer_id' => 'required',
+			 'location_id' =>'required','location_id' => 'required',
+			 'customer_name' => 'required','customer_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
 			 'quantity.*' => 'required',
@@ -422,24 +433,28 @@ class SalesReturnController extends Controller
 			],
 			['sales_invoice_id' => 'Sales Invoice no. is required.',
 			 //'reference_no' => 'Reference no. is required.',
-			 //'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+			 	'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
+			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		);
+		)) {
+
+			return redirect('sales_return/add')->withInput()->withErrors();
+		}
 		
 		//if dept active... set department cost and stock account...
 		if(Session::get('department')==1 && Session::get('cost_accounting')==1) { 
 			
 			$dept_accounts = $this->accountsetting->getCostAccountsDept($request->get('department_id'));
 			if($dept_accounts) {
-				Session::put('stock', $dept_accounts->stock_acid);
-				Session::put('cost_of_sale', $dept_accounts->cost_acid);
+				Session::set('stock', $dept_accounts->stock_acid);
+				Session::set('cost_of_sale', $dept_accounts->cost_acid);
 			} else {
-				Session::put('stock', $this->cost_accounts['stock']);
-				Session::put('cost_of_sale', $this->cost_accounts['cost_of_sale']);
+				Session::set('stock', $this->cost_accounts['stock']);
+				Session::set('cost_of_sale', $this->cost_accounts['cost_of_sale']);
 			}
 			
 		}
@@ -593,7 +608,7 @@ class SalesReturnController extends Controller
 	    }
 			//echo '<pre>';print_r($batchs);print_r($batch_items);exit;
 							
-		return view('body.salesreturn.'.$view) //edit  editsi-blade
+		return view('body.salesreturn.edit') //edit  editsi-blade
 					->withItems($itemmaster)
 					->withJobs($jobs)
 					->withCurrency($currency)
@@ -620,10 +635,11 @@ class SalesReturnController extends Controller
 	public function update(Request $request)
 	{  
 		$id = $request->input('sales_return_id');
-		$this->validate(
+		if( $this->validate(
 			$request, 
 			['sales_invoice_id' => 'required',
 			 //'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
+			  'location_id' =>'required','location_id' => 'required',
 			 'customer_name' => 'required','customer_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
 			 'unit_id.*' => 'required',
@@ -632,13 +648,21 @@ class SalesReturnController extends Controller
 			],
 			['sales_invoice_id' => 'Sales Invoice no. is required.',
 			 //'reference_no' => 'Reference no. is required.',
+			 	'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 			 'unit_id.*' => 'Item unit is required.',
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-	);
+<<<<<<< HEAD
+		);
+=======
+		)) {
+
+			return redirect('sales_return/edit/'.$id)->withInput()->withErrors();
+		}
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
 		$attributes=$request->all();
 		if( $this->sales_return->update($id, $attributes) ){
         #### mail
@@ -875,7 +899,7 @@ class SalesReturnController extends Controller
 			//  "\r"           13           New Line in Mac
 			//  " "            32           Space
 		   
-			$what   = "\x00-\x20";    //all white-spaces and control chars
+			$what   = "\\x00-\\x20";    //all white-spaces and control chars
 		}
 	   
 		return trim( preg_replace( "/[".$what."]+/" , $with , $str ) , $what );
@@ -911,10 +935,10 @@ class SalesReturnController extends Controller
 				 $voucher = $row->prefix.''.$no;
 			 }
 			 
-			 //Session::put('sl_voucher_id', $request->get('vchr_id'));
-			Session::put('sl_voucher_no', $voucher);
-			//Session::put('sl_stock_ac', $request->get('acnt'));
-			//Session::put('sl_ac_master', $request->get('ac_mstr'));
+			 //Session::set('sl_voucher_id', $request->get('vchr_id'));
+			Session::set('sl_voucher_no', $voucher);
+			//Session::set('sl_stock_ac', $request->get('acnt'));
+			//Session::set('sl_ac_master', $request->get('ac_mstr'));
 		
 			 return $result = array('voucher_no' => $voucher,
 								'account_id' => $row->account_id, 
@@ -955,10 +979,10 @@ class SalesReturnController extends Controller
 	
 	public function setSessionVal()
 	{
-		Session::put('sl_voucher_id', $request->get('vchr_id'));
-		Session::put('sl_voucher_no', $request->get('vchr_no'));
-		Session::put('sl_stock_ac', $request->get('acnt'));
-		Session::put('sl_ac_master', $request->get('ac_mstr'));
+		Session::set('sl_voucher_id', $request->get('vchr_id'));
+		Session::set('sl_voucher_no', $request->get('vchr_no'));
+		Session::set('sl_stock_ac', $request->get('acnt'));
+		Session::set('sl_ac_master', $request->get('ac_mstr'));
 	}
 	
 	public function checkRefNo(Request $request) {
@@ -1304,5 +1328,3 @@ class SalesReturnController extends Controller
 	
 	
 }
-
-

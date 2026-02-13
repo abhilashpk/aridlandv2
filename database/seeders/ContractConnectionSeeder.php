@@ -1,0 +1,28 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class ContractConnectionSeeder extends Seeder
+{
+    public function run(): void
+    {
+        DB::table('contract_connection')->insert([
+                ['id' => 7, 'connection_no' => '103', 'date' => '2023-03-24', 'building_id' => 1, 'flat_id' => 1, 'customer_id' => 2497, 'grand_total' => 200.0, 'is_rv' => 1, 'created_at' => '2023-03-24 05:57:52', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '102', 'rv_amount' => 0.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 8, 'connection_no' => '104', 'date' => '2023-03-24', 'building_id' => 1, 'flat_id' => 1, 'customer_id' => 2516, 'grand_total' => 700.0, 'is_rv' => 1, 'created_at' => '2023-03-24 06:18:46', 'created_by' => 4, 'modify_at' => '2023-03-24 05:17:29', 'modify_by' => 4, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '103', 'rv_amount' => 0.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 9, 'connection_no' => '105', 'date' => '2023-03-25', 'building_id' => 1, 'flat_id' => 1, 'customer_id' => 2519, 'grand_total' => 470.0, 'is_rv' => 0, 'created_at' => '2023-03-25 11:17:01', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '104', 'rv_amount' => 0.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 10, 'connection_no' => '106', 'date' => '2023-03-25', 'building_id' => 1, 'flat_id' => 1, 'customer_id' => 2521, 'grand_total' => 750.0, 'is_rv' => 0, 'created_at' => '2023-03-25 11:22:01', 'created_by' => 4, 'modify_at' => '2023-03-25 12:12:34', 'modify_by' => 4, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '105', 'rv_amount' => 0.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 12, 'connection_no' => '107', 'date' => '2023-03-27', 'building_id' => 1, 'flat_id' => 1, 'customer_id' => 2517, 'grand_total' => 1500.0, 'is_rv' => 1, 'created_at' => '2023-03-27 11:02:50', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '107', 'rv_amount' => 0.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 13, 'connection_no' => '108', 'date' => '2023-04-04', 'building_id' => 2, 'flat_id' => 2, 'customer_id' => 2524, 'grand_total' => 1200.0, 'is_rv' => 1, 'created_at' => '2023-04-04 08:48:03', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '110', 'rv_amount' => 0.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 14, 'connection_no' => '109', 'date' => '2023-04-05', 'building_id' => 2, 'flat_id' => 3, 'customer_id' => 2525, 'grand_total' => 1200.0, 'is_rv' => 1, 'created_at' => '2023-04-05 01:25:17', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '113', 'rv_amount' => 0.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 15, 'connection_no' => '110', 'date' => '2023-04-05', 'building_id' => 2, 'flat_id' => 4, 'customer_id' => 2519, 'grand_total' => 1200.0, 'is_rv' => 1, 'created_at' => '2023-04-05 05:20:08', 'created_by' => 4, 'modify_at' => '2023-04-05 05:26:03', 'modify_by' => 4, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '114', 'rv_amount' => 700.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 16, 'connection_no' => '111', 'date' => '2023-04-08', 'building_id' => 3, 'flat_id' => 5, 'customer_id' => 2521, 'grand_total' => 1620.0, 'is_rv' => 1, 'created_at' => '2023-04-08 10:07:35', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '118', 'rv_amount' => 1620.0, 'new_reading' => 100, 'is_close' => 0],
+                ['id' => 17, 'connection_no' => '112', 'date' => '2023-04-18', 'building_id' => 2, 'flat_id' => 3, 'customer_id' => 2517, 'grand_total' => 1200.0, 'is_rv' => 1, 'created_at' => '2023-04-18 10:32:32', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '127', 'rv_amount' => 1200.0, 'new_reading' => 0, 'is_close' => 0],
+                ['id' => 18, 'connection_no' => '113', 'date' => '2023-04-18', 'building_id' => 3, 'flat_id' => 5, 'customer_id' => 2525, 'grand_total' => 1620.0, 'is_rv' => 1, 'created_at' => '2023-04-18 11:33:22', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '128', 'rv_amount' => 1620.0, 'new_reading' => 110, 'is_close' => 0],
+                ['id' => 19, 'connection_no' => 'C114', 'date' => '2023-04-20', 'building_id' => 1, 'flat_id' => 6, 'customer_id' => 2526, 'grand_total' => 1420.0, 'is_rv' => 1, 'created_at' => '2023-04-20 02:28:58', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '130', 'rv_amount' => 1420.0, 'new_reading' => 510, 'is_close' => 0],
+                ['id' => 23, 'connection_no' => 'C115', 'date' => '2023-04-21', 'building_id' => 2, 'flat_id' => 7, 'customer_id' => 2516, 'grand_total' => 1341.25, 'is_rv' => 1, 'created_at' => '2023-04-21 11:16:59', 'created_by' => 4, 'modify_at' => null, 'modify_by' => null, 'deleted_at' => null, 'deleted_by' => null, 'status' => 1, 'sin_no' => '131', 'rv_amount' => 1341.25, 'new_reading' => 56, 'is_close' => 0],
+        ]);
+    }
+}

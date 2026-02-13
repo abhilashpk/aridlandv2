@@ -1106,6 +1106,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 								$itemLocationPR->quantity = $lcqty;
 								$itemLocationPR->status = 1;
 								$itemLocationPR->invoice_id = $inv_item->id;
+								$itemLocationPR->logid = $logid;
 								$itemLocationPR->qty_entry = $attributes['quantity'][$key];
 								$itemLocationPR->save();
 								

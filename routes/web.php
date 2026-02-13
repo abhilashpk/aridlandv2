@@ -2,9 +2,9 @@
 use Illuminate\Support\Facades\Route;
 
 // ================================================
-//  Migrated from Laravel 5.2 routes.php and now in Laravel Framework 10.50.0
+//  Migrated from Laravel 5.2 routes.php
 // ================================================
-
+use Illuminate\Support\Facades\Auth;
 use \App\Http\Controllers\ReportController;
 use \App\Http\Controllers\SettingsController;
 use \App\Http\Controllers\DashboardController;
@@ -15,6 +15,7 @@ use \App\Http\Controllers\CategoryController;
 use \App\Http\Controllers\SubcategoryController;
 use \App\Http\Controllers\CompanyController;
 use \App\Http\Controllers\SysparameterController;
+
 use \App\Http\Controllers\GroupController;
 use \App\Http\Controllers\SubgroupController;
 use \App\Http\Controllers\UnitController;
@@ -193,6 +194,7 @@ use \App\Http\Controllers\SignController;
 use \App\Http\Controllers\MyOrderController;
 use \App\Http\Controllers\ApicallController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\PurchaseEnquiryController;
 
 // ===== Migrated Routes =====
 
@@ -208,7 +210,7 @@ use App\Http\Controllers\Auth\LoginController;
 */
 
 Route::middleware(['web'])->group(function () {
-
+Auth::routes();
     // ALWAYS redirect root to login
     Route::get('/', function () {
         return redirect('/login');
@@ -225,12 +227,15 @@ Route::middleware(['web'])->group(function () {
         ->middleware('guest');
 
     // LOGOUT
-	Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+	// Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-
+	Route::get('/logout', function () {
+		Auth::logout();
+		return redirect('/login');
+	});
 	
 	//STIMULSOFT ROUTES....
-Route::get('/report', [ReportController::class, 'showReport']);
+	Route::get('/report', [ReportController::class, 'showReport']);
 	Route::any('/stimulsoftV2/handler', function () {
 		require public_path('stimulsoftV2/handler.php');
 	});
@@ -256,18 +261,20 @@ Route::get('/report', [ReportController::class, 'showReport']);
 
 	Route::post('/designer/save', function (\Illuminate\Http\Request $request) {
 		$json = $request->input('report');
+		$name = $request->input('fileName', 'report');
+		$safeName = preg_replace('/[^a-zA-Z0-9_-]/', '', $name);
+		$safeName = $safeName !== '' ? $safeName : 'report';
+		$path = public_path('stimulsoftV2/reports/'.$safeName.'.mrt');
 
-		// Save to file (be careful with paths)
-		file_put_contents(public_path('stimulsoftV2/reports/your-report.mrt'), $json);
+		file_put_contents($path, $json);
 
-		return response()->json(['success' => true]);
+		return response()->json(['success' => true, 'file' => $safeName.'.mrt']);
 	});
-
 	//END HERE STIMULSOFT...
 	
-Route::get('/settings/dbswitch', [SettingsController::class, 'index']);
-Route::post('/settings/login', [SettingsController::class, 'SubmitLogin']);
-Route::post('/settings/submit_dbswitch', [SettingsController::class, 'SubmitDbswitch']);
+	Route::get('/settings/dbswitch', [SettingsController::class, 'index']);
+	Route::post('/settings/login', [SettingsController::class, 'SubmitLogin']);
+	Route::post('/settings/submit_dbswitch', [SettingsController::class, 'SubmitDbswitch']);
 	
 	Route::get('/config-cache', function() {
      $exitCode = Artisan::call('config:cache');
@@ -298,7 +305,9 @@ Route::get('/dashboard/approval_alert', [DashboardController::class, 'approvalAl
 		
 Route::get('/home', [HomeController::class, 'index']);
 		
-		Route::resource('users','UserController');
+		//Route::resource('users','UserController');
+		
+Route::resource('users', UserController::class); 
 		
 Route::get('roles',		  ['as'=>'roles.index', 'uses'=>RoleController::class.'@index', 'middleware' => ['permission:role-list|role-create|role-edit|role-delete']]);
 Route::get('roles/create',['as'=>'roles.create','uses'=>RoleController::class.'@create','middleware' => ['permission:role-create']]);
@@ -307,8 +316,7 @@ Route::get('roles/{id}',['as'=>'roles.show','uses'=>RoleController::class.'@show
 Route::get('roles/{id}/edit',['as'=>'roles.edit','uses'=>RoleController::class.'@edit','middleware' => ['permission:role-edit']]);
 Route::patch('roles/{id}',['as'=>'roles.update','uses'=>RoleController::class.'@update','middleware' => ['permission:role-edit']]);
 Route::delete('roles/{id}',['as'=>'roles.destroy','uses'=>RoleController::class.'@destroy','middleware' => ['permission:role-delete']]);
-
-Route::resource('users', UserController::class);
+		
 Route::get('/users/{id}/delete', [UserController::class, 'deluser']);
 Route::get('/users/{id}/password', [UserController::class, 'changePassword']);
 Route::post('/users/{id}/password', [UserController::class, 'updatePassword']);
@@ -333,6 +341,7 @@ Route::post('/subcategory/group_delete', ['uses' => SubcategoryController::class
 Route::get('/subcategory/checkname', [SubcategoryController::class, 'checkname']);
 
 Route::get('/company', [CompanyController::class, 'index']);
+Route::post('/company/store', [CompanyController::class, 'store']);
 Route::post('/company/update/{id}', [CompanyController::class, 'update']);
 
 
@@ -385,6 +394,7 @@ Route::get('/itemmaster/get_info/{id}', [ItemmasterController::class, 'getInfo']
 Route::get('/itemmaster/get_purchase_cost', [ItemmasterController::class, 'getPurchaseCost']);
 Route::get('/itemmaster/get_sale_cost', [ItemmasterController::class, 'getSaleCost']);
 Route::get('/itemmaster/item_data/{n}', [ItemmasterController::class, 'getItem']);
+Route::get('/itemmaster/item_data/{num}/{mod?}', [ItemMasterController::class, 'getItem']);
 Route::get('/itemmaster/get_cost_avg', [ItemmasterController::class, 'getCostAvg']);
 Route::get('/itemmaster/get_cost_sale', [ItemmasterController::class, 'getCostSale']);
 Route::get('/itemmaster/ajax_create', [ItemmasterController::class, 'ajaxSave']);
@@ -442,6 +452,9 @@ Route::get('/itemmaster/view_conloc_items/{id}/{qty}/{n}/{t}/{r}', [ItemmasterCo
 
 Route::get('/itemmaster/get_rawmatwe/{id}', [ItemmasterController::class, 'getRawmatWe']);
 
+Route::get('/itemmaster/view_intralocinfo/{id}', [ItemmasterController::class, 'viewIntraLocInfo']);
+Route::get('/itemmaster/view_locinfo/{id}', [ItemmasterController::class, 'viewLocInfo']);
+
 		
 //Route::get('/itemmaster/sts', [ItemmasterController::class, 'status_chk']);
 
@@ -492,13 +505,15 @@ Route::post('/location/update/{id}', [LocationController::class, 'update']);
 Route::get('/location/delete/{id}', [LocationController::class, 'destroy']);
 Route::get('/location/checkcode', [LocationController::class, 'checkcode']);
 Route::get('/location/checkname', [LocationController::class, 'checkname']);
-Route::get('/location/get_loc/{id?}', [LocationController::class, 'getLocation']);
-// Route::get('/location/get_loc/{id}', [LocationController::class, 'getLocation']);
+Route::get('/location/get_loc/{id}', [LocationController::class, 'getLocation']);
 Route::get('/location/get_loc', [LocationController::class, 'getLocation']);
 Route::get('/location/bin_data/{n}', [LocationController::class, 'getBin']);
 Route::get('/location/ajax_create', [LocationController::class, 'ajaxSave']);
+<<<<<<< HEAD
+=======
 Route::get('location/get_loc/{id}/{n}', [LocationController::class, 'getLocInfo']);
-
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
+Route::get('location/getCode/{id}', [LocationController::class, 'getCode']);
 
 Route::get('/country', [CountryController::class, 'index']);
 Route::get('/country/add', [CountryController::class, 'add']);
@@ -1199,6 +1214,11 @@ Route::get('/sales_invoice/get_salesinvoice', [SalesInvoiceController::class, 'g
 Route::get('/sales_invoice/refresh_do/{id}', [SalesInvoiceController::class, 'refreshDO']);
 Route::get('/sales_invoice/getjob/{id}', [SalesInvoiceController::class, 'getJob']);
 
+Route::get('/sales_invoice/cash', ['as' => 'sales_invoice.index', 'uses' => SalesInvoiceController::class.'@indexc', 'middleware' => ['permission:si-list|si-create|si-edit|si-delete']]);
+Route::post('/sales_invoice/cashpaging', [SalesInvoiceController::class, 'ajaxPagingCash']);
+Route::get('/sales_invoice/addc', ['as'=>'sales_invoice.add','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
+Route::get('/sales_invoice/addc/{id}/{n}', ['as'=>'sales_invoice.add','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
+
 		//sales_invoice/edit/'.$sirow->id.'/SO/'.$id
 		
 		
@@ -1732,40 +1752,103 @@ Route::post('/job_invoice/export', [JobInvoiceController::class, 'dataExport']);
 Route::get('/job_invoice/docs/{id}', [JobInvoiceController::class, 'getDocs']); //OCT24
 
 
-Route::get('/purchase_enquiry', "PurchaseEnquiryController@index");
-Route::get('/purchase_enquiry/add', "PurchaseEnquiryController@add");
-Route::post('/purchase_enquiry/save', 'PurchaseEnquiryController@save');
-Route::post('/purchase_enquiry/save/{id}','PurchaseEnquiryController@save');
-Route::get('/purchase_enquiry/edit/{id}', 'PurchaseEnquiryController@edit');
-Route::post('/purchase_enquiry/update/{id}', 'PurchaseEnquiryController@update');
-Route::get('/purchase_enquiry/delete/{id}', 'PurchaseEnquiryController@destroy');
-Route::get('/purchase_enquiry/print/{id}', 'PurchaseEnquiryController@getPrint');
-Route::get('/purchase_enquiry/item_details/{id}', "PurchaseEnquiryController@getItemDetails");
-Route::post('/purchase_enquiry/search', "PurchaseEnquiryController@getSearch");
-Route::post('/purchase_enquiry/export', 'PurchaseEnquiryController@dataExport');
-Route::post('/purchase_enquiry/paging', 'PurchaseEnquiryController@ajaxPaging');
-Route::post('/purchase_enquiry/set_session', 'PurchaseEnquiryController@setSessionVal');
-Route::get('/purchase_enquiry/add/{id}/{n}', 'PurchaseEnquiryController@add');
-Route::get('/purchase_enquiry/get_enquiry/{id}/{url}', "PurchaseEnquiryController@getEnquiry");
-Route::get('/purchase_enquiry/views/{id}','PurchaseEnquiryController@getViews');
-Route::get('/purchase_enquiry/approve/{id}', 'PurchaseEnquiryController@getApproval');
-Route::get('/purchase_enquiry/reject/{id}', 'PurchaseEnquiryController@getReject');
-Route::get('/purchase_enquiry/print/{id}/{n}', 'PurchaseEnquiryController@getPrint');
+<<<<<<< HEAD
+Route::get('/purchase_enquiry', [PurchaseEnquiryController::class, 'index']);
+Route::get('/purchase_enquiry/add', [PurchaseEnquiryController::class, 'add']);
 
-Route::post('/purchase_enquiry/save_draft', "PurchaseEnquiryController@saveDraft");//Draft
-Route::get('/purchase_enquiry/edit_draft/{id}', "PurchaseEnquiryController@editDraft");
-Route::post('/purchase_enquiry/update_draft/{id}', "PurchaseEnquiryController@updateDraft");
+Route::post('/purchase_enquiry/save', [PurchaseEnquiryController::class, 'save']);
+Route::post('/purchase_enquiry/save/{id}', [PurchaseEnquiryController::class, 'save']);
+
+Route::get('/purchase_enquiry/edit/{id}', [PurchaseEnquiryController::class, 'edit']);
+Route::post('/purchase_enquiry/update/{id}', [PurchaseEnquiryController::class, 'update']);
+
+Route::get('/purchase_enquiry/delete/{id}', [PurchaseEnquiryController::class, 'destroy']);
+
+Route::get('/purchase_enquiry/print/{id}', [PurchaseEnquiryController::class, 'getPrint']);
+Route::get('/purchase_enquiry/print/{id}/{n}', [PurchaseEnquiryController::class, 'getPrint']);
+
+Route::get('/purchase_enquiry/item_details/{id}', [PurchaseEnquiryController::class, 'getItemDetails']);
+
+Route::post('/purchase_enquiry/search', [PurchaseEnquiryController::class, 'getSearch']);
+Route::post('/purchase_enquiry/export', [PurchaseEnquiryController::class, 'dataExport']);
+Route::post('/purchase_enquiry/paging', [PurchaseEnquiryController::class, 'ajaxPaging']);
+Route::post('/purchase_enquiry/set_session', [PurchaseEnquiryController::class, 'setSessionVal']);
+
+Route::get('/purchase_enquiry/add/{id}/{n}', [PurchaseEnquiryController::class, 'add']);
+
+Route::get('/purchase_enquiry/get_enquiry/{id}/{url}', [PurchaseEnquiryController::class, 'getEnquiry']);
+Route::get('/purchase_enquiry/views/{id}', [PurchaseEnquiryController::class, 'getViews']);
+
+Route::get('/purchase_enquiry/approve/{id}', [PurchaseEnquiryController::class, 'getApproval']);
+Route::get('/purchase_enquiry/reject/{id}', [PurchaseEnquiryController::class, 'getReject']);
+
+/* Draft routes */
+Route::post('/purchase_enquiry/save_draft', [PurchaseEnquiryController::class, 'saveDraft']);
+Route::get('/purchase_enquiry/edit_draft/{id}', [PurchaseEnquiryController::class, 'editDraft']);
+Route::post('/purchase_enquiry/update_draft/{id}', [PurchaseEnquiryController::class, 'updateDraft']);
+
+=======
+// Route::get('/purchase_enquiry', "PurchaseEnquiryController@index");
+// Route::get('/purchase_enquiry/add', "PurchaseEnquiryController@add");
+// Route::post('/purchase_enquiry/save', 'PurchaseEnquiryController@save');
+// Route::post('/purchase_enquiry/save/{id}','PurchaseEnquiryController@save');
+// Route::get('/purchase_enquiry/edit/{id}', 'PurchaseEnquiryController@edit');
+// Route::post('/purchase_enquiry/update/{id}', 'PurchaseEnquiryController@update');
+// Route::get('/purchase_enquiry/delete/{id}', 'PurchaseEnquiryController@destroy');
+// Route::get('/purchase_enquiry/print/{id}', 'PurchaseEnquiryController@getPrint');
+// Route::get('/purchase_enquiry/item_details/{id}', "PurchaseEnquiryController@getItemDetails");
+// Route::post('/purchase_enquiry/search', "PurchaseEnquiryController@getSearch");
+// Route::post('/purchase_enquiry/export', 'PurchaseEnquiryController@dataExport');
+// Route::post('/purchase_enquiry/paging', 'PurchaseEnquiryController@ajaxPaging');
+// Route::post('/purchase_enquiry/set_session', 'PurchaseEnquiryController@setSessionVal');
+// Route::get('/purchase_enquiry/add/{id}/{n}', 'PurchaseEnquiryController@add');
+// Route::get('/purchase_enquiry/get_enquiry/{id}/{url}', "PurchaseEnquiryController@getEnquiry");
+// Route::get('/purchase_enquiry/views/{id}','PurchaseEnquiryController@getViews');
+// Route::get('/purchase_enquiry/approve/{id}', 'PurchaseEnquiryController@getApproval');
+// Route::get('/purchase_enquiry/reject/{id}', 'PurchaseEnquiryController@getReject');
+// Route::get('/purchase_enquiry/print/{id}/{n}', 'PurchaseEnquiryController@getPrint');
+
+// Route::post('/purchase_enquiry/save_draft', "PurchaseEnquiryController@saveDraft");//Draft
+// Route::get('/purchase_enquiry/edit_draft/{id}', "PurchaseEnquiryController@editDraft");
+// Route::post('/purchase_enquiry/update_draft/{id}', "PurchaseEnquiryController@updateDraft");
+
+
+Route::get('/purchase_enquiry', [PurchaseEnquiryController::class, 'index']);
+Route::get('/purchase_enquiry/add', [PurchaseEnquiryController::class, 'add']);
+
+Route::post('/purchase_enquiry/save', [PurchaseEnquiryController::class, 'save']);
+Route::post('/purchase_enquiry/save/{id}', [PurchaseEnquiryController::class, 'save']);
+
+Route::get('/purchase_enquiry/edit/{id}', [PurchaseEnquiryController::class, 'edit']);
+Route::post('/purchase_enquiry/update/{id}', [PurchaseEnquiryController::class, 'update']);
+
+Route::get('/purchase_enquiry/delete/{id}', [PurchaseEnquiryController::class, 'destroy']);
+
+Route::get('/purchase_enquiry/print/{id}', [PurchaseEnquiryController::class, 'getPrint']);
+Route::get('/purchase_enquiry/print/{id}/{n}', [PurchaseEnquiryController::class, 'getPrint']);
+
+Route::get('/purchase_enquiry/item_details/{id}', [PurchaseEnquiryController::class, 'getItemDetails']);
+
+Route::post('/purchase_enquiry/search', [PurchaseEnquiryController::class, 'getSearch']);
+Route::post('/purchase_enquiry/export', [PurchaseEnquiryController::class, 'dataExport']);
+Route::post('/purchase_enquiry/paging', [PurchaseEnquiryController::class, 'ajaxPaging']);
+Route::post('/purchase_enquiry/set_session', [PurchaseEnquiryController::class, 'setSessionVal']);
+
+Route::get('/purchase_enquiry/add/{id}/{n}', [PurchaseEnquiryController::class, 'add']);
+
+Route::get('/purchase_enquiry/get_enquiry/{id}/{url}', [PurchaseEnquiryController::class, 'getEnquiry']);
+Route::get('/purchase_enquiry/views/{id}', [PurchaseEnquiryController::class, 'getViews']);
+
+Route::get('/purchase_enquiry/approve/{id}', [PurchaseEnquiryController::class, 'getApproval']);
+Route::get('/purchase_enquiry/reject/{id}', [PurchaseEnquiryController::class, 'getReject']);
+
+/* Draft routes */
+Route::post('/purchase_enquiry/save_draft', [PurchaseEnquiryController::class, 'saveDraft']);
+Route::get('/purchase_enquiry/edit_draft/{id}', [PurchaseEnquiryController::class, 'editDraft']);
+Route::post('/purchase_enquiry/update_draft/{id}', [PurchaseEnquiryController::class, 'updateDraft']);
+>>>>>>> 45aa6610d356aac74e1b3b1cf8dae75c26e83400
 
 		
-// Route::get('/location_transfer', "LocationTransferController@index");
-// Route::get('/location_transfer/add', "LocationTransferController@add");
-// Route::post('/location_transfer/save', "LocationTransferController@save");
-// Route::get('/location_transfer/checkrefno', 'LocationTransferController@checkRefNo');
-// Route::get('/location_transfer/delete/{id}', "LocationTransferController@destroy");
-// Route::get('/location_transfer/edit/{id}', "LocationTransferController@edit");
-// Route::post('/location_transfer/update/{id}', 'LocationTransferController@update');
-// Route::get('/location_transfer/print/{id}', 'LocationTransferController@getPrint');
-
 Route::get('/location_transfer', [LocationTransferController::class, 'index']);
 Route::get('/location_transfer/add', [LocationTransferController::class, 'add']);
 Route::post('/location_transfer/save', [LocationTransferController::class, 'save']);
@@ -2177,6 +2260,7 @@ Route::get('/manufacture/search/{id}', [ManufactureController::class, 'getSearch
 Route::get('/manufacture/getvoucher/{id}', [ManufactureController::class, 'getVoucher']);
 Route::get('/manufacture/add/{id}', ['as' => 'manufacture.addN', 'uses' => ManufactureController::class.'@add', 'middleware' => ['permission:pi-create']]);
 
+
 Route::get('/material_requisition', [MaterialRequisitionController::class, 'index']);
 Route::get('/material_requisition/add', [MaterialRequisitionController::class, 'add']);
 Route::post('/material_requisition/save', [MaterialRequisitionController::class, 'save']);
@@ -2196,25 +2280,6 @@ Route::get('/material_requisition/views/{id}',[MaterialRequisitionController::cl
 Route::get('/material_requisition/approve/{id}', [MaterialRequisitionController::class,'getApproval']);
 Route::get('/material_requisition/reject/{id}', [MaterialRequisitionController::class,'getReject']);
 Route::get('/material_requisition/print/{id}/{n}', [MaterialRequisitionController::class,'getPrint']);
-// Route::get('/material_requisition', "MaterialRequisitionController@index");
-// Route::get('/material_requisition/add', "MaterialRequisitionController@add");
-// Route::post('/material_requisition/save', 'MaterialRequisitionController@save');
-// Route::post('/material_requisition/save/{id}','MaterialRequisitionController@save');
-// Route::get('/material_requisition/edit/{id}', 'MaterialRequisitionController@edit');
-// Route::post('/material_requisition/update/{id}', 'MaterialRequisitionController@update');
-// Route::get('/material_requisition/delete/{id}', 'MaterialRequisitionController@destroy');
-// Route::get('/material_requisition/print/{id}', 'MaterialRequisitionController@getPrint');
-// Route::get('/material_requisition/item_details/{id}', "MaterialRequisitionController@getItemDetails");
-// Route::post('/material_requisition/search', "MaterialRequisitionController@getSearch");
-// Route::post('/material_requisition/export', 'MaterialRequisitionController@dataExport');
-// Route::post('/material_requisition/paging', 'MaterialRequisitionController@ajaxPaging');
-// Route::post('/material_requisition/set_session', 'MaterialRequisitionController@setSessionVal');
-// Route::get('/material_requisition/add/{id}/{n}', 'MaterialRequisitionController@add');
-// Route::get('/material_requisition/get_enquiry/{id}/{url}', "MaterialRequisitionController@getEnquiry");
-// Route::get('/material_requisition/views/{id}','MaterialRequisitionController@getViews');
-// Route::get('/material_requisition/approve/{id}', 'MaterialRequisitionController@getApproval');
-// Route::get('/material_requisition/reject/{id}', 'MaterialRequisitionController@getReject');
-// Route::get('/material_requisition/print/{id}/{n}', 'MaterialRequisitionController@getPrint');
 		
 Route::get('/ms_customer', [MsCustomerController::class, 'index']);
 Route::get('/ms_customer/add', [MsCustomerController::class, 'add']);
@@ -2913,6 +2978,5 @@ Route::get('/myorder/pending', [MyOrderController::class, 'pendingList']);//MAY2
 
 Route::get('/apicall', [ApicallController::class, 'index']);
 Route::post('/apicall/sts', [ApicallController::class, 'status_chk']);
-
 
 

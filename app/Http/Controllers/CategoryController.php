@@ -46,7 +46,7 @@ class CategoryController extends Controller
 		try {
 			$this->category->create($request->all());
 			Session::flash('message', 'Category added successfully.');
-			return redirect('category/add');
+			return redirect('category');
 		} catch(ValidationException $e) { 
 			return Redirect::to('category/add')->withErrors($e->getErrors());
 		}
@@ -68,12 +68,26 @@ class CategoryController extends Controller
 		return redirect('category');
 	}
 	
-	public function destroy($id)
-	{
-		$this->category->delete($id);
-		//check group name is already in use.........
-		// code here ********************************
-		Session::flash('message', 'Category deleted successfully.');
+	// public function destroy($id)
+	// {
+	// 	$this->category->delete($id);
+	// 	//check group name is already in use.........
+	// 	// code here ********************************
+	// 	Session::flash('message', 'Category deleted successfully.');
+	// 	return redirect('category');
+	// }
+
+	public function destroy(Request $request) { // ✓ Better name
+		$ids = $request->get('ids');
+		if ($ids) {
+			$idarr = array_filter(explode(',', $ids), 'is_numeric'); // ✓ Validate
+			if (!empty($idarr)) {
+				DB::table('category')
+					->whereIn('id', $idarr)
+					->update(['deleted_at' => now()]); // ✓ Use now()
+				Session::flash('message', 'Categories deleted successfully.');
+			}
+		}
 		return redirect('category');
 	}
 	

@@ -206,10 +206,12 @@ thead
 										<tr style="border:0px solid black;">
 											<td colspan="2" align="center">
 												<table border="0" style="width:100%;" class="tblstyle table-bordered">
-											<?php foreach($results['pursales'] as $ky => $results) {  ?>
+											<?php foreach($results['pursales'] as $ky => $results1) {  ?>
 												<tr>
 													<td align="left" valign="top" style="padding-left:0px;" colspan="7">
+													    @if(isset($locdata[$ky]))
 														<h6><b>Location Code: {{$locdata[$ky]->code}}, Location Name: {{$locdata[$ky]->name}}</b></h6>
+														@endif
 													</td>
 												</tr>
 												<tr>
@@ -223,7 +225,7 @@ thead
 													<td width="15%" class="text-right"><b>Balance</b></td>
 												</tr>
 												<?php $qtyout = $qtyin = 0; ?>
-												@foreach($results as $result)
+												@foreach($results1 as $result)
 												<tr>
 													<td>{{$result->type}}</td>
 													<td>{{$result->voucher_no}}</td>
