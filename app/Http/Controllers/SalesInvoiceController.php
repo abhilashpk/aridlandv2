@@ -585,7 +585,7 @@ class SalesInvoiceController extends Controller
 			$deptid = '';
 		}
          $is_dept = true;
-		 $deptid =env('DEPARTMENT_ID');
+		 $deptid = Auth::user()->department_id;
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -683,7 +683,7 @@ class SalesInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount;
 			$is_dept = true;
-		    $deptid =env('DEPARTMENT_ID');
+		    $deptid = Auth::user()->department_id;
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
 		
 			return view('body.salesinvoice.addpi') //addpi  addpisp
@@ -867,7 +867,7 @@ class SalesInvoiceController extends Controller
 			$deptid = '';
 		}
          $is_dept = true;
-		 $deptid =env('DEPARTMENT_ID');
+		 $deptid =Auth::user()->department_id;
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -965,7 +965,7 @@ class SalesInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount;
 			$is_dept = true;
-		    $deptid =env('DEPARTMENT_ID');
+		    $deptid =Auth::user()->department_id;
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
 			//echo '<pre>';print_r($docItems);exit;
 			return view('body.salesinvoice.addcpi') //addpi  addpisp

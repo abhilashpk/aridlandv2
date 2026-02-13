@@ -1790,12 +1790,12 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	}
 	public function activeAccountList($deptid=null)
 	{
-		$query = $this->accountmaster->where('account_master.status',1);
+		$query = $this->accountmaster->where('account_master.status',1)->whereNull('account_master.deleted_at')
+			->where('account_master.is_hide', 0);
 		
 		//CHECK DEPARTMENT.......
-		if(Session::get('department')==1) { //if active...
-			if(Auth::user()->department_id!=0)
-				$query->where('department_id', Auth::user()->department_id);
+		if(Auth::user() && Auth::user()->department_id!=0) {
+			$query->where('department_id', Auth::user()->department_id);
 		}
 		
 		if($deptid)
@@ -1807,11 +1807,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	
 	public function getAccountByGroup($code)
 	{
-		return $this->accountmaster
+		$query = $this->accountmaster
 						->where('account_master.status',1)
-						->where('category',$code)
-						->select('account_master.id','account_master.master_name','account_master.account_id','account_master.account_group_id','account_master.category')
-						->get();
+						->whereNull('account_master.deleted_at')
+						->where('category',$code);
+		$query->where('account_master.is_hide', 0);
+		if(Auth::user() && Auth::user()->department_id!=0) {
+			$query->where('department_id', Auth::user()->department_id);
+		}
+
+		return $query->select('account_master.id','account_master.master_name','account_master.account_id','account_master.account_group_id','account_master.category')
+					 ->get();
 						/* ->join('account_group AS ag', function($join) {
 							$join->on('ag.id','=','account_master.account_group_id');
 						})

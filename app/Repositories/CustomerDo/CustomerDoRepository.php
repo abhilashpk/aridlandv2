@@ -312,7 +312,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		if($irow->cur_quantity == 0) {
 			$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])
 								   ->where('trtype', 1) ->where('department_id',env('DEPARTMENT_ID'))
-								   ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+								   ->where('status',1)->whereNull('deleted_at')
 								   ->select('pur_cost','cur_quantity','unit_cost')
 								   ->orderBy('id','DESC')->first();
 								   
@@ -440,7 +440,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				$dept = env('DEPARTMENT_ID');
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id);
+				$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -470,7 +470,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							$dept = env('DEPARTMENT_ID');
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id);
+							$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -562,7 +562,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 									
 									$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 									if($qtys) {
 										DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]); //MAY25
 									} else {
@@ -597,7 +597,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								
 							$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-															  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+															  ->whereNull('deleted_at')->select('id')->first();
 															  
 						//	$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key]; //MAY25
 							
@@ -926,7 +926,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 										$edit = DB::table('item_location_si')->where('id', $attributes['editid'][$key][$lk])->where('department_id',env('DEPARTMENT_ID'))->first();
 										$idloc = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 																	  //echo '<pre>';print_r($edit);exit;
 										if($edit) {
 											
@@ -964,7 +964,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+																  ->whereNull('deleted_at')->select('*')->first();
 																  
 								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key]; //MAY25
 								$lcqty = $attributes['quantity'][$key];
@@ -1081,7 +1081,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 										
 										$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys) {
 											DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 										} else {
@@ -1115,7 +1115,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 																  
 								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key]; //MAY25
 								$lcqty = $attributes['quantity'][$key];
@@ -1415,7 +1415,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	public function customerDOListCount()
 	{
-		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',auth()->user()->department_id)
+		$query = $this->customer_do->where('customer_do.status',1)->where('customer_do.department_id',auth()->user()->department_id);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','customer_do.customer_id');
 						} )
@@ -1491,7 +1491,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					  })
 					   
 					  ->where('poi.status',1)->where('isd.department_id',env('DEPARTMENT_ID'))
-					  ->where('poi.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.packing','isd.pkno')
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
@@ -1522,7 +1522,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					  ->where('isd.department_id',env('DEPARTMENT_ID'))
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity','isd.packing','isd.pkno')
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
@@ -1637,7 +1637,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 									   $join->on('U.id','=','PI.unit_id');
 								   })
 								   ->where('PI.status',1)
-								   ->where('PI.deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('PI.deleted_at')
 								   ->select('PI.*','customer_do.id','IM.item_code','U.unit_name')
 								   ->get();
 								   
@@ -1869,9 +1869,9 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 						->where('customer_do.id', $id)
 						->where('D.invoice_type','DO')
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('D.status',1)
-						->where('D.deleted_at','0000-00-00 00:00:00')
+						->whereNull('D.deleted_at')
 						->select('D.*')
 						->get();
 	}
@@ -1912,7 +1912,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			//UPDATE into ITEM STOCK LOG 
 			$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])
 								   ->where('trtype', 1)
-								   ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+								   ->where('status',1)->whereNull('deleted_at')
 								   ->where('cur_quantity', '>', 0)
 								   ->orderBy('id','ASC')->get();
 			//echo '<pre>';print_r($stocks);exit;					   
@@ -1960,7 +1960,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				
 				$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])
 								   ->where('trtype', 1)
-								   ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+								   ->where('status',1)->whereNull('deleted_at')
 								   ->select('pur_cost')
 								   ->orderBy('id','DESC')->first(); //echo '<pre>';print_r($stocks);exit;
 				
@@ -1980,7 +1980,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('cur_quantity','pur_cost')
 										->get(); //echo '<pre>';print_r($itmlogs);exit;
 		if($type==0) {								
@@ -1999,7 +1999,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			$cost_avg = round( (($itmcost / $itmqty) + $other_cost), 3);
 			$cost = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		} else {
-			$row = DB::table('item_log')->where('department_id',env('DEPARTMENT_ID'))->where('item_id', $attributes['item_id'][$key])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cost_avg')->orderBy('id', 'DESC')->first();
+			$row = DB::table('item_log')->where('department_id',env('DEPARTMENT_ID'))->where('item_id', $attributes['item_id'][$key])->where('status',1)->whereNull('deleted_at')->select('cost_avg')->orderBy('id', 'DESC')->first();
 			if($row)
 				$cost_avg = $cost = $row->cost_avg;
 			else
@@ -2033,7 +2033,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		
 		//GET DEFAULT LOCATION
 		if($attributes['default_location']==0) {
-			$locData = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+			$locData = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->whereNull('deleted_at')->select('id')->first();
 			$fromLoc = ($locData)?$locData->id:'';
 		} else
 			$fromLoc = $attributes['default_location'];
@@ -2108,7 +2108,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		
 		//GET DEFAULT LOCATION
 		if($attributes['default_location']==0) {
-			$locData = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+			$locData = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->whereNull('deleted_at')->select('id')->first();
 			$fromLoc = ($locData)?$locData->id:'';
 		} else
 			$fromLoc = $attributes['default_location'];
@@ -2123,7 +2123,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			$locdataold = DB::table('location_transfer')//->where('type','DO')
 					->where('locto_id', $loc)
 					->where('typeid', $attributes['order_item_id'][$key])->where('department_id',env('DEPARTMENT_ID'))
-					->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+					->where('status',1)->whereNull('deleted_at')->select('id')->first();
 					
 			if($locdataold) { Storage::prepend('dolog.txt', 'old data: ');
 				DB::table('location_transfer')->where('id',$locdataold->id)->where('department_id',env('DEPARTMENT_ID'))->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s')]);
@@ -2141,7 +2141,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			$locdata_new = DB::table('location_transfer')->where('type','DO')
 					->where('locto_id', $loc)
 					->where('typeid', $attributes['order_item_id'][$key])
-					->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+					->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->whereNull('deleted_at')->select('id')->first();
 					
 			if($locdata_new) { //Storage::prepend('dolog.txt', 'new data: ');
 				DB::table('location_transfer')->where('id',$locdata_new->id)->where('department_id',env('DEPARTMENT_ID'))
@@ -2170,4 +2170,5 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	
 }
+
 

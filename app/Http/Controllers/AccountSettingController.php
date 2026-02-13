@@ -16,6 +16,7 @@ use Session;
 use Redirect;
 use App;
 use DB;
+use Auth;
 
 class AccountSettingController extends Controller
 {
@@ -54,7 +55,11 @@ class AccountSettingController extends Controller
 		$data = array();
 		$voucher_type = $this->voucher_type->getVoucherType();
 		//echo '<pre>';print_r($voucher_type);exit;
-		$department = $this->department->activeDepartmentList();
+		if(Session::get('department')==1 && Auth::user()->department_id!=0) {
+			$department = DB::table('department')->where('id', Auth::user()->department_id)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
+		} else {
+			$department = $this->department->activeDepartmentList();
+		}
 		$accounts = $this->accountmaster->activeAccountList();
 		$cashacs = $this->accountmaster->getAccountByGroup('CASH');
 		$bankacs = $this->accountmaster->getAccountByGroup('BANK');
@@ -102,12 +107,40 @@ class AccountSettingController extends Controller
 
 		$data = array(); 
 		$voucher_type = $this->voucher_type->getVoucherType();
-		$department = $this->department->activeDepartmentList();
+		if(Session::get('department')==1 && Auth::user()->department_id!=0) {
+			$department = DB::table('department')->where('id', Auth::user()->department_id)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
+		} else {
+			$department = $this->department->activeDepartmentList();
+		}
 		$settings = $this->accountsetting->find($id);
 		
 		$accounts = $this->accountmaster->activeAccountList();
 		$cashacs = $this->accountmaster->getAccountByGroup('CASH');
 		$bankacs = $this->accountmaster->getAccountByGroup('BANK');
+
+		$validAccount = function($accountId) {
+			if(!$accountId) {
+				return false;
+			}
+			$query = DB::table('account_master')
+				->where('id', $accountId)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->where('is_hide', 0);
+			if(Session::get('department')==1 && Auth::user()->department_id!=0) {
+				$query->where('department_id', Auth::user()->department_id);
+			}
+			return (bool) $query->first();
+		};
+		if($settings) {
+			if(!$validAccount($settings->cash_account_id)) $settings->cash_account_id = null;
+			if(!$validAccount($settings->bank_account_id)) $settings->bank_account_id = null;
+			if(!$validAccount($settings->pdc_account_id)) $settings->pdc_account_id = null;
+			if(!$validAccount($settings->dr_account_master_id)) $settings->dr_account_master_id = null;
+			if(!$validAccount($settings->cr_account_master_id)) $settings->cr_account_master_id = null;
+			if(!$validAccount($settings->dr_account_master_id_to)) $settings->dr_account_master_id_to = null;
+			if(!$validAccount($settings->cr_account_master_id_to)) $settings->cr_account_master_id_to = null;
+		}
 		
 		if($settings->voucher_type_id==9) {
 			$pdcs = $this->accountmaster->getAccountByGroup('PDCR');
@@ -239,4 +272,3 @@ class AccountSettingController extends Controller
 	
 
 }
-
