@@ -118,16 +118,16 @@ class SalesInvoiceController extends Controller
 		$customer = $this->accountmaster->getCustomerList();//echo '<pre>';print_r($customer);exit;
 		$jobs = $this->jobmaster->activeJobmasterList();
 	
-        $item = DB::table('itemmaster')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+        $item = DB::table('itemmaster')->where('status',1)->whereNull('deleted_at')->get();
 		
-		$category = DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$category = DB::table('category')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
 		
 		//DEPT CHECK...
 		if(Session::get('department')==1) {
-			$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			$is_dept = true;
 		} else {
 			$departments = []; $is_dept = false;
@@ -314,16 +314,16 @@ class SalesInvoiceController extends Controller
 		$customer = $this->accountmaster->getCustomerList();
 		$jobs = $this->jobmaster->activeJobmasterList();
 	
-        $item = DB::table('itemmaster')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+        $item = DB::table('itemmaster')->where('status',1)->whereNull('deleted_at')->get();
 		
-		$category = DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$category = DB::table('category')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
 		
 		//DEPT CHECK...
 		if(Session::get('department')==1) {
-			$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			$is_dept = true;
 		} else {
 			$departments = []; $is_dept = false;
@@ -515,11 +515,11 @@ class SalesInvoiceController extends Controller
 	public function add($id = null, $doctype = null) {
 		//$this->objUtility->reEvalItemCostQuantity([200],$this->acsettings);
 		$acarr = ['Discount in Sales', 'Stock Account', 'Stock Excess', 'Cost Difference', 'Cost of Sales'];
-		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', env('DEPARTMENT_ID'))
+		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', Auth::user()->department_id)
 							->leftJoin('account_master AS am', function($join) {
 								$join->on('am.id','=','other_account_setting.account_id');
 								$join->where('am.status','=',1);
-								$join->where('am.deleted_at','=','0000-00-00 00:00:00');
+								$join->whereNull('am.deleted_at');
 							} )
 							->select('other_account_setting.*','am.master_name','am.account_id as code')
 							->orderBy('other_account_setting.id','ASC')->get();
@@ -538,7 +538,7 @@ class SalesInvoiceController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', Auth::user()->department_id)
                          ->where('is_default', 1) ->first();
 		
 		$sideptid = (Session::has('SI_deptid'))?Session::get('SI_deptid'):'';
@@ -550,7 +550,7 @@ class SalesInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($vouchers);exit;
 		$lastid = $this->sales_invoice->getLastId();
-		$locdefault = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$locdefault = DB::table('location')->where('is_default',1)->where('department_id',Auth::user()->department_id)->where('status',1)->whereNull('deleted_at')->select('id')->first();
 		$sales_location = DB::table('parameter3')
 							 ->join('location', 'location.id', '=', 'parameter3.location_id')
 							 ->join('account_master', 'account_master.id', '=', 'parameter3.account_id')
@@ -560,7 +560,7 @@ class SalesInvoiceController extends Controller
 		//RV FORM ENTRY............
 		$banks = $this->bank->activeBankList();
 		$vchrdata = $this->getVoucherRV(9,'CASH');
-		$footertxt = DB::table('header_footer')->where('doc','SI')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+		$footertxt = DB::table('header_footer')->where('doc','SI')->where('status',1)->whereNull('deleted_at')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','SI')
@@ -572,9 +572,9 @@ class SalesInvoiceController extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$deptid = ($sideptid!='')?$sideptid:$deptid;
@@ -595,7 +595,7 @@ class SalesInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($departments);exit;
 		
-		$crmtem = DB::table('crm_template')->where('doc_type','SOB')->where('deleted_at',null)->get();
+		$crmtem = DB::table('crm_template')->where('doc_type','SOB')->whereNull('deleted_at')->get();
 		//echo '<pre>';print_r($crmtem);exit;
 		
 		if($id) {
@@ -627,7 +627,7 @@ class SalesInvoiceController extends Controller
 							$join->where('crm_info.doc_id','=',$sid);
 					})
 					->where('crm_template.doc_type','SOB')
-					->where('crm_template.deleted_at',null)->get();
+					->whereNull('crm_template.deleted_at')->get();
 					
 				//AUG24
 				$resdo = DB::table('sales_order')->whereIn('id',$ids)->select('voucher_no')->get();
@@ -733,13 +733,13 @@ class SalesInvoiceController extends Controller
 		if($vouchers) { 
 			$prefix = $vouchers[0]->prefix;
 			$isprefix = $vouchers[0]->is_prefix;
-			$dept = env('DEPARTMENT_ID');//Session::get('dpt_id');
+			$dept = Auth::user()->department_id;//Session::get('dpt_id');
 			$vtype = $vouchers[0]->voucher_type_id;
 
 			$usedNos = DB::table('sales_invoice')
                 //->where('voucher_type', $voucherType)
-                ->where('department_id', env('DEPARTMENT_ID'))
-                ->where('deleted_at', '0000-00-00 00:00:00')
+                ->where('department_id', Auth::user()->department_id)
+                ->whereNull('deleted_at')
                 ->pluck('voucher_no');
 
 			$voucherNo = $this->objUtility->previewVoucherNo($vtype, $isprefix, $prefix, $dept);
@@ -796,11 +796,11 @@ class SalesInvoiceController extends Controller
 	public function addc($id = null, $doctype = null) {
 		//$this->objUtility->reEvalItemCostQuantity([200],$this->acsettings);
 			$acarr = ['Discount in Sales', 'Stock Account', 'Stock Excess', 'Cost Difference', 'Cost of Sales'];
-		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', env('DEPARTMENT_ID'))
+		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', Auth::user()->department_id)
 							->leftJoin('account_master AS am', function($join) {
 								$join->on('am.id','=','other_account_setting.account_id');
 								$join->where('am.status','=',1);
-								$join->where('am.deleted_at','=','0000-00-00 00:00:00');
+								$join->whereNull('am.deleted_at');
 							} )
 							->select('other_account_setting.*','am.master_name','am.account_id as code')
 							->orderBy('other_account_setting.id','ASC')->get();
@@ -820,7 +820,7 @@ class SalesInvoiceController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', Auth::user()->department_id)
                          ->where('is_default', 1) ->first();
 		
 		$sideptid = (Session::has('SI_deptid'))?Session::get('SI_deptid'):'';
@@ -832,7 +832,7 @@ class SalesInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($vouchers);exit;
 		$lastid = $this->sales_invoice->getLastId();
-		$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$locdefault = DB::table('location')->where('is_default',1)->where('status',1)->whereNull('deleted_at')->select('id')->first();
 		$sales_location = DB::table('parameter3')
 							 ->join('location', 'location.id', '=', 'parameter3.location_id')
 							 ->join('account_master', 'account_master.id', '=', 'parameter3.account_id')
@@ -842,7 +842,7 @@ class SalesInvoiceController extends Controller
 		//RV FORM ENTRY............
 		$banks = $this->bank->activeBankList();
 		$vchrdata = $this->getVoucherRV(9,'CASH');
-		$footertxt = DB::table('header_footer')->where('doc','SI')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+		$footertxt = DB::table('header_footer')->where('doc','SI')->where('status',1)->whereNull('deleted_at')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','SI')
@@ -854,9 +854,9 @@ class SalesInvoiceController extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$deptid = ($sideptid!='')?$sideptid:$deptid;
@@ -867,7 +867,7 @@ class SalesInvoiceController extends Controller
 			$deptid = '';
 		}
          $is_dept = true;
-		 $deptid =Auth::user()->department_id;
+		 $deptid = Auth::user()->department_id;
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -877,7 +877,7 @@ class SalesInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($departments);exit;
 		
-		$crmtem = DB::table('crm_template')->where('doc_type','SOB')->where('deleted_at',null)->get();
+		$crmtem = DB::table('crm_template')->where('doc_type','SOB')->whereNull('deleted_at')->get();
 		//echo '<pre>';print_r($crmtem);exit;
 		
 		if($id) {
@@ -909,7 +909,7 @@ class SalesInvoiceController extends Controller
 							$join->where('crm_info.doc_id','=',$sid);
 					})
 					->where('crm_template.doc_type','SOB')
-					->where('crm_template.deleted_at',null)->get();
+					->whereNull('crm_template.deleted_at')->get();
 					
 				//AUG24
 				$resdo = DB::table('sales_order')->whereIn('id',$ids)->select('voucher_no')->get();
@@ -965,7 +965,7 @@ class SalesInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount;
 			$is_dept = true;
-		    $deptid =Auth::user()->department_id;
+		    $deptid = Auth::user()->department_id;
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
 			//echo '<pre>';print_r($docItems);exit;
 			return view('body.salesinvoice.addcpi') //addpi  addpisp
@@ -1015,13 +1015,13 @@ class SalesInvoiceController extends Controller
 			if($vouchers) { 
 			$prefix = $vouchers[0]->prefix;
 			$isprefix = $vouchers[0]->is_prefix;
-			$dept = env('DEPARTMENT_ID');//Session::get('dpt_id');
+			$dept = Auth::user()->department_id;//Session::get('dpt_id');
 			$vtype = $vouchers[0]->voucher_type_id;
 
 			$usedNos = DB::table('sales_invoice')
                 //->where('voucher_type', $voucherType)
-                ->where('department_id', env('DEPARTMENT_ID'))
-                ->where('deleted_at', '0000-00-00 00:00:00')
+                ->where('department_id', Auth::user()->department_id)
+                ->whereNull('deleted_at')
                 ->pluck('voucher_no');
 
 			$voucherNo = $this->objUtility->previewVoucherNo($vtype, $isprefix, $prefix, $dept);
@@ -1102,7 +1102,7 @@ class SalesInvoiceController extends Controller
 	public function save(Request $request) {// echo '<pre>';print_r($request->all());exit;
 		
 		if(Session::get('department')==1) {
-			if( $this->validate(
+			$this->validate(
 				$request, 
 				[    'location_id' =>'required','location_id' => 'required',
 				    'customer_name' => 'required','customer_id' => 'required',
@@ -1118,12 +1118,10 @@ class SalesInvoiceController extends Controller
 				 'quantity.*' => 'Item quantity is required.',
 				 'cost.*' => 'Item cost is required.'
 				]
-			)) {
-				return redirect('sales_invoice/add')->withInput()->withErrors();
-			}
+			);
 			
 		} else {
-			if( $this->validate(
+			$this->validate(
 				$request, 
 				[ //'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
 				 //'voucher_no' => 'required|unique:sales_invoice,voucher_no,NULL,id,deleted_at,NULL',
@@ -1144,9 +1142,7 @@ class SalesInvoiceController extends Controller
 				 'quantity.*' => 'Item quantity is required.',
 				 'cost.*' => 'Item cost is required.' 
 				]
-			)) {
-				return redirect('sales_invoice/add')->withInput()->withErrors();
-			}
+				);
 		}
 		
 		//if dept active... set department cost and stock account...
@@ -1220,7 +1216,7 @@ class SalesInvoiceController extends Controller
 								$join->on('users.id','=','sales_invoice.created_by');
 								 })
 		                     ->where('PI.status', 1)
-		                     ->where('PI.deleted_at', '0000-00-00 00:00:00')
+		                     ->whereNull('PI.deleted_at')
 		                     ->select('PI.*','IM.item_code','U.unit_name','sales_invoice.voucher_no','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total','sales_invoice.created_at','users.name')
 		                      ->orderBY('PI.id','ASC')->get();
 		                    //echo '<pre>';print_r($data['salesitems']);exit;
@@ -1388,30 +1384,7 @@ class SalesInvoiceController extends Controller
 	
 	public function edit($id) { 
 	    
-	    /*$drow = DB::table('account_transaction')->where('voucher_type','SI')->where('voucher_type_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('transaction_type','Dr')->select(DB::raw("SUM(account_transaction.amount) AS dr_amount"))->first();
-	    
-	    $crow = DB::table('account_transaction')->where('voucher_type','SI')->where('voucher_type_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('transaction_type','Cr')->select(DB::raw("SUM(account_transaction.amount) AS cr_amount"))->first();
-	    
-	    if($drow->dr_amount!=$drow->cr_amount)
-	        throw new ValidationException('Payment entry validation error! Please try again.',$this->getErrors());*/
-	    
-        /*$query = DB::table('sales_invoice');
-      $sr = $query->select('sales_invoice.*',
-       DB::raw("(SELECT COUNT(*) FROM sales_invoice AS SI WHERE SI.customer_id=sales_invoice.customer_id AND SI.status=1 AND SI.deleted_at='0000-00-00 00:00:00') AS si_count"))->get();
-       
-       $query = DB::table('account_transaction')->where('voucher_type','SI')->where('voucher_type_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00');
-      $sr = $query->select('sales_invoice.*',
-       DB::raw("(SELECT SUM(account_transaction.amount) FROM account_transaction WHERE SI.customer_id=sales_invoice.customer_id AND SI.status=1 AND SI.deleted_at='0000-00-00 00:00:00') AS si_count"))->get();*/
-
-			                       
-		/*$sr = DB::table('account_transaction')->where('voucher_type','SI')->where('voucher_type_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
-			            ->select(DB::raw("SUM(account_transaction.amount) AS dr_aount WHERE account_transaction.transaction_type='Dr'"),
-			                       DB::raw("SUM(account_transaction.amount) AS cr_amount WHERE account_transaction.transaction_type='Cr'"),
-			                       DB::raw("SUM(dr_amount) - SUM(cr_amount) AS balance"))->first();*/
-			                       
-			           //  echo '<pre>';print_r($sr);exit;
-		
-		$data = array();
+	   	$data = array();
 		$itemmaster = $this->itemmaster->activeItemmasterList();
 		$terms = $this->terms->activeTermsList();
 		$jobs = $this->jobmaster->activeJobmasterList();
@@ -1438,7 +1411,7 @@ class SalesInvoiceController extends Controller
 							$join->where('crm_info_si.doc_id','=',$id);
 					})
 					->where('crm_template.doc_type','SOB')
-					->where('crm_template.deleted_at',null)->get();
+					->whereNull('crm_template.deleted_at')->get();
 					
 		if($this->mod_si_roundoff->is_active==1)
 			$round_off = true;
@@ -1478,9 +1451,9 @@ class SalesInvoiceController extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -1583,7 +1556,7 @@ class SalesInvoiceController extends Controller
 	public function update(Request $request)
 	{ //echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('sales_invoice_id');
-				if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			'location_id' =>'required','location_id' => 'required',
@@ -1601,10 +1574,7 @@ class SalesInvoiceController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('sales_invoice/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		if( $this->sales_invoice->update($id, $request->all()) ) {
 			
@@ -1741,7 +1711,7 @@ class SalesInvoiceController extends Controller
 								$join->on('users.id','=','sales_invoice.modify_by');
 								 })
 		                     ->where('PI.status', 1)
-		                    ->where('PI.deleted_at', '0000-00-00 00:00:00')
+		                    ->whereNull('PI.deleted_at')
 		                     ->select('PI.*','IM.item_code','U.unit_name','sales_invoice.voucher_no','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total','sales_invoice.modify_at','users.name')
 		                      ->orderBY('PI.id','ASC')->get();
 		                    //echo '<pre>';print_r($data['salesitems']);exit;
@@ -1812,7 +1782,7 @@ class SalesInvoiceController extends Controller
 							$join->where('crm_info_si.doc_id','=',$id);
 					})
 					->where('crm_template.doc_type','SOB')
-					->where('crm_template.deleted_at',null)->get();
+					->whereNull('crm_template.deleted_at')->get();
 					
 		if($this->mod_si_roundoff->is_active==1)
 			$round_off = true;
@@ -1852,9 +1822,9 @@ class SalesInvoiceController extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -2181,12 +2151,12 @@ class SalesInvoiceController extends Controller
 		$splitbills = $this->sales_invoice->getSplitBills($customer_id);
 		//echo '<pre>';print_r($splitbills);exit;
 		if($rvid) {
-			$rvdat = DB::table('receipt_voucher_entry')->where('id', $rvid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			$rvdat = DB::table('receipt_voucher_entry')->where('id', $rvid)->where('status',1)->whereNull('deleted_at')->first();
 			if($rvdat) {
-				$rvref = DB::table('receipt_voucher_entry')->where('entry_type', 'Dr')->where('receipt_voucher_id',$rvdat->receipt_voucher_id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference')->first();
+				$rvref = DB::table('receipt_voucher_entry')->where('entry_type', 'Dr')->where('receipt_voucher_id',$rvdat->receipt_voucher_id)->where('status',1)->whereNull('deleted_at')->select('reference')->first();
 				$rvrefdat = ($rvref)?explode(',',$rvref->reference):[];
 				
-				$rvarr = $this->makeArr(DB::table('receipt_voucher_entry')->where('entry_type', 'Cr')->where('receipt_voucher_id',$rvdat->receipt_voucher_id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference','amount')->get());
+				$rvarr = $this->makeArr(DB::table('receipt_voucher_entry')->where('entry_type', 'Cr')->where('receipt_voucher_id',$rvdat->receipt_voucher_id)->where('status',1)->whereNull('deleted_at')->select('reference','amount')->get());
 				
 			}
 		}
@@ -2211,10 +2181,10 @@ class SalesInvoiceController extends Controller
 		$openbalances = $this->sales_invoice->getOpenBalances($customer_id);
 		$sinbills = $this->sales_invoice->getSINbills($customer_id,null,null);
 		
-		$rvref = DB::table('receipt_voucher_entry')->where('entry_type', 'Dr')->where('receipt_voucher_id',$rvid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference')->first();
+		$rvref = DB::table('receipt_voucher_entry')->where('entry_type', 'Dr')->where('receipt_voucher_id',$rvid)->where('status',1)->whereNull('deleted_at')->select('reference')->first();
 		$rvrefdat = ($rvref)?explode(',',$rvref->reference):[];
 		
-		$rvarr = $this->makeArr(DB::table('receipt_voucher_entry')->where('entry_type', 'Cr')->where('receipt_voucher_id',$rvid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference','amount')->get());
+		$rvarr = $this->makeArr(DB::table('receipt_voucher_entry')->where('entry_type', 'Cr')->where('receipt_voucher_id',$rvid)->where('status',1)->whereNull('deleted_at')->select('reference','amount')->get());
 		
 		return view('body.salesinvoice.custinvoiceedit')
 					->withNum($no)
@@ -2241,7 +2211,7 @@ class SalesInvoiceController extends Controller
 				print_r($rvrefdat);
 			}
 			
-			$rvarr = $this->makeArr(DB::table('receipt_voucher_entry')->where('entry_type', 'Cr')->where('receipt_voucher_id',$rvdat->receipt_voucher_id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('reference','amount')->get());
+			$rvarr = $this->makeArr(DB::table('receipt_voucher_entry')->where('entry_type', 'Cr')->where('receipt_voucher_id',$rvdat->receipt_voucher_id)->where('status',1)->whereNull('deleted_at')->select('reference','amount')->get());
 		}
 		//$advance = $this->sales_invoice->getAdvance($customer_id); 	
 		return view('body.salesinvoice.custinvoice')
@@ -2554,7 +2524,7 @@ class SalesInvoiceController extends Controller
 	
 			$data = DB::table('sales_invoice')->where('sales_invoice.customer_id',$id)
 			                    ->join('jobmaster', 'jobmaster.id', '=', 'sales_invoice.job_id')
-			                   ->where('sales_invoice.status',1)->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+			                   ->where('sales_invoice.status',1)->whereNull('sales_invoice.deleted_at')
 			                   ->select('jobmaster.id','jobmaster.code')->orderBy('jobmaster.id', 'DESC')->get();
 			return $data;
 		}
@@ -3259,9 +3229,9 @@ public function dataExport(Request $request)
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -3378,7 +3348,7 @@ public function dataExport(Request $request)
 							$join->where('AT.voucher_type','=','SI');
 							$join->where('AT.transaction_type','=','Dr');
 							$join->where('AT.status','=',1);
-							$join->where('AT.deleted_at','=','0000-00-00 00:00:00');
+							$join->whereNull('AT.deleted_at');
 						})
 						->select('AT.*');
 						
@@ -3386,20 +3356,20 @@ public function dataExport(Request $request)
 					->join('receipt_voucher_tr AS RVT', function($join) {
 						$join->on('RVT.sales_invoice_id','=','sales_invoice.id');
 						$join->where('RVT.bill_type','=','SI');
-						$join->where('RVT.deleted_at','=','0000-00-00 00:00:00');
+						$join->whereNull('RVT.deleted_at');
 					})
 					->join('receipt_voucher_entry AS RVE', function($join) {
 						$join->on('RVE.id','=','RVT.receipt_voucher_entry_id');
 						$join->where('RVT.bill_type','=','SI');
 						$join->where('RVT.status','=',1);
-						$join->where('RVT.deleted_at','=','0000-00-00 00:00:00');
+						$join->whereNull('RVT.deleted_at');
 					})
 					->Join('account_transaction AS AT', function($join) {
 						$join->on('AT.voucher_type_id','=','RVE.id');
 						$join->where('AT.voucher_type','=','RV');
 						$join->where('AT.transaction_type','=','Cr');
 						$join->where('AT.status','=',1);
-						$join->where('AT.deleted_at','=','0000-00-00 00:00:00');
+						$join->whereNull('AT.deleted_at');
 					})
 					->select('AT.*');
 					
@@ -3442,7 +3412,7 @@ public function dataExport(Request $request)
 			    //$id = $row->document_id;
 			    if($row->document_type=='CDO' && $row->doc_row_id != 0) {
 			        
-    			    $doRow = DB::table('customer_do_item')->where('id',$row->doc_row_id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','quantity','balance_quantity')->first();
+    			    $doRow = DB::table('customer_do_item')->where('id',$row->doc_row_id)->where('status',1)->whereNull('deleted_at')->select('id','quantity','balance_quantity')->first();
     			    //echo '<pre>';print_r($doRow);
     			    if($doRow) {
     			        
@@ -3455,7 +3425,7 @@ public function dataExport(Request $request)
     			            $balqty = ($doRow->balance_quantity > $row->quantity)?($doRow->balance_quantity - $row->quantity):($row->quantity - $doRow->balance_quantity);
     						
     					    //CHECKE ANY MORE SI IS CREATED AGAINST THIS DO IEM....
-    					    $siRow = DB::table('sales_invoice_item')->where('doc_row_id',$doRow->id)->where('sales_invoice_id','!=',$siId)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    					    $siRow = DB::table('sales_invoice_item')->where('doc_row_id',$doRow->id)->where('sales_invoice_id','!=',$siId)->where('status',1)->whereNull('deleted_at')->count();
     					    if($siRow==0) {
     					        DB::table('customer_do_item')->where('id',$doRow->id)
     									->update(['is_transfer' => 0, 'balance_quantity' => 0]);
