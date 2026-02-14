@@ -11,4 +11,6 @@ docker-data/
 aridland-new.sql
 app/Repositories/Location/LocationRepository11.php
 resources/views/body/materialrequisition/add11.blade.php
+public/stimulsoftV2/*.log
+public/stimulsoftV2/*.log
 

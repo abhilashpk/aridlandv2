@@ -237,7 +237,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
                                 //PDCR table inserting...
 								$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',18)
                     						->join('account_master','account_master.id','=','account_setting.dr_account_master_id')
-                    						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                    						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                     						->select('account_setting.dr_account_master_id','account_master.master_name')->first();
                     			if($bacnts)
                     			    $pdcr_dr_account_id = $bacnts->dr_account_master_id;
@@ -315,7 +315,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								//PDCI table inserting...
 								$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',19)
                         						->join('account_master','account_master.id','=','account_setting.cr_account_master_id')
-                        						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                        						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                         						->select('account_setting.cr_account_master_id','account_master.master_name')->first();
                     			if($bacnts)
                     			    $pdcr_cr_account_id = $bacnts->cr_account_master_id;
@@ -815,7 +815,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									//PDCR table inserting...
 									$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',18)
                     						->join('account_master','account_master.id','=','account_setting.dr_account_master_id')
-                    						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                    						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                     						->select('account_setting.dr_account_master_id','account_master.master_name')->first();
                         			if($bacnts)
                         			    $pdcr_dr_account_id = $bacnts->dr_account_master_id;
@@ -894,7 +894,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									//$acrow = DB::table('account_master')->where('status',1)->where('category','PDCI')->select('id')->first();
     								$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',19)
                             						->join('account_master','account_master.id','=','account_setting.cr_account_master_id')
-                            						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                            						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                             						->select('account_setting.cr_account_master_id','account_master.master_name')->first();
                         			if($bacnts)
                         			    $pdcr_cr_account_id = $bacnts->cr_account_master_id;
@@ -1086,7 +1086,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	
 	public function delete($id)
 	{
-		DB::table('account_transaction')->where('account_master_id', $id)->update(['status' => 0, 'deleted_at' => '0000-00-00 00:00:00']);
+		DB::table('account_transaction')->where('account_master_id', $id)->update(['status' => 0, 'deleted_at' => null]);
 		$this->accountmaster = $this->accountmaster->find($id);
 		$this->accountmaster->delete();
 	}
@@ -1844,12 +1844,12 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	}
 	public function activeAccountList($deptid=null)
 	{
-		$query = $this->accountmaster->where('account_master.status',1);
+		$query = $this->accountmaster->where('account_master.status',1)->whereNull('account_master.deleted_at')
+			->where('account_master.is_hide', 0);
 		
 		//CHECK DEPARTMENT.......
-		if(Session::get('department')==1) { //if active...
-			if(Auth::user()->department_id!=0)
-				$query->where('department_id', Auth::user()->department_id);
+		if(Auth::user() && Auth::user()->department_id!=0) {
+			$query->where('department_id', Auth::user()->department_id);
 		}
 		
 		if($deptid)
@@ -1861,11 +1861,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	
 	public function getAccountByGroup($code)
 	{
-		return $this->accountmaster
+		$query = $this->accountmaster
 						->where('account_master.status',1)
-						->where('category',$code)
-						->select('account_master.id','account_master.master_name','account_master.account_id','account_master.account_group_id','account_master.category')
-						->get();
+						->whereNull('account_master.deleted_at')
+						->where('category',$code);
+		$query->where('account_master.is_hide', 0);
+		if(Auth::user() && Auth::user()->department_id!=0) {
+			$query->where('department_id', Auth::user()->department_id);
+		}
+
+		return $query->select('account_master.id','account_master.master_name','account_master.account_id','account_master.account_group_id','account_master.category')
+					 ->get();
 						/* ->join('account_group AS ag', function($join) {
 							$join->on('ag.id','=','account_master.account_group_id');
 						})
@@ -9342,10 +9348,18 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			if($check > 0 || $checkp>0)
 				return 0; */
 			
-			$check = $this->accountmaster->where('master_name', $attributes['master_name'])->where('status',1)->whereNull('deleted_at')->count();
-			if($check > 0)
+			// $check = $this->accountmaster->where('master_name', $attributes['master_name'])->where('status',1)->whereNull('deleted_at')->count();
+			$check = $this->accountmaster
+				->where('master_name', $attributes['master_name'])
+				->where('department_id', Auth::user()->department_id)
+				->where('status',1)
+				->whereNull('deleted_at')
+				->count();
+			
+			if ($check > 0) {
 				DB::rollback();
 				return 0;
+			}
 			
 			$group = DB::table('account_group')->where('category', $attributes['category'])
 											->where('status',1)

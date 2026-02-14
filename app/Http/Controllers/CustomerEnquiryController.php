@@ -12,11 +12,13 @@ use App\Repositories\CustomerEnquiry\CustomerEnquiryInterface;
 use App\Repositories\Salesman\SalesmanInterface;
 use App\Repositories\Forms\FormsInterface;
 use App\Repositories\Location\LocationInterface;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Session;
 
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
-use Session;
+
 use Response;
 use Excel;
 use App;
@@ -234,46 +236,128 @@ class CustomerEnquiryController extends Controller
 					->withData($data);
 	}
 	
-	public function save(Request $request) { //
-		//echo '<pre>';print_r( $request->all() );exit;
+	// public function save(Request $request) { //
+	// 	//echo '<pre>';print_r( $request->all() );exit;
 		
-		/* $this->validate($request, [
-        'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
-    ]); */
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'customer_name' => 'required','customer_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('customer_enquiry/add')->withInput()->withErrors();
-		}
+	// 	/* $this->validate($request, [
+    //     'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
+    // ]); */
+	// 	if( $this->validate(
+	// 		$request, 
+	// 		[//'reference_no' => 'required',
+	// 		 'customer_name' => 'required','customer_id' => 'required',
+	// 		 'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 		 'unit_id.*' => 'required',
+	// 		 'quantity.*' => 'required',
+	// 		 'cost.*' => 'required'
+	// 		],
+	// 		[//'reference_no.required' => 'Reference no. is required.',
+	// 		 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+	// 		 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 		 'unit_id.*' => 'Item unit is required.',
+	// 		 'quantity.*' => 'Item quantity is required.',
+	// 		 'cost.*' => 'Item cost is required.'
+	// 		]
+	// 	)) {
+	// 		//echo '<pre>';print_r($request->flash());exit;
+	// 		return redirect('customer_enquiry/add')->withInput()->withErrors();
+	// 	}
 		
-		$id = $this->customer_enquiry->create($request->all());
+	// 	$id = $this->customer_enquiry->create($request->all());
 	
-		if($id) {
-			Session::flash('message', 'Customer Enquiry added successfully.'); 
-			return redirect('customer_enquiry/add');
+	// 	if($id) {
+	// 		Session::flash('message', 'Customer Enquiry added successfully.'); 
+	// 		return redirect('customer_enquiry/add');
 			
+	// 	} else {
+	// 		Session::flash('error', 'Something went wrong, Order failed to add!');
+	// 		return redirect('customer_enquiry/add');
+	// 	}
+		
+		
+	// }
+
+
+	public function save(Request $request)
+	{
+		$rules = [
+			'customer_name'   => 'required',
+			'customer_id'     => 'required',
+			'item_code.*'     => 'required',
+			'item_id.*'       => 'required',
+			'unit_id.*'       => 'required',
+			'quantity.*'      => 'required|numeric|min:0.01',
+			'cost.*'          => 'required|numeric|min:0',
+		];
+
+		$messages = [
+			'customer_name.required' => 'Customer Name is required.',
+			'customer_id.required'   => 'Customer name is invalid.',
+			'item_code.*.required'   => 'Item code is required.',
+			'item_id.*.required'     => 'Item code is invalid.',
+			'unit_id.*.required'     => 'Item unit is required.',
+			'quantity.*.required'    => 'Item quantity is required.',
+			'quantity.*.numeric'     => 'Item quantity must be numeric.',
+			'quantity.*.min'         => 'Item quantity must be greater than 0.',
+			'cost.*.required'        => 'Item cost is required.',
+			'cost.*.numeric'         => 'Item cost must be numeric.',
+		];
+
+		// ✅ This will auto redirect back if validation fails
+		$request->validate($rules, $messages);
+
+		// Merge default values for ALL required database fields
+		$data = array_merge([
+			'voucher_no' => '',
+			'reference_no' => '',
+			'voucher_date' => date('Y-m-d'),
+			'subject' => '',
+			'description' => '',
+			'job_id' => 0,
+			'header_id' => 0,
+			'footer_id' => 0,
+			'is_fc' => 0,
+			'currency_id' => 0,
+			'currency_rate' => 0,
+			'total' => 0,
+			'vat_amount' => 0,
+			'discount' => 0,
+			'net_total' => 0,
+			'total_fc' => 0,
+			'discount_fc' => 0,
+			'net_total_fc' => 0,
+			'vat_amount_fc' => 0,
+			'is_export' => 0,
+			'subtotal' => 0,
+			'subtotal_fc' => 0,
+			'vehicle_id' => 0,
+			'job_type' => 0,
+			'jobnature' => 0,
+			'fabrication' => '',
+			'prefix' => '',
+			'kilometer' => '',
+			'footer_text' => '',
+			'terms_id' => 0,
+			'lead_id' => 0,
+			'location_id' => 0,
+			'is_transfer' => 0,
+			'is_editable' => 1,
+			'doc_status' => 0,
+			'comment' => '',
+		], $request->all());
+
+		// Pass all request data with defaults
+		$id = $this->customer_enquiry->create($data);
+
+		if ($id) {
+			Session::flash('message', 'Customer Enquiry added successfully.');
 		} else {
 			Session::flash('error', 'Something went wrong, Order failed to add!');
-			return redirect('customer_enquiry/add');
 		}
-		
-		
+
+		return redirect('customer_enquiry/add');
 	}
+
 	
 	public function destroy($id)
 	{

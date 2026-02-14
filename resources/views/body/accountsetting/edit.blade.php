@@ -68,10 +68,10 @@
                                     </div>
                                 </div>
 								
-								<div class="form-group">
+                                <div class="form-group">
                                     <label for="input-text" class="col-sm-3 control-label">Department </label>
                                     <div class="col-sm-8">
-                                        <select id="department_id" class="form-control select2" style="width:100%" name="department_id">
+                                        <select id="department_id" class="form-control select2" style="width:100%" name="department_id" @if(Session::get('department')==1 && count($department)==1) disabled @endif>
                                             <option value="">Select Department...</option>
 											@foreach ($department as $dept)
 											@if($settingrow->department_id==$dept['id'])
@@ -82,6 +82,9 @@
 											<option value="{{ $dept['id'] }}" {{$sel}}>{{ $dept['name'] }}</option>
 											@endforeach
                                         </select>
+                                        @if(Session::get('department')==1 && count($department)==1)
+                                            <input type="hidden" name="department_id" value="{{ $department[0]['id'] }}">
+                                        @endif
                                     </div>
                                 </div>
 								

@@ -39,7 +39,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 		$this->location_transfer->prefix = isset($attributes['prefix'])?$attributes['prefix']:'';
 		$this->location_transfer->reference_no = isset($attributes['reference_no'])?$attributes['reference_no']:'';
 		$this->location_transfer->description = isset($attributes['description'])?$attributes['description']:'';
-		$this->location_transfer->department_id = env('DEPARTMENT_ID');
+		$this->location_transfer->department_id = auth()->user()->department_id;
 		$this->location_transfer->locfrom_id = isset($attributes['locfrom_id'])?$attributes['locfrom_id']:'';
 		$this->location_transfer->locto_id = isset($attributes['locto_id'])?$attributes['locto_id']:'';
 		$this->location_transfer->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
@@ -68,10 +68,10 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 		  try {
 
                //VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('location_transfer')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('location_transfer')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -99,10 +99,10 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = env('DEPARTMENT_ID');
+							$dept = auth()->user()->department_id;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('location_transfer')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('location_transfer')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -413,7 +413,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 					->join('location AS LT', function($join) {
 							$join->on('LT.id','=','location_transfer.locto_id');
 						} )
-					->where('location_transfer.department_id',env('DEPARTMENT_ID'))
+					->where('location_transfer.department_id',auth()->user()->department_id)
 					->select('LF.name AS locfrom','LT.name AS locto','location_transfer.*')
 					->orderBY('location_transfer.id', 'DESC')->get();
 		
@@ -489,7 +489,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 									   $join->on('U.id','=','STI.unit_id');
 								   })
 								   ->where('STI.status', 1)
-								   ->where('STI.deleted_at', '0000-00-00 00:00:00')
+								   ->whereNull('STI.deleted_at')
 								   ->select('STI.*','IM.item_code','U.unit_name')//'sales_invoice.id',
 								   ->get();
 								   

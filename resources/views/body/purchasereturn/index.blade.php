@@ -253,10 +253,10 @@ $(function() {
 		{ "data": "invoice_no" },
 		{ "data": "supplier" },
 		{ "data": "net_amount" },
-		@permission('sr-edit'){ "data": "edit","bSortable": false },@endpermission
-		@permission('sr-edit'){ "data": "viewonly","bSortable": false },@endpermission
-		@permission('sr-print'){ "data": "print","bSortable": false },@endpermission
-		@permission('sr-delete'){ "data": "delete","bSortable": false },@endpermission
+		@can('sr-edit'){ "data": "edit","bSortable": false },@endcan
+		@can('sr-edit'){ "data": "viewonly","bSortable": false },@endcan
+		@can('sr-print'){ "data": "print","bSortable": false },@endcan
+		@can('sr-delete'){ "data": "delete","bSortable": false },@endcan
 	]	
 	  
 	});

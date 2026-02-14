@@ -155,8 +155,14 @@
                                         @foreach($invoicerow as $item)
 										@php $i++; @endphp
 										
+											@php $pdcLocked = ($item->category=='PDCR' && isset($item->pdc_status) && $item->pdc_status==1); @endphp
 											<div class="itemdivChld">							
-												<div class="form-group classtrn" style="margin-bottom:1px;" id="trns_{{$i}}">
+												<div class="form-group classtrn" style="margin-bottom:1px;" id="trns_{{$i}}" data-pdc-locked="{{ $pdcLocked ? 1 : 0 }}">
+													@if($pdcLocked)
+														<div class="col-xs-12">
+															<span class="label label-warning">PDC transferred</span>
+														</div>
+													@endif
 												@if($item->category=='PDCR')
 													@php $ispdc = true; @endphp
 													@if($isdept)
@@ -213,7 +219,7 @@
 													</div>
 													
 													<div class="col-xs-1 pdcfm" style="width:8%;">
-														<span class="small">Chq. Date</span> <input type="text" id="chkdate_{{$i}}" value="<?php echo ($item->cheque_date=='0000-00-00')?'':date('d-m-Y',strtotime($item->cheque_date));?>" name="cheque_date[]" class="form-control chqdate" data-language='en'>
+														<span class="small">Chq. Date</span> <input type="text" id="chkdate_{{$i}}" value="<?php echo (empty($item->cheque_date) || $item->cheque_date=='0000-00-00')?'':date('d-m-Y',strtotime($item->cheque_date));?>" name="cheque_date[]" class="form-control chqdate" data-language='en'>
 													</div>
 													
 													
@@ -770,6 +776,16 @@ if ($.fn.select2) {
     $(this).select2();
   });
 }
+
+$('.classtrn[data-pdc-locked="1"]').each(function() {
+  var $row = $(this);
+  $row.find('input,select,textarea,button').prop('disabled', true);
+  $row.find('input[type=hidden]').prop('disabled', false);
+  $row.find('.btn-add-item, .btn-remove-item').prop('disabled', true);
+  if ($.fn.select2) {
+    $row.find('select.select2').prop('disabled', true).trigger('change.select2');
+  }
+});
 
 /* ---------- Helpers ---------- */
 function isPdcRow(idx){

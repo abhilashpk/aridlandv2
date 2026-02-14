@@ -133,7 +133,7 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmSalesInvoice" id="frmSalesInvoice" action="{{ url('sales_invoice/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-								<input type="hidden" name="default_location" id="default_location" value="{{ $locdefault->id }}">
+								<input type="hidden" name="default_location" id="default_location" value="{{ $locdefault?->id }}">
 								<input type="hidden" name="is_cash" id="is_cash" value="{{$vouchers[0]->is_cash_voucher}}">
 							    @if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">

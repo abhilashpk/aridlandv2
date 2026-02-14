@@ -60,13 +60,15 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 	private function setInputValue($attributes)
 	{
 		//echo '<pre>';print_r( $attributes );exit;
-		$this->customer_enquiry->voucher_no   = $attributes['voucher_no'];
-		$this->customer_enquiry->reference_no = $attributes['reference_no'];
+		$this->customer_enquiry->voucher_no = $attributes['voucher_no'] ?? '';
+    	$this->customer_enquiry->reference_no = $attributes['reference_no'] ?? '';
 		$this->customer_enquiry->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
-		$this->customer_enquiry->customer_id  = $attributes['customer_id'];
-		$this->customer_enquiry->salesman_id  = $attributes['salesman_id'];
-		$this->customer_enquiry->subject 	 = $attributes['subject'];
-		$this->customer_enquiry->description  = $attributes['description'];
+		$this->customer_enquiry->customer_id = $attributes['customer_id'] ?? 0;
+    	$this->customer_enquiry->salesman_id = $attributes['salesman_id'] ?? 0;
+		// Provide default empty string for subject and description
+    	$this->customer_enquiry->subject = $attributes['subject'] ?? '';
+    	$this->customer_enquiry->description = $attributes['description'] ?? '';
+
 		$this->customer_enquiry->job_id 		 = $attributes['job_id'];
 		$this->customer_enquiry->header_id 	 = $attributes['header_id'];
 		$this->customer_enquiry->footer_id 	 = $attributes['footer_id'];
@@ -490,6 +492,28 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 				$attributes['voucher_no'] = $qs->voucher_no; */
 				$attributes['salesman_id'] = (Auth::user()->roles[0]->name=='Salesman')?Session::get('salesman_id'):0;
 				if($this->setInputValue($attributes)) {
+
+					$attributes = array_merge([
+						'voucher_no'   => 0,
+						'reference_no' => '',
+						'subject'      => '',
+						'description'  => '',
+						'fabrication'  => '',
+						'prefix'       => '',
+						'kilometer'    => '',
+						'footer_text'  => '',
+						'comment'      => '',
+						'job_id'       => 0,
+						'header_id'    => 0,
+						'footer_id'    => 0,
+						'vehicle_id'   => 0,
+						'job_type'     => 0,
+						'jobnature'    => 0,
+						'terms_id'     => 0,
+						'lead_id'      => 0,
+						'location_id'  => 0,
+					], $attributes);
+
 					$this->customer_enquiry->status 	   = 1;
 					$this->customer_enquiry->created_at = now();
 					$this->customer_enquiry->created_by = 1;
@@ -609,13 +633,25 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 				}
 				
 				//update voucher number
-				if($this->customer_enquiry->id && $attributes['autoincrement']==1) {
-					 DB::table('voucher_no')
+				// if($this->customer_enquiry->id && $attributes['autoincrement']==1) {
+				// 	 DB::table('voucher_no')
+				// 		->where('voucher_type', $attributes['voucher_type'])
+				// 		->update(['no' => $attributes['voucher_no'] + 1]);
+				// 		//->update(['no' => DB::raw('no + 1')]);//$this->customer_enquiry->id
+				// }
+				if (
+					$this->customer_enquiry->id &&
+					isset($attributes['autoincrement']) &&
+					$attributes['autoincrement'] == 1 &&
+					isset($attributes['voucher_no']) &&
+					isset($attributes['voucher_type'])
+				) {
+					DB::table('voucher_no')
 						->where('voucher_type', $attributes['voucher_type'])
-						->update(['no' => $attributes['voucher_no'] + 1]);
-						//->update(['no' => DB::raw('no + 1')]);//$this->customer_enquiry->id
-				}
-				
+						->update([
+							'no' => ((int) $attributes['voucher_no']) + 1
+						]);
+				}				
                 // for crm
 
 				if($this->customer_enquiry->id && isset($attributes['photo_name'])) {
@@ -1041,7 +1077,7 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 					  })
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
 					  ->orderBY('poi.id')->groupBy('poi.id')
 					  ->get();
@@ -1138,7 +1174,7 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 									   $join->on('U.id','=','PI.unit_id');
 								   })
 								   ->where('PI.status',1)
-								   ->where('PI.deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('PI.deleted_at')
 								   ->select('PI.*','IM.item_code','U.unit_name')
 								   ->orderBY('PI.id')
 								   ->get();
@@ -1192,7 +1228,7 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 						$query->where('im.class_id',$val);
 					  }
 					  
-		return $query->where('poi.deleted_at','0000-00-00 00:00:00')
+		return $query->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.id')
@@ -1213,9 +1249,9 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 						->where('customer_enquiry.id', $id)
 						->where('D.invoice_type','QS')
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('D.status',1)
-						->where('D.deleted_at','0000-00-00 00:00:00')
+						->whereNull('D.deleted_at')
 						->select('D.*')
 						->get();
 	}

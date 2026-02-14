@@ -5265,19 +5265,30 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		if (Auth::check() && Auth::user()->location_id > 0) {
 			$qry->where('location.id', Auth::user()->location_id);
 		}
+
+		// Create subquery for item_location aggregated by location
+		$ilSubquery = DB::table('item_location')
+			->select(
+				'location_id',
+				DB::raw('SUM(quantity) as total_quantity'),
+				DB::raw('SUM(opn_qty) as total_opn_qty'),
+				DB::raw('GROUP_CONCAT(DISTINCT bin_id) as bin_ids'),
+				DB::raw('MIN(id) as item_location_id')
+			)
+			->where('item_id', $id)
+			->where('department_id', $deptId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->groupBy('location_id');
 		
-		// Join item_location to get current quantity per location
-		$qry->leftJoin('item_location AS IL', function($join) use ($id, $deptId) {
-			$join->on('IL.location_id', '=', 'location.id')
-				->where('IL.item_id', '=', $id)
-				->where('IL.department_id', '=', $deptId)
-				->where('IL.status', '=', 1)
-				->whereNull('IL.deleted_at');
+		// Join the aggregated item_location subquery
+		$qry->leftJoinSub($ilSubquery, 'IL', function($join) {
+			$join->on('IL.location_id', '=', 'location.id');
 		});
 		
-		// Join bin_location
+		// Join bin_location using FIND_IN_SET for the concatenated bin_ids
 		$qry->leftJoin('bin_location AS BL', function($join) {
-			$join->on('BL.id', '=', 'IL.bin_id')
+			$join->whereRaw('FIND_IN_SET(BL.id, IL.bin_ids) > 0')
 				->whereNull('BL.deleted_at');
 		});
 		
@@ -5288,116 +5299,155 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				'location.id',
 				'location.code',
 				'location.name',
-				'IL.quantity',           // Current quantity in this location
-				'IL.opn_qty',            // Opening quantity
-				'BL.code AS bin',
-				'IL.id as item_location_id'
+				// 'IL.quantity',           // Current quantity in this location
+				// 'IL.opn_qty',            // Opening quantity
+				// 'BL.code AS bin',
+				// 'IL.id as item_location_id'
+				'IL.total_quantity as quantity',
+                'IL.total_opn_qty as opn_qty',
+                DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+            	'IL.item_location_id'
 			)
-			->orderBy('location.id')
-			->get();
+			->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'IL.total_opn_qty', 'IL.item_location_id')
+            ->orderBy('location.id')
+            ->get();
 			
 		} else {
 			switch ($type) {
-				case 'PI':
-					// Purchase Invoice
-					$qry->leftJoin('item_location_pi AS PI', function($join) use ($invid) {
-						$join->on('PI.location_id', '=', 'location.id')
-							->where('PI.invoice_id', '=', $invid)
-							->where('PI.is_sdo', '=', 0)
-							->whereNull('PI.deleted_at');
+				case 'PI': // Purchase Invoice
+                // Create subquery for item_location_pi aggregated by location
+                $piSubquery = DB::table('item_location_pi')
+                    ->select(
+                        'location_id',
+                        DB::raw('SUM(quantity) as total_pi_quantity')
+                    )
+                    ->where('invoice_id', $invid)
+                    ->where('is_sdo', 0)
+                    ->whereNull('deleted_at')
+                    ->groupBy('location_id');
+                
+                $qry->leftJoinSub($piSubquery, 'PI', function($join) {
+                    $join->on('PI.location_id', '=', 'location.id');
+                });
+                
+                $result = $qry->select(
+                        'location.id',
+                        'location.code',
+                        'location.name',
+                        'IL.total_quantity as quantity',
+                        'PI.total_pi_quantity as curqty',
+                        DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+                        'IL.item_location_id'
+                    )
+                    ->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'PI.total_pi_quantity', 'IL.item_location_id')
+                    ->orderBy('location.id')
+                    ->get();
+                break;
+					
+				case 'SI': // Sales Invoice
+                // Create subquery for item_location_si aggregated by location
+                $siSubquery = DB::table('item_location_si')
+                    ->select(
+                        'location_id',
+                        DB::raw('SUM(quantity) as total_si_quantity')
+                    )
+                    ->where('invoice_id', $invid)
+                    ->where('is_do', 0)
+                    ->whereNull('deleted_at')
+                    ->groupBy('location_id');
+                
+                $qry->leftJoinSub($siSubquery, 'SI', function($join) {
+                    $join->on('SI.location_id', '=', 'location.id');
+                });
+                
+                $result = $qry->select(
+                        'location.id',
+                        'location.code',
+                        'location.name',
+                        'IL.total_quantity as quantity',
+                        'SI.total_si_quantity as curqty',
+                        DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+                        'IL.item_location_id'
+                    )
+                    ->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'SI.total_si_quantity', 'IL.item_location_id')
+                    ->orderBy('location.id')
+                    ->get();
+                break;
+					
+				case 'CDO': // Customer Delivery Order
+                // Create subquery for item_location_si aggregated by location
+                $siSubquery = DB::table('item_location_si')
+                    ->select(
+                        'location_id',
+                        DB::raw('SUM(quantity) as total_si_quantity')
+                    )
+                    ->where('invoice_id', $invid)
+                    ->where('is_do', 1)
+                    ->whereNull('deleted_at')
+                    ->groupBy('location_id');
+                
+                $qry->leftJoinSub($siSubquery, 'SI', function($join) {
+                    $join->on('SI.location_id', '=', 'location.id');
+                });
+                
+                $result = $qry->select(
+                        'location.id',
+                        'location.code',
+                        'location.name',
+                        'IL.total_quantity as quantity',
+                        'SI.total_si_quantity as curqty',
+                        DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+                        'IL.item_location_id'
+                    )
+                    ->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'SI.total_si_quantity', 'IL.item_location_id')
+                    ->orderBy('location.id')
+                    ->get();
+                break;
+            
+				case 'SDO': // Supplier Delivery Order
+					// Create subquery for item_location_pi aggregated by location
+					$piSubquery = DB::table('item_location_pi')
+						->select(
+							'location_id',
+							DB::raw('SUM(quantity) as total_pi_quantity'),
+							DB::raw('SUM(qty_entry) as total_qty_entry')
+						)
+						->where('invoice_id', $invid)
+						->where('is_sdo', 1)
+						->whereNull('deleted_at')
+						->groupBy('location_id');
+					
+					$qry->leftJoinSub($piSubquery, 'PI', function($join) {
+						$join->on('PI.location_id', '=', 'location.id');
 					});
 					
 					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'PI.quantity AS curqty', // Quantity in this invoice
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
+							'location.id',
+							'location.code',
+							'location.name',
+							'IL.total_quantity as quantity',
+							'PI.total_pi_quantity as curqty',
+							'PI.total_qty_entry as qty_entry',
+							DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+							'IL.item_location_id'
+						)
+						->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'PI.total_pi_quantity', 'PI.total_qty_entry', 'IL.item_location_id')
+						->orderBy('location.id')
+						->get();
 					break;
 					
-				case 'SI':
-					// Sales Invoice
-					$qry->leftJoin('item_location_si AS SI', function($join) use ($invid) {
-						$join->on('SI.location_id', '=', 'location.id')
-							->where('SI.invoice_id', '=', $invid)
-							->where('SI.is_do', '=', 0)
-							->whereNull('SI.deleted_at');
-					});
-					
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'SI.quantity AS curqty', // Quantity in this invoice
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
-					break;
-					
-				case 'CDO':
-					// Customer Delivery Order
-					$qry->leftJoin('item_location_si AS SI', function($join) use ($invid) {
-						$join->on('SI.location_id', '=', 'location.id')
-							->where('SI.invoice_id', '=', $invid)
-							->where('SI.is_do', '=', 1)
-							->whereNull('SI.deleted_at');
-					});
-					
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'SI.quantity AS curqty', // Quantity in this delivery
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
-					break;
-					
-				case 'SDO':
-					// Supplier Delivery Order
-					$qry->leftJoin('item_location_pi AS PI', function($join) use ($invid) {
-						$join->on('PI.location_id', '=', 'location.id')
-							->where('PI.invoice_id', '=', $invid)
-							->where('PI.is_sdo', '=', 1)
-							->whereNull('PI.deleted_at');
-					});
-					
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'PI.quantity AS curqty', // Quantity in this delivery
-						'PI.qty_entry',
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
-					break;
-					
-				default:
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
+					default:
+						$result = $qry->select(
+							'location.id',
+							'location.code',
+							'location.name',
+							'IL.total_quantity as quantity',
+							DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+							'IL.item_location_id'
+						)
+						->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'IL.item_location_id')
+						->orderBy('location.id')
+						->get();
 					break;
 			}
 		}

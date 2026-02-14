@@ -14,6 +14,7 @@ use App\Repositories\PurchaseInvoice\PurchaseInvoiceInterface;
 use App\Repositories\Location\LocationInterface;
 use App\Repositories\Forms\FormsInterface;
 use App\Repositories\UpdateUtility;
+use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Http\Request;
 
@@ -84,13 +85,13 @@ class PurchaseReturnController extends Controller
 		$category=[];
 		$subcategory =[];
 	
-        $item = DB::table('itemmaster')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+        $item = DB::table('itemmaster')->where('status',1)->whereNull('deleted_at')->get();
 		
-		$category = DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','master_name')->get(); 
+		$category = DB::table('category')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->whereNull('deleted_at')->select('id','master_name')->get(); 
 		$jobs = $this->jobmaster->activeJobmasterList();
 		return view('body.purchasereturn.index')
 		        ->withCategory($category)
@@ -218,14 +219,14 @@ class PurchaseReturnController extends Controller
 		$itemmaster = $this->itemmaster->activeItemmasterList();
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
-		$dept=env('DEPARTMENT_ID');
+		$dept= auth()->user()->department_id;
 		$vouchers = $this->accountsetting->getAccountSettingsPR($vid=2,$dept);//echo '<pre>';print_r($vouchers);exit;
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id)
                          ->where('is_default', 1) ->first();
-		$lastid = DB::table('purchase_return')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
-		$footertxt = DB::table('header_footer')->where('doc','PR')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+		$lastid = DB::table('purchase_return')->where('status',1)->where('department_id', auth()->user()->department_id)->whereNull('deleted_at')->orderBy('id','DESC')->select('id')->first();
+		$footertxt = DB::table('header_footer')->where('doc','PR')->where('status',1)->whereNull('deleted_at')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','PR')
@@ -235,11 +236,11 @@ class PurchaseReturnController extends Controller
 							
 		//CHECK DEPARTMENT.......
 		if(Session::get('department')==1) { //if active...
-			$deptid = Auth::user()->department_id;
+			$deptid = auth()->user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -373,30 +374,42 @@ class PurchaseReturnController extends Controller
 	
 	public function save(Request $request) {
 		
-		//echo '<pre>';print_r($request->all());exit;
-		if( $this->validate(
-			$request, 
-			['purchase_invoice_id' => 'required',
-			 'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
-			 'location_id' =>'required','location_id' => 'required',
-			 'supplier_name' => 'required','supplier_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			['purchase_invoice_id' => 'Purchase Invoice no. is required.',
-			 'reference_no' => 'Reference no. is required.',
-			 	'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
-			 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
+		$rules = [
+			'purchase_invoice_id' => 'required',
+			'reference_no'        => ($this->formData['reference_no'] == 1) ? 'required' : 'nullable',
+			'location_id'         => 'required',
+			'supplier_name'       => 'required',
+			'supplier_id'         => 'required',
+			'item_code.*'         => 'required',
+			'item_id.*'           => 'required',
+			'unit_id.*'           => 'required',
+			'quantity.*'          => 'required|numeric|min:0.01',
+			'cost.*'              => 'required|numeric|min:0',
+		];
 
-			return redirect('purchase_return/add')->withInput()->withErrors();
+		$messages = [
+			'purchase_invoice_id.required' => 'Purchase Invoice no. is required.',
+			'reference_no.required'        => 'Reference no. is required.',
+			'location_id.required'         => 'Location is required.',
+			'supplier_name.required'       => 'Supplier Name is required.',
+			'supplier_id.required'         => 'Supplier name is invalid.',
+			'item_code.*.required'         => 'Item code is required.',
+			'item_id.*.required'           => 'Item code is invalid.',
+			'unit_id.*.required'           => 'Item unit is required.',
+			'quantity.*.required'          => 'Item quantity is required.',
+			'quantity.*.numeric'           => 'Item quantity must be numeric.',
+			'cost.*.required'              => 'Item cost is required.',
+			'cost.*.numeric'               => 'Item cost must be numeric.',
+		];
+
+		$validator = Validator::make($request->all(), $rules, $messages);
+
+		if ($validator->fails()) {
+
+			return redirect('purchase_return/add')
+					->withInput()
+					->withErrors($validator)
+					->with('error', 'Please fix the errors below.');
 		}
 		
 		
@@ -428,7 +441,7 @@ class PurchaseReturnController extends Controller
 							})
 						
 					->where('PRI.status', 1)
-					->where('PRI.deleted_at', '0000-00-00 00:00:00')		 
+					->whereNull('PRI.deleted_at')		 
 					->select('purchase_return.voucher_no','purchase_return.total','purchase_return.vat_amount','purchase_return.net_amount','purchase_return.created_at','PRI.*','IM.item_code','U.unit_name','users.name')
 					->orderBY('PRI.id','ASC')->get();
 				
@@ -501,7 +514,7 @@ class PurchaseReturnController extends Controller
 		$getItemLocation = $this->itemmaster->getItemLocation($id,'PR');
 		$itemlocedit = $this->makeTreeArr( $this->itemmaster->getItemLocEdit($id,'PR') );
 		
-		$lastid = DB::table('purchase_return')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('purchase_return')->where('status',1)->whereNull('deleted_at')->orderBy('id','DESC')->select('id')->first();
 		
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -535,27 +548,42 @@ class PurchaseReturnController extends Controller
 	public function update(Request $request)
 	{
 		$id = $request->input('purchase_return_id');
-		if( $this->validate(
-			$request, 
-			['purchase_invoice_id' => 'required',
-			 'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
-			 'supplier_name' => 'required','supplier_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			['purchase_invoice_id' => 'Purchase Invoice no. is required.',
-			 'reference_no' => 'Reference no. is required.',
-			 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
+		$rules = [
+			'purchase_invoice_id' => 'required',
+			'reference_no'        => ($this->formData['reference_no'] == 1) ? 'required' : 'nullable',
+			'location_id'         => 'required',
+			'supplier_name'       => 'required',
+			'supplier_id'         => 'required',
+			'item_code.*'         => 'required',
+			'item_id.*'           => 'required',
+			'unit_id.*'           => 'required',
+			'quantity.*'          => 'required|numeric|min:0.01',
+			'cost.*'              => 'required|numeric|min:0',
+		];
 
-			return redirect('purchase_return/edit/'.$id)->withInput()->withErrors();
+		$messages = [
+			'purchase_invoice_id.required' => 'Purchase Invoice no. is required.',
+			'reference_no.required'        => 'Reference no. is required.',
+			'location_id.required'         => 'Location is required.',
+			'supplier_name.required'       => 'Supplier Name is required.',
+			'supplier_id.required'         => 'Supplier name is invalid.',
+			'item_code.*.required'         => 'Item code is required.',
+			'item_id.*.required'           => 'Item code is invalid.',
+			'unit_id.*.required'           => 'Item unit is required.',
+			'quantity.*.required'          => 'Item quantity is required.',
+			'quantity.*.numeric'           => 'Item quantity must be numeric.',
+			'cost.*.required'              => 'Item cost is required.',
+			'cost.*.numeric'               => 'Item cost must be numeric.',
+		];
+
+		$validator = Validator::make($request->all(), $rules, $messages);
+
+		if ($validator->fails()) {
+
+			return redirect('purchase_return/add')
+					->withInput()
+					->withErrors($validator)
+					->with('error', 'Please fix the errors below.');
 		}
 		
 		if( $this->purchase_return->update($id, $request->all()) ) {
@@ -585,7 +613,7 @@ class PurchaseReturnController extends Controller
 					 })
 				 
 			->where('PRI.status', 1)
-			->where('PRI.deleted_at', '0000-00-00 00:00:00')		 
+			->whereNull('PRI.deleted_at')		 
 			->select('purchase_return.voucher_no','purchase_return.total','purchase_return.vat_amount','purchase_return.net_amount','purchase_return.modify_at','PRI.*','IM.item_code','U.unit_name','users.name')
 			->orderBY('PRI.id','ASC')->get();
 			
@@ -637,7 +665,7 @@ class PurchaseReturnController extends Controller
 		$getItemLocation = $this->itemmaster->getItemLocation($id,'PR');
 		$itemlocedit = $this->makeTreeArr( $this->itemmaster->getItemLocEdit($id,'PR') );
 		
-		$lastid = DB::table('purchase_return')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('purchase_return')->where('status',1)->whereNull('deleted_at')->orderBy('id','DESC')->select('id')->first();
 		
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -693,7 +721,7 @@ class PurchaseReturnController extends Controller
 	
 			$data = DB::table('purchase_return')->where('purchase_return.supplier_id',$id)
 			                    ->join('jobmaster', 'jobmaster.id', '=', 'purchase_return.job_id')
-			                   ->where('purchase_return.status',1)->where('purchase_return.deleted_at','0000-00-00 00:00:00')
+			                   ->where('purchase_return.status',1)->whereNull('purchase_return.deleted_at')
 			                   ->select('jobmaster.id','jobmaster.code')->orderBy('jobmaster.id', 'DESC')->get();
 			return $data;
 		}
@@ -1067,11 +1095,11 @@ class PurchaseReturnController extends Controller
 	//	echo '<pre>';print_r($subgroup);exit;
 		//$category= $this->category->categoryList();
 		//echo '<pre>';print_r($category);exit;
-		 $category = DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		 $subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		 $group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		 $category = DB::table('category')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		 $subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		 $group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
 		 //echo '<pre>';print_r($group);exit;
-		 $subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		 $subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
 		
 		return view('body.purchasereturn.multiselect')
 		                ->withCategory($category)

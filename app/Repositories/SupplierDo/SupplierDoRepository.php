@@ -17,6 +17,7 @@ use Session;
 use Auth;
 use Storage;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 
 class SupplierDoRepository extends AbstractValidator implements SupplierDoInterface {
@@ -1174,7 +1175,7 @@ public function getReportExcel($attributes)
 						//CHECK WHEATHER Update Quantity by SDO
 						if($this->mod_sdo_qty->is_active==1) {
 							
-							//if($exi_qty != $attributes['quantity'][$key] || $exi_price != $costchk) {
+							if($exi_qty != $attributes['quantity'][$key] || $exi_price != $costchk) {
 								//echo '<pre>';print_r($key);exit;
 								$CostAvg_log = $this->updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, $othercost_unit);
 							
@@ -1187,7 +1188,7 @@ public function getReportExcel($attributes)
     								$this->updateItemQuantityonEdit($attributes, $key);
     							    
     							}
-							//}
+							}
 						}
 						
 						
@@ -1244,7 +1245,7 @@ public function getReportExcel($attributes)
 
 									}
 									
-									DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => null,'qty_entry' => $lq]);
+									DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 1, 'deleted_at' => null,'qty_entry' => $lq, 'logid' => $logid]);
 
 								} else { //NOV24
 									//DB::table('item_location_pi')->where('department_id',auth()->user()->department_id)->where('id', $attributes['editid'][$key][$lk])->update(['quantity' => $lcqty,'status' => 0, 'deleted_at' => date('Y-m-d h:i:s'), 'qty_entry' => $lq]);

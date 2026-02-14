@@ -148,17 +148,12 @@ class CustomerReceiptController extends Controller
 				$nestedData['amount'] = $row->amount;
 				$nestedData['description'] = $row->description;
 				$nestedData['reference'] = $row->reference;
+				$nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$edit}'>
+												<span class='glyphicon glyphicon-pencil'></span></button></p>";
 				if($row->is_transfer==1) {
-					$nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='{$editcon}'>
-													<span class='glyphicon glyphicon-pencil'></span></button></p>";
-													
 					$nestedData['delete'] = "<button class='btn btn-danger btn-xs delete' onClick='{$editcon}'>
 												<span class='glyphicon glyphicon-trash'></span>";
-												
 				} else {
-					$nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$edit}'>
-													<span class='glyphicon glyphicon-pencil'></span></button></p>";
-													
 					$nestedData['delete'] = "<button class='btn btn-danger btn-xs delete' onClick='{$delete}'>
 												<span class='glyphicon glyphicon-trash'></span>";
 				}
@@ -457,8 +452,14 @@ class CustomerReceiptController extends Controller
 		          ->leftjoin('salesman AS S', 'S.id', '=', 'receipt_voucher.salesman_id')->select('receipt_voucher.*','S.name AS salesman')
 		           ->where('receipt_voucher.id',$id)->first();
 		//echo '<pre>';print_r($salesman);exit;
-		$invoices = $this->sales_invoice->getCustomerInvoice($invoicerow[1]->account_id,'edit');
-		$openbalances = $this->sales_invoice->getOpenBalances($invoicerow[1]->account_id,'edit'); 
+		$firstEntry = $invoicerow->first();
+		if($firstEntry) {
+			$invoices = $this->sales_invoice->getCustomerInvoice($firstEntry->account_id,'edit');
+			$openbalances = $this->sales_invoice->getOpenBalances($firstEntry->account_id,'edit');
+		} else {
+			$invoices = [];
+			$openbalances = [];
+		}
 		//echo '<pre>';print_r($invoicerow);exit;
 		
 		//CHECK DEPARTMENT.......
@@ -727,17 +728,12 @@ class CustomerReceiptController extends Controller
 				$nestedData['supplier'] = ($row->voucher_type==9)?'CASH':$row->voucher_type;
 				$nestedData['amount'] = $row->amount;
 				$nestedData['reference'] = $row->reference;
+				$nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$edit}'>
+												<span class='glyphicon glyphicon-pencil'></span></button></p>";
 				if($row->is_transfer==1) {
-					$nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='{$editcon}'>
-													<span class='glyphicon glyphicon-pencil'></span></button></p>";
-													
 					$nestedData['delete'] = "<button class='btn btn-danger btn-xs delete' onClick='{$editcon}'>
 												<span class='glyphicon glyphicon-trash'></span>";
-												
 				} else {
-					$nestedData['edit'] = "<p><button class='btn btn-primary btn-xs' onClick='location.href={$edit}'>
-													<span class='glyphicon glyphicon-pencil'></span></button></p>";
-													
 					$nestedData['delete'] = "<button class='btn btn-danger btn-xs delete' onClick='{$delete}'>
 												<span class='glyphicon glyphicon-trash'></span>";
 				}
@@ -860,75 +856,71 @@ class CustomerReceiptController extends Controller
 	}
 	
 	public function saverv(Request $request) {
+		$rules = [
+			'voucher_type'   => 'required',
+			'voucher'        => 'required|integer',
+			'voucher_date'   => 'required|date_format:d-m-Y',
+			'account_id.*'   => 'required|integer|exists:account_master,id',
+			'account_type.*' => 'required|in:Dr,Cr',
+			'line_amount.*'  => 'required|numeric|min:0.01',
+			'reference.*'    => 'required|string|max:50',
+			'debit'          => 'required|numeric|min:0',
+			'credit'         => 'required|numeric|min:0',
+			'bank_id.*'      => 'nullable|integer|exists:bank,id',
+			'cheque_no.*'    => 'nullable|string|max:50',
+			'cheque_date.*'  => 'nullable|date_format:d-m-Y',
+			'party_name.*'   => 'nullable|string|max:100',
+		];
 
-		/*echo '<pre>';print_r($request->all());exit;
+		$messages = [
+			'voucher_date.required' => 'Voucher date is required.',
+			'voucher_date.date_format' => 'Invalid date format (expected dd-mm-yyyy).',
+			'account_id.*.required' => 'Account selection is required.',
+			'account_type.*.in'     => 'Invalid account type.',
+			'line_amount.*.required'=> 'Each line must have an amount.',
+			'line_amount.*.numeric' => 'Amount must be numeric.',
+			'line_amount.*.min'     => 'Amount must be greater than zero.',
+			'reference.*.required'  => 'Reference number is required.',
+		];
 
-		// --- Validation Rules ---
-       $rules = [
-		'voucher_type'   => 'required',
-		'voucher'        => 'required|integer',
-		//'voucher_no'     => 'required',
-		'voucher_date'   => 'required|date_format:d-m-Y',
-
-		'account_id.*'   => 'required|integer|exists:account_master,id',
-		'account_type.*' => 'required|in:Dr,Cr',
-		'line_amount.*'  => 'required|numeric|min:0.01',
-		'reference.*'    => 'required|string|max:50',
-
-		'debit'          => 'required|numeric|min:0',
-		'credit'         => 'required|numeric|min:0',
-
-		// Optional fields - remove `nullable`, just keep valid type rules
-		'bank_id.*'      => 'integer|exists:bank,id',
-		'cheque_no.*'    => 'string|max:50',
-		'cheque_date.*'  => 'date_format:d-m-Y',
-		'party_name.*'   => 'string|max:100',
-	];
-
-
-        $messages = [
-            //'voucher_no.required'   => 'Voucher number is required.',
-            'voucher_date.required' => 'Voucher date is required.',
-            'voucher_date.date_format' => 'Invalid date format (expected dd-mm-yyyy).',
-            'account_id.*.required' => 'Account selection is required.',
-            'account_type.*.in'     => 'Invalid account type.',
-            'line_amount.*.required'=> 'Each line must have an amount.',
-            'line_amount.*.numeric' => 'Amount must be numeric.',
-            'line_amount.*.min'     => 'Amount must be greater than zero.',
-            'reference.*.required'  => 'Reference number is required.',
-        ];
-
-		// Laravel 5.2: Apply optional fields only if present
 		$validator = Validator::make($request->all(), $rules, $messages);
 
-		$validator->sometimes('bank_id.*', 'integer|exists:bank,id', function($input) {
-			return !empty($input->bank_id);
+		$validator->after(function($validator) use ($request) {
+			$debit  = floatval($request->input('debit', 0));
+			$credit = floatval($request->input('credit', 0));
+			if (abs($debit - $credit) > 0.001) {
+				$validator->errors()->add('credit', 'Debit and Credit must be equal.');
+			}
+
+			$groupIds = $request->input('group_id', []);
+			foreach ($groupIds as $idx => $groupId) {
+				if ($groupId === 'PDCR') {
+					$bankId = $request->input("bank_id.$idx");
+					$chequeNo = $request->input("cheque_no.$idx");
+					$chequeDate = $request->input("cheque_date.$idx");
+					$partyName = $request->input("party_name.$idx");
+
+					if ($bankId === null || $bankId === '') {
+						$validator->errors()->add("bank_id.$idx", 'Bank is required for PDCR.');
+					}
+					if ($chequeNo === null || $chequeNo === '') {
+						$validator->errors()->add("cheque_no.$idx", 'Cheque no is required for PDCR.');
+					}
+					if ($chequeDate === null || $chequeDate === '') {
+						$validator->errors()->add("cheque_date.$idx", 'Cheque date is required for PDCR.');
+					}
+					if ($partyName === null || $partyName === '') {
+						$validator->errors()->add("party_name.$idx", 'Party name is required for PDCR.');
+					}
+				}
+			}
 		});
-		$validator->sometimes('cheque_no.*', 'string|max:50', function($input) {
-			return !empty($input->cheque_no);
-		});
-		$validator->sometimes('cheque_date.*', 'date_format:d-m-Y', function($input) {
-			return !empty($input->cheque_date);
-		});
 
-        $validator = Validator::make($request->all(), $rules, $messages);
-
-        // --- Extra Check: Debit and Credit must balance ---
-        $validator->after(function($validator) use ($request) {
-            $debit  = floatval($request->input('debit', 0));
-            $credit = floatval($request->input('credit', 0));
-            if (abs($debit - $credit) > 0.001) {
-                $validator->errors()->add('credit', 'Debit and Credit must be equal.');
-            }
-        });
-
-        if ($validator->fails()) {
-            return Redirect::back()
-                ->withErrors($validator)
-                ->withInput();
-        } */
-
-		//echo '<pre>';print_r($request->all());exit;
+		if ($validator->fails()) {
+			return Redirect::back()
+				->withErrors($validator)
+				->withInput();
+		}
 
 //----------------------------------------------------------
 		
@@ -972,8 +964,14 @@ class CustomerReceiptController extends Controller
 		          ->leftjoin('salesman AS S', 'S.id', '=', 'receipt_voucher.salesman_id')->select('receipt_voucher.*','S.name AS salesman')
 		           ->where('receipt_voucher.id',$id)->first();
 		//echo '<pre>';print_r($salesman);exit;
-		$invoices = $this->sales_invoice->getCustomerInvoice($invoicerow[1]->account_id,'edit');
-		$openbalances = $this->sales_invoice->getOpenBalances($invoicerow[1]->account_id,'edit'); 
+		$firstEntry = $invoicerow->first();
+		if($firstEntry) {
+			$invoices = $this->sales_invoice->getCustomerInvoice($firstEntry->account_id,'edit');
+			$openbalances = $this->sales_invoice->getOpenBalances($firstEntry->account_id,'edit');
+		} else {
+			$invoices = [];
+			$openbalances = [];
+		}
 		//echo '<pre>';print_r($invoicerow);exit;
 		
 		//CHECK DEPARTMENT.......
@@ -1052,7 +1050,11 @@ class CustomerReceiptController extends Controller
 		$status = $this->receipt_voucher->check_RV($id); //echo $status;exit;
 		if($status) {
 			if( $this->receipt_voucher->delete($id) ) {
-				DB::table('pdc_received')->where('voucher_id',$id)->where('status',0)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+				DB::table('pdc_received')
+					->where('voucher_id',$id)
+					->where('department_id', Auth::user()->department_id)
+					->where('status',0)
+					->update(['deleted_at' => date('Y-m-d H:i:s')]);
 				Session::flash('message', 'Customer Receipt deleted successfully.');
 			} else
 				Session::flash('error', 'Something went wrong, Customer receipt failed to delete!');
@@ -1635,4 +1637,3 @@ public function dataExport(Request $request)
 							->withJeid($jeid);
 	}
 }
-

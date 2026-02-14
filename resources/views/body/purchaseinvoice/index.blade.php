@@ -276,13 +276,14 @@ $(function() {
 			{ "data": "job" },
 			{ "data": "supplier" },
 			{ "data": "net_total" },
-			// @permission('pi-edit'){ "data": "edit","bSortable": false },@endpermission
-			// @permission('pi-view'){ "data": "viewonly","bSortable": false },@endpermission
-			// @permission('pi-print'){ "data": "print","bSortable": false },@endpermission
-			// @permission('pi-delete'){ "data": "delete","bSortable": false }@endpermission
+			@can('pi-edit'){ "data": "edit","bSortable": false },@endcan
+			@can('pi-view'){ "data": "viewonly","bSortable": false },@endcan
+			@can('pi-print'){ "data": "print","bSortable": false },@endcan
+			@can('pi-delete'){ "data": "delete","bSortable": false }@endcan
+
 			// { "data": "edit","bSortable": false }
 			// { "data": "viewonly","bSortable": false }
-			// { "data": "print","bSortable": false }
+			// { "data": "print","bSortable": false } 
 			// { "data": "delete","bSortable": false }
 		]	
 		  

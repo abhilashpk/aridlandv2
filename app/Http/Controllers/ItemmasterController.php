@@ -1153,7 +1153,7 @@ private function getDefaultFormData()
 	 */
 	private function checkIfItemInUse($id)
 	{
-		$deptId = env('DEPARTMENT_ID', 1);
+		$deptId = auth()->user()->department_id;
 		
 		// Check item_log
 		$logCount = DB::table('item_log')
@@ -1460,10 +1460,20 @@ private function getDefaultFormData()
 	
 	public function viewLocInfo($id,$n)
 	{
+		if (empty($id)) {
+			return view('body.itemmaster.viewlocinfo')
+					->withNum($n)
+					->withInfo(collect())   // empty collection
+					->withMessage('Please select an item first.');
+		}
+
 		$info = $this->itemmaster->getStockLocInfo($id,$inv_id=null,$type=null);
+		
+		$message = $info->isEmpty() ? 'No location record found for this item.' : null;
 		return view('body.itemmaster.viewlocinfo')
 					->withNum($n)
-					->withInfo($info);
+					->withInfo($info)
+					->withMessage($message);
 	}
 	
 	
