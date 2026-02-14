@@ -83,23 +83,31 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->is_hide = isset($attributes['is_hide'])?$attributes['is_hide']:'';
 				
 				$fcamount = 0;
+				$opBalance = $attributes['op_balance'] ?? 0;
+				if($opBalance === '' || $opBalance === null) {
+					$opBalance = 0;
+				}
+				$fcopBalance = $attributes['fcop_balance'] ?? 0;
+				if($fcopBalance === '' || $fcopBalance === null) {
+					$fcopBalance = 0;
+				}
 				if($attributes['actype']=='') {
 					//$this->accountmaster->transaction_type = $attributes['transaction'];category
 					if($attributes['transaction']=='Cr') {
-						$this->accountmaster->op_balance = $amount = -1 * abs($attributes['op_balance']);
-						$this->accountmaster->cl_balance = -1 * abs($attributes['op_balance']);
+						$this->accountmaster->op_balance = $amount = -1 * abs($opBalance);
+						$this->accountmaster->cl_balance = -1 * abs($opBalance);
 						$this->accountmaster->transaction_type = $transaction_type = 'Cr';
 						$trn_type_update = true;
 					} else {
-						$this->accountmaster->transaction_type = $transaction_type = ($attributes['op_balance'] < 0)?'Cr':'Dr';
-						$this->accountmaster->op_balance = $amount = $attributes['op_balance'];
-						$this->accountmaster->cl_balance = $attributes['op_balance'];
+						$this->accountmaster->transaction_type = $transaction_type = ($opBalance < 0)?'Cr':'Dr';
+						$this->accountmaster->op_balance = $amount = $opBalance;
+						$this->accountmaster->cl_balance = $opBalance;
 						$trn_type_update = true;
 					}
 				} else {
-					$this->accountmaster->transaction_type = $transaction_type = ($attributes['op_balance'] > 0)?'Dr':'Cr';
-					$amount = $attributes['op_balance'];
-					$fcamount = $attributes['fcop_balance'];
+					$this->accountmaster->transaction_type = $transaction_type = ($opBalance > 0)?'Dr':'Cr';
+					$amount = $opBalance;
+					$fcamount = $fcopBalance;
 					$trn_type_update = true;
 				}
 				
@@ -1625,19 +1633,29 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	}
 	
 	public function check_name($name, $id = null) {
-		
-		if($id)
-			return $this->accountmaster->where('master_name',$name)->where('id', '!=', $id)->count();
-		else
-			return $this->accountmaster->where('master_name',$name)->count();
+		$deptId = Auth::user()->department_id ?? 0;
+		$query = $this->accountmaster->where('master_name', $name);
+		if ($id) {
+			$query->where('id', '!=', $id);
+		}
+		if ($deptId) {
+			$query->where('department_id', $deptId);
+		}
+		$query->whereNull('deleted_at');
+		return $query->count();
 	}
 	
 	public function check_acno($acno, $id = null) {
-		
-		if($id)
-			return $this->accountmaster->where('ac_no',$acno)->where('id', '!=', $id)->count();
-		else
-			return $this->accountmaster->where('ac_no',$acno)->count();
+		$deptId = Auth::user()->department_id ?? 0;
+		$query = $this->accountmaster->where('ac_no', $acno);
+		if ($id) {
+			$query->where('id', '!=', $id);
+		}
+		if ($deptId) {
+			$query->where('department_id', $deptId);
+		}
+		$query->whereNull('deleted_at');
+		return $query->count();
 	}
 	
 	public function check_item_description($description, $id = null) {

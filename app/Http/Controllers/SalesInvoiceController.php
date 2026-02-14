@@ -730,11 +730,17 @@ class SalesInvoiceController extends Controller
 						->withBatchitems($batch_items); //MAY25
 		}
 		//echo '<pre>';print_r($vouchers);exit;
-		if($vouchers) { 
-			$prefix = $vouchers[0]->prefix;
-			$isprefix = $vouchers[0]->is_prefix;
+		$firstVoucher = null;
+		if($vouchers instanceof \Illuminate\Support\Collection) {
+			$firstVoucher = $vouchers->first();
+		} elseif(is_array($vouchers)) {
+			$firstVoucher = $vouchers[0] ?? null;
+		}
+		if($firstVoucher) { 
+			$prefix = $firstVoucher->prefix;
+			$isprefix = $firstVoucher->is_prefix;
 			$dept = Auth::user()->department_id;//Session::get('dpt_id');
-			$vtype = $vouchers[0]->voucher_type_id;
+			$vtype = $firstVoucher->voucher_type_id;
 
 			$usedNos = DB::table('sales_invoice')
                 //->where('voucher_type', $voucherType)
@@ -1012,11 +1018,17 @@ class SalesInvoiceController extends Controller
 						->withBatchitems($batch_items); //MAY25
 		}
 		//echo '<pre>';print_r($vouchers);exit;
-			if($vouchers) { 
-			$prefix = $vouchers[0]->prefix;
-			$isprefix = $vouchers[0]->is_prefix;
+			$firstVoucher = null;
+			if($vouchers instanceof \Illuminate\Support\Collection) {
+				$firstVoucher = $vouchers->first();
+			} elseif(is_array($vouchers)) {
+				$firstVoucher = $vouchers[0] ?? null;
+			}
+			if($firstVoucher) { 
+			$prefix = $firstVoucher->prefix;
+			$isprefix = $firstVoucher->is_prefix;
 			$dept = Auth::user()->department_id;//Session::get('dpt_id');
-			$vtype = $vouchers[0]->voucher_type_id;
+			$vtype = $firstVoucher->voucher_type_id;
 
 			$usedNos = DB::table('sales_invoice')
                 //->where('voucher_type', $voucherType)
@@ -3467,4 +3479,3 @@ public function dataExport(Request $request)
 
 	
 }
-

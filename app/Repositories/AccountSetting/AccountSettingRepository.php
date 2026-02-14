@@ -282,7 +282,7 @@ class AccountSettingRepository extends AbstractValidator implements AccountSetti
 					->join('voucher_type AS vt', function($join) {
 							$join->on('vt.id', '=', 'account_setting.voucher_type_id');
 					})
-					->where('account_setting.status',1)
+					// show enabled + disabled
 					//->where('account_setting.deleted_at', '0000-00-00 00:00:00')
 					->select('account_setting.*','de.name AS department','am.master_name AS dr_master_name','am2.master_name AS cr_master_name','vt.name AS type_name')
 					->get(); 
@@ -1274,4 +1274,3 @@ class AccountSettingRepository extends AbstractValidator implements AccountSetti
 	}
 	
 }
-

@@ -69,26 +69,7 @@ $(document).ready(function() {
             
         });
 		
-		$(function() {
-            var inputMapper = {
-                "voucher_type": 1,
-                "voucher_name": 2
-            };
-            var dtInstance = $("#tableAcsettings").DataTable({
-                "lengthMenu": [10, 25, 50, "ALL"],
-                bLengthChange: false,
-                mark: true,
-				"aaSorting": [[0, "desc"]],
-				"aoColumns": [null,null,null,null,null,{ "bSortable": false },{ "bSortable": false } ],
-				//"scrollX": true,
-            });
-            $("input").on("input", function() {
-                var $this = $(this);
-                var val = $this.val();
-                var key = $this.attr("name");
-                dtInstance.columns(inputMapper[key] - 1).search(val).draw();
-            });
-        });
+		// tableAcsettings is initialized per-view to avoid duplicate init warnings.
 		
 		$(function() {
             var inputMapper = {

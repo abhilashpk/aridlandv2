@@ -89,7 +89,8 @@
         <section class="content">
             <div class="row">
                 <div class="col-md-12">
-				<?php if(sizeof($vouchers)==0) { ?>
+				<?php $hasVoucher = (sizeof($vouchers) > 0); ?>
+				<?php if(!$hasVoucher) { ?>
 				<div class="alert alert-warning">
 					<p>
 						Sales Invoice voucher is not found! Please create a voucher in Account Settings.
@@ -1433,7 +1434,7 @@ $(document).ready(function () {
 	$('.itemdivPrnt').find('.btn-add-item:not(:last)').hide();
 	<?php } ?>
 	
-	<?php if(!Session::has('is_cash') && sizeof($vouchers) > 0 && $vouchers[0]->is_cash_voucher==1) { ?> //cash customer.... 
+<?php if(!Session::has('is_cash') && $hasVoucher && $vouchers[0]->is_cash_voucher==1) { ?> //cash customer.... 
 		$('#customer_name').removeAttr("data-toggle");
 		if( $('#newcustomerInfo').is(":hidden") )
 			$('#newcustomerInfo').toggle();

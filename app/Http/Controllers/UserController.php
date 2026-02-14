@@ -10,7 +10,6 @@ use DB;
 use Hash;
 use Session;
 use Auth;
-use Illuminate\Support\Arr;
 
 
 
@@ -26,10 +25,11 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $data = array();
-        $deptId = Auth::check() ? Auth::user()->department_id : null;
-        $users = $deptId
-            ? User::where('department_id', $deptId)->with('role')->get()
-            : User::with('role')->get(); //orderBy('id','DESC')->paginate(5);
+		$query = User::query();
+		if(Auth::user() && Auth::user()->department_id!=0) {
+			$query->where('department_id', Auth::user()->department_id);
+		}
+		$users = $query->get();//orderBy('id','DESC')->paginate(5);
         /* return view('users.index',compact('data'))
             ->with('i', ($request->input('page', 1) - 1) * 5); */
 			//echo '<pre>';print_r($users);exit;
@@ -46,25 +46,9 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::pluck('display_name','id');
-        $deptId = Auth::check() ? Auth::user()->department_id : null;
-        $locId = Auth::check() ? Auth::user()->location_id : null;
-		$depts = DB::table('department')
-            ->where('status', 1)
-            ->whereNull('deleted_at')
-            ->when($deptId, function ($q) use ($deptId) {
-                $q->where('id', $deptId);
-            })
-            ->select('id','name')
-            ->get();
-		$loc = DB::table('location')
-            ->where('status', 1)
-            ->whereNull('deleted_at')
-            ->when($locId, function ($q) use ($locId) {
-                $q->where('id', $locId);
-            })
-            ->select('id','name')
-            ->get();
+        $roles = Role::pluck('display_name', 'id');
+		$depts = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
+		$loc = DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
         return view('body.users.add',compact('roles','depts'),compact('loc','loc'));
     }
 
@@ -77,27 +61,24 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $deptId = Auth::check() ? Auth::user()->department_id : null;
-        $locId = Auth::check() ? Auth::user()->location_id : null;
-        $request->merge([
-            'department_id' => $deptId,
-            'location_id' => $request->input('location_id', 0),
-        ]);
-
         $this->validate($request, [
             'name' => 'required',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|same:confirm-password',
-            'department_id' => 'required|integer',
-            'role_id' => 'required|integer|exists:roles,id',
-            'location_id' => 'nullable|integer'
+            'roles' => 'required'
         ]);
 
 
         $input = $request->all();
+        // Ensure optional location defaults to 0 instead of null/empty.
+        if (!isset($input['location_id']) || $input['location_id'] === '' || $input['location_id'] === null) {
+            $input['location_id'] = 0;
+        }
         $input['password'] = Hash::make($input['password']);
 
-        $user = User::create($input); 
+        $user = User::create($input);
+        $user->syncRoles($request->input('roles', []));
+
         return redirect()->route('users.index')
                         ->with('success','User created successfully');
     }
@@ -125,28 +106,14 @@ class UserController extends Controller
     public function edit($id)
     {
         $user = User::find($id);
-        $roles = Role::pluck('display_name','id');
-        $deptId = Auth::check() ? Auth::user()->department_id : null;
-        $locId = Auth::check() ? Auth::user()->location_id : null;
-		$depts = DB::table('department')
-            ->where('status', 1)
-            ->whereNull('deleted_at')
-            ->when($deptId, function ($q) use ($deptId) {
-                $q->where('id', $deptId);
-            })
-            ->select('id','name')
-            ->get();
-		$loc = DB::table('location')
-            ->where('status', 1)
-            ->whereNull('deleted_at')
-            ->when($locId, function ($q) use ($locId) {
-                $q->where('id', $locId);
-            })
-            ->select('id','name')
-            ->get();
+        $roles = Role::pluck('display_name', 'id');
+        $userRole = $user->roles->pluck('id', 'id')->toArray();
+		$depts = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
+		$loc = DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
         //return view('users.edit',compact('user','roles','userRole'));
-
-        return view('body.users.edit',compact('roles','user','depts','loc'));
+		
+		$roles = Role::pluck('display_name', 'id');
+        return view('body.users.edit',compact('roles','user','userRole','depts','loc'));
     }
 
 
@@ -159,33 +126,31 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $deptId = Auth::check() ? Auth::user()->department_id : null;
-        $locId = Auth::check() ? Auth::user()->location_id : null;
-        $request->merge([
-            'department_id' => $deptId,
-            'location_id' => $request->input('location_id', 0),
-        ]);
-
         $this->validate($request, [
             'name' => 'required',
             'email' => 'required|email|unique:users,email,'.$id,
             'password' => 'same:confirm-password',
-            'department_id' => 'required|integer',
-            'role_id' => 'required|integer|exists:roles,id',
-            'location_id' => 'nullable|integer'
+            'roles' => 'required'
         ]);
 
 
         $input = $request->all();
+        // Ensure optional location defaults to 0 instead of null/empty.
+        if (!isset($input['location_id']) || $input['location_id'] === '' || $input['location_id'] === null) {
+            $input['location_id'] = 0;
+        }
         if(!empty($input['password'])){ 
             $input['password'] = Hash::make($input['password']);
         }else{
-            $input = Arr::except($input, ['password']);
+            $input = array_except($input,array('password'));    
         }
 
 
         $user = User::find($id);
         $user->update($input);
+        $user->syncRoles($request->input('roles', []));
+
+
         return redirect()->route('users.index')
                         ->with('success','User updated successfully');
     }

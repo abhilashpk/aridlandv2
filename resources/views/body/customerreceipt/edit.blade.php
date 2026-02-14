@@ -155,8 +155,14 @@
                                         @foreach($invoicerow as $item)
 										@php $i++; @endphp
 										
+											@php $pdcLocked = ($item->category=='PDCR' && isset($item->pdc_status) && $item->pdc_status==1); @endphp
 											<div class="itemdivChld">							
-												<div class="form-group classtrn" style="margin-bottom:1px;" id="trns_{{$i}}">
+												<div class="form-group classtrn" style="margin-bottom:1px;" id="trns_{{$i}}" data-pdc-locked="{{ $pdcLocked ? 1 : 0 }}">
+													@if($pdcLocked)
+														<div class="col-xs-12">
+															<span class="label label-warning">PDC transferred</span>
+														</div>
+													@endif
 												@if($item->category=='PDCR')
 													@php $ispdc = true; @endphp
 													@if($isdept)
@@ -771,6 +777,16 @@ if ($.fn.select2) {
   });
 }
 
+$('.classtrn[data-pdc-locked="1"]').each(function() {
+  var $row = $(this);
+  $row.find('input,select,textarea').prop('disabled', true);
+  $row.find('input[type=hidden]').prop('disabled', false);
+  $row.find('.btn-remove-item').prop('disabled', true).hide();
+  if ($.fn.select2) {
+    $row.find('select.select2').prop('disabled', true).trigger('change.select2');
+  }
+});
+
 /* ---------- Helpers ---------- */
 function isPdcRow(idx){
   var g = $('#groupid_' + idx).val();
@@ -978,14 +994,26 @@ function checkDuplicateChequeNo() {
         var bank  = $('#bankid_' + id).val();
         var chq   = ($('#chkno_' + id).val() || '').trim();
         var party = $('#partyac_' + id).val();
+        var jeid  = $('#jeid_' + id).val();
+        var initBank  = $('#bankid_' + id).data('initial') || '';
+        var initChq   = ($('#chkno_' + id).data('initial') || '').trim();
+        var initParty = $('#partyac_' + id).data('initial') || '';
+        var changed = (String(bank || '') !== String(initBank || '')) ||
+                      (String(chq || '')  !== String(initChq || '')) ||
+                      (String(party || '')!== String(initParty || ''));
+        var mutable = !jeid || changed;
 
         if (bank && chq && party) {
             var key = bank + '|' + chq + '|' + party;
             if (seen[key]) {
-                duplicates.push(id);
-                duplicates.push(seen[key]); // highlight both rows
+                if (mutable) {
+                    duplicates.push(id);
+                }
+                if (seen[key].mutable) {
+                    duplicates.push(seen[key].id);
+                }
             } else {
-                seen[key] = id;
+                seen[key] = { id: id, mutable: mutable };
             }
         }
         
@@ -1180,6 +1208,21 @@ $(document).on('click', '.add-invoice', function(e){
   var drac = $('#draccount_'+baseRow).val();
   var dracid = $('#draccountid_'+baseRow).val();
 
+  function resetClonedRow($row){
+    $row.find('input,select,textarea').prop('disabled', false);
+    $row.find('.label.label-warning').remove();
+    $row.find('.classtrn').attr('data-pdc-locked', '0');
+    $row.find('.btn-remove-item').prop('disabled', false).show();
+    $row.find('label[id$="-dup-error"]').remove();
+    $row.find('input[name="cheque_no[]"]').removeClass('is-invalid');
+    $row.find('input[name="oldcheque_no[]"]').val('');
+    $row.find('select[name="bank_id[]"]').val('').trigger('change');
+    $row.find('input[name="cheque_no[]"]').val('');
+    $row.find('input[name="cheque_date[]"]').val('');
+    $row.find('input[name="party_name[]"]').val('');
+    $row.find('input[name="partyac_id[]"]').val('');
+  }
+
   for (var i = 0; i < refs.length; i++){
     if (i > 0){
       var $current = $('.itemdivChld:last', $container);
@@ -1199,6 +1242,8 @@ $(document).on('click', '.add-invoice', function(e){
       $new.find('.divchq').attr('id','chqdtl_' + curRowNum).hide();
       $new.find('.refdata').attr('id','refdata_' + curRowNum);
       $new.find('.salem').attr('id','salem_' + curRowNum);
+
+      resetClonedRow($new);
     }
 
     $('#ref_' + curRowNum).val(refs[i]);
@@ -1216,7 +1261,8 @@ $(document).on('click', '.add-invoice', function(e){
     $('#draccountid_' + curRowNum).val($('#draccountid_' + baseRow).val());
     $('#groupid_'     + curRowNum).val($('#groupid_'     + baseRow).val());
 
-    addRulesForRow(curRowNum);
+  addRulesForRow(curRowNum);
+  storeInitialRowValues(curRowNum);
   }
 
   getNetTotal();
@@ -1266,6 +1312,15 @@ $(document).on('click', '.btn-add-item', function(e){
 		$new.find('.refdata').attr('id', 'refdata_' + rowNum);
 		$new.find('.salem').attr('id', 'salem_' + rowNum).hide();
 
+		$new.find('.label.label-warning').remove();
+		$new.find('.classtrn').attr('data-pdc-locked', '0');
+		$new.find('input,select,textarea').prop('disabled', false);
+		$new.find('.btn-remove-item').prop('disabled', false).show();
+		$new.find('label[id$="-dup-error"]').remove();
+		$new.find('input[name="cheque_no[]"]').removeClass('is-invalid');
+		$new.find('input[name="oldcheque_no[]"]').val('');
+		$new.find('input[name="partyac_id[]"]').val('');
+
 		// clear IDs used in edit so the new row is “new”
 		$('#groupid_'   + rowNum).val('');
 		$('#jeid_'      + rowNum).val('');
@@ -1287,6 +1342,7 @@ $(document).on('click', '.btn-add-item', function(e){
 		$new.find('.chqdate').removeData('datepicker').datepicker({ language: 'en', autoClose: true, dateFormat: 'dd-mm-yyyy' });
 
 		addRulesForRow(rowNum);
+		storeInitialRowValues(rowNum);
 		getNetTotal();
 		refreshButtons();
 });
@@ -1335,6 +1391,7 @@ function initRowsSetup(){
     var id  = $(this).attr('id'); if (!id) return;
     var idx = parseInt(id.split('_')[1], 10);
     addRulesForRow(idx);
+    storeInitialRowValues(idx);
 
     // If existing row is PDC in edit mode, ensure its PDC blocks are visible
     if (isPdcRow(idx)){
@@ -1346,6 +1403,15 @@ function initRowsSetup(){
   refreshButtons();
 }
 initRowsSetup();
+
+function storeInitialRowValues(idx){
+  var $bank  = $('#bankid_' + idx);
+  var $chq   = $('#chkno_' + idx);
+  var $party = $('#partyac_' + idx);
+  if ($bank.length)  $bank.data('initial', $bank.val() || '');
+  if ($chq.length)   $chq.data('initial', ($chq.val() || '').trim());
+  if ($party.length) $party.data('initial', $party.val() || '');
+}
 
 /* ---------- Expose (if needed elsewhere inline) ---------- */
 window.getNetTotal     = getNetTotal;

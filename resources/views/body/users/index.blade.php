@@ -67,7 +67,8 @@
                                     <tr>
                                         <th>Name</th>
 										<th>Email</th>
-										<th>Role</th>
+                                    <th>Role</th>
+                                    <th>Department</th>
 										<th></th>
 										<th></th>
                                     </tr>
@@ -77,7 +78,8 @@
                                     <tr>
                                         <td>{{ $user->name }}</td>
 										<td>{{ $user->email }}</td>
-										<td>{{ $user->role ? $user->role->display_name : '' }}</td>
+                                        <td>{{ $user->getRoleNames()->implode(', ') }}</td>
+                                        <td>{{ $user->department ? $user->department->name : '' }}</td>
 										<td>
 											<p>
 												<button class="btn btn-primary btn-xs" onClick="location.href='{{ url('users/'.$user->id.'/edit') }}'">

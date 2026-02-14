@@ -89,10 +89,10 @@
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Role:</strong>
-										<select class="form-control select2" style="width:100%" name="role_id" required>
+                                        <select class="form-control select2" style="width:100%" name="roles[]" required>
                                             <option value="">Select Role...</option>
                                             @foreach ($roles as $key => $row)
-                                                <option value="{{ $key }}" {{ ($user->role_id == $key) ? 'selected' : '' }}>{{ $row }}</option>
+                                                <option value="{{ $key }}" {{ (isset($userRole[$key]) ? 'selected' : '') }}>{{ $row }}</option>
                                             @endforeach
                                         </select>
 									</div>
@@ -101,15 +101,12 @@
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Department:</strong>
-										<select id="department_id" class="form-control select2" style="width:100%" name="department_id" disabled>
+										<select id="department_id" class="form-control select2" style="width:100%" name="department_id">
                                             <option value="">Department None</option>
 											@foreach ($depts as $row)
-											<option value="{{$row->id}}" <?php echo ($user->department_id==$row->id)?'selected':'';?>>{{ $row->name }}</option>
+											<option value="{{$row->id}}" {{ ($user->department_id==$row->id)?'selected':'';}}>{{ $row->name }}</option>
 											@endforeach
                                         </select>
-                                        @if(isset($depts[0]))
-                                            <input type="hidden" name="department_id" value="{{ $depts[0]->id }}">
-                                        @endif
 									</div>
 								</div>
 								

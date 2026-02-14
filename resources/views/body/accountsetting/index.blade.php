@@ -71,7 +71,7 @@
                     <div class="panel-body">
 						
                         <div class="table-responsive m-t-10">
-                                <table class="table horizontal_table table-striped" id="tableAcsettings">
+                                <table class="table horizontal_table table-striped" id="tableAccountSettings">
                                     <thead>
                                     <tr>
 										<th>Voucher Type</th>
@@ -79,6 +79,7 @@
 										<th>Department</th>
 										<th>Dr A/c. Name</th>
 										<th>Cr A/c. Name</th>
+										<th>Status</th>
 										<th></th><th></th>
                                     </tr>
                                     </thead>
@@ -90,6 +91,13 @@
 											<td>{{ $setting->department }}</td>
 											<td>{{ $setting->dr_master_name }}</td>
 											<td>{{ $setting->cr_master_name }}</td>
+											<td>
+												@if((int)$setting->status === 1)
+													<span class="label label-success">Enabled</span>
+												@else
+													<span class="label label-default">Disabled</span>
+												@endif
+											</td>
 											<td>
 												<p><button class="btn btn-primary btn-xs" onClick="location.href='{{ url('account_setting/edit/'.$setting->id)}}'"><span class="glyphicon glyphicon-pencil"></span></button></p>
 											</td>
@@ -138,6 +146,24 @@ function funDelete(id,type) {
 	 location.href = url+'/'+id+'/'+type;
 	}
 }
+$(function(){
+	if (!$.fn.DataTable) return;
+	var $table = $('#tableAccountSettings');
+	if ($.fn.dataTable.isDataTable($table)) {
+		return;
+	}
+	$table.DataTable({
+		pageLength: 10,
+		lengthMenu: [10, 25, 50, 100],
+		order: [[0, 'asc']],
+		paging: true,
+		info: true,
+		dom: '<"m-t-10 pull-left"f>rt<"pull-left m-t-10"i><"m-t-10 pull-right"p>',
+		columnDefs: [
+			{ orderable: false, targets: [6,7] }
+		]
+	});
+});
 </script>
 
 @stop

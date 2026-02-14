@@ -89,7 +89,20 @@
         <section class="content">
             <div class="row">
                 <div class="col-md-12">
-				<?php if(sizeof($vouchers)==0) { ?>
+				<?php
+					$voucher = null;
+					if ($vouchers instanceof \Illuminate\Support\Collection) {
+						$voucher = $vouchers->firstWhere('is_cash_voucher', 1);
+					} elseif (is_array($vouchers)) {
+						foreach ($vouchers as $row) {
+							if (isset($row->is_cash_voucher) && (int)$row->is_cash_voucher === 1) {
+								$voucher = $row;
+								break;
+							}
+						}
+					}
+				?>
+				<?php if(!$voucher) { ?>
 				<div class="alert alert-warning">
 					<p>
 						Sales Invoice voucher is not found! Please create a voucher in Account Settings.
@@ -134,7 +147,7 @@
                             <form class="form-horizontal" role="form" method="POST" name="frmSalesInvoice" id="frmSalesInvoice" action="{{ url('sales_invoice/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 								<input type="hidden" name="default_location" id="default_location" value="{{ $locdefault?->id }}">
-								<input type="hidden" name="is_cash" id="is_cash" value="{{$vouchers[1]->is_cash_voucher}}">
+								<input type="hidden" name="is_cash" id="is_cash" value="{{ $voucher->is_cash_voucher }}">
                                 @if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
 								@else
@@ -146,7 +159,7 @@
                                     <label for="input-text" class="col-sm-2 control-label">Invoice</label>
                                     <div class="col-sm-10">
                                        <select id="voucher_id" class="form-control select2" style="width:100%" name="voucher_id">
-											<option value="{{ $vouchers[1]['id'] }}" <?php if(old('voucher_id')==$vouchers[1]['id']) echo 'selected'; ?>>{{ $vouchers[1]['voucher_name'] }}</option>
+											<option value="{{ $voucher->id }}" <?php if(old('voucher_id')==$voucher->id) echo 'selected'; ?>>{{ $voucher->voucher_name }}</option>
 											
                                         </select>
                                     </div>
@@ -191,14 +204,14 @@
 							
 								<div class="form-group">
                                      <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label"><b>SI. No.</b></label></font>
-									<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$vouchers[1]['voucher_no']}}">
+									<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$voucher->voucher_no}}">
                                     <div class="col-sm-10">
 										
 										<div class="input-group">
-										<span class="input-group-addon" id="prefixBox">{{$vouchers[1]['prefix']}}</span>
-                                        <input type="text" class="form-control" id="voucher_no" placeholder="{{(old('voucher_no'))?old('voucher_no'):$vouchers[1]['voucher_no']}}" readonly name="voucher_no">
+										<span class="input-group-addon" id="prefixBox">{{ $voucher->prefix }}</span>
+                                        <input type="text" class="form-control" id="voucher_no" placeholder="{{(old('voucher_no'))?old('voucher_no'):$voucher->voucher_no}}" readonly name="voucher_no">
 										<span class="input-group-addon inputvn"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
-										<input type="hidden" value="{{$vouchers[1]['prefix']}}" name="prefix">
+										<input type="hidden" value="{{ $voucher->prefix }}" name="prefix">
 										</div>
 										
                                     </div>
@@ -250,13 +263,13 @@
 										<?php if($scrid) { ?>
 										<input type="hidden" name="cr_account_id" id="cr_account_id" value="{{$scrid}}">
 										<?php } else { ?>
-										<input type="hidden" name="cr_account_id" id="cr_account_id" value="{{ (old('cr_account_id'))?old('cr_account_id'):$vouchers[1]['cr_account_master_id'] }}">
+										<input type="hidden" name="cr_account_id" id="cr_account_id" value="{{ (old('cr_account_id'))?old('cr_account_id'):$voucher->cr_account_master_id }}">
 										<?php } ?>
 										<div class="input-group">
 											<?php if($sslsacnt) { ?>
 											<input type="text" name="sales_account" id="sales_account" class="form-control" value="{{$sslsacnt}}" readonly>
 											<?php } else { ?>
-											<input type="text" name="sales_account" id="sales_account" class="form-control" value="{{ (old('sales_account'))?old('sales_account'):$vouchers[1]['account_id'].'-'.$vouchers[1]['master_name'] }}" readonly>
+											<input type="text" name="sales_account" id="sales_account" class="form-control" value="{{ (old('sales_account'))?old('sales_account'):$voucher->account_id.'-'.$voucher->master_name }}" readonly>
 											<?php } ?>
 											<span class="input-group-addon inputsa"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
 										</div>
@@ -297,9 +310,9 @@
                                  <font color="#16A085">  <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('customer_name')) echo 'form-error';?>"><b>Customer</b></label></font>
                                     <div class="col-sm-10">
 										
-										<input type="text" name="customer_name" id="customer_name" value="{{(old('customer_name'))?old('customer_name'):$vouchers[1]['voucher_name']}}" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#customer_modal"   readonly>
-										<input type="hidden" name="customer_id" id="customer_id" value="{{(old('customer_id'))?old('customer_id'):$vouchers[1]['default_account_id']}}">
-										<input type="hidden" name="dr_account_id" id="dr_account_id" value="{{(old('dr_account_id'))?old('dr_account_id'):$vouchers[1]['default_account_id']}}">
+										<input type="text" name="customer_name" id="customer_name" value="{{(old('customer_name'))?old('customer_name'):$voucher->voucher_name}}" class="form-control <?php if($errors->has('customer_name')) echo 'form-error';?>" autocomplete="off" data-toggle="modal" data-target="#customer_modal"   readonly>
+										<input type="hidden" name="customer_id" id="customer_id" value="{{(old('customer_id'))?old('customer_id'):$voucher->default_account_id}}">
+										<input type="hidden" name="dr_account_id" id="dr_account_id" value="{{(old('dr_account_id'))?old('dr_account_id'):$voucher->default_account_id}}">
 										
 										<div class="col-xs-10" id="customerInfo">
 											<div class="col-xs-4">
@@ -1423,13 +1436,13 @@ $(document).ready(function () {
 	$('.itemdivPrnt').find('.btn-add-item:not(:last)').hide();
 	<?php } ?>
 	
-	<?php if(!Session::has('is_cash') && sizeof($vouchers) > 0 && $vouchers[0]->is_cash_voucher==1) { ?> //cash customer.... 
+	<?php if(!Session::has('is_cash') && isset($voucher) && $voucher->is_cash_voucher==1) { ?> //cash customer.... 
 		$('#customer_name').removeAttr("data-toggle");
 		if( $('#newcustomerInfo').is(":hidden") )
 			$('#newcustomerInfo').toggle();
-		//$('#customer_id').val({{$vouchers[0]->default_account_id}});
-		//$('#dr_account_id').val({{$vouchers[0]->default_account_id}});
-		//$('#customer_name').val('{{$vouchers[0]->default_account}}');
+		//$('#customer_id').val({{$voucher->default_account_id}});
+		//$('#dr_account_id').val({{$voucher->default_account_id}});
+		//$('#customer_name').val('{{$voucher->default_account}}');
 		if( $('#customerInfo').is(":visible") )
 			$('#customerInfo').toggle();
 	<?php } else {   ?>
