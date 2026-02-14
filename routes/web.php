@@ -436,6 +436,7 @@ Route::get('/itemmaster/sts', [ItemmasterController::class, 'status_chk']);
 Route::get('/itemmaster/view_locinfo/{id}/{n}', [ItemmasterController::class, 'viewLocInfo']);
 Route::get('/itemmaster/view_intralocinfo/{id}', [ItemmasterController::class, 'viewIntraLocInfo']);
 Route::get('/itemmaster/get_locqty/{id}', [ItemmasterController::class, 'getLocqty']);
+Route::get('/itemmaster/get_inlocqty/{id}', [ItemmasterController::class, 'getinLocqty']);
 Route::get('/itemmaster/get_langtrans', [ItemmasterController::class, 'getLangTrans']);
 		
 Route::get('/itemmaster/get_cnlocinfo/{id}', [ItemmasterController::class, 'getcnLocInfo']);

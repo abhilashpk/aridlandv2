@@ -8,6 +8,8 @@ use App\Models\PurchaseOrderOtherCost;
 use App\Models\ItemDescription;
 use App\Exceptions\Validation\ValidationException;
 use App\Repositories\UpdateUtility;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Config;
 use DB;
 use Auth;
@@ -59,7 +61,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		$this->purchase_order->is_draft = (isset($attributes['is_draft']))?$attributes['is_draft'] ?? 0:'';
 		$this->purchase_order->prefix = (isset($attributes['prefix']))?$attributes['prefix']:'';
 		$this->purchase_order->is_intercompany = (isset($attributes['is_intercompany']))?$attributes['is_intercompany']:'';
-		$this->purchase_order->department_id =env('DEPARTMENT_ID');
+		$this->purchase_order->department_id =auth()->user()->department_id;
 		$this->purchase_order->doc_nos =(isset($attributes['po_no']))?$attributes['po_no']:'';
 		
 		return true;
@@ -242,23 +244,23 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		$ids = explode(',', $attributes['document_id']);
 		if(isset($attributes['document_type']) && $attributes['document_type']=='SO')  {
 		    foreach($ids as $id) {
-    			$count1 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    			$count2 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('is_transfer_po',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			$count1 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+    			$count2 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('is_transfer_po',1)->where('status',1)->whereNull('deleted_at')->count();
     			if($count1 == $count2)
     				DB::table('sales_order')->where('id', $id)->update(['is_transfer_po' => 1]);
     		}
 		} else if(isset($attributes['document_type']) && $attributes['document_type']=='MR') {
     		foreach($ids as $id) {
-    			$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    			$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+    			$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
     			if($count1 == $count2)
     				DB::table('material_requisition')->where('id', $id)->update(['is_transfer' => 1]);
     		} 
 		} 
 		else if(isset($attributes['document_type']) && $attributes['document_type']=='PE') {
     		foreach($ids as $id) {
-    			$count1 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    			$count2 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			$count1 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+    			$count2 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
     			if($count1 == $count2)
     				DB::table('purchase_enquiry')->where('id', $id)->update(['is_transfer' => 1]);
     		} 
@@ -350,10 +352,10 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		  try {
 				
 				//VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('purchase_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -381,10 +383,10 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = env('DEPARTMENT_ID');
+							$dept = auth()->user()->department_id;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('purchase_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -538,9 +540,10 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 				return true;
 				
 		  } catch(\Exception $e) {
-				
-				DB::rollback(); echo $e->getLine().' '.$e->getMessage();exit;
-				return false;
+			DB::rollback();
+			\Log::error('Purchase Order Creation Error: ' . $e->getMessage() . ' at line ' . $e->getLine());
+			\Log::error('Stack trace: ' . $e->getTraceAsString());
+			return false;
 		  }
 		  
 		}
@@ -993,9 +996,9 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function getPOdata($supplier_id = null)
 	{
 		if($supplier_id)
-			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0)->where('purchase_order.supplier_id',$supplier_id);
+			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id)->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0)->where('purchase_order.supplier_id',$supplier_id);
 		else
-			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0);
+			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id)->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0);
 		
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
@@ -1011,7 +1014,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function findPOdata($id)
 	{
 		//echo '<pre>';print_r($id);exit;
-		$query = $this->purchase_order->where('purchase_order.id', $id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_order->where('purchase_order.id', $id)->where('purchase_order.department_id',auth()->user()->department_id);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
 						} )
@@ -1067,7 +1070,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					  ->get();*/
 					  
 					  
-		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',auth()->user()->department_id);
 		
 		return $query->join('purchase_order_item AS poi', function($join) {
 							$join->on('poi.purchase_order_id','=','purchase_order.id');
@@ -1083,7 +1086,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						  $join->on('im.id','=','poi.item_id');
 					  })
 					  ->where('poi.status',1)
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.packing','iu.pkno','im.batch_req')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.id')
@@ -1177,7 +1180,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 									   $join->on('U.id','=','PI.unit_id');
 								   })
 								   ->where('PI.status',1)
-								   ->where('PI.deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('PI.deleted_at')
 								   ->select('PI.*','purchase_order.id','IM.item_code','U.unit_name')
 								   ->orderBY('PI.id')
 								   ->get();
@@ -1188,7 +1191,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function getItems($id)
 	{
 		
-		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',auth()->user()->department_id);
 		
 		return $query->join('purchase_order_item AS poi', function($join) {
 							$join->on('poi.purchase_order_id','=','purchase_order.id');
@@ -1204,7 +1207,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						  $join->on('im.id','=','poi.item_id');
 					  })
 					  ->where('poi.status',1)
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty','iu.packing','iu.pkno')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.id')
@@ -1267,7 +1270,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1316,7 +1319,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1360,7 +1363,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1404,7 +1407,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1448,38 +1451,81 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					  ->select('pi.*','im.id AS dr_id','im.master_name AS dr_name','im2.id AS cr_id','im2.master_name AS cr_name')->get();
 	}
 	
+	// public function purchaseOrderListCount()
+	// {
+	// 	$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id);
+	// 	return $query->join('account_master AS am', function($join) {
+	// 						$join->on('am.id','=','purchase_order.supplier_id');
+	// 					} )
+	// 				->count();
+	// }
+	
+	// public function purchaseOrderList($type,$start,$limit,$order,$dir,$search)
+	// {
+	// 	$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id)
+	// 					->join('account_master AS am', function($join) {
+	// 						$join->on('am.id','=','purchase_order.supplier_id');
+	// 					} );
+						
+	// 			if($search) {
+	// 				$query->where('purchase_order.voucher_no','LIKE',"%{$search}%")
+    //                       ->orWhere('purchase_order.reference_no', 'LIKE',"%{$search}%")
+	// 					  ->orWhere('am.master_name', 'LIKE',"%{$search}%");
+	// 			}
+				
+	// 			$query->select('purchase_order.*','am.master_name AS supplier')
+	// 				->offset($start)
+    //                 ->limit($limit)
+    //                 ->orderBy($order,$dir);
+					
+	// 			if($type=='get')
+	// 				return $query->get();
+	// 			else
+	// 				return $query->count();
+	// }
+
 	public function purchaseOrderListCount()
 	{
-		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
-		return $query->join('account_master AS am', function($join) {
-							$join->on('am.id','=','purchase_order.supplier_id');
-						} )
+		return $this->purchase_order
+					->join('account_master AS am', 'am.id', '=', 'purchase_order.supplier_id')
+					->where('purchase_order.status', 1)
+					->where('purchase_order.department_id', auth()->user()->department_id)
+					->where(function($query) {
+						$query->whereNull('purchase_order.deleted_at')
+							->orWhere('purchase_order.deleted_at', '0000-00-00 00:00:00');
+					})
 					->count();
 	}
-	
-	public function purchaseOrderList($type,$start,$limit,$order,$dir,$search)
-	{
-		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))
-						->join('account_master AS am', function($join) {
-							$join->on('am.id','=','purchase_order.supplier_id');
-						} );
-						
-				if($search) {
-					$query->where('purchase_order.voucher_no','LIKE',"%{$search}%")
-                          ->orWhere('purchase_order.reference_no', 'LIKE',"%{$search}%")
-						  ->orWhere('am.master_name', 'LIKE',"%{$search}%");
-				}
-				
-				$query->select('purchase_order.*','am.master_name AS supplier')
-					->offset($start)
-                    ->limit($limit)
-                    ->orderBy($order,$dir);
-					
-				if($type=='get')
-					return $query->get();
-				else
-					return $query->count();
-	}
+
+	public function purchaseOrderList($type, $start, $limit, $order, $dir, $search)
+{
+    // Remove all filters temporarily to test
+    $query = $this->purchase_order
+                ->join('account_master AS am', 'am.id', '=', 'purchase_order.supplier_id');
+    
+    \Log::info('Purchase Order Query (no filters) count: ' . $query->count());
+    
+    if($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('purchase_order.voucher_no', 'LIKE', "%{$search}%")
+              ->orWhere('purchase_order.reference_no', 'LIKE', "%{$search}%")
+              ->orWhere('am.master_name', 'LIKE', "%{$search}%");
+        });
+    }
+    
+    $query->select('purchase_order.*', 'am.master_name AS supplier')
+          ->offset($start)
+          ->limit($limit)
+          ->orderBy($order, $dir);
+    
+    if($type == 'get') {
+        $results = $query->get();
+        \Log::info('Purchase Orders retrieved: ' . count($results));
+        return $results;
+    } else {
+        return $query->count();
+    }
+}
 	
 	public function getJobPurOrd($job_id)
 	{
@@ -1507,9 +1553,9 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						->where('purchase_order.id', $id)
 						->where('D.invoice_type','PO')
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('D.status',1)
-						->where('D.deleted_at','0000-00-00 00:00:00')
+						->whereNull('D.deleted_at')
 						->select('D.*')
 						->get();
 	}

@@ -317,9 +317,19 @@
 													<input type="hidden" id="itmdsnt_{{$j}}" name="line_discount[]" value="{{ old('line_discount')[$i]}}">
 
 												</td>
-												<td width="10%">
+												{{-- <td width="10%">
 													<input type="number" id="itmttl_{{$j}}" step="any" name="line_total[]" value="{{ old('item_total')[$i]}}" class="form-control line-total" readonly placeholder="Total">
 													
+												</td> --}}
+												<td width="10%">
+													<input type="number" 
+														id="itmttl_{{$j}}" 
+														step="any" 
+														name="line_total[]" 
+														value="{{ $oldLineTotal[$i] ?? '' }}" 
+														class="form-control line-total" 
+														readonly 
+														placeholder="Total">
 												</td>
 												<td width="14%">
 													<input type="text" id="remrk_{{$j}}"  name="remarks[]" value="{{ old('remarks')[$i]}}"  autocomplete="off" class="form-control line-remarks"  placeholder="Remarks">

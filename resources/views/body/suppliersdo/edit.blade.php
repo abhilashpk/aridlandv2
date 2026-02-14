@@ -76,13 +76,13 @@
                             </h3>
 							
 							<div class="pull-right">
-							@permission('so-print')
+							{{-- @permission('so-print') --}}
 							 <a href="{{ url('suppliers_do/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endpermission
+							{{-- @endpermission --}}
 							</div>
                         </div>
                         <div class="panel-body">
@@ -335,7 +335,11 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php $i = 0; $num = count($orditems); @endphp
+								{{-- @php
+									$i = 0;
+									$num = count($orditems ?? []);
+								@endphp --}}
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -354,7 +358,7 @@
 													</td>
 													<td width="7%">
 														<select id="itmunt_{{$j}}" class="form-control select2 <?php if($errors->has('unit_id.'.$i)) echo 'form-error';?> line-unit" style="width:100%" name="unit_id[]">
-														<option value="{{old('unit_id')[$i]}}">{{old('hidunit')[$i]}}</option></select>
+														{{-- <option value="{{old('unit_id')[$i]}}">{{old('hidunit')[$i]}}</option></select> --}}
 														</select>
 													</td>
 													<td width="8%">
@@ -375,7 +379,7 @@
 													<td width="6%">
 														<select id="txincld_{{$j}}" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option <?php if(old('tax_include')[$i]==0) echo 'selected';?> value="0">No</option><option <?php if(old('tax_include')[$i]==1) echo 'selected';?> value="1">Yes</option></select>
 													</td>
-													<td width="9%">
+													{{-- <td width="9%">
 														<input type="hidden" id="hidunit_{{$j}}" name="hidunit[]" class="hidunt" value="{{old('hidunit')[$i]}}">
 														<input type="hidden" id="packing_{{$j}}" name="packing[]" value="{{ old('packing')[$i]}}">
 														<input type="text" id="vatdiv_{{$j}}" step="any" readonly name="vatdiv[]" class="form-control vatdiv" value="{{ old('vatdiv')[$i]}}">
@@ -383,7 +387,40 @@
 														<input type="hidden" id="vatlineamt_{{$j}}" name="vatline_amt[]" class="form-control vatline-amt" value="{{ old('vatline_amt')[$i]}}">
 														<input type="hidden" id="itmdsnt_{{$j}}" name="line_discount[]">
 
+													</td> --}}
+
+													<td width="9%">
+														@php
+															$hidunit = old('hidunit', []);
+															$packing = old('packing', []);
+															$vatdiv = old('vatdiv', []);
+															$lineVat = old('line_vat', []);
+															$vatlineAmt = old('vatline_amt', []);
+															$lineDiscount = old('line_discount', []);
+														@endphp
+														
+														<input type="hidden" id="hidunit_{{$j}}" name="hidunit[]" class="hidunt" 
+															value="{{ $hidunit[$i] ?? '' }}">
+														
+														<input type="hidden" id="packing_{{$j}}" name="packing[]" 
+															value="{{ $packing[$i] ?? '' }}">
+														
+														<input type="text" id="vatdiv_{{$j}}" step="any" readonly name="vatdiv[]" 
+															class="form-control vatdiv" 
+															value="{{ $vatdiv[$i] ?? '' }}">
+														
+														<input type="hidden" id="vat_{{$j}}" name="line_vat[]" 
+															class="form-control vat" 
+															value="{{ $lineVat[$i] ?? '' }}">
+														
+														<input type="hidden" id="vatlineamt_{{$j}}" name="vatline_amt[]" 
+															class="form-control vatline-amt" 
+															value="{{ $vatlineAmt[$i] ?? '' }}">
+														
+														<input type="hidden" id="itmdsnt_{{$j}}" name="line_discount[]" 
+															value="{{ $lineDiscount[$i] ?? '' }}">
 													</td>
+
 													<td width="11%">
 														<input type="number" id="itmttl_{{$j}}" step="any" name="line_total[]" class="form-control line-total" readonly value="{{ old('line_total')[$i]}}">
 														<input type="hidden" id="itmtot_{{$j}}" name="item_total[]" value="{{ old('item_total')[$i]}}">

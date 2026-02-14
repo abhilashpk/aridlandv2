@@ -68,12 +68,12 @@ class SuppliersDOController extends Controller
 		$data = array();
 		$orders = $this->supplierdo->suppliersDOList();//echo '<pre>';print_r($orders);exit;
 		if(Session::get('department')==1) {
-			$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			$is_dept = true;
 		} else {
 			$departments = []; $is_dept = false;
 		}
-		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+		$sup =DB::table('account_master')->where('category','SUPPLIER')->where('status',1)->whereNull('deleted_at')
 		->select('id','master_name')->get(); 
 		$supplier = [];//$this->accountmaster->getSupplierList();
 		$jobs = $this->jobmaster->activeJobmasterList();
@@ -106,10 +106,10 @@ class SuppliersDOController extends Controller
 		$res = $this->voucherno->getVoucherNo('SDO');
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id)
                          ->where('is_default', 1) ->first();
-		$footertxt = DB::table('header_footer')->where('doc','SDO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-		$lastid = DB::table('supplier_do')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$footertxt = DB::table('header_footer')->where('doc','SDO')->where('status',1)->whereNull('deleted_at')->first();
+		$lastid = DB::table('supplier_do')->where('status',1)->where('department_id',auth()->user()->department_id)->whereNull('deleted_at')->orderBy('id','DESC')->select('id')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','SDO')
@@ -121,7 +121,7 @@ class SuppliersDOController extends Controller
 							  ->select('currency.code')
 							 ->first();	
 		$cid=$this->acsettings->bcurrency_id;					 
-		$fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
+		$fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->whereNull('deleted_at')->select('id','name','code')->get();
 		$vno = $res->no;
 		if($id) {
 			$ids = explode(',', $id);
@@ -208,41 +208,89 @@ class SuppliersDOController extends Controller
 					->withData($data);
 	}
 	
-	public function save(Request $request, $id = null) {
+	// public function save(Request $request, $id = null) {
 		
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'supplier_name' => 'required','supplier_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
+	// 	if( $this->validate(
+	// 		$request, 
+	// 		[//'reference_no' => 'required',
+	// 		 'supplier_name' => 'required','supplier_id' => 'required',
+	// 		 'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 		 'unit_id.*' => 'required',
+	// 		 'quantity.*' => 'required',
+	// 		 'cost.*' => 'required'
+	// 		],
+	// 		[//'reference_no.required' => 'Reference no. is required.',
+	// 		 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+	// 		 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 		 'unit_id.*' => 'Item unit is required.',
+	// 		 'quantity.*' => 'Item quantity is required.',
+	// 		 'cost.*' => 'Item cost is required.'
+	// 		]
+	// 	)) {
 
-			return redirect('suppliers_do/add')->withInput()->withErrors();
-		}
+	// 		// return redirect('suppliers_do/add')->withInput()->withErrors();
+	// 		return redirect('suppliers_do/add')
+	// 			->withInput()
+	// 			->withErrors(['error' => 'Something went wrong. Please check the form.']);
+	// 	}
 		
-		if( $this->supplierdo->create($request->all()) ) {
-			//AUTO COST REFRESH CHECK ENABLE OR NOT
-			if($this->mod_autocost->is_active==1) {
-				$this->objUtility->reEvalItemCostQuantity($request->get('item_id'),$this->acsettings);
-				app('App\Http\Controllers\UtilityController')->updateItemCurrentQtyByItems($request->get('item_id'));
+	// 	if( $this->supplierdo->create($request->all()) ) {
+	// 		//AUTO COST REFRESH CHECK ENABLE OR NOT
+	// 		if($this->mod_autocost->is_active==1) {
+	// 			$this->objUtility->reEvalItemCostQuantity($request->get('item_id'),$this->acsettings);
+	// 			app('App\Http\Controllers\UtilityController')->updateItemCurrentQtyByItems($request->get('item_id'));
+	// 		}
+	// 		Session::flash('message', 'Suppliers Delivery Order added successfully.');
+	// 	} else
+	// 		Session::flash('error', 'Something went wrong, Invoice failed to add!');
+		
+	// 	return redirect('suppliers_do/add');
+	// }
+
+
+	public function save(Request $request, $id = null)
+	{
+		$this->validate(
+			$request,
+			[
+				'supplier_name' => 'required',
+				'supplier_id'   => 'required',
+				'item_code.*'   => 'required',
+				'item_id.*'     => 'required',
+				'unit_id.*'     => 'required',
+				'quantity.*'    => 'required',
+				'cost.*'        => 'required',
+				'location_id' => 'required|integer|not_in:0|exists:location,id'
+			],
+			[
+				'supplier_name.required' => 'Supplier name is required.',
+				'supplier_id.required'   => 'Supplier name is invalid.',
+				'item_code.*.required'   => 'Item code is required.',
+				'item_id.*.required'     => 'Item code is invalid.',
+				'unit_id.*.required'     => 'Item unit is required.',
+				'quantity.*.required'    => 'Item quantity is required.',
+				'cost.*.required'        => 'Item cost is required.',
+				'location_id.required'   => 'Location is required.'
+			]
+		);
+
+
+		if ($this->supplierdo->create($request->all())) {
+
+			if ($this->mod_autocost->is_active == 1) {
+				$this->objUtility->reEvalItemCostQuantity($request->get('item_id'), $this->acsettings);
+				app('App\Http\Controllers\UtilityController')
+					->updateItemCurrentQtyByItems($request->get('item_id'));
 			}
+
 			Session::flash('message', 'Suppliers Delivery Order added successfully.');
-		} else
+		} else {
 			Session::flash('error', 'Something went wrong, Invoice failed to add!');
-		
+		}
+
 		return redirect('suppliers_do/add');
 	}
+
 	
 	public function destroy($id)
 	{
@@ -363,7 +411,7 @@ class SuppliersDOController extends Controller
 	    }
 	    
 	    $cid=$this->acsettings->bcurrency_id;
-	    $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name','code')->get();
+	    $fcurrency=DB::table('currency')->where('id','!=',$cid)->where('status',1)->whereNull('deleted_at')->select('id','name','code')->get();
 	    
 	//	echo '<pre>';print_r($batch_items);exit;
 		return view('body.suppliersdo.edit')
@@ -765,40 +813,90 @@ class SuppliersDOController extends Controller
 	
 		
 		
+	// public function update(Request $request, $id)
+	// {
+	// 	if( $this->validate(
+	// 		$request, 
+	// 		[//'reference_no' => 'required',
+	// 		 'supplier_name' => 'required','supplier_id' => 'required',
+	// 		 'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 		 'unit_id.*' => 'required',
+	// 		 'quantity.*' => 'required',
+	// 		 'cost.*' => 'required'
+	// 		],
+	// 		[//'reference_no.required' => 'Reference no. is required.',
+	// 		 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+	// 		 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 		 'unit_id.*' => 'Item unit is required.',
+	// 		 'quantity.*' => 'Item quantity is required.',
+	// 		 'cost.*' => 'Item cost is required.'
+	// 		]
+	// 	)) {
+
+	// 		return redirect('suppliers_do/edit/'.$id) ->withInput()
+    //     	->withErrors(['error' => 'Something went wrong. Please check the form.']);
+	// 	}
+		
+	// 	//echo '<pre>';print_r($sup_udate);exit;
+	// 	if($this->supplierdo->update($id, $request->all())) {
+	// 		//AUTO COST REFRESH CHECK ENABLE OR NOT
+	// 		if($this->mod_autocost->is_active==1) {
+	// 			$this->objUtility->reEvalItemCostQuantity($request->get('item_id'),$this->acsettings);
+	// 			app('App\Http\Controllers\UtilityController')->updateItemCurrentQtyByItems($request->get('item_id'));
+	// 		}
+	// 		Session::flash('message', 'Goods receipt note updated successfully');
+	// 	}
+	// 	return redirect('suppliers_do');
+	// }
+
+
 	public function update(Request $request, $id)
 	{
-		if( $this->validate(
+		// Validation (Laravel auto-redirects if fails)
+		$this->validate(
 			$request, 
-			[//'reference_no' => 'required',
-			 'supplier_name' => 'required','supplier_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
+			[
+				'supplier_name' => 'required',
+				'supplier_id'   => 'required',
+				'item_code.*'   => 'required',
+				'item_id.*'     => 'required',
+				'unit_id.*'     => 'required',
+				'quantity.*'    => 'required',
+				'cost.*'        => 'required'
 			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
+			[
+				'supplier_name.required' => 'Supplier name is required.',
+				'supplier_id.required'   => 'Supplier name is invalid.',
+				'item_code.*.required'   => 'Item code is required.',
+				'unit_id.*.required'     => 'Item unit is required.',
+				'quantity.*.required'    => 'Item quantity is required.',
+				'cost.*.required'        => 'Item cost is required.'
 			]
-		)) {
+		);
 
-			return redirect('suppliers_do/edit/'.$id)->withInput()->withErrors();
-		}
-		
-		//echo '<pre>';print_r($sup_udate);exit;
-		if($this->supplierdo->update($id, $request->all())) {
-			//AUTO COST REFRESH CHECK ENABLE OR NOT
-			if($this->mod_autocost->is_active==1) {
-				$this->objUtility->reEvalItemCostQuantity($request->get('item_id'),$this->acsettings);
-				app('App\Http\Controllers\UtilityController')->updateItemCurrentQtyByItems($request->get('item_id'));
+		// If validation passes, execution continues here
+
+		if ($this->supplierdo->update($id, $request->all())) {
+
+			if ($this->mod_autocost->is_active == 1) {
+				$this->objUtility->reEvalItemCostQuantity(
+					$request->get('item_id'),
+					$this->acsettings
+				);
+
+				app('App\Http\Controllers\UtilityController')
+					->updateItemCurrentQtyByItems($request->get('item_id'));
 			}
+
 			Session::flash('message', 'Goods receipt note updated successfully');
+		} else {
+			Session::flash('error', 'Update failed.');
 		}
+
 		return redirect('suppliers_do');
 	}
+
+
 	
 	public function ajax_getcode($group_id)
 	{
@@ -821,7 +919,7 @@ class SuppliersDOController extends Controller
 	
 			$data = DB::table('supplier_do')->where('supplier_do.supplier_id',$id)
 			                    ->join('jobmaster', 'jobmaster.id', '=', 'supplier_do.job_id')
-			                   ->where('supplier_do.status',1)->where('supplier_do.deleted_at','0000-00-00 00:00:00')
+			                   ->where('supplier_do.status',1)->whereNull('supplier_do.deleted_at')
 			                   ->select('jobmaster.id','jobmaster.code')->orderBy('jobmaster.id', 'DESC')->get();
 			return $data;
 		}
@@ -948,8 +1046,8 @@ class SuppliersDOController extends Controller
 					->where('purchase_invoice.document_type','SDO')
 					->where('purchase_invoice_item.doc_row_id', $row->id)
 					->where('purchase_invoice_item.status', 1)
-					->where('purchase_invoice_item.deleted_at', '0000-00-00 00:00:00')
-					->where('purchase_invoice.deleted_at', '0000-00-00 00:00:00')
+					->whereNull('purchase_invoice_item.deleted_at')
+					->whereNull('purchase_invoice.deleted_at')
 					->select(DB::raw('SUM(purchase_invoice_item.quantity) AS pi_quantity'))
 					->get();
 					

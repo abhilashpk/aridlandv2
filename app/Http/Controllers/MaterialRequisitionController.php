@@ -12,6 +12,8 @@ use App\Repositories\AccountSetting\AccountSettingInterface;
 use App\Repositories\PurchaseOrder\PurchaseOrderInterface;
 use App\Repositories\SupplierDo\SupplierDoInterface;
 use App\Repositories\Forms\FormsInterface;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 use App\Repositories\Location\LocationInterface;
 
@@ -256,41 +258,73 @@ class MaterialRequisitionController extends Controller
 					->withData($data);
 	}
 	
-	public function save(Request $request,$id = null) {
-	    
-	    
-		//echo '<pre>';print_r($request->all());exit;
-		//echo '<pre>';print_r($this->material_requisition->create($request->all()));exit;
-		if( $this->validate(
-				$request, 
-				[ 
-				// 'supplier_name' => 'required','supplier_id' => 'required',
-				// 'jobname' => 'required','job_id' => 'required',
-				'locfrom_id' =>'required','locfrom_id' => 'required',
-				 'location_id' =>'required','location_id' => 'required',
-				  'item_code.*'  => 'required', 'item_id.*' => 'required',
-				// 'unit_id.*' => 'required',
-				 'quantity.*' => 'required',
-				 //'cost.*' => 'required' 
-				],
-				[
+	public function save(Request $request) {
+		
+		// Correct validation for Material Requisition
+		$validator = Validator::make($request->all(), 
+			[
+				'location_id' => 'required',
+				'item_code.*' => 'required',
+				'item_id.*' => 'required',
+				'unit_id.*' => 'required',
+				'quantity.*' => 'required'
+				// Remove: supplier_name, supplier_id, cost (these are for Purchase Orders)
+			],
+			[
+				'location_id.required' => 'Location is required.',
+				'item_code.*.required' => 'Item code is required.',
+				'item_id.*.required' => 'Item code is invalid.',
+				'unit_id.*.required' => 'Item unit is required.',
+				'quantity.*.required' => 'Item quantity is required.'
+			]
+		);
+		
+		// Check if validation fails
+		if ($validator->fails()) {
+			// Ensure arrays are set for old() to work properly
+			$input = $request->all();
+			
+			// Initialize empty arrays if they don't exist
+			$input['item_total'] = $input['item_total'] ?? [];
+			$input['line_total'] = $input['line_total'] ?? [];
+			$input['item_code'] = $input['item_code'] ?? [];
+			$input['item_id'] = $input['item_id'] ?? [];
+			$input['unit_id'] = $input['unit_id'] ?? [];
+			$input['quantity'] = $input['quantity'] ?? [];
+			
+			return redirect('material_requisition/add')
+					->withInput($input)
+					->withErrors($validator);
+		}
+		
+		// Debug: Log the request data
+		\Log::info('Material Requisition Request Data:', $request->all());
+		
+		// Attempt to create material requisition
+		try {
+			$result = $this->material_requisition->create($request->all());
+			
+			if ($result) {
+				Session::flash('message', 'Material Requisition added successfully.');
+				return redirect('material_requisition/add');
+			} else {
+				$input = $request->all();
+				$input['item_total'] = $input['item_total'] ?? [];
+				$input['line_total'] = $input['line_total'] ?? [];
 				
-				// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
-				// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
-				'locfrom_id.required' => 'From Location is required.','locfrom_id.required' => 'Location From is invalid.',
-				'location_id.required' => 'TO Location is required.','location_id.required' => 'Location To is invalid.',
-				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-				 //'unit_id.*' => 'Item unit is required.',
-				 'quantity.*' => 'Item quantity is required.',
-				 //'cost.*' => 'Item cost is required.' 
-				]
-			)) {
-			    
-				return redirect('material_requisition/add')->withInput()->withErrors();
+				Session::flash('error', 'Something went wrong, Material Requisition failed to add!');
+				\Log::error('Material Requisition creation returned false');
+				return redirect('material_requisition/add')->withInput($input);
 			}
-		$this->material_requisition->create($request->all());
-		Session::flash('message', 'Material requisition added successfully.');
-		return redirect('material_requisition');
+		} catch (\Exception $e) {
+			$input = $request->all();
+			$input['item_total'] = $input['item_total'] ?? [];
+			$input['line_total'] = $input['line_total'] ?? [];
+			
+			Session::flash('error', 'Error: ' . $e->getMessage());
+			\Log::error('Material Requisition Save Error: ' . $e->getMessage() . ' at line ' . $e->getLine());
+			return redirect('material_requisition/add')->withInput($input);
+		}
 	}
 	
 	

@@ -658,16 +658,35 @@ if(!empty( array_filter($attributes['account_id']))) {
 		//return $this->jobmaster->orderBy('code','ASC')->get();
 	}
 	
+	// public function activeJobmasterList()
+	// {
+	// 	return $this->jobmaster->leftjoin('account_master AS AM', function($join) {
+	// 								$join->on('AM.id','=','jobmaster.customer_id');
+	// 							} )
+	// 	                     ->select('jobmaster.id','jobmaster.name','jobmaster.code','jobmaster.transport_type','AM.master_name')
+	// 	                     ->where('jobmaster.status', 1)
+	// 	                     ->where('jobmaster.is_salary_job',0)
+	// 	                     //->where('jobmaster.deleted_at', '0000-00-00 00:00:00')
+	// 	                      ->orderBy('name', 'ASC')->groupBy('jobmaster.code')->get()->toArray();
+	// }
+
 	public function activeJobmasterList()
 	{
-		return $this->jobmaster->leftjoin('account_master AS AM', function($join) {
-									$join->on('AM.id','=','jobmaster.customer_id');
-								} )
-		                     ->select('jobmaster.id','jobmaster.name','jobmaster.code','jobmaster.transport_type','AM.master_name')
-		                     ->where('jobmaster.status', 1)
-		                     ->where('jobmaster.is_salary_job',0)
-		                     //->where('jobmaster.deleted_at', '0000-00-00 00:00:00')
-		                      ->orderBy('name', 'ASC')->groupBy('jobmaster.code')->get()->toArray();
+		return $this->jobmaster
+					->leftJoin('account_master AS AM', 'AM.id', '=', 'jobmaster.customer_id')
+					->select(
+						'jobmaster.id',
+						'jobmaster.name',
+						'jobmaster.code',
+						'jobmaster.transport_type',
+						'AM.master_name'
+					)
+					->where('jobmaster.status', 1)
+					->where('jobmaster.is_salary_job', 0)
+					->whereNull('jobmaster.deleted_at')
+					->orderBy('jobmaster.name', 'ASC')
+					->get()
+					->toArray();
 	}
 	
 	public function getOpenJobs()

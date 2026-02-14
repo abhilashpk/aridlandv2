@@ -245,7 +245,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
                                 //PDCR table inserting...
 								$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',18)
                     						->join('account_master','account_master.id','=','account_setting.dr_account_master_id')
-                    						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                    						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                     						->select('account_setting.dr_account_master_id','account_master.master_name')->first();
                     			if($bacnts)
                     			    $pdcr_dr_account_id = $bacnts->dr_account_master_id;
@@ -323,7 +323,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								//PDCI table inserting...
 								$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',19)
                         						->join('account_master','account_master.id','=','account_setting.cr_account_master_id')
-                        						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                        						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                         						->select('account_setting.cr_account_master_id','account_master.master_name')->first();
                     			if($bacnts)
                     			    $pdcr_cr_account_id = $bacnts->cr_account_master_id;
@@ -371,7 +371,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											'invoice_date'		=> $invoice_date,//isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime($attributes['tr_date'][$key])):date('Y-m-d'),
 											'fc_amount'			=> isset($attributes['cnvt_amt'][$key])?$attributes['cnvt_amt'][$key]:$attributes['amount'][$key], //$attributes['amount'][$key],
 											'is_fc'				=> isset($attributes['currency'][$key])?(($attributes['bcurrency']!=$attributes['currency'][$key])?1:0):0,
-											'department_id'		=> env('DEPARTMENT_ID'),
+											'department_id'		=> auth()->user()->department_id,
 											'loc_proj'			=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
 											'eqp_type'			=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
 											'lpo_no'			=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:''
@@ -417,7 +417,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											'invoice_date'		=> date('Y-m-d',(strtotime ( '-1 day' , strtotime ( $attributes['invoice_date'] ) ) )),//isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime($attributes['tr_date'][$key])):date('Y-m-d'),
 											'fc_amount'			=> isset($attributes['amount'][$key])?$attributes['amount'][$key]:(($amount < 0)?(-1*$amount):$amount),
 											'is_fc'				=> isset($attributes['currency'][$key])?(($attributes['bcurrency']!=$attributes['currency'][$key])?1:0):0,
-											'department_id'		=> env('DEPARTMENT_ID'),
+											'department_id'		=> auth()->user()->department_id,
 											'loc_proj'			=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
 											'eqp_type'			=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
 											'lpo_no'			=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:''
@@ -823,7 +823,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									//PDCR table inserting...
 									$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',18)
                     						->join('account_master','account_master.id','=','account_setting.dr_account_master_id')
-                    						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                    						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                     						->select('account_setting.dr_account_master_id','account_master.master_name')->first();
                         			if($bacnts)
                         			    $pdcr_dr_account_id = $bacnts->dr_account_master_id;
@@ -902,7 +902,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									//$acrow = DB::table('account_master')->where('status',1)->where('category','PDCI')->select('id')->first();
     								$bacnts = DB::table('account_setting')->where('account_setting.voucher_type_id',19)
                             						->join('account_master','account_master.id','=','account_setting.cr_account_master_id')
-                            						->where('account_setting.status',1)->where('account_setting.deleted_at','0000-00-00 00:00:00')
+                            						->where('account_setting.status',1)->whereNull('account_setting.deleted_at')
                             						->select('account_setting.cr_account_master_id','account_master.master_name')->first();
                         			if($bacnts)
                         			    $pdcr_cr_account_id = $bacnts->cr_account_master_id;
@@ -947,7 +947,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												'invoice_date'		=> $invoice_date,
 												'fc_amount'			=> isset($attributes['cnvt_amt'][$key])?$attributes['cnvt_amt'][$key]:$attributes['amount'][$key], //$attributes['amount'][$key],
 												'is_fc'				=> isset($attributes['currency'][$key])?(($attributes['bcurrency']!=$attributes['currency'][$key])?1:0):0,
-												'department_id'		=> env('DEPARTMENT_ID'),
+												'department_id'		=> auth()->user()->department_id,
 												'loc_proj'			=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
 												'eqp_type'			=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
 												'lpo_no'			=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:''
@@ -995,7 +995,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										'invoice_date'		=> $attributes['invoice_date'],//isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime($attributes['tr_date'][$key])):date('Y-m-d'),
 										'fc_amount'			=> isset($attributes['amount'][$key])?$attributes['amount'][$key]:(($attributes['op_balance'] < 0)?(-1*$attributes['op_balance']):$attributes['op_balance']),
 										'is_fc'				=> isset($attributes['currency'][$key])?(($attributes['bcurrency']!=$attributes['currency'][$key])?1:0):0,
-										'department_id'		=> env('DEPARTMENT_ID'),
+										'department_id'		=> auth()->user()->department_id,
 										'loc_proj'			=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
 										'eqp_type'			=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
 										'lpo_no'			=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:''
@@ -1094,7 +1094,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	
 	public function delete($id)
 	{
-		DB::table('account_transaction')->where('account_master_id', $id)->update(['status' => 0, 'deleted_at' => '0000-00-00 00:00:00']);
+		DB::table('account_transaction')->where('account_master_id', $id)->update(['status' => 0, 'deleted_at' => null]);
 		$this->accountmaster = $this->accountmaster->find($id);
 		$this->accountmaster->delete();
 	}
@@ -1182,10 +1182,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 						});
 									
 						if($deptid!=0) //dept chk
-							$query->where('account_master.department_id', env('DEPARTMENT_ID'));
+							$query->where('account_master.department_id', auth()->user()->department_id);
 						else {
 							if($dept!='' && $dept!=0) {
-								$query->where('account_master.department_id', env('DEPARTMENT_ID'));
+								$query->where('account_master.department_id', auth()->user()->department_id);
 							}
 						}
 						
@@ -1738,23 +1738,77 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	}
 	
 	//JAN20
+	// public function getCustomerList($deptid=null)
+	// {
+	// 	$query = DB::table('account_master')->where('account_master.status',1)->where('account_master.department_id',auth()->user()->department_id)
+	// 	            ->where(function ($q) {
+    //                     $q->whereNull('account_master.deleted_at')
+    //                       ->orWhere('account_master.deleted_at', '0000-00-00 00:00:00');
+    //                 });
+		
+		
+	// 	return $query->join('account_group AS ag', function($join) {
+	// 						$join->on('ag.id','=','account_master.account_group_id');
+	// 					} )
+	// 				->where('ag.category','=','CUSTOMER')
+	// 				->select('account_master.id','account_master.account_id','account_master.master_name','account_master.phone','account_master.cl_balance','account_master.vat_no',
+	// 				         'account_master.op_balance','account_master.credit_limit','account_master.pdc_amount','account_master.account_group_id','account_master.terms_id','account_master.category')
+	// 				->get(); 
+	// }
+
+
 	public function getCustomerList($deptid=null)
 	{
-		$query = DB::table('account_master')->where('account_master.status',1)->where('account_master.department_id',env('DEPARTMENT_ID'))
-		            ->where(function ($q) {
-                        $q->whereNull('account_master.deleted_at')
-                          ->orWhere('account_master.deleted_at', '0000-00-00 00:00:00');
-                    });
+		// Test 1: Check total customers without filters
+		$totalCustomers = DB::table('account_master')
+			->join('account_group AS ag', 'ag.id', '=', 'account_master.account_group_id')
+			->where('ag.category', 'CUSTOMER')
+			->count();
 		
+		\Log::info('Total customers in system: ' . $totalCustomers);
+		
+		// Test 2: Check with status filter
+		$activeCustomers = DB::table('account_master')
+			->join('account_group AS ag', 'ag.id', '=', 'account_master.account_group_id')
+			->where('ag.category', 'CUSTOMER')
+			->where('account_master.status', 1)
+			->count();
+		
+		\Log::info('Active customers: ' . $activeCustomers);
+		
+		// Test 3: Check current user's department
+		\Log::info('Current user department_id: ' . auth()->user()->department_id);
+		
+		// Test 4: Check customers in user's department
+		$deptCustomers = DB::table('account_master')
+			->join('account_group AS ag', 'ag.id', '=', 'account_master.account_group_id')
+			->where('ag.category', 'CUSTOMER')
+			->where('account_master.status', 1)
+			->where('account_master.department_id', auth()->user()->department_id)
+			->count();
+		
+		\Log::info('Customers in user department: ' . $deptCustomers);
+		
+		// Your original query
+		$query = DB::table('account_master')
+					->where('account_master.status', 1)
+					->where('account_master.department_id', auth()->user()->department_id)
+					->where(function ($q) {
+						$q->whereNull('account_master.deleted_at')
+						->orWhere('account_master.deleted_at', '0000-00-00 00:00:00');
+					});
 		
 		return $query->join('account_group AS ag', function($join) {
-							$join->on('ag.id','=','account_master.account_group_id');
-						} )
-					->where('ag.category','=','CUSTOMER')
-					->select('account_master.id','account_master.account_id','account_master.master_name','account_master.phone','account_master.cl_balance','account_master.vat_no',
-					         'account_master.op_balance','account_master.credit_limit','account_master.pdc_amount','account_master.account_group_id','account_master.terms_id','account_master.category')
+						$join->on('ag.id', '=', 'account_master.account_group_id');
+					})
+					->where('ag.category', '=', 'CUSTOMER')
+					->select('account_master.id', 'account_master.account_id', 'account_master.master_name', 
+							'account_master.phone', 'account_master.cl_balance', 'account_master.vat_no',
+							'account_master.op_balance', 'account_master.credit_limit', 'account_master.pdc_amount', 
+							'account_master.account_group_id', 'account_master.terms_id', 'account_master.category')
 					->get(); 
 	}
+
 	public function activebudgAccountList($deptid=null)
 	{
 		$query1 =DB::table('account_master')
@@ -2626,7 +2680,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 		else
 			$grparr = null;
 			
-		$department_id =env('DEPARTMENT_ID');
+		$department_id =auth()->user()->department_id;
 		
 		switch($attributes['search_type']) 
 		{
@@ -3860,7 +3914,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):$attributes['curr_from_date'];
 			$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):date('Y-m-d');
 			$direct_expence = $indirect_expence = $direct_income = $indirect_income = array();
-			$department_id = $department_id =env('DEPARTMENT_ID');//(isset($attributes['department_id']))?$attributes['department_id']:'';		
+			$department_id = $department_id =auth()->user()->department_id;//(isset($attributes['department_id']))?$attributes['department_id']:'';		
 				
 			if($attributes['search_type']=='summary') 
 			{
@@ -4469,7 +4523,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 		$current_liability = $longterm_liability = $fixed_assets = $current_assets = $capital = $equity = array();
 		$date_from = date('Y-m-d', strtotime($attributes['date_from'])); //$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):'';
-		$department_id = $department_id =env('DEPARTMENT_ID');//(isset($attributes['department_id']))?$attributes['department_id']:'';	
+		$department_id = $department_id =auth()->user()->department_id;//(isset($attributes['department_id']))?$attributes['department_id']:'';	
 		$is_ob = (isset($attributes['chkob']))?true:false;	
 		//echo '<pre>';print_r($attributes);exit;
 		if($attributes['search_type']=='summary') 
@@ -9312,16 +9366,29 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			if($check > 0 || $checkp>0)
 				return 0; */
 			
-			$check = $this->accountmaster->where('master_name', $attributes['master_name'])->where('status',1)->count();
-			if($check > 0)
+			// $check = $this->accountmaster->where('master_name', $attributes['master_name'])->where('status',1)->whereNull('deleted_at')->count();
+			$check = $this->accountmaster
+				->where('master_name', $attributes['master_name'])
+				->where('department_id', Auth::user()->department_id)
+				->where('status',1)
+				->whereNull('deleted_at')
+				->count();
+			
+			if ($check > 0) {
+				DB::rollback();
 				return 0;
+			}
 			
 			$group = DB::table('account_group')->where('category', $attributes['category'])
 											->where('status',1)
 											->whereNull('deleted_at')
 											->select('id','category_id')
 											->first();
-			
+			 	if(!$group) {
+					DB::rollback();
+					return -2; // Group not found
+				}
+
 			$settings = DB::table('parameter1')->select('from_date','to_date')->first();
 			
 			//$this->accountmaster->account_id = $attributes['account_id'];//$code;
@@ -9331,7 +9398,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$this->accountmaster->transaction_type = ($attributes['category']=='CUSTOMER')?'Dr':'Cr';
 			$this->accountmaster->address = $attributes['address'];
 			$this->accountmaster->country_id = $attributes['country_id'];
-			$this->accountmaster->area_id = $attributes['area_id'];
+			$this->accountmaster->area_id = $attributes['area_id'] ?? null;
 			$this->accountmaster->phone = $attributes['phone'];
 			$this->accountmaster->email = isset($attributes['email'])?$attributes['email']:'';
 			$this->accountmaster->contact_name = isset($attributes['contact_name'])?$attributes['contact_name']:'';
@@ -9345,7 +9412,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$this->accountmaster->status = 1;
 			$this->accountmaster->category = $attributes['category'];
 			$this->accountmaster->department_id = Auth::user()->department_id ?? 0; // user department
-			$this->accountmaster->fill($attributes)->save();
+			// $this->accountmaster->fill($attributes)->save();
+			$this->accountmaster->save();
 			
 			DB::table('account_transaction')
 						->insert([  'voucher_type' 		=> 'OB',

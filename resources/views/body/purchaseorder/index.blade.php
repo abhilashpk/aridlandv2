@@ -203,6 +203,33 @@
 $('#date_from').datepicker( { autoClose: true,dateFormat: 'dd-mm-yyyy' } );
 $('#date_to').datepicker( { autoClose: true,dateFormat: 'dd-mm-yyyy'} );
 
+// In your blade file
+$(document).ready(function() {
+    var table = $('#purchase_order_table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "{{ url('purchase_order/ajax_paging') }}",
+            type: 'GET',
+            error: function(xhr, error, code) {
+                console.log('AJAX Error:', error);
+                console.log('Response:', xhr.responseText);
+            }
+        },
+        columns: [
+            {data: 'id', name: 'id'},
+            {data: 'voucher_no', name: 'voucher_no'},
+            {data: 'voucher_date', name: 'voucher_date'},
+            {data: 'supplier', name: 'supplier'},
+            {data: 'net_total', name: 'net_total'},
+            {data: 'approval', name: 'approval'},
+            {data: 'edit', name: 'edit', orderable: false, searchable: false},
+            {data: 'print', name: 'print', orderable: false, searchable: false},
+            {data: 'delete', name: 'delete', orderable: false, searchable: false}
+        ]
+    });
+});
+
 $(document).ready(function () {
 	$("#select21").select2({
         theme: "bootstrap",
@@ -245,11 +272,17 @@ $(function() {
 			{ "data": "supplier" },
 			{ "data": "net_total" },
 			@if($modpurenq==1)	{ "data": "approval" },@endif
-			@permission('po-edit'){ "data": "edit","bSortable": false },@endpermission
-			@permission('po-view'){ "data": "viewonly","bSortable": false },@endpermission
-			@permission('po-print'){ "data": "print","bSortable": false },@endpermission
-				@if($modpurenq==1){ "data": "view","bSortable": false },@endif
-			@permission('po-delete'){ "data": "delete","bSortable": false }@endpermission
+			// @permission('po-edit'){ "data": "edit","bSortable": false },@endpermission
+			// @permission('po-view'){ "data": "viewonly","bSortable": false },@endpermission
+			// @permission('po-print'){ "data": "print","bSortable": false },@endpermission
+				// @if($modpurenq==1){ "data": "view","bSortable": false },@endif
+			// @permission('po-delete'){ "data": "delete","bSortable": false }@endpermission
+
+			@if($modpurenq==1)	{ "data": "approved_user" },@endif
+			{ "data": "edit","bSortable": false },
+			{ "data": "print","bSortable": false },
+		@if($modpurenq==1)	{ "data": "view","bSortable": false },@endif
+			{ "data": "delete","bSortable": false }
 		],
 			@if($modpurenq==1)	"createdRow": function( row, data, dataIndex){
                             if( data["status"] == 1  ){

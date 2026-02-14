@@ -121,6 +121,7 @@
 							<div class="controls"> 
                             <form class="form-horizontal" role="form" method="POST" name="frmPurchaseInvoice" id="frmPurchaseInvoice" enctype="multipart/form-data" action="{{ url('purchase_invoice/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
+								{{-- <input type="hidden" name="default_location" id="default_location" value="{{ $locdefault->id }}"> --}}
 								<input type="hidden" name="default_location" id="default_location" value="{{ $locdefault?->id }}">
 								@if($formdata['send_email']==1)
 								<input type="hidden" name="send_email" value="1">
@@ -1456,7 +1457,7 @@ $(document).ready(function () {
 		$('#locationRadio').show();
     
 
-	   let locID   = {{$interid}};
+	   let locID   = "{{$interid}}";
         let locCode = "{{$intercode}}";
 		let prefix ='IPI';
 		let newPrefix = prefix + locCode; 

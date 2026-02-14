@@ -113,7 +113,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 		$this->itemmaster->assembly = $attributes['assembly'] ?? 0;
 	// 		$this->itemmaster->image = $image;
 	// 		$this->itemmaster->status = 1;
-	// 		$this->itemmaster->created_department = env('DEPARTMENT_ID');
+	// 		$this->itemmaster->created_department = auth()->user()->department_id;
 	// 		$this->itemmaster->profit_per = $attributes['profit_per'] ?? 0;
 	// 		$this->itemmaster->bin = $attributes['machine_model'] ?? '';
 	// 		$this->itemmaster->weight = $attributes['size'] ?? 0;
@@ -148,7 +148,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 				if($attributes['unit'][$key]!="" || $c==1) {
 	// 				     $unitdat = DB::table('units')->where('id',$attributes['unit'][$key])->first();
 	// 				    if($attributes['unit'][$key]=='') {
-	// 				        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+	// 				        $unitdat = DB::table('units')->where('deleted_at')->first();
 	// 				        //echo $unitdat->unit_name;exit;
 	// 				    }
 					    
@@ -177,7 +177,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 						$dtrow = DB::table('parameter1')->select('from_date')->first();
 	// 						$log_id = DB::table('item_log')->insertGetId([
 	// 										 'document_type' => 'OQ',
-	// 										 'department_id'=>env('DEPARTMENT_ID'),
+	// 										 'department_id'=>auth()->user()->department_id,
 	// 										 'item_id' 	  => $this->itemmaster->id,
 	// 										 'unit_id'    => ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key],
 	// 										 'quantity'   => $attributes['opn_quantity'][$key] ?? 0,
@@ -199,13 +199,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						    
 	// 					    //---------------DEPARTMENT STOCK--------
 							
-	// 						$departmentId = env('DEPARTMENT_ID');
+	// 						$departmentId = auth()->user()->department_id;
 	// 						if($attributes['unit'][0]!="") {
     // 					        $unitdat = DB::table('units')->where('id',$attributes['unit'][0])->first();
     // 						}
     						
     // 					    if($attributes['unit'][0]=='') {
-    // 					        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+    // 					        $unitdat = DB::table('units')->where('deleted_at')->first();
     // 					        //echo $unitdat->unit_name;exit;
     // 					    }
 	// 					    $unit=($attributes['unit'][0]=='')?$unitdat->id:$attributes['unit'][0];
@@ -219,7 +219,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 						$vat          =isset($attributes['selvat'][0])?$attributes['selvat'][0]:0;
 	// 						$pkno = ($attributes['packing'][0]=='')?1:$attributes['pkno'][0];
 							
-    //                         $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
+    //                         $departments = DB::table('department')->where('deleted_at')->get();
 
     //                                   foreach ($departments as $dept) {
     //                                            $isCurrent = ($dept->id == $departmentId);
@@ -264,7 +264,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
     // 								$itemLocation->location_id = $v;
     // 								$itemLocation->item_id = $this->itemmaster->id;
     // 								$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
-	// 								$itemLocation->department_id = env('DEPARTMENT_ID');
+	// 								$itemLocation->department_id = auth()->user()->department_id;
     // 								$itemLocation->quantity = $quantity ?? 0;
     // 								$itemLocation->status = 1;
     // 								$itemLocation->opn_qty = $attributes['locqty'][$k] ?? 0;
@@ -273,13 +273,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
     // 							}
     							
     // 							//ADD OTHER ITEMS TO OTHER LOCATIONS...
-    // 							$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+    // 							$rows = DB::table('location')->where('department_id',auth()->user()->department_id)->where('status',1)->where('deleted_at')->get();
     // 							if($rows){
     // 								foreach($rows as $row) {
     // 									if(!in_array($row->id, $attributes['locid'])) {
     // 										$itemLocation = new ItemLocation();
     // 										$itemLocation->location_id = $row->id;
-    // 										$itemLocation->department_id = env('DEPARTMENT_ID');
+    // 										$itemLocation->department_id = auth()->user()->department_id;
     // 										$itemLocation->item_id = $this->itemmaster->id;
     // 										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
     // 										$itemLocation->quantity = 0;
@@ -292,15 +292,15 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
     // 							}
     								
     // 						} else {
-    // 							//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+    // 							//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at')->first();
     // 							if($c==1) {
-    // 								$rows = DB::table('location')->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+    // 								$rows = DB::table('location')->where('department_id',auth()->user()->department_id)->where('status',1)->where('deleted_at')->get();
     // 								if($rows){
     // 									foreach($rows as $row) {
     										
     // 										$itemLocation = new ItemLocation();
     // 										$itemLocation->location_id = $row->id;
-    // 										$itemLocation->department_id = env('DEPARTMENT_ID');
+    // 										$itemLocation->department_id = auth()->user()->department_id;
     // 										$itemLocation->item_id = $this->itemmaster->id;
     // 										$itemLocation->unit_id = ($attributes['unit'][$key]=='')?$unitdat->id:$attributes['unit'][$key];
     // 										$itemLocation->quantity = ($row->is_default==1)?($attributes['opn_quantity'][0] ?? 0):0;
@@ -1121,7 +1121,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			
 	// 		//$units = $this->getUnits($id);//echo '<pre>';print_r($units);exit;
 	// 		$key = 0;
-	// 		$currentDeptId = env('DEPARTMENT_ID');
+	// 		$currentDeptId = auth()->user()->department_id;
 			
 	// 		foreach($attributes['unit'] as $key => $val) {
 				
@@ -1138,7 +1138,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 				}
 					
 	// 				if($attributes['unit'][$key]=='') {
-	// 			        $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+	// 			        $unitdat = DB::table('units')->where('deleted_at')->first();
 	// 			    }
     //                   //echo '<pre>';print_r($attributes['unit'][$key]);exit;
     //                   $unitId = ($attributes['unit'][$key] == '') ? $unitdat->id : $attributes['unit'][$key];
@@ -1275,7 +1275,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 						$dtrow = DB::table('parameter1')->select('from_date')->first();
 	// 						$log_id = DB::table('item_log')->insertGetId([
 	// 										 'document_type' => 'OQ',
-	// 										 'department_id'=>env('DEPARTMENT_ID'),
+	// 										 'department_id'=>auth()->user()->department_id,
 	// 										 'item_id' 	  => $this->itemmaster->id,
 	// 										 'unit_id'    => $unitId,
 	// 										 'quantity'   => isset($attributes['opn_quantity'][0])?$attributes['opn_quantity'][0]:0,
@@ -1305,11 +1305,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 						if($itlocid!='')
 	// 							DB::table('item_location')->where('id', $itlocid)->where('department_id', env('DEPARTMENT_ID', 1))->update(['quantity' => $attributes['locqty'][$k],'opn_qty' => $attributes['locqty'][$k], 'bin_id' => $attributes['binid'][$k]]);
 	// 						else {
-	// 						    $unitdat = DB::table('units')->where('deleted_at','0000-00-00 00:00:00')->first();
+	// 						    $unitdat = DB::table('units')->where('deleted_at')->first();
 	// 							$itemLocation = new ItemLocation();
 	// 							$itemLocation->location_id = $v;
 	// 							$itemLocation->item_id = $this->itemmaster->id;
-	// 							$itemLocation->department_id = env('DEPARTMENT_ID');
+	// 							$itemLocation->department_id = auth()->user()->department_id;
 	// 							$itemLocation->unit_id = (isset($attributes['unit'][$key]) && $attributes['unit'][$key]!='')?$attributes['unit'][$key]:$unitdat->id;
 	// 							$itemLocation->quantity = $attributes['locqty'][$k];
 	// 							$itemLocation->status = 1;
@@ -1916,7 +1916,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				$join->on('sd.unit_id', '=', 'u.unit_id');
 			})
 			->where('u.itemmaster_id', $id)
-			->where('sd.department_id', env('DEPARTMENT_ID'))
+			->where('sd.department_id', auth()->user()->department_id)
 			// ->where('sd.deleted_at', '0000-00-00 00:00:00')
 			->orderBy('u.id', 'ASC')
 			->select([
@@ -1985,7 +1985,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							$query->where('itemmaster.class_id',$val);
 						}
 						
-		return $query->where('u.is_baseqty','=',1)->where('ISD.department_id','=',env('DEPARTMENT_ID'))->count();
+		return $query->where('u.is_baseqty','=',1)->where('ISD.department_id','=',auth()->user()->department_id)->count();
 	}
 	
 	//paging..
@@ -2066,7 +2066,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		
 		// REMOVE these lines - they're now in the join conditions above
 		// $query->where('u.is_baseqty', 1)
-		//       ->where('ID.department_id', env('DEPARTMENT_ID'));
+		//       ->where('ID.department_id', auth()->user()->department_id);
 		
 		$query->select(
 				'itemmaster.*',
@@ -2243,7 +2243,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		return DB::table('mfg_items')->where('mfg_items.item_id', $id)
 								->join('itemmaster AS IM', 'IM.id', '=', 'mfg_items.subitem_id')
 								->join('item_unit AS IU', 'IU.itemmaster_id', '=', 'IM.id')
-								->where('mfg_items.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('mfg_items.deleted_at')
 								->where('IU.is_baseqty',1)//AUG25
 								->select('mfg_items.*','IU.unit_id','IM.item_code','IM.description')
 								->get();
@@ -2410,9 +2410,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('IL.document_type','OQ')
 							->where('IL.status',1)
 							
-							->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
+							->where('IL.department_id',auth()->user()->department_id)
+							->whereNull('IL.deleted_at')
+							->where('ISD.department_id',auth()->user()->department_id)
 							->where('ISD.is_baseqty','=',1);
 							
 			if(($date_from!='') && ($date_to!='')) {
@@ -2469,9 +2469,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$join->on('IL.item_id','=','itemmaster.id');
 							} )
 							->where('IL.status',1)
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')
+							->where('ISD.department_id',auth()->user()->department_id)
+							->where('IL.department_id',auth()->user()->department_id)
+							->whereNull('IL.deleted_at')
 							->where('u.is_baseqty','=',1);
 				
 				if(($date_from!='') && ($date_to!='')) {
@@ -2514,7 +2514,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							
 			$result = $query->select('itemmaster.id','itemmaster.item_code','itemmaster.description','itemmaster.mpqty',
 			                    'itemmaster.p1_qty','itemmaster.p2_qty','IL.*','ISD.packing','ISD.opn_cost','ISD.opn_quantity','itemmaster.bin_location','ISD.sell_price','itemmaster.p1_formula','itemmaster.p2_formula',
-			                    DB::raw("(SELECT IL2.pur_cost FROM item_log as IL2 WHERE (IL.item_id=IL2.item_id) AND (IL2.document_type='PI') AND IL2.status=1 AND IL2.deleted_at='0000-00-00 00:00:00' ORDER BY IL2.id DESC LIMIT 1) AS pr_cost")
+			                    DB::raw("(SELECT IL2.pur_cost FROM item_log as IL2 WHERE (IL.item_id=IL2.item_id) AND (IL2.document_type='PI') AND IL2.status=1 AND IL2.deleted_at IS NULL ORDER BY IL2.id DESC LIMIT 1) AS pr_cost")
 			                    )
 			                    ->orderBy('IL.voucher_date')->get()->toArray();
 		
@@ -2533,9 +2533,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$join->on('IL.item_id','=','itemmaster.id');
 							} )
 							->where('IL.status',1)
-							->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')
+							->where('IL.department_id',auth()->user()->department_id)
+							->where('ISD.department_id',auth()->user()->department_id)
+							->whereNull('IL.deleted_at')
 							->where('u.is_baseqty','=',1);
 							
 			if(($date_from!='') && ($date_to!='')) {
@@ -2572,7 +2572,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							$query->where($quantity_col,'!=',0);*/
 							
 			$result = $query->select('itemmaster.p1_formula','itemmaster.p2_formula','itemmaster.id','itemmaster.item_code','itemmaster.description','itemmaster.mpqty','itemmaster.p1_qty','itemmaster.p2_qty','IL.*','ISD.packing','ISD.opn_cost','ISD.opn_quantity','itemmaster.bin_location',
-			                DB::raw("(SELECT IL2.pur_cost FROM item_log as IL2 WHERE (IL.item_id=IL2.item_id) AND (IL2.document_type='PI') AND IL2.status=1 AND IL2.deleted_at='0000-00-00 00:00:00' ORDER BY IL2.id DESC LIMIT 1) AS pr_cost"))
+			                DB::raw("(SELECT IL2.pur_cost FROM item_log as IL2 WHERE (IL.item_id=IL2.item_id) AND (IL2.document_type='PI') AND IL2.status=1 AND IL2.deleted_at IS NULL ORDER BY IL2.id DESC LIMIT 1) AS pr_cost"))
 			                ->orderBy('IL.voucher_date')->get()->toArray();
 		
 			return $result;
@@ -2588,11 +2588,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->join('item_location AS IL','IL.item_id','=','itemmaster.id')
-							->join('location AS L','L.id','=','IL.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 							
-							->where('ILG.document_type','OQ')->where('IL.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'))
+							->join('location AS L','L.id','=','IL.location_id')->where('ISD.department_id',auth()->user()->department_id) 							
+							->where('ILG.document_type','OQ')->where('IL.status',1)->where('ILG.department_id',auth()->user()->department_id)
+							->whereNull('IL.deleted_at')->where('IL.department_id',auth()->user()->department_id)
+							->where('ILG.status',1)->where('ILG.deleted_at')->where('u.is_baseqty','=',1)
+							->whereNull('L.deleted_at')->where('L.department_id',auth()->user()->department_id)
 ;
 						
 				if(($date_from!='') && ($date_to!='')) {
@@ -2647,21 +2647,21 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_to AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');//->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');//->where('LSI.deleted_at');
 							})
 							->join('location AS L','L.id','=','LSI.location_id')
-							->where('ISD.department_id',env('DEPARTMENT_ID'))->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00');
+							->where('ISD.department_id',auth()->user()->department_id)->where('L.department_id',auth()->user()->department_id)
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)
+							->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
+							->whereNull('L.deleted_at');
 							/*->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
 							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
 							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at');
 							})
 							->join('location AS L','L.id','=','LT.locto_id') 
-							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');*/
+							->where('LTI.status',1)->where('LTI.deleted_at')->where('u.is_baseqty','=',1)
+							->where('L.deleted_at');*/
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -2716,24 +2716,24 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
                             ->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_ti AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');//->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');//->where('LSI.deleted_at');
 							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00');
+							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',auth()->user()->department_id) 
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)
+							->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
+							->whereNull('L.deleted_at');
 							
 						/*	->join('location AS L','L.id','=','LSI.location_id') 
-							->where('ILG.status',1)->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00');
+							->where('ILG.status',1)->where('ILG.deleted_at')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
+							->where('L.deleted_at');
 							->join('item_unit AS u', function($join) { $join->on('u.itemmaster_id','=','itemmaster.id'); })
 							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
 							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at');
 							})
 							->join('location AS L','L.id','=','LT.locfrom_id') 
-							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');*/
+							->where('LTI.status',1)->where('LTI.deleted_at')->where('u.is_baseqty','=',1)
+							->where('L.deleted_at');*/
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -2790,11 +2790,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
 							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->whereNull('LT.deleted_at');
 							})
-							->join('location AS L','L.id','=','LT.locfrom_id')->where('ISD.department_id',env('DEPARTMENT_ID'))->where('LT.department_id',env('DEPARTMENT_ID'))
-							->where('LTI.status',1)->where('L.department_id',env('DEPARTMENT_ID'))->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');
+							->join('location AS L','L.id','=','LT.locfrom_id')->where('ISD.department_id',auth()->user()->department_id)->where('LT.department_id',auth()->user()->department_id)
+							->where('LTI.status',1)->where('L.department_id',auth()->user()->department_id)->whereNull('LTI.deleted_at')->where('u.is_baseqty','=',1)
+							->whereNull('L.deleted_at');
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -2847,12 +2847,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('location_transfer_item AS LTI', function($join) { $join->on('LTI.item_id','=','itemmaster.id'); })
 							->Join('location_transfer AS LT', function($join) {
-								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->where('LT.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LT.id','=','LTI.location_transfer_id')->where('LT.status','=',1)->whereNull('LT.deleted_at');
 							})
-							->join('location AS L','L.id','=','LT.locto_id')->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('ISD.department_id',env('DEPARTMENT_ID'))->where('LT.department_id',env('DEPARTMENT_ID')) 
-							->where('LTI.status',1)->where('LTI.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)
-							->where('L.deleted_at','0000-00-00 00:00:00');
+							->join('location AS L','L.id','=','LT.locto_id')->where('L.department_id',auth()->user()->department_id)
+							->where('ISD.department_id',auth()->user()->department_id)->where('LT.department_id',auth()->user()->department_id) 
+							->where('LTI.status',1)->whereNull('LTI.deleted_at')->where('u.is_baseqty','=',1)
+							->whereNull('L.deleted_at');
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -2907,12 +2907,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_si AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');
 							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('LSI.department_id',env('DEPARTMENT_ID'))
-							->where('ISD.department_id',env('DEPARTMENT_ID'))  
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
+							->join('location AS L','L.id','=','LSI.location_id')->where('LSI.department_id',auth()->user()->department_id)
+							->where('ISD.department_id',auth()->user()->department_id)  
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
+							->whereNull('L.deleted_at')->where('L.department_id',auth()->user()->department_id);
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -2963,11 +2963,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_gi AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');
 							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
+							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',auth()->user()->department_id) 
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
+							->whereNull('L.deleted_at')->where('L.department_id',auth()->user()->department_id);
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -3018,11 +3018,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_gr AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');
 							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
+							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',auth()->user()->department_id) 
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
+							->whereNull('L.deleted_at')->where('L.department_id',auth()->user()->department_id);
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -3073,11 +3073,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_sr AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');
 							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
+							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',auth()->user()->department_id)
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1)//->where('LSI.is_do',0)
+							->whereNull('L.deleted_at')->where('L.department_id',auth()->user()->department_id);
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -3131,11 +3131,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_pi AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');
 							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
+							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',auth()->user()->department_id) 
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
+							->whereNull('L.deleted_at')->where('L.department_id',auth()->user()->department_id);
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -3186,11 +3186,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->join('itemstock_department AS ISD', function($join) { $join->on('ISD.itemmaster_id','=','itemmaster.id'); })
 							->join('item_log AS ILG', function($join) { $join->on('ILG.item_id','=','itemmaster.id'); })
 							->Join('item_location_pr AS LSI', function($join) {
-								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->where('LSI.deleted_at','=','0000-00-00 00:00:00');
+								$join->on('LSI.logid','=','ILG.id')->where('LSI.status','=',1)->whereNull('LSI.deleted_at');
 							})
-							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',env('DEPARTMENT_ID')) 
-							->where('ILG.status',1)->where('ILG.department_id',env('DEPARTMENT_ID'))->where('ILG.deleted_at','0000-00-00 00:00:00')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
-							->where('L.deleted_at','0000-00-00 00:00:00')->where('L.department_id',env('DEPARTMENT_ID'));
+							->join('location AS L','L.id','=','LSI.location_id')->where('ISD.department_id',auth()->user()->department_id) 
+							->where('ILG.status',1)->where('ILG.department_id',auth()->user()->department_id)->whereNull('ILG.deleted_at')->where('u.is_baseqty','=',1) //->where('LSI.is_sdo',0)
+							->whereNull('L.deleted_at')->where('L.department_id',auth()->user()->department_id);
 							
 				if(($date_from!='') && ($date_to!='')) {
 					$date_from = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
@@ -3271,13 +3271,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$join->on('UN.id','=','u.unit_id');
 							} )
 							->where('IL.status',1)->where('L.status',1)->where('L2.status',1)
-							->where('ISD.department_id',env('DEPARTMENT_ID'))
-							->where('IL.department_id',env('DEPARTMENT_ID'))
-							->where('IL.deleted_at','0000-00-00 00:00:00')
-							->where('L.deleted_at','0000-00-00 00:00:00')
-							->where('L2.deleted_at','0000-00-00 00:00:00')
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							//->where('L2.department_id',env('department_id'))
+							->where('ISD.department_id',auth()->user()->department_id)
+							->where('IL.department_id',auth()->user()->department_id)
+							->whereNull('IL.deleted_at')
+							->whereNull('L.deleted_at')
+							->whereNull('L2.deleted_at')
+							->where('L.department_id',auth()->user()->department_id)
+							//->where('L2.department_id',auth()->user()->department_id)
 							->where('L.opn_qty','>',0)
 							->where('u.is_baseqty','=',1);
 							
@@ -3329,12 +3329,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	public function getStockLedgerReportSummary() {
 
 		$result = DB::table('item_log')->join('itemmaster','itemmaster.id','=','item_log.item_id')
-						->where('item_log.status',1)->where('item_log.deleted_at','0000-00-00 00:00:00')
-						->where('itemmaster.status',1)->where('itemmaster.deleted_at','0000-00-00 00:00:00')
+						->where('item_log.status',1)->whereNull('item_log.deleted_at')
+						->where('itemmaster.status',1)->whereNull('itemmaster.deleted_at')
 						->where('itemmaster.class_id',1)
 						->select('itemmaster.item_code','itemmaster.description',
-							DB::raw("(SELECT SUM(IL.quantity) FROM item_log as IL WHERE (item_log.item_id=IL.item_id) AND (IL.trtype=1) AND IL.status=1 AND IL.deleted_at='0000-00-00 00:00:00') AS qty_in"),
-							DB::raw("(SELECT SUM(IL.quantity) FROM item_log as IL WHERE (item_log.item_id=IL.item_id) AND (IL.trtype=0) AND IL.status=1 AND IL.deleted_at='0000-00-00 00:00:00') AS qty_out")
+							DB::raw("(SELECT SUM(IL.quantity) FROM item_log as IL WHERE (item_log.item_id=IL.item_id) AND (IL.trtype=1) AND IL.status=1 AND IL.deleted_at IS NULL) AS qty_in"),
+							DB::raw("(SELECT SUM(IL.quantity) FROM item_log as IL WHERE (item_log.item_id=IL.item_id) AND (IL.trtype=0) AND IL.status=1 AND IL.deleted_at IS NULL) AS qty_out")
 						)->groupBy('itemmaster.id')->get();
 
 		return $result;
@@ -3365,9 +3365,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$join->on('UN.id','=','u.unit_id');
 							} )
 							->where('IL.status',1)->where('L.status',1)->where('L2.status',1)
-							->where('IL.deleted_at','0000-00-00 00:00:00')
-							->where('L.deleted_at','0000-00-00 00:00:00')
-							->where('L.opn_qty','>',0)->where('L2.deleted_at','0000-00-00 00:00:00')
+							->whereNull('IL.deleted_at')
+							->whereNull('L.deleted_at')
+							->where('L.opn_qty','>',0)->whereNull('L2.deleted_at')
 							->where('u.is_baseqty','=',1);
 							
 			if(($date_from!='') && ($date_to!='')) {
@@ -3428,7 +3428,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$join->on('IL.item_id','=','itemmaster.id');
 							} )
 							->where('IL.status',1)
-							->where('IL.deleted_at','0000-00-00 00:00:00')
+							->whereNull('IL.deleted_at')
 							->where('u.is_baseqty','=',1);
 						if($attributes['itemtype']!='')
 							$query->where('itemmaster.class_id', $attributes['itemtype']);
@@ -3473,7 +3473,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							} )
 							->where('u.is_baseqty','=',1)
 							->where('IL.status','=',1)
-							->where('IL.deleted_at','=','0000-00-00 00:00:00');
+							->whereNull('IL.deleted_at');
 							
 						if(isset($attributes['location_id']) && ($attributes['location_id']!='all'))
 							$query->whereIn('L.id', $attributes['location_id']);
@@ -3641,7 +3641,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							} )
 							->where('u.is_baseqty','=',1)
 							->where('IL.status','=',1)
-							->where('IL.deleted_at','=','0000-00-00 00:00:00');
+							->whereNull('IL.deleted_at');
 							
 						if($attributes['location_id']!='all')
 							$query->whereIn('L.id', $attributes['location_id']);
@@ -3767,7 +3767,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$result['opn_details'] = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('item_log.document_type','OQ')
 									 ->where('u.is_baseqty','1')
 									 ->select('itemmaster.id','itemmaster.item_code','itemmaster.description','u.opn_quantity','u.opn_cost AS cost_avg')
@@ -3798,7 +3798,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','supplier_do.job_id')
 									 ->where('item_log.document_type','=','SDO')
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('supplier_do.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3817,7 +3817,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','sales_invoice.job_id')
 									 ->where('item_log.document_type','=','SI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('sales_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3835,7 +3835,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','purchase_return.job_id')
 									 ->where('item_log.document_type','=','PR')
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('purchase_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3853,7 +3853,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','sales_return.job_id')
 									 ->where('item_log.document_type','=','SR')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('sales_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3871,7 +3871,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferin.job_id')
 									 ->where('item_log.document_type','=','TI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('stock_transferin.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3890,7 +3890,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','goods_return.job_id')
 									 ->where('item_log.document_type','=','GR')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('goods_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3908,7 +3908,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferout.job_id')
 									 ->where('item_log.document_type','=','TO')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('stock_transferout.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3926,7 +3926,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','goods_issued.job_id')
 									 ->where('item_log.document_type','=','GI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('goods_issued.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3943,7 +3943,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','customer_do.job_id')
 									 ->where('item_log.document_type','=','CDO')
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('customer_do.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -3970,9 +3970,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->where('isd.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
 									 ->where('item_log.document_type','OQ')
 									 ->where('u.is_baseqty','1')
 									 ->select('itemmaster.id','itemmaster.item_code','itemmaster.description','isd.opn_quantity','isd.opn_cost AS cost_avg')
@@ -3984,11 +3984,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				
 				$qtyin = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('trtype',1)
 							->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
-							->where('status',1)->where('item_log.department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
+							->where('status',1)->where('item_log.department_id',auth()->user()->department_id)->whereNull('deleted_at')->sum('quantity');
 		
-				$qtyout = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('item_log.department_id',env('DEPARTMENT_ID'))
+				$qtyout = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('item_log.department_id',auth()->user()->department_id)
 							->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
-							->where('trtype',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
+							->where('trtype',0)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 				
 				$result['opn_details'][0]->opn_quantity = $qtyin - $qtyout;
 				//echo '1<pre>';print_r($qtyin);print_r($qtyout);exit;
@@ -4002,9 +4002,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','purchase_invoice.job_id')
 									 ->where('item_log.document_type','=','PI')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->where('isd.department_id',auth()->user()->department_id)
+									 ->where('purchase_invoice.department_id',auth()->user()->department_id)
 									 ->where('purchase_invoice.status',1);
 									 
 									 
@@ -4023,10 +4023,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','supplier_do.job_id')
 									 ->where('item_log.document_type','=','SDO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('supplier_do.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->where('isd.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									  ->where('supplier_do.department_id',auth()->user()->department_id)
 									 ->where('supplier_do.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4045,11 +4045,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','sales_invoice.job_id')
 									 ->where('item_log.document_type','=','SI')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->where('isd.department_id',auth()->user()->department_id)
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
+									 ->whereNull('item_log.deleted_at')
+									 ->where('sales_invoice.department_id',auth()->user()->department_id)
 									 ->where('sales_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4068,10 +4068,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','purchase_return.job_id')
 									 ->where('item_log.document_type','=','PR')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('purchase_return.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->where('isd.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									 ->where('purchase_return.department_id',auth()->user()->department_id)
 									 ->where('purchase_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4090,10 +4090,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','sales_return.job_id')
 									 ->where('item_log.document_type','=','SR')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('sales_return.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
+									 ->where('sales_return.department_id',auth()->user()->department_id)
 									 ->where('sales_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4112,9 +4112,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferin.job_id')
 									 ->where('item_log.document_type','=','TI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
 									 ->where('stock_transferin.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4134,9 +4134,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','goods_return.job_id')
 									 ->where('item_log.document_type','=','GR')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
 									 ->where('goods_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4154,10 +4154,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','stock_transferout.job_id')
 									 ->where('item_log.document_type','=','TO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
 									 ->where('stock_transferout.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4176,9 +4176,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->leftJoin('jobmaster','jobmaster.id','=','goods_issued.job_id')
 									 ->where('item_log.document_type','=','GI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
 									 ->where('goods_issued.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4196,10 +4196,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->leftJoin('jobmaster','jobmaster.id','=','customer_do.job_id')
 									 ->where('item_log.document_type','=','CDO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('customer_do.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
+									 ->where('customer_do.department_id',auth()->user()->department_id)
 									 ->where('customer_do.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4236,14 +4236,14 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									
 									
 										$query0->where('IL.status','=',1)
-											  ->where('IL.deleted_at','=','0000-00-00 00:00:00')
+											  ->whereNull('IL.deleted_at')
 											 ->where('item_log.document_type','=','OQ')
 											 ->where('IL.opn_qty','>',0)
-											 ->where('IL.department_id',env('DEPARTMENT_ID'))
+											 ->where('IL.department_id',auth()->user()->department_id)
 											 ->where('L.status','=',1)
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											  ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											   ->where('isd.department_id',env('DEPARTMENT_ID'))
+											 ->where('L.department_id',auth()->user()->department_id)
+											  ->where('item_log.department_id',auth()->user()->department_id)
+											   ->where('isd.department_id',auth()->user()->department_id)
 											 ->where('itemmaster.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4273,13 +4273,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										$query1->whereIn('purchase_invoice.supplier_id', $attributes['account_id']);
 									
 										$query1->where('IL.status','=',1)
-											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
-											  ->where('L.department_id',env('DEPARTMENT_ID'))
+											 ->whereNull('IL.deleted_at')
+											  ->where('L.department_id',auth()->user()->department_id)
 											 ->where('item_log.document_type','=','PI')
 											 ->where('item_log.status','=',1)
-											  ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											  ->where('isd.department_id',env('DEPARTMENT_ID'))
-											  ->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
+											  ->where('item_log.department_id',auth()->user()->department_id)
+											  ->where('isd.department_id',auth()->user()->department_id)
+											  ->where('purchase_invoice.department_id',auth()->user()->department_id)
 											 ->where('purchase_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4310,14 +4310,14 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										$query1_1->whereIn('supplier_do.supplier_id', $attributes['account_id']);
 									 
 									 $query1_1->where('IL.status','=',1)
-											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
+											 ->whereNull('IL.deleted_at')
+											 ->where('L.department_id',auth()->user()->department_id)
 											 ->where('item_log.document_type','=','SDO')
 											 ->where('supplier_do.status','=',1)
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											 ->where('supplier_do.department_id',env('DEPARTMENT_ID'))
+											 ->where('item_log.department_id',auth()->user()->department_id)
+											 ->whereNull('item_log.deleted_at')
+											 ->where('isd.department_id',auth()->user()->department_id)
+											 ->where('supplier_do.department_id',auth()->user()->department_id)
 											 ->where('supplier_do.status',1);
 											 
 				if(($date_from!='') && ($date_to!=''))
@@ -4347,11 +4347,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								if(isset($attributes['location_id']) && $attributes['location_id']!='all')
 									$query7->whereIn('location_transfer.locto_id', $attributes['location_id']);
 
-								$query7->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								             ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_location.department_id',env('DEPARTMENT_ID'))
-									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
+								$query7->whereNull('location_transfer.deleted_at')
+								             ->where('location_transfer.department_id',auth()->user()->department_id)
+											 ->where('L.department_id',auth()->user()->department_id)
+											 ->where('item_location.department_id',auth()->user()->department_id)
+									->whereNull('location_transfer_item.deleted_at');
 									
 								if(($date_from!='') && ($date_to!=''))
 									$query7->whereBetween('location_transfer.voucher_date', array($date_from, $date_to));
@@ -4376,11 +4376,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								if(isset($attributes['location_id']) && $attributes['location_id']!='all')
 									$query8->whereIn('location_transfer.locfrom_id', $attributes['location_id']);
 
-								$query8->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								        ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_location.department_id',env('DEPARTMENT_ID'))
-									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
+								$query8->whereNull('location_transfer.deleted_at')
+								        ->where('location_transfer.department_id',auth()->user()->department_id)
+											 ->where('L.department_id',auth()->user()->department_id)
+											 ->where('item_location.department_id',auth()->user()->department_id)
+									->whereNull('location_transfer_item.deleted_at');
 									
 								if(($date_from!='') && ($date_to!=''))
 									$query8->whereBetween('location_transfer.voucher_date', array($date_from, $date_to));
@@ -4407,11 +4407,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								if(isset($attributes['location_id']) && $attributes['location_id']!='all')
 									$query2->whereIn('location_transfer.locto_id', $attributes['location_id']);
 
-								$query2->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								          ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_location.department_id',env('DEPARTMENT_ID'))
-									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
+								$query2->whereNull('location_transfer.deleted_at')
+								          ->where('location_transfer.department_id',auth()->user()->department_id)
+											 ->where('L.department_id',auth()->user()->department_id)
+											 ->where('item_location.department_id',auth()->user()->department_id)
+									->whereNull('location_transfer_item.deleted_at');
 									
 								if(($date_from!='') && ($date_to!=''))
 									$query2->whereBetween('location_transfer.voucher_date', array($date_from, $date_to));
@@ -4440,11 +4440,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								if(isset($attributes['location_id']) && $attributes['location_id']!='all')
 									$query6->whereIn('location_transfer.locto_id', $attributes['location_id']);
 
-								$query6->where('location_transfer.deleted_at','=','0000-00-00 00:00:00')
-								        ->where('location_transfer.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											->where('item_location.department_id',env('DEPARTMENT_ID'))
-									->where('location_transfer_item.deleted_at','=','0000-00-00 00:00:00');
+								$query6->whereNull('location_transfer.deleted_at')
+								        ->where('location_transfer.department_id',auth()->user()->department_id)
+											 ->where('L.department_id',auth()->user()->department_id)
+											->where('item_location.department_id',auth()->user()->department_id)
+									->whereNull('location_transfer_item.deleted_at');
 									
 								if(($date_from!='') && ($date_to!=''))
 									$query6->whereBetween('location_transfer.voucher_date', array($date_from, $date_to));
@@ -4477,14 +4477,14 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										$query3->whereIn('sales_invoice.customer_id', $attributes['account_id']);
 									
 										$query3->where('IL.status','=',1)
-											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
+											 ->whereNull('IL.deleted_at')
 											 ->where('item_log.document_type','=','SI')
 											 ->where('item_log.status','=',1)
-											 ->where('IL.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											 ->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
+											 ->where('IL.department_id',auth()->user()->department_id)
+											 ->where('L.department_id',auth()->user()->department_id)
+											 ->where('item_log.department_id',auth()->user()->department_id)
+											 ->where('isd.department_id',auth()->user()->department_id)
+											 ->where('sales_invoice.department_id',auth()->user()->department_id)
 											 ->where('sales_invoice.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4517,13 +4517,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										$query3_1->whereIn('customer_do.customer_id', $attributes['account_id']);
 									
 										$query3_1->where('IL.status','=',1)
-											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
+											 ->whereNull('IL.deleted_at')
 											 ->where('item_log.document_type','=','CDO')
-											 ->where('IL.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											  ->where('customer_do.department_id',env('DEPARTMENT_ID'))
+											 ->where('IL.department_id',auth()->user()->department_id)
+											 ->where('L.department_id',auth()->user()->department_id)
+											 ->where('item_log.department_id',auth()->user()->department_id)
+											 ->where('isd.department_id',auth()->user()->department_id)
+											  ->where('customer_do.department_id',auth()->user()->department_id)
 											 ->where('item_log.status','=',1)
 											 ->where('customer_do.status','=',1);
 									 
@@ -4555,13 +4555,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										$query4->whereIn('purchase_return.supplier_id', $attributes['account_id']);
 									
 										$query4->where('IL.status','=',1)
-											 ->where('IL.deleted_at','=','0000-00-00 00:00:00')
+											 ->whereNull('IL.deleted_at')
 											 ->where('item_log.document_type','=','PR')
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
+											 ->where('item_log.department_id',auth()->user()->department_id)
+											 ->where('isd.department_id',auth()->user()->department_id)
+											 ->where('L.department_id',auth()->user()->department_id)
 											 ->where('item_log.status','=',1)
-											  ->where('purchase_return.department_id',env('DEPARTMENT_ID'))
+											  ->where('purchase_return.department_id',auth()->user()->department_id)
 											 ->where('purchase_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4591,13 +4591,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 										$query5->whereIn('sales_return.customer_id', $attributes['account_id']);
 									
 										$query5->where('CL.status','=',1)
-											 ->where('CL.deleted_at','=','0000-00-00 00:00:00')
-											 ->where('L.department_id',env('DEPARTMENT_ID'))
+											 ->whereNull('CL.deleted_at')
+											 ->where('L.department_id',auth()->user()->department_id)
 											 ->where('item_log.document_type','=','SR')
-											 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-											 ->where('isd.department_id',env('DEPARTMENT_ID'))
+											 ->where('item_log.department_id',auth()->user()->department_id)
+											 ->where('isd.department_id',auth()->user()->department_id)
 											 ->where('item_log.status','=',1)
-											  ->where('sales_return.department_id',env('DEPARTMENT_ID'))
+											  ->where('sales_return.department_id',auth()->user()->department_id)
 											 ->where('sales_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -4629,8 +4629,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								->join('account_master','account_master.id','=','purchase_invoice.supplier_id')
 								->join('itemmaster','itemmaster.id','=','purchase_invoice_item.item_id')
 								->where('purchase_invoice.status',1)
-								->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
-								->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00');
+								->whereNull('purchase_invoice.deleted_at')
+								->whereNull('purchase_invoice_item.deleted_at');
 								
 						if(($date_from!='') && ($date_to!=''))
 							$qry->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to));
@@ -4650,8 +4650,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								->join('sales_invoice','sales_invoice.id','=','sales_invoice_item.sales_invoice_id')
 								->join('account_master','account_master.id','=','sales_invoice.customer_id')
 								->join('itemmaster','itemmaster.id','=','sales_invoice_item.item_id')
-								->where('sales_invoice.status',1)->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
-								->where('sales_invoice_item.status',1)->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00');
+								->where('sales_invoice.status',1)->whereNull('sales_invoice.deleted_at')
+								->where('sales_invoice_item.status',1)->whereNull('sales_invoice_item.deleted_at');
 						
 						if(($date_from!='') && ($date_to!=''))
 							$qry->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to));
@@ -4673,7 +4673,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								->join('account_master','account_master.id','=','purchase_order.supplier_id')
 								->join('itemmaster','itemmaster.id','=','purchase_order_item.item_id')
 								->where('purchase_order.status',1)
-								->where('purchase_order.deleted_at','0000-00-00 00:00:00');
+								->whereNull('purchase_order.deleted_at');
 					
 					if(($date_from!='') && ($date_to!=''))
 							$qry->whereBetween('purchase_order.voucher_date', array($date_from, $date_to));
@@ -4694,7 +4694,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								->join('account_master','account_master.id','=','sales_order.customer_id')
 								->join('itemmaster','itemmaster.id','=','sales_order_item.item_id')
 								->where('sales_order.status',1)
-								->where('sales_order.deleted_at','0000-00-00 00:00:00');
+								->whereNull('sales_order.deleted_at');
 					
 					if(($date_from!='') && ($date_to!=''))
 							$qry->whereBetween('sales_order.voucher_date', array($date_from, $date_to));
@@ -4715,7 +4715,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								->join('account_master','account_master.id','=','purchase_return.supplier_id')
 								->join('itemmaster','itemmaster.id','=','purchase_return_item.item_id')
 								->where('purchase_return.status',1)
-								->where('purchase_return.deleted_at','0000-00-00 00:00:00');
+								->whereNull('purchase_return.deleted_at');
 						
 						if(($date_from!='') && ($date_to!=''))
 							$qry->whereBetween('purchase_return.voucher_date', array($date_from, $date_to));
@@ -4736,7 +4736,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								->join('account_master','account_master.id','=','sales_return.customer_id')
 								->join('itemmaster','itemmaster.id','=','sales_return_item.item_id')
 								->where('sales_return.status',1)
-								->where('sales_return.deleted_at','0000-00-00 00:00:00');
+								->whereNull('sales_return.deleted_at');
 						
 						if(($date_from!='') && ($date_to!=''))
 							$qry->whereBetween('sales_return.voucher_date', array($date_from, $date_to));
@@ -4762,17 +4762,17 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	{
 	    $count3 = DB::table('location_transfer_item')
 		        ->join('location_transfer', 'location_transfer.id', '=', 'location_transfer_item.location_transfer_id')
-				->where('location_transfer_item.item_id', $id)->where('location_transfer.department_id',env('DEPARTMENT_ID'))->where('location_transfer_item.status',1)
-				->where('location_transfer_item.deleted_at','0000-00-00 00:00:00')->count();
-		$count = DB::table('purchase_invoice_item')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('item_id', $id)->count();
+				->where('location_transfer_item.item_id', $id)->where('location_transfer.department_id',auth()->user()->department_id)->where('location_transfer_item.status',1)
+				->whereNull('location_transfer_item.deleted_at')->count();
+		$count = DB::table('purchase_invoice_item')->where('status',1)->whereNull('deleted_at')->where('item_id', $id)->count();
 		if($count > 0 || $count3 > 0 )
 			return false;
 		else {
 			$count1 = DB::table('sales_invoice_item')
-			->join('sales_invoice', 'sales_invoice.id', '=', 'sales_invoice_item.sales_invoice_id')->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
-			->where('sales_invoice_item.status',1)->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')->where('sales_invoice_item.item_id', $id)->count();
-			$count2 = DB::table('item_log')->where('document_type','!=','OQ')->where('department_id',env('DEPARTMENT_ID'))
-			->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('item_id', $id)->count();
+			->join('sales_invoice', 'sales_invoice.id', '=', 'sales_invoice_item.sales_invoice_id')->where('sales_invoice.department_id',auth()->user()->department_id)
+			->where('sales_invoice_item.status',1)->whereNull('sales_invoice_item.deleted_at')->where('sales_invoice_item.item_id', $id)->count();
+			$count2 = DB::table('item_log')->where('document_type','!=','OQ')->where('department_id',auth()->user()->department_id)
+			->where('status',1)->whereNull('deleted_at')->where('item_id', $id)->count();
 			if($count1 > 0 || $count2 > 0 )
 				return false;
 			else
@@ -4785,7 +4785,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	{
 		$result = DB::table('item_log')->where('item_log.status', 1)
 							//->join('item_stock','item_stock.item_id', '=', 'item_unit.itemmaster_id')
-							->where('item_log.deleted_at','0000-00-00 00:00:00')
+							->whereNull('item_log.deleted_at')
 							->where('item_log.cost_avg',0)
 							->where('item_log.sale_cost',0)
 							->where('item_log.document_type','SI')
@@ -4832,8 +4832,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 			$this->itemmaster->itemUnits()->save($itemunit);
 				
 	// 				//Item Stock Department
-	// 			$departmentId = env('DEPARTMENT_ID');
-	// 			 $departments = DB::table('department')->where('deleted_at','0000-00-00 00:00:00')->get();
+	// 			$departmentId = auth()->user()->department_id;
+	// 			 $departments = DB::table('department')->where('deleted_at')->get();
 
     //                                   foreach ($departments as $dept) {
     //                                            $isCurrent = ($dept->id == $departmentId);
@@ -4856,7 +4856,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 			DB::table('item_log')->insert([
 	// 							 'document_type' => 'OQ',
 	// 							 'item_id' 	  => $this->itemmaster->id,
-	// 							 'department_id'  =>env('DEPARTMENT_ID'),
+	// 							 'department_id'  =>auth()->user()->department_id,
 	// 							 'unit_id'    => $attributes['unit'],
 	// 							 'trtype'	  => 1,
 	// 							 'packing' => 1,
@@ -4868,14 +4868,14 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 							]);
                         			
 	// 			//...............ITEM LOCATION........
-	// 			//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-	// 			$rows = DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->get();
+	// 			//$row = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at')->first();
+	// 			$rows = DB::table('location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('deleted_at')->get();
 	// 			if($rows){
 	// 				foreach($rows as $row) {
 	// 					$loc_id = ($row->is_default==1)?$row->id:'';
 	// 					$itemLocation = new ItemLocation();
 	// 					$itemLocation->location_id = $row->id;
-	// 					$itemLocation->department_id = env('DEPARTMENT_ID');
+	// 					$itemLocation->department_id = auth()->user()->department_id;
 	// 					$itemLocation->item_id = $this->itemmaster->id;
 	// 					$itemLocation->unit_id = ($attributes['unit']=='')?2:$attributes['unit'];
 	// 					$itemLocation->status = 1;
@@ -5104,7 +5104,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	
 	public function getLocation()
 	{
-		return DB::table('location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('is_conloc',0)->whereNull('deleted_at')->orderBy('id','ASC')->get();
+		return DB::table('location')->where('status',1)->where('department_id',auth()->user()->department_id)->where('is_conloc',0)->whereNull('deleted_at')->orderBy('id','ASC')->get();
 	}
 	
 	public function getStockLocation($id)
@@ -5138,15 +5138,15 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 						->select('L.name','item_location.quantity')
 	// 						->get(); */
 	// 	if(!$invid) {				
-	// 		$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 		$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
-	// 						->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 						->whereNull('location.deleted_at');
 							
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5156,19 +5156,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 	} else {
 	// 		if($type=='PI') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
 	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('PI.deleted_at')
 	// 								->where('PI.is_sdo','=', 0);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5177,19 +5177,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								
 	// 		} else if($type=='SI') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) use($id){
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
 	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('SI.deleted_at')
 	// 								->where('SI.is_do','=', 0);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5198,19 +5198,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			
 	// 		} else if($type=='CDO') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
 	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('SI.deleted_at')
 	// 								->where('SI.is_do','=', 1);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5219,19 +5219,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				
 	// 		} elseif($type=='SDO') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
 	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('PI.deleted_at')
 	// 								->where('PI.is_sdo','=', 1);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5265,19 +5265,30 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		if (Auth::check() && Auth::user()->location_id > 0) {
 			$qry->where('location.id', Auth::user()->location_id);
 		}
+
+		// Create subquery for item_location aggregated by location
+		$ilSubquery = DB::table('item_location')
+			->select(
+				'location_id',
+				DB::raw('SUM(quantity) as total_quantity'),
+				DB::raw('SUM(opn_qty) as total_opn_qty'),
+				DB::raw('GROUP_CONCAT(DISTINCT bin_id) as bin_ids'),
+				DB::raw('MIN(id) as item_location_id')
+			)
+			->where('item_id', $id)
+			->where('department_id', $deptId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->groupBy('location_id');
 		
-		// Join item_location to get current quantity per location
-		$qry->leftJoin('item_location AS IL', function($join) use ($id, $deptId) {
-			$join->on('IL.location_id', '=', 'location.id')
-				->where('IL.item_id', '=', $id)
-				->where('IL.department_id', '=', $deptId)
-				->where('IL.status', '=', 1)
-				->whereNull('IL.deleted_at');
+		// Join the aggregated item_location subquery
+		$qry->leftJoinSub($ilSubquery, 'IL', function($join) {
+			$join->on('IL.location_id', '=', 'location.id');
 		});
 		
-		// Join bin_location
+		// Join bin_location using FIND_IN_SET for the concatenated bin_ids
 		$qry->leftJoin('bin_location AS BL', function($join) {
-			$join->on('BL.id', '=', 'IL.bin_id')
+			$join->whereRaw('FIND_IN_SET(BL.id, IL.bin_ids) > 0')
 				->whereNull('BL.deleted_at');
 		});
 		
@@ -5288,116 +5299,155 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				'location.id',
 				'location.code',
 				'location.name',
-				'IL.quantity',           // Current quantity in this location
-				'IL.opn_qty',            // Opening quantity
-				'BL.code AS bin',
-				'IL.id as item_location_id'
+				// 'IL.quantity',           // Current quantity in this location
+				// 'IL.opn_qty',            // Opening quantity
+				// 'BL.code AS bin',
+				// 'IL.id as item_location_id'
+				'IL.total_quantity as quantity',
+                'IL.total_opn_qty as opn_qty',
+                DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+            	'IL.item_location_id'
 			)
-			->orderBy('location.id')
-			->get();
+			->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'IL.total_opn_qty', 'IL.item_location_id')
+            ->orderBy('location.id')
+            ->get();
 			
 		} else {
 			switch ($type) {
-				case 'PI':
-					// Purchase Invoice
-					$qry->leftJoin('item_location_pi AS PI', function($join) use ($invid) {
-						$join->on('PI.location_id', '=', 'location.id')
-							->where('PI.invoice_id', '=', $invid)
-							->where('PI.is_sdo', '=', 0)
-							->whereNull('PI.deleted_at');
+				case 'PI': // Purchase Invoice
+                // Create subquery for item_location_pi aggregated by location
+                $piSubquery = DB::table('item_location_pi')
+                    ->select(
+                        'location_id',
+                        DB::raw('SUM(quantity) as total_pi_quantity')
+                    )
+                    ->where('invoice_id', $invid)
+                    ->where('is_sdo', 0)
+                    ->whereNull('deleted_at')
+                    ->groupBy('location_id');
+                
+                $qry->leftJoinSub($piSubquery, 'PI', function($join) {
+                    $join->on('PI.location_id', '=', 'location.id');
+                });
+                
+                $result = $qry->select(
+                        'location.id',
+                        'location.code',
+                        'location.name',
+                        'IL.total_quantity as quantity',
+                        'PI.total_pi_quantity as curqty',
+                        DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+                        'IL.item_location_id'
+                    )
+                    ->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'PI.total_pi_quantity', 'IL.item_location_id')
+                    ->orderBy('location.id')
+                    ->get();
+                break;
+					
+				case 'SI': // Sales Invoice
+                // Create subquery for item_location_si aggregated by location
+                $siSubquery = DB::table('item_location_si')
+                    ->select(
+                        'location_id',
+                        DB::raw('SUM(quantity) as total_si_quantity')
+                    )
+                    ->where('invoice_id', $invid)
+                    ->where('is_do', 0)
+                    ->whereNull('deleted_at')
+                    ->groupBy('location_id');
+                
+                $qry->leftJoinSub($siSubquery, 'SI', function($join) {
+                    $join->on('SI.location_id', '=', 'location.id');
+                });
+                
+                $result = $qry->select(
+                        'location.id',
+                        'location.code',
+                        'location.name',
+                        'IL.total_quantity as quantity',
+                        'SI.total_si_quantity as curqty',
+                        DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+                        'IL.item_location_id'
+                    )
+                    ->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'SI.total_si_quantity', 'IL.item_location_id')
+                    ->orderBy('location.id')
+                    ->get();
+                break;
+					
+				case 'CDO': // Customer Delivery Order
+                // Create subquery for item_location_si aggregated by location
+                $siSubquery = DB::table('item_location_si')
+                    ->select(
+                        'location_id',
+                        DB::raw('SUM(quantity) as total_si_quantity')
+                    )
+                    ->where('invoice_id', $invid)
+                    ->where('is_do', 1)
+                    ->whereNull('deleted_at')
+                    ->groupBy('location_id');
+                
+                $qry->leftJoinSub($siSubquery, 'SI', function($join) {
+                    $join->on('SI.location_id', '=', 'location.id');
+                });
+                
+                $result = $qry->select(
+                        'location.id',
+                        'location.code',
+                        'location.name',
+                        'IL.total_quantity as quantity',
+                        'SI.total_si_quantity as curqty',
+                        DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+                        'IL.item_location_id'
+                    )
+                    ->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'SI.total_si_quantity', 'IL.item_location_id')
+                    ->orderBy('location.id')
+                    ->get();
+                break;
+            
+				case 'SDO': // Supplier Delivery Order
+					// Create subquery for item_location_pi aggregated by location
+					$piSubquery = DB::table('item_location_pi')
+						->select(
+							'location_id',
+							DB::raw('SUM(quantity) as total_pi_quantity'),
+							DB::raw('SUM(qty_entry) as total_qty_entry')
+						)
+						->where('invoice_id', $invid)
+						->where('is_sdo', 1)
+						->whereNull('deleted_at')
+						->groupBy('location_id');
+					
+					$qry->leftJoinSub($piSubquery, 'PI', function($join) {
+						$join->on('PI.location_id', '=', 'location.id');
 					});
 					
 					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'PI.quantity AS curqty', // Quantity in this invoice
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
+							'location.id',
+							'location.code',
+							'location.name',
+							'IL.total_quantity as quantity',
+							'PI.total_pi_quantity as curqty',
+							'PI.total_qty_entry as qty_entry',
+							DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+							'IL.item_location_id'
+						)
+						->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'PI.total_pi_quantity', 'PI.total_qty_entry', 'IL.item_location_id')
+						->orderBy('location.id')
+						->get();
 					break;
 					
-				case 'SI':
-					// Sales Invoice
-					$qry->leftJoin('item_location_si AS SI', function($join) use ($invid) {
-						$join->on('SI.location_id', '=', 'location.id')
-							->where('SI.invoice_id', '=', $invid)
-							->where('SI.is_do', '=', 0)
-							->whereNull('SI.deleted_at');
-					});
-					
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'SI.quantity AS curqty', // Quantity in this invoice
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
-					break;
-					
-				case 'CDO':
-					// Customer Delivery Order
-					$qry->leftJoin('item_location_si AS SI', function($join) use ($invid) {
-						$join->on('SI.location_id', '=', 'location.id')
-							->where('SI.invoice_id', '=', $invid)
-							->where('SI.is_do', '=', 1)
-							->whereNull('SI.deleted_at');
-					});
-					
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'SI.quantity AS curqty', // Quantity in this delivery
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
-					break;
-					
-				case 'SDO':
-					// Supplier Delivery Order
-					$qry->leftJoin('item_location_pi AS PI', function($join) use ($invid) {
-						$join->on('PI.location_id', '=', 'location.id')
-							->where('PI.invoice_id', '=', $invid)
-							->where('PI.is_sdo', '=', 1)
-							->whereNull('PI.deleted_at');
-					});
-					
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',           // Current stock in location
-						'PI.quantity AS curqty', // Quantity in this delivery
-						'PI.qty_entry',
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
-					break;
-					
-				default:
-					$result = $qry->select(
-						'location.id',
-						'location.code',
-						'location.name',
-						'IL.quantity',
-						'BL.code AS bin',
-						'IL.id as item_location_id'
-					)
-					->orderBy('location.id')
-					->get();
+					default:
+						$result = $qry->select(
+							'location.id',
+							'location.code',
+							'location.name',
+							'IL.total_quantity as quantity',
+							DB::raw('GROUP_CONCAT(DISTINCT BL.code SEPARATOR ", ") as bin'),
+							'IL.item_location_id'
+						)
+						->groupBy('location.id', 'location.code', 'location.name', 'IL.total_quantity', 'IL.item_location_id')
+						->orderBy('location.id')
+						->get();
 					break;
 			}
 		}
@@ -5418,15 +5468,15 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// {
 		
 	// 	if(!$invid) {				
-	// 		$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 		$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
-	// 						->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 						->whereNull('location.deleted_at');
 							
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5436,19 +5486,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 	} else {
 	// 		if($type=='PI') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
 	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('PI.deleted_at')
 	// 								->where('PI.is_sdo','=', 0);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5457,19 +5507,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								
 	// 		} else if($type=='SI') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) use($id){
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
 	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('SI.deleted_at')
 	// 								->where('SI.is_do','=', 0);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5478,19 +5528,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			
 	// 		} else if($type=='CDO') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_si AS SI', function($join) use($invid){
 	// 								$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-	// 								->where('SI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('SI.deleted_at')
 	// 								->where('SI.is_do','=', 1);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5499,19 +5549,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				
 	// 		} elseif($type=='SDO') {
 				
-	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',env('DEPARTMENT_ID'))
+	// 			$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',0)->where('location.department_id','!=',auth()->user()->department_id)
 	// 							->leftJoin('item_location AS IL', function($join) use($id){
 	// 								$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-	// 								->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+	// 								->whereNull('IL.deleted_at');
 	// 							})
 	// 							->leftJoin('bin_location AS BL', function($join) {
 	// 								$join->on('BL.id','=','IL.bin_id');
 	// 							})
 	// 							->leftJoin('item_location_pi AS PI', function($join) use($invid){
 	// 								$join->on('PI.location_id','=','location.id')->where('PI.invoice_id','=',$invid)
-	// 								->where('PI.deleted_at','=', '0000-00-00 00:00:00')
+	// 								->whereNull('PI.deleted_at')
 	// 								->where('PI.is_sdo','=', 1);
-	// 							})->where('location.deleted_at','=', '0000-00-00 00:00:00');
+	// 							})->whereNull('location.deleted_at');
 								
 	// 				if(Auth::user()->location_id > 0)
 	// 					$qry->where('location.id', Auth::user()->location_id);
@@ -5596,7 +5646,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$qry =  DB::table('location')->where('location.status',1)->where('location.is_conloc',1)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+									->whereNull('IL.deleted_at');
 								})->where('location.customer_id',$cst_id);
 					if(Auth::user()->location_id > 0)
 						$qry->where('location.id', Auth::user()->location_id);
@@ -5610,11 +5660,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',1)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+									->whereNull('IL.deleted_at');
 								})
 								->leftJoin('item_location_si AS SI', function($join) use($invid){
 									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00');
+									->whereNull('SI.deleted_at');
 								})->where('location.customer_id',$cst_id);
 								
 					if(Auth::user()->location_id > 0)
@@ -5627,11 +5677,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				$qry = DB::table('location')->where('location.status',1)->where('location.is_conloc',1)
 								->leftJoin('item_location AS IL', function($join) use($id){
 									$join->on('IL.location_id','=','location.id')->where('IL.item_id','=',$id)
-									->where('IL.deleted_at','=', '0000-00-00 00:00:00');
+									->whereNull('IL.deleted_at');
 								})
 								->leftJoin('item_location_si AS SI', function($join) use($invid){
 									$join->on('SI.location_id','=','location.id')->where('SI.invoice_id','=',$invid)
-									->where('SI.deleted_at','=', '0000-00-00 00:00:00');
+									->whereNull('SI.deleted_at');
 								})->where('location.customer_id',$cst_id);
 								
 					if(Auth::user()->location_id > 0)
@@ -5665,13 +5715,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('purchase_invoice.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							//->where('D.status',1) NOV24
-							//->where('D.deleted_at','0000-00-00 00:00:00') NOV24
+							//->where('D.deleted_at') NOV24
 							->where('L.is_conloc',0)
 							->where('L.status',1)
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->where('L.department_id',auth()->user()->department_id)
+							->whereNull('L.deleted_at')
 							->select('D.*','L.name','IL.quantity AS cqty')
 							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
@@ -5695,13 +5745,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						})
 						->where('purchase_invoice.id', $id)
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						//->where('D.status',1)//NOV24
-						->where('L.department_id',env('DEPARTMENT_ID'))
+						->where('L.department_id',auth()->user()->department_id)
 						->where('L.is_conloc',0)
-						//->where('D.deleted_at','0000-00-00 00:00:00')//NOV24
+						//->where('D.deleted_at')//NOV24
 						->where('L.status',1)
-						->where('L.deleted_at','0000-00-00 00:00:00')
+						->whereNull('L.deleted_at')
 						->select('D.*','L.name','IL.quantity AS cqty')
 						->orderBy('D.id','ASC')->groupBy('D.id')
 						->get();
@@ -5725,13 +5775,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						})
 						->where('sales_invoice.id', $id)
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						//->where('D.status',1)//NOV24
 						->where('L.is_conloc',0)
-						->where('L.department_id',env('DEPARTMENT_ID'))
-						//->where('D.deleted_at','0000-00-00 00:00:00')//NOV24
+						->where('L.department_id',auth()->user()->department_id)
+						//->where('D.deleted_at')//NOV24
 						->where('L.status',1)
-						->where('L.deleted_at','0000-00-00 00:00:00')
+						->whereNull('L.deleted_at')
 						->select('D.*','L.name','IL.quantity AS cqty')
 						->orderBy('D.id','ASC')->groupBy('D.id')
 						->get();
@@ -5754,15 +5804,15 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							$join->on('L.id','=','D.location_id');
 						})
 						->where('sales_return.id', $id)
-						->where('sales_return.department_id',env('DEPARTMENT_ID'))
+						->where('sales_return.department_id',auth()->user()->department_id)
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('D.status',1)
 						->where('L.is_conloc',0)
-						->where('L.department_id',env('DEPARTMENT_ID'))
-						->where('D.deleted_at','0000-00-00 00:00:00')
+						->where('L.department_id',auth()->user()->department_id)
+						->whereNull('D.deleted_at')
 						->where('L.status',1)
-						->where('L.deleted_at','0000-00-00 00:00:00')
+						->whereNull('L.deleted_at')
 						->select('D.*','L.name','IL.quantity AS cqty')
 						->orderBy('D.id','ASC')->groupBy('D.id')
 						->get();
@@ -5785,13 +5835,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('supplier_do.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							//->where('D.status',1) NOV24
 							->where('L.is_conloc',0)
-							//->where('D.deleted_at','0000-00-00 00:00:00') NOV24
+							//->where('D.deleted_at') NOV24
 							->where('L.status',1)
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->where('L.department_id',auth()->user()->department_id)
+							->whereNull('L.deleted_at')
 							->select('D.*','L.name','IL.quantity AS cqty')
 							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
@@ -5814,14 +5864,14 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('customer_do.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							//->where('D.status',1)NOV24
 							->where('L.is_conloc',0)
-							//->where('D.deleted_at','0000-00-00 00:00:00')NOV24
+							//->where('D.deleted_at')NOV24
 							->where('L.status',1)
-							->where('customer_do.department_id',env('DEPARTMENT_ID'))
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->where('customer_do.department_id',auth()->user()->department_id)
+							->where('L.department_id',auth()->user()->department_id)
+							->whereNull('L.deleted_at')
 							->select('D.*','L.name','IL.quantity AS cqty')
 							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
@@ -5845,12 +5895,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('stock_transferin.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('D.status',1)
 							->where('D.deleted_at',null)
 							->where('L.is_conloc',0)
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('D.*','L.name','IL.quantity AS cqty')
 							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
@@ -5874,12 +5924,12 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('stock_transferout.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('D.status',1)
 							->where('D.deleted_at',null)
 							->where('L.is_conloc',0)
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('D.*','L.name','IL.quantity AS cqty')
 							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
@@ -5903,13 +5953,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('goods_issued.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							//->where('D.status',1)//NOV24
 							//->where('D.deleted_at',null)//NOV24
 							->where('L.is_conloc',0)
 							->where('L.status',1)
-							->where('L.department_id',env('DEPARTMENT_ID'))
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->where('L.department_id',auth()->user()->department_id)
+							->whereNull('L.deleted_at')
 							->select('D.*','L.name','IL.quantity AS cqty')
 							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
@@ -5932,13 +5982,13 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('goods_return.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('D.status',1)
 							->where('D.deleted_at',null)
 							->where('L.is_conloc',0)
-							->where('L.department_id',env('DEPARTMENT_ID'))
+							->where('L.department_id',auth()->user()->department_id)
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('D.*','L.name','IL.quantity AS cqty')
 							->orderBy('D.id','ASC')->groupBy('D.id')
 							->get();
@@ -5963,9 +6013,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						})
 						->where('sales_invoice.id', $id)
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('D.status',1)
-						->where('D.deleted_at','0000-00-00 00:00:00')
+						->whereNull('D.deleted_at')
 						->select('D.*','L.name')
 						->get();
 						
@@ -5983,9 +6033,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						})
 						->where('sales_return.id', $id)
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('D.status',1)
-						->where('D.deleted_at','0000-00-00 00:00:00')
+						->whereNull('D.deleted_at')
 						->select('D.*','L.name')
 						->get();
 						
@@ -6004,9 +6054,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							})
 							->where('customer_do.id', $id)
 							->where('QSI.status',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('D.status',1)
-							->where('D.deleted_at','0000-00-00 00:00:00')
+							->whereNull('D.deleted_at')
 							->select('D.*','L.name')
 							->get();
 						
@@ -6029,9 +6079,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('purchase_invoice.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6051,9 +6101,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('purchase_return.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6073,9 +6123,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('sales_invoice.id', $id)
 						->where('QSI.status',1)
 						->where('L.is_conloc',0)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 						->select('L.id','L.name','IL.quantity AS cqty')
 						->groupBy('L.id')
 						->get();
@@ -6095,9 +6145,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('sales_return.id', $id)
 						->where('QSI.status',1)
 						->where('L.is_conloc',0)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 						->select('L.id','L.name','IL.quantity AS cqty')
 						->groupBy('L.id')
 						->get();
@@ -6116,9 +6166,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('supplier_do.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6137,9 +6187,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('customer_do.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6157,9 +6207,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('stock_transferin.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6177,9 +6227,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('stock_transferout.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6198,9 +6248,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('goods_issued.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6218,9 +6268,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('goods_return.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',0)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->where('L.status',1)
-							->where('L.deleted_at','0000-00-00 00:00:00')
+							->whereNull('L.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6245,7 +6295,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('sales_invoice.id', $id)
 						->where('QSI.status',1)
 						->where('L.is_conloc',0)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->select('L.id','L.name','IL.quantity AS cqty')
 						->groupBy('L.id')
 						->get();
@@ -6265,7 +6315,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('sales_return.id', $id)
 						->where('QSI.status',1)
 						->where('L.is_conloc',0)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->select('L.id','L.name','IL.quantity AS cqty')
 						->groupBy('L.id')
 						->get();
@@ -6284,7 +6334,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->where('customer_do.id', $id)
 							->where('QSI.status',1)
 							->where('L.is_conloc',1)
-							->where('QSI.deleted_at','0000-00-00 00:00:00')
+							->whereNull('QSI.deleted_at')
 							->select('L.id','L.name','IL.quantity AS cqty')
 							->groupBy('L.id')
 							->get();
@@ -6309,7 +6359,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	public function ItemLogProcess() {
 		
 		//API ...
-		$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$location = DB::table('location')->where('is_default',1)->where('status',1)->whereNull('deleted_at')->select('id')->first();
 		$response = Curl::to($this->api_url.'itemlog-process.php')
 					->withData( array('id' => $location->id))
 					//->asJson()
@@ -6382,7 +6432,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					foreach($attributes['item_location'] as $loc) {
 						$itemLocation = new ItemLocation();
 						$itemLocation->location_id = $loc['location_id'];
-						$itemLocation->department_id = env('DEPARTMENT_ID');
+						$itemLocation->department_id = auth()->user()->department_id;
 						$itemLocation->item_id = $this->itemmaster->id;
 						$itemLocation->unit_id = ($loc['unit_id']=='')?2:$loc['unit_id'];
 						$itemLocation->quantity = $loc['quantity'];
@@ -6438,8 +6488,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
     //             $item_id = null;
 	// 			$mod_location = DB::table('parameter2')->where('keyname', 'mod_location')->where('status',1)->select('is_active')->first();
 
-	// 			$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-	// 			$vat = DB::table('vat_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('percentage')->first();
+	// 			$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at')->get();
+	// 			$vat = DB::table('vat_master')->where('status',1)->where('deleted_at')->select('percentage')->first();
 	// 			$dtrow = DB::table('parameter1')->select('from_date')->first();
 	// 			foreach ($data as $row) { //
 	// 			//	echo $row;exit;
@@ -6456,7 +6506,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 					$group_id = $subgroup_id = '';
 	// 					if($row->group!='') {
 	// 						$group = DB::table('groupcat')->where('group_name', $row->group)->where('status',1)
-	// 											->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+	// 											->where('deleted_at')->select('id')->first();
 	// 						if($group)
 	// 							$group_id = $group->id;
 	// 						else {
@@ -6466,7 +6516,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 						//SUBGROUP......
 	// 						if($row->subgroup!='') {
 	// 							$subgroup = DB::table('groupcat')->where('group_name', $row->subgroup)->where('status',1)->where('parent_id','!=',0)
-	// 											->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+	// 											->where('deleted_at')->select('id')->first();
 
 	// 							if($subgroup)
 	// 								$subgroup_id = $subgroup->id;
@@ -6613,7 +6663,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 
 	// 					} else {
 
-	// 						$locations = DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_conloc',0)->get();
+	// 						$locations = DB::table('location')->where('status',1)->where('deleted_at')->where('is_conloc',0)->get();
 	// 						if($location) {
 	// 							foreach($locations as $res) {
 
@@ -7154,7 +7204,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->join('units AS U', function($join) {
 								$join->on('U.id','=','PITM.unit_id');
 							} )
-						->where('PITM.status',1)->where('PITM.deleted_at','0000-00-00 00:00:00')
+						->where('PITM.status',1)->whereNull('PITM.deleted_at')
 						->select('PI.voucher_no','PI.voucher_date','PITM.quantity','PITM.unit_price','AM.master_name','U.unit_name')
 						->orderBy('PI.voucher_date')
 						->get();
@@ -7183,7 +7233,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	
 	public function getallUnits()
 	{
-		return DB::table('units')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','unit_name')->get();
+		return DB::table('units')->where('status',1)->whereNull('deleted_at')->select('id','unit_name')->get();
 	}
 	
 	public function getCustSalesInfo($id,$uid)
@@ -7224,7 +7274,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							$join->on('IL.item_id','=','itemmaster.id');
 						} )
 						->where('IL.status',1)
-						->where('IL.deleted_at','0000-00-00 00:00:00')
+						->whereNull('IL.deleted_at')
 						->where('u.is_baseqty','=',1);
 		
 		$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
@@ -7282,7 +7332,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			/* $result['OQ'] = DB::table('item_log')->where('item_log.status',1)//->where('item_log.item_id', $attributes['document_id'])
 									 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
-									 ->where('item_log.status',1)->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->where('item_log.status',1)->where('item_log.deleted_at')
 									 ->where('item_log.document_type','OQ')
 									 ->where('u.is_baseqty','1')
 									 ->whereBetween('item_log.voucher_date', array($date_from, $date_to))
@@ -7298,11 +7348,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','PI')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
 									 ->where('item_log.status',1)
-									 ->where('purchase_invoice.department_id',env('DEPARTMENT_ID'))
+									 ->where('purchase_invoice.department_id',auth()->user()->department_id)
 									 ->where('purchase_invoice.status',1)
-									 ->where('isd.department_id',env('DEPARTMENT_ID'));
+									 ->where('isd.department_id',auth()->user()->department_id);
 									 
 			if(($date_from!='') && ($date_to!=''))
 				$query1->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to));
@@ -7319,11 +7369,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','SI')
-									  ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('sales_invoice.department_id',env('DEPARTMENT_ID'))
+									  ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									  ->where('sales_invoice.department_id',auth()->user()->department_id)
 									 ->where('sales_invoice.status','=',1)
-									  ->where('isd.department_id',env('DEPARTMENT_ID'));
+									  ->where('isd.department_id',auth()->user()->department_id);
 									 
 			if(($date_from!='') && ($date_to!=''))
 				$query2->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to));
@@ -7342,10 +7392,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','PR')
 									 ->where('item_log.status','=',1)
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									 ->where('purchase_return.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
+									 ->where('purchase_return.department_id',auth()->user()->department_id)
 									 ->where('purchase_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7364,10 +7414,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','SR')
 									 ->where('item_log.status',1)
-									  ->where('item_log.department_id',env('DEPARTMENT_ID'))
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('isd.department_id',env('DEPARTMENT_ID'))
-									  ->where('sales_return.department_id',env('DEPARTMENT_ID'))
+									  ->where('item_log.department_id',auth()->user()->department_id)
+									 ->whereNull('item_log.deleted_at')
+									  ->where('isd.department_id',auth()->user()->department_id)
+									  ->where('sales_return.department_id',auth()->user()->department_id)
 									 ->where('sales_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7385,7 +7435,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','TI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('stock_transferin.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7404,7 +7454,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','GR')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('goods_return.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7422,7 +7472,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','TO')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('stock_transferout.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7440,7 +7490,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','GI')
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+									 ->whereNull('item_log.deleted_at')
 									 ->where('goods_issued.status','=',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7458,11 +7508,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','SDO')
-									  ->where('item_log.department_id',env('DEPARTMENT_ID'))
+									  ->where('item_log.department_id',auth()->user()->department_id)
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									  ->where('isd.department_id',env('DEPARTMENT_ID'))
-									  ->where('supplier_do.department_id',env('DEPARTMENT_ID'))
+									 ->whereNull('item_log.deleted_at')
+									  ->where('isd.department_id',auth()->user()->department_id)
+									  ->where('supplier_do.department_id',auth()->user()->department_id)
 									 ->where('supplier_do.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7479,11 +7529,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 									 ->join('itemmaster','itemmaster.id','=','item_log.item_id')
 									 ->where('item_log.document_type','=','CDO')
-									 ->where('item_log.department_id',env('DEPARTMENT_ID'))
+									 ->where('item_log.department_id',auth()->user()->department_id)
 									 ->where('item_log.status',1)
-									 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-									 ->where('isd.department_id',env('DEPARTMENT_ID'))
-									  ->where('customer_do.department_id',env('DEPARTMENT_ID'))
+									 ->whereNull('item_log.deleted_at')
+									 ->where('isd.department_id',auth()->user()->department_id)
+									  ->where('customer_do.department_id',auth()->user()->department_id)
 									 ->where('customer_do.status',1);
 									 
 			if(($date_from!='') && ($date_to!=''))
@@ -7511,7 +7561,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 						 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
 						 ->where('item_log.document_type','=','SI')
-						 ->where('item_log.deleted_at','0000-00-00 00:00:00')
+						 ->whereNull('item_log.deleted_at')
 						 ->where('sales_invoice.status','=',1);
 									 
 		if(($date_from!='') && ($date_to!=''))
@@ -7551,7 +7601,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						 ->leftJoin('item_log','item_log.item_id','=','itemmaster.id')
 						 ->where('item_log.document_type','=','SI')
 						 ->where('item_log.item_id','=',null)
-						 ->where('item_log.deleted_at','0000-00-00 00:00:00');
+						 ->where('item_log.deleted_at');
 									 
 		if(($date_from!='') && ($date_to!=''))
 			$query2->whereBetween('item_log.voucher_date', array($date_from, $date_to));
@@ -7586,8 +7636,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('location.status',1)
 						->where('IL.status',1)
 						->where('location.is_conloc',1)
-						->where('location.deleted_at','0000-00-00 00:00:00')
-						->where('IL.deleted_at','0000-00-00 00:00:00')
+						->whereNull('location.deleted_at')
+						->whereNull('IL.deleted_at')
 						->where('location.customer_id',$custid)->where('IL.item_id',$itemid)->count();
 		return $qry;
 	}
@@ -7600,8 +7650,8 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						->where('location.status',1)
 						->where('IL.status',1)
 						->where('location.is_conloc',1)
-						->where('location.deleted_at','0000-00-00 00:00:00')
-						->where('IL.deleted_at','0000-00-00 00:00:00')
+						->whereNull('location.deleted_at')
+						->whereNull('IL.deleted_at')
 						->where('location.customer_id',$custid)
 						->where('IL.item_id',$itemid);
 						
@@ -7618,36 +7668,69 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			
 	}
 	
-	public function getLocQuantity($id) {
+	// public function getLocQuantity($id) {
 		
+	// 	return DB::table('item_location')
+	// 			->join('location','location.id','=','item_location.location_id')
+	// 			->leftjoin('bin_location','bin_location.id','=','item_location.bin_id')
+	// 			->where('item_location.item_id',$id)
+	// 			->where('item_location.status',1)
+	// 			->where('item_location.department_id', auth()->user()->department_id)
+	// 			->whereNull('item_location.deleted_at')
+	// 			->where('location.status',1)
+	// 			->whereNull('location.deleted_at')
+	// 			->where('item_location.quantity','>',0)
+	// 			->select('location.code','location.name','item_location.quantity','bin_location.code AS bin')
+	// 			->get();
+	// }
+
+	public function getLocQuantity($id)
+	{
+    
 		return DB::table('item_location')
 				->join('location','location.id','=','item_location.location_id')
-				->leftjoin('bin_location','bin_location.id','=','item_location.bin_id')
-				->where('item_location.item_id',$id)
-				->where('item_location.status',1)
-				->where('item_location.department_id',env('DEPARTMENT_ID'))
-				->where('item_location.deleted_at','0000-00-00 00:00:00')
-				->where('location.status',1)
-				->where('location.deleted_at','0000-00-00 00:00:00')
-				->where('item_location.quantity','>',0)
-				->select('location.code','location.name','item_location.quantity','bin_location.code AS bin')
+				->leftJoin('bin_location','bin_location.id','=','item_location.bin_id')
+				->where('item_location.item_id', $id)
+				->where('item_location.status', 1)
+				->where('item_location.department_id', auth()->user()->department_id)
+				->whereNull('item_location.deleted_at')
+				->where('location.status', 1)
+				->whereNull('location.deleted_at')
+				->where('item_location.quantity', '>', 0)
+				->select(
+					'location.code as location_code',
+					'location.name as location_name',
+					'item_location.quantity',
+					'bin_location.code AS bin_code'
+				)
 				->get();
 	}
 
-	public function getInLocQuantity($id) {
-		
-		return DB::table('item_location')
+	public function getInLocQuantity($id) 
+	{
+    
+		$query = DB::table('item_location')
 				->join('location','location.id','=','item_location.location_id')
-				->leftjoin('bin_location','bin_location.id','=','item_location.bin_id')
-				->where('item_location.item_id',$id)
-				->where('item_location.status',1)
-				->where('item_location.department_id','!=',env('DEPARTMENT_ID'))
-				->where('item_location.deleted_at','0000-00-00 00:00:00')
-				->where('location.status',1)
-				->where('location.deleted_at','0000-00-00 00:00:00')
-				->where('item_location.quantity','>',0)
-				->select('location.code','location.name','item_location.quantity','bin_location.code AS bin')
-				->get();
+				->leftJoin('bin_location','bin_location.id','=','item_location.bin_id')
+				->where('item_location.item_id', $id)
+				->where('item_location.status', 1)
+				->where('item_location.department_id', '!=', auth()->user()->department_id)
+				->whereNull('item_location.deleted_at')
+				->where('location.status', 1)
+				->whereNull('location.deleted_at')
+				->where('item_location.quantity', '>', 0)
+				->select(
+					'location.code as location_code',
+					'location.name as location_name',
+					'item_location.quantity',
+					'bin_location.code AS bin_code',
+					'item_location.department_id' // Add this to verify
+				);
+		
+		// Debug: Print the SQL query
+		// dd($query->toSql(), $query->getBindings());
+		
+		return $query->get();
 	}
 	
 	public function getStockMovementSummaryReport($attributes)
@@ -7660,9 +7743,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 						 ->join('item_unit AS u','u.itemmaster_id','=','item_log.item_id')
 						  ->join('itemstock_department AS isd','isd.itemmaster_id','=','item_log.item_id')
 						 ->join('itemmaster AS itemmaster','itemmaster.id','=','item_log.item_id')
-						 ->where('item_log.deleted_at','0000-00-00 00:00:00')
-						 ->where('item_log.department_id',env('DEPARTMENT_ID'))
-						 ->where('isd.department_id',env('DEPARTMENT_ID'))
+						 ->whereNull('item_log.deleted_at')
+						 ->where('item_log.department_id',auth()->user()->department_id)
+						 ->where('isd.department_id',auth()->user()->department_id)
 						 ->where('item_log.status','=',1);
 									 
 		if(($date_from!='') && ($date_to!=''))
@@ -7694,10 +7777,10 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 
 			$itemlog = DB::table('item_log')
 								  ->where('item_id', $itemid)
-								//   ->where('department_id', env('DEPARTMENT_ID'))
+								//   ->where('department_id', auth()->user()->department_id)
 								  ->where('department_id', env('DEPARTMENT_ID', 1))
 								  ->where('status',1)
-								  ->where('deleted_at','0000-00-00 00:00:00')
+								  ->whereNull('deleted_at')
 								  ->select('item_log.*')
 								  ->orderBy('id','DESC')
 								  ->first(); 
@@ -7749,16 +7832,16 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	}
 
 	private function getItemOpnQtyFromLog($item_id){
-       $oqtyin = DB::table('item_log')->where('item_id', $item_id)->where('document_type', 'OQ')->where('trtype',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
+       $oqtyin = DB::table('item_log')->where('item_id', $item_id)->where('document_type', 'OQ')->where('trtype',1)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 		return ['opq' => $oqtyin];
 	}
 	
 
 	private function getItemQtyFromLog($item_id)
 	{
-		$qtyin = DB::table('item_log')->where('item_id', $item_id)->where('trtype',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
+		$qtyin = DB::table('item_log')->where('item_id', $item_id)->where('trtype',1)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 		
-		$qtyout = DB::table('item_log')->where('item_id', $item_id)->where('trtype',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->sum('quantity');
+		$qtyout = DB::table('item_log')->where('item_id', $item_id)->where('trtype',0)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 		
 		return ['in' => $qtyin, 'out' => $qtyout];
 	}

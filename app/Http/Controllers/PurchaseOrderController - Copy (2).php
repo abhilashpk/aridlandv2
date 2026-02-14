@@ -379,34 +379,78 @@ class PurchaseOrderController extends Controller
 		    return redirect('purchase_order');
        }
        
-       public function saveDraft(Request $request) {
-		
-		//echo '<pre>';print_r($request->all());exit;
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'supplier_name' => 'required','supplier_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
+    // public function saveDraft(Request $request) {
+	// 	//echo '<pre>';print_r($request->all());exit;
+	// 	if( $this->validate(
+	// 		$request, 
+	// 		[//'reference_no' => 'required',
+	// 		 'supplier_name' => 'required','supplier_id' => 'required',
+	// 		 'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 		 'unit_id.*' => 'required',
+	// 		 'quantity.*' => 'required',
+	// 		 'cost.*' => 'required'
+	// 		],
+	// 		[//'reference_no.required' => 'Reference no. is required.',
+	// 		 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
+	// 		 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 		 'unit_id.*' => 'Item unit is required.',
+	// 		 'quantity.*' => 'Item quantity is required.',
+	// 		 'cost.*' => 'Item cost is required.'
+	// 		]
+	// 	)) {
 
-			return redirect('purchase_order/add')->withInput()->withErrors();
+	
+
+	// 	}
+		
+	// 	if( $this->purchase_order->create($request->all()) )
+	// 		Session::flash('message', 'Purchase order draft added successfully.');
+	// 	else
+	// 		Session::flash('error', 'Something went wrong, Invoice failed to add!');
+		
+	// 	return redirect('purchase_order/add');
+	// }
+
+
+	public function saveDraft(Request $request) {
+    
+		// Create validator instance
+		$validator = Validator::make($request->all(), 
+			[
+				//'reference_no' => 'required',
+				'supplier_name' => 'required',
+				'supplier_id' => 'required',
+				'item_code.*' => 'required',
+				'item_id.*' => 'required',
+				'unit_id.*' => 'required',
+				'quantity.*' => 'required',
+				'cost.*' => 'required'
+			],
+			[
+				//'reference_no.required' => 'Reference no. is required.',
+				'supplier_name.required' => 'Supplier name is required.',
+				'supplier_id.required' => 'Supplier name is invalid.',
+				'item_code.*.required' => 'Item code is required.',
+				'item_id.*.required' => 'Item code is invalid.',
+				'unit_id.*.required' => 'Item unit is required.',
+				'quantity.*.required' => 'Item quantity is required.',
+				'cost.*.required' => 'Item cost is required.'
+			]
+		);
+		
+		// Check if validation fails
+		if ($validator->fails()) {
+			return redirect('purchase_order/add')
+					->withInput()
+					->withErrors($validator);
 		}
 		
-		if( $this->purchase_order->create($request->all()) )
+		// Validation passed, proceed with creation
+		if ($this->purchase_order->create($request->all())) {
 			Session::flash('message', 'Purchase order draft added successfully.');
-		else
+		} else {
 			Session::flash('error', 'Something went wrong, Invoice failed to add!');
+		}
 		
 		return redirect('purchase_order/add');
 	}

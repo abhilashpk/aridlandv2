@@ -1153,7 +1153,7 @@ private function getDefaultFormData()
 	 */
 	private function checkIfItemInUse($id)
 	{
-		$deptId = env('DEPARTMENT_ID', 1);
+		$deptId = auth()->user()->department_id;
 		
 		// Check item_log
 		$logCount = DB::table('item_log')
@@ -1460,10 +1460,20 @@ private function getDefaultFormData()
 	
 	public function viewLocInfo($id,$n)
 	{
+		if (empty($id)) {
+			return view('body.itemmaster.viewlocinfo')
+					->withNum($n)
+					->withInfo(collect())   // empty collection
+					->withMessage('Please select an item first.');
+		}
+
 		$info = $this->itemmaster->getStockLocInfo($id,$inv_id=null,$type=null);
+		
+		$message = $info->isEmpty() ? 'No location record found for this item.' : null;
 		return view('body.itemmaster.viewlocinfo')
 					->withNum($n)
-					->withInfo($info);
+					->withInfo($info)
+					->withMessage($message);
 	}
 	
 	
@@ -1599,6 +1609,10 @@ private function getDefaultFormData()
 	
 	public function getLocqty($id)
 	{
+
+		if (!$id || $id == 'undefined' || !is_numeric($id)) {
+			return '<div class="text-danger text-center">Select any item first</div>';
+		}
 		/* $itemLogs = $this->sumLoc($this->groupItemLoc($this->groupLoc( $this->itemmaster->ItemLogLocation($id) )));
 		foreach($itemLogs as $loc => $rows) {
 		   foreach($rows as $row) {
@@ -1609,6 +1623,18 @@ private function getDefaultFormData()
 		
 		$items = $this->itemmaster->getLocQuantity($id); //echo '<pre>';print_r($items);exit;
 		return view('body.itemmaster.locqty')
+					->withItems($items);
+	}
+
+	public function getinLocqty($id)
+	{	
+		if (!$id || $id == 'undefined' || !is_numeric($id)) {
+			return '<div class="text-danger text-center">Select any item first</div>';
+		}
+			
+		$items = $this->itemmaster->getInLocQuantity($id);
+		
+		return view('body.itemmaster.other_branch_locqty')
 					->withItems($items);
 	}
 	

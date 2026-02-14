@@ -500,6 +500,7 @@ class UpdateUtility
 	private function reProcessLogs($logs,$dateobj) 
 	{
 		$sale_ref = 0;
+		$cost_avg = 0;
 		foreach($logs as $log) {
 			$cost_avg = 0;
 			if($log->document_type=='OQ')
