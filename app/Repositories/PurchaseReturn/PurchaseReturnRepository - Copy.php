@@ -100,7 +100,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 	{
 		DB::table('item_stock')->insert(['document_type' => 'PI',
 										 'document_id'   => $document_id,
-										 'department_id'   => env('DEPARTMENT_ID'),
+										 'department_id'   => auth()->user()->department_id ?? 1,
 										 'item_id' 	  => $attributes['item_id'][$key],
 										 'unit_id'    => $attributes['unit_id'][$key],
 										 'quantity'   => $attributes['quantity'][$key],
@@ -115,7 +115,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 	{
 		
 		$item = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])
-		                                          ->where('department_id', env('DEPARTMENT_ID'))
+		                                          ->where('department_id', auth()->user()->department_id ?? 1)
 									             ->where('unit_id', $attributes['unit_id'][$key])
 									             ->first();
 									  
@@ -123,7 +123,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 		
 		DB::table('item_stock')->insert(['document_type' => 'PR',
 										 'document_id'   => $document_id,
-										 'department_id'   => env('DEPARTMENT_ID'),
+										 'department_id'   => auth()->user()->department_id ?? 1,
 										 'item_id' 	  => $attributes['item_id'][$key],
 										 'unit_id'    => $attributes['unit_id'][$key],
 										 'quantity'   => $attributes['quantity'][$key],
@@ -137,7 +137,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 										 
 		if($attributes['quantity'][$key]==$attributes['actual_quantity'][$key]) {								 
 			DB::table('item_stock')
-					->where('document_id', $attributes['purchase_invoice_id'])->where('document_type', 'PI')->where('department_id', env('DEPARTMENT_ID'))->where('item_id', $attributes['item_id'][$key])
+					->where('document_id', $attributes['purchase_invoice_id'])->where('document_type', 'PI')->where('department_id', auth()->user()->department_id ?? 1)->where('item_id', $attributes['item_id'][$key])
 					->update(['is_return' => 1]);
 		}
 		
@@ -152,7 +152,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 						  'received_qty' => $attributes['quantity'][$key]
 						]);
 
-		DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))
+		DB::table('itemstock_department')->where('department_id', auth()->user()->department_id ?? 1)
 				->where('itemmaster_id', $attributes['item_id'][$key])->where('unit_id', $attributes['unit_id'][$key])
 				->update(['cur_quantity' => DB::raw('cur_quantity + '.$attributes['quantity'][$key] ),
 						  'received_qty' => $attributes['quantity'][$key]
@@ -163,7 +163,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 	private function updateItemReturnQuantity($attributes, $key) 
 	{
 		if($attributes['quantity'][$key]==$attributes['actual_quantity'][$key]) {
-			$row = DB::table('item_stock')->where('item_id', $attributes['item_id'][$key])->where('department_id', env('DEPARTMENT_ID'))
+			$row = DB::table('item_stock')->where('item_id', $attributes['item_id'][$key])->where('department_id', auth()->user()->department_id ?? 1)
 					->where('document_type', 'PI')->where('document_id', '!=', $attributes['purchase_invoice_id'])
 					->orderBy('id','DESC')->select('unit_cost')->first();
 			$last_purchase_cost = ($row)?$row->unit_cost:0;
@@ -175,7 +175,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 						  'received_qty' => DB::raw('received_qty - '.$attributes['quantity'][$key] * $attributes['packing'][$key])
 						 ]);
 
-		DB::table('itemstock_department')->where('department_id', env('DEPARTMENT_ID'))
+		DB::table('itemstock_department')->where('department_id', auth()->user()->department_id ?? 1)
 				->where('itemmaster_id', $attributes['item_id'][$key])->where('is_baseqty', 1)
 				->update(['cur_quantity' => DB::raw('cur_quantity - '.$attributes['quantity'][$key] * $attributes['packing'][$key] ),
 						  'received_qty' => DB::raw('received_qty - '.$attributes['quantity'][$key] * $attributes['packing'][$key])
@@ -212,7 +212,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 										'reference'			=> $attributes['voucher_no'],
 										'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 										'reference_from'	=> $attributes['reference_no'],
-										'department_id'      => env('DEPARTMENT_ID'),
+										'department_id'      => auth()->user()->department_id ?? 1,
 										'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount
 										]);
 					
@@ -274,7 +274,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $attributes['reference_no'],
 								'tr_for'			=> $trfor,
-								'department_id'      => env('DEPARTMENT_ID'),
+								'department_id'      => auth()->user()->department_id ?? 1,
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount
 							]);
 			
@@ -338,7 +338,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 					if($vatrowout) {
 						DB::table('account_transaction')
 							->where('voucher_type_id', $voucher_id)
-							->where('department_id',env('DEPARTMENT_ID'))
+							->where('department_id',auth()->user()->department_id ?? 1)
 							->where('account_master_id', $vatrowout->id) //CHNG
 							->where('voucher_type', 'PR')
 							->update([  'amount'   			=> $amount,
@@ -348,7 +348,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 										'reference'			=> $attributes['voucher_no'],
 										'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 										'reference_from'    => $attributes['reference_no'],
-										'department_id'      => env('DEPARTMENT_ID'),
+										'department_id'      => auth()->user()->department_id ?? 1,
 										'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount
 										]);
 					
@@ -399,7 +399,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 									'reference_from'	=> $attributes['reference_no'],
 									'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
 									'is_fc'				=> isset($attributes['is_fc'])?1:0,
-									'department_id'		=> env('DEPARTMENT_ID')//(isset($attributes['department_id']))?$attributes['department_id']:''
+									'department_id'		=> auth()->user()->department_id ?? 1//(isset($attributes['department_id']))?$attributes['department_id']:''
 									]);
 									
 				} 
@@ -413,7 +413,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 			
 			DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
-					->where('department_id',env('DEPARTMENT_ID'))
+					->where('department_id',auth()->user()->department_id ?? 1)
 					->where('account_master_id', ($type=='Cr')?$cr_acnt_id:$dr_acnt_id) //CHNG
 					->where('voucher_type', 'PR')
 					->update([  'amount'   			=> $amount,
@@ -422,7 +422,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 								'reference'			=> $attributes['voucher_no'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'reference_from'	=> $attributes['reference_no'],
-								'department_id'      => env('DEPARTMENT_ID'),
+								'department_id'      => auth()->user()->department_id ?? 1,
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount
 						]);
 			
@@ -448,7 +448,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 				//Remove DISCOUNT....		
 				DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
-					->where('department_id',env('DEPARTMENT_ID'))
+					->where('department_id',auth()->user()->department_id ?? 1)
 					->where('account_master_id', $dr_acnt_id) //CHNG
 					->where('transaction_type' , 'Dr')
 					->where('voucher_type', 'PR')					
@@ -481,7 +481,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 		$this->purchase_return->prefix = (isset($attributes['prefix']))?$attributes['prefix']:'';
 		$this->purchase_return->is_intercompany = (isset($attributes['is_intercompany']))?$attributes['is_intercompany']:'';
 		$this->purchase_return->location_id = (isset($attributes['location_id']))?$attributes['location_id']:'';
-		$this->purchase_return->department_id  =env('DEPARTMENT_ID');
+		$this->purchase_return->department_id  =auth()->user()->department_id ?? 1;
 		
 		return true;
 	}
@@ -680,7 +680,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 	
 	private function updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, $other_cost)
 	{
-		$prev = DB::table('item_stock')->where('document_type', 'PI')->where('department_id', env('DEPARTMENT_ID'))->where('document_id', $attributes['purchase_invoice_id'])
+		$prev = DB::table('item_stock')->where('document_type', 'PI')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id', $attributes['purchase_invoice_id'])
 									   ->where('action','!=','delete')->where('item_id',$attributes['item_id'][$key])
 									   ->orderBY('id', 'desc')->first();
 		
@@ -701,7 +701,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 							]);
 			DB::table('itemstock_department')
 					->where('itemmaster_id', $prev->item_id)
-					->where('department_id',env('DEPARTMENT_ID'))
+					->where('department_id',auth()->user()->department_id ?? 1)
 					->where('is_baseqty', 1)
 					->update(['last_purchase_cost' => ($retqty==0)?$prev->prev_purchase_cost:$cost,
 							  'cost_avg'		   => round($cost_avg + $other_cost, 2),
@@ -928,9 +928,9 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 			} else { *///purchase return section..........
 				
 				//VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id ?? 1;
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id',env('DEPARTMENT_ID'));
+				$qry = DB::table('purchase_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id',auth()->user()->department_id ?? 1);
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
@@ -958,9 +958,9 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 							if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
 								strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-								$dept = env('DEPARTMENT_ID');
+								$dept = auth()->user()->department_id ?? 1;
 								// ⿢ Get the highest numeric part from voucher_master
-								$qry = DB::table('purchase_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+								$qry = DB::table('purchase_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 
 								$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 								
@@ -1044,16 +1044,16 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
                             		        $lcqty = ($lq *  $pkgar[1]) / $pkgar[0];
                             		}
                             		
-									$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['locid'][$key][$lk])
+									$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 																  
 									if($qtys) {
-										DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
+										DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id ?? 1)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 									} else {
 										$itemLocation = new ItemLocation();
 										$itemLocation->location_id = $attributes['locid'][$key][$lk];
-										$itemLocation->department_id=env('DEPARTMENT_ID');
+										$itemLocation->department_id=auth()->user()->department_id ?? 1;
 										$itemLocation->item_id = $value;
 										$itemLocation->unit_id = $attributes['unit_id'][$key];
 										$itemLocation->quantity = $lcqty;
@@ -1063,7 +1063,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 									
 									$itemLocationPR = new ItemLocationPR();
 									$itemLocationPR->location_id = $attributes['locid'][$key][$lk];
-									$itemLocationPR->department_id=env('DEPARTMENT_ID');
+									$itemLocationPR->department_id=auth()->user()->department_id ?? 1;
 									$itemLocationPR->item_id = $value;
 									$itemLocationPR->unit_id = $attributes['unit_id'][$key];
 									$itemLocationPR->quantity = $lcqty;
@@ -1079,7 +1079,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 						//Item default location add...
 						if(($attributes['location_id']!='') && ($updated == false)) {
 								
-								$qtys = DB::table('item_location')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('location_id', $attributes['location_id'])
+								$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $attributes['location_id'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
 																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
 								
@@ -1094,12 +1094,12 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
                         		}
                         		//echo '<pre>';print_r($lcqty);exit;
 								if($qtys) {
-									DB::table('item_location')->where('id', $qtys->id)->where('department_id',env('DEPARTMENT_ID'))->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
+									DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id ?? 1)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 								} 
 									
 								$itemLocationPR = new ItemLocationPR();
 								$itemLocationPR->location_id = $attributes['location_id'];
-								$itemLocationPR->department_id=env('DEPARTMENT_ID');
+								$itemLocationPR->department_id=auth()->user()->department_id ?? 1;
 								$itemLocationPR->item_id = $value;
 								$itemLocationPR->unit_id = $attributes['unit_id'][$key];
 								$itemLocationPR->quantity = $lcqty;
@@ -1398,7 +1398,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 					$res = DB::table('purchase_return_item')->where('id',$row)->first();
 					DB::table('purchase_return_item')->where('id', $row)->update(['status' => 0]);
 					
-					DB::table('item_location')->where('item_id', $res->item_id)->where('department_id',env('DEPARTMENT_ID'))
+					DB::table('item_location')->where('item_id', $res->item_id)->where('department_id',auth()->user()->department_id ?? 1)
 								->where('location_id', $attributes['location_id'])
 								->where('unit_id', $res->unit_id)
 								->update(['quantity' => DB::raw('quantity + '.$res->quantity) ]);
@@ -1512,7 +1512,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 			} */
 			
 			//Transaction update....
-			DB::table('account_transaction')->where('voucher_type', 'PR')->where('department_id',env('DEPARTMENT_ID'))->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+			DB::table('account_transaction')->where('voucher_type', 'PR')->where('department_id',auth()->user()->department_id ?? 1)->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
 			
 			DB::table('account_master')->where('id', $this->purchase_return->dr_account_id)->update(['cl_balance' => DB::raw('cl_balance + '.$this->purchase_return->net_amount)]);
 			
@@ -1645,8 +1645,8 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 						$join->on('isd.itemmaster_id','=','im.id');
 						
 					  })
-					  ->where('purchase_return.department_id',env('DEPARTMENT_ID'))
-					  ->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->where('purchase_return.department_id',auth()->user()->department_id ?? 1)
+					  ->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->where('poi.status',1)->where('poi.deleted_at','0000-00-00 00:00:00')
 					  ->orderBY('poi.id')->groupBY('poi.id')
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.packing','isd.pkno')->get();
@@ -1811,7 +1811,7 @@ public function getReport($attributes)
  								->join('itemmaster AS IM', function($join) {
 								$join->on('IM.id','=','POI.item_id');
 								})								
-								->where('purchase_return.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_return.department_id',auth()->user()->department_id ?? 1)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) {  							
@@ -1861,7 +1861,7 @@ public function getReport($attributes)
 						$join->on('CAT.id','=','IM.subcategory_id');
 					})
 					->where('purchase_return.status',1)
-					->where('purchase_return.department_id',env('DEPARTMENT_ID'))
+					->where('purchase_return.department_id',auth()->user()->department_id ?? 1)
 					->where('POI.status',1);
 
 			// if($attributes['isimport']==1)
@@ -1928,7 +1928,7 @@ public function getReport($attributes)
 						->join('account_transaction', 'account_transaction.account_master_id', '=', 'account_master.id')
 						->where('account_transaction.voucher_type','!=','OBD')
 						->where('account_transaction.status',1)
-						->where('account_transaction.department_id',env('DEPARTMENT_ID'))
+						->where('account_transaction.department_id',auth()->user()->department_id ?? 1)
 						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
 						->where('account_master.status',1)
 						->where('account_master.deleted_at','0000-00-00 00:00:00')
@@ -1991,7 +1991,7 @@ public function getReport($attributes)
 	{
 	    
 	   
-		$irow = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])->where('department_id',env('DEPARTMENT_ID'))
+		$irow = DB::table('itemstock_department')->where('itemmaster_id', $attributes['item_id'][$key])->where('department_id',auth()->user()->department_id ?? 1)
 		                               ->select('cur_quantity')->first();
 		$attributes['packing'][$key]=isset($attributes['packing'][$key])?$attributes['packing'][$key]:1;
 		/*if(($attributes['unit_id'][$key]==1||$attributes['unit_id'][$key]==2)) {
@@ -2022,7 +2022,7 @@ public function getReport($attributes)
 			$logid = DB::table('item_log')->insertGetId([
 							 'document_type' => 'PR',
 							 'document_id'   => $document_id,
-							 'department_id' =>env('DEPARTMENT_ID'),
+							 'department_id' =>auth()->user()->department_id ?? 1,
 							 'item_id' 	  => $attributes['item_id'][$key],
 							 'unit_id'    => $attributes['unit_id'][$key],
 							 'quantity'   =>  $quantity, //$attributes['quantity'][$key] * $attributes['packing'][$key],
@@ -2046,7 +2046,7 @@ public function getReport($attributes)
 			$logid = '';					
 			DB::table('item_log')->where('document_type','PR')
 							->where('document_id', $document_id)
-							->where('department_id', env('DEPARTMENT_ID'))
+							->where('department_id', auth()->user()->department_id ?? 1)
 							->where('item_id', $attributes['item_id'][$key])
 							->where('unit_id', $attributes['unit_id'][$key])
 							->where('item_row_id', $attributes['order_item_id'][$key]) //OCT24
@@ -2070,14 +2070,14 @@ public function getReport($attributes)
 		foreach($items as $item) {
 									
 			//COST AVG Updating on DELETE section....
-			DB::table('item_log')->where('document_id', $id)->where('department_id', env('DEPARTMENT_ID'))->where('document_type','PR')
+			DB::table('item_log')->where('document_id', $id)->where('department_id', auth()->user()->department_id ?? 1)->where('document_type','PR')
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
 								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
 			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity + '.$item->quantity)]);
 
-			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id', env('DEPARTMENT_ID'))
+			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id', auth()->user()->department_id ?? 1)
 			                                 ->where('unit_id',$item->unit_id)
 								  ->update(['cur_quantity' => DB::raw('cur_quantity + '.$item->quantity)]);
 									  
@@ -2127,7 +2127,7 @@ public function getReport($attributes)
 	
 	public function purchaseReturnListCount()
 	{
-		$query = $this->purchase_return->where('purchase_return.status',1)->where('purchase_return.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_return->where('purchase_return.status',1)->where('purchase_return.department_id',auth()->user()->department_id ?? 1);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_return.supplier_id');
 						} )
@@ -2136,7 +2136,7 @@ public function getReport($attributes)
 	
 	public function purchaseReturnList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->purchase_return->where('purchase_return.status',1)->where('purchase_return.department_id',env('DEPARTMENT_ID'))
+		$query = $this->purchase_return->where('purchase_return.status',1)->where('purchase_return.department_id',auth()->user()->department_id ?? 1)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_return.supplier_id');
 						} );
@@ -2202,7 +2202,7 @@ public function getReport($attributes)
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'is_paid'			=> 5, //IDENTIFY COST DIFF TRANS.
 								'reference_from'	=> $attributes['reference_no'],
-								'department_id'     => env('DEPARTMENT_ID'),
+								'department_id'     => auth()->user()->department_id ?? 1,
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount
 								]);
 				
@@ -2222,7 +2222,7 @@ public function getReport($attributes)
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'is_paid'			=> 5, //IDENTIFY COST DIFF TRANS.
 								'reference_from'	=> $attributes['reference_no'],
-								'department_id'     => env('DEPARTMENT_ID'),
+								'department_id'     => auth()->user()->department_id ?? 1,
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount
 								]);
 				
@@ -2248,7 +2248,7 @@ public function getReport($attributes)
 		
 		DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
-					->where('department_id', env('DEPARTMENT_ID'))
+					->where('department_id', auth()->user()->department_id ?? 1)
 					->where('account_master_id', $costac->account_id)
 					->where('voucher_type', 'PR')
 					->where('transaction_type','Cr')
@@ -2260,14 +2260,14 @@ public function getReport($attributes)
 								'reference'			=> $attributes['voucher_no'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount,
-								'department_id'		=> env('DEPARTMENT_ID'),//isset($attributes['department_id'])?$attributes['department_id']:''
+								'department_id'		=> auth()->user()->department_id ?? 1,//isset($attributes['department_id'])?$attributes['department_id']:''
 								]);
 				
 		$this->objUtility->tallyClosingBalance($costac->account_id);
 		
 		DB::table('account_transaction')
 					->where('voucher_type_id', $voucher_id)
-					->where('department_id', env('DEPARTMENT_ID'))
+					->where('department_id', auth()->user()->department_id ?? 1)
 					->where('account_master_id', $stockac->account_id)
 					->where('voucher_type', 'PR')
 					->where('transaction_type','Dr')
@@ -2278,7 +2278,7 @@ public function getReport($attributes)
 								'description' 		=> $attributes['description'],
 								'reference'			=> $attributes['voucher_no'],
 								'invoice_date'		=> ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date'])),
-								'department_id'		=> env('DEPARTMENT_ID'),
+								'department_id'		=> auth()->user()->department_id ?? 1,
 								'fc_amount'			=> (isset($attributes['is_fc']))?($amount/$attributes['currency_rate']):$amount
 								]);
 				

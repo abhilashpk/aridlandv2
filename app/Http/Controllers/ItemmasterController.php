@@ -699,7 +699,7 @@ class ItemmasterController extends Controller
 								
 	// 	//CHECK ITEM ALREADY IN USE OTHER DOCS	...					
 	// 	$readonly = false;						
-	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',env('DEPARTMENT_ID'))->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',auth()->user()->department_id ?? 1)->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 	// 	if($logcount > 0)
 	// 	    $readonly = true;
 	// 	else {
@@ -848,7 +848,7 @@ class ItemmasterController extends Controller
 	// 	 Log::info('Row materials', ['count' => $rowmaterials]);
 	// 	// CHECK ITEM ALREADY IN USE OTHER DOCS
 	// 	$readonly = false;
-	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',env('DEPARTMENT_ID'))->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',auth()->user()->department_id ?? 1)->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
 		
 	// 	if($logcount > 0) {
 	// 		$readonly = true;

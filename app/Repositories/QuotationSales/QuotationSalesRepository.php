@@ -55,7 +55,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		$this->quotation_sales->reference_no = $attributes['reference_no'] ?? null;
 		$this->quotation_sales->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->quotation_sales->customer_id  = $attributes['customer_id'];
-		$this->quotation_sales->department_id  = env('DEPARTMENT_ID');
+		$this->quotation_sales->department_id  = auth()->user()->department_id ?? 1;
 		$this->quotation_sales->salesman_id  = $attributes['salesman_id'] ?? 0;
 		$this->quotation_sales->subject 	 = $attributes['subject'] ?? null;
 		$this->quotation_sales->description  = $attributes['description'] ?? null;
@@ -585,10 +585,10 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 
 
 				//VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id ?? 1;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -621,10 +621,10 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = env('DEPARTMENT_ID');
+							$dept = auth()->user()->department_id ?? 1;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -1291,7 +1291,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 							 ->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								} )
-							 ->where('quotation_sales.status', 1)->where('quotation_sales.department_id', env('DEPARTMENT_ID'));
+							 ->where('quotation_sales.status', 1)->where('quotation_sales.department_id', auth()->user()->department_id ?? 1);
 							 
 				if($customer_id)
 					$qry->where('quotation_sales.customer_id', $customer_id);
@@ -1326,7 +1326,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 		
 	public function findQuoteData($id)
 	{
-		$query = $this->quotation_sales->where('quotation_sales.id', $id)->where('quotation_sales.is_transfer', 0)->where('quotation_sales.department_id',env('DEPARTMENT_ID'));
+		$query = $this->quotation_sales->where('quotation_sales.id', $id)->where('quotation_sales.is_transfer', 0)->where('quotation_sales.department_id',auth()->user()->department_id ?? 1);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','quotation_sales.customer_id');
 						} )
@@ -1404,7 +1404,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	
 	public function getQuotation($attributes)
 	{
-		$order = $this->quotation_sales->where('quotation_sales.id', $attributes['document_id'])->where('quotation_sales.department_id', env('DEPARTMENT_ID'))
+		$order = $this->quotation_sales->where('quotation_sales.id', $attributes['document_id'])->where('quotation_sales.department_id', auth()->user()->department_id ?? 1)
 								   ->join('account_master AS AM', function($join) {
 									   $join->on('AM.id','=','quotation_sales.customer_id');
 								   })
@@ -1542,7 +1542,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 						$query->where('im.class_id',$val);
 					  }
 					  
-		return $query->where('poi.deleted_at','0000-00-00 00:00:00')->where('isd.department_id',env('DEPARTMENT_ID'))
+		return $query->where('poi.deleted_at','0000-00-00 00:00:00')->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.orderno') //JN23
@@ -1569,7 +1569,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 					  ->leftjoin('itemstock_department AS isd', function($join){
 						  $join->on('isd.itemmaster_id','=','im.id');
 					  })
-					  ->where('poi.status',1)->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->where('poi.status',1)->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->whereIn('poi.is_transfer',[0,2])
 					  ->where('poi.deleted_at','0000-00-00 00:00:00')
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity','isd.packing','isd.pkno')
@@ -1746,7 +1746,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','quotation_sales.job_id');
 								})
-								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
+								->where('quotation_sales.department_id',auth()->user()->department_id ?? 1)
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1781,7 +1781,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								})
-								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
+								->where('quotation_sales.department_id',auth()->user()->department_id ?? 1)
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1817,7 +1817,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								})
-								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
+								->where('quotation_sales.department_id',auth()->user()->department_id ?? 1)
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1851,7 +1851,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 								->leftJoin('salesman AS S', function($join) {
 									$join->on('S.id','=','quotation_sales.salesman_id');
 								})
-								->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
+								->where('quotation_sales.department_id',auth()->user()->department_id ?? 1)
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -2133,7 +2133,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	}
 	public function salesEstimateListCount()
 	{
-		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0)->where('quotation_sales.department_id',env('DEPARTMENT_ID'));
+		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0)->where('quotation_sales.department_id',auth()->user()->department_id ?? 1);
 		if(Auth::user()->roles[0]->name=='Salesman')
 					$query->where('quotation_sales.salesman_id',Session::get('salesman_id'));  // for CRM
 	
@@ -2177,7 +2177,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	}
 	public function salesEstimateList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0)->where('quotation_sales.department_id',env('DEPARTMENT_ID'))
+		$query = $this->quotation_sales->where('quotation_sales.status',1)->where('quotation_sales.is_rental',0)->where('quotation_sales.department_id',auth()->user()->department_id ?? 1)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','quotation_sales.customer_id');
 						} )

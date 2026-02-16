@@ -187,7 +187,7 @@ class PurchaseEnquiryController extends Controller
         $locationfrom = $this->location->locationFrom();
         $locationto = $this->location->locationTo();
         $defaultInter = DB::table('location')
-                         ->where('department_id','!=',env('DEPARTMENT_ID'))
+                         ->where('department_id','!=',auth()->user()->department_id ?? 1)
                          ->where('is_default', 1) ->first();
 		$res = $this->voucherno->getVoucherNo('PE'); //echo '<pre>';print_r($location);exit;
 		$settings = $this->accountsetting->getAccountPeriod();//

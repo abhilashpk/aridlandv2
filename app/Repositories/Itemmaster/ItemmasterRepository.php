@@ -414,7 +414,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					$image = $this->handleImageUpload($attributes['image']);
 				}
 				
-				$departmentId = env('DEPARTMENT_ID', 1);
+				$departmentId = auth()->user()->department_id ?? 1;
 				
 				// Create item
 				$this->itemmaster->item_code = $attributes['item_code'];
@@ -739,7 +739,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	{
 		$dtrow = DB::table('parameter1')->select('from_date')->first();
 		$c = 1;
-		$departmentId = env('DEPARTMENT_ID', 1);
+		$departmentId = auth()->user()->department_id ?? 1;
 		Log::info('with in save createItemUnits');
 		foreach($attributes['unit'] as $key => $val) {
 			if($attributes['unit'][$key] != "" || $c == 1) {
@@ -817,7 +817,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	 */
 	private function createDepartmentStock($itemmaster_id, $attributes, $key, $unit_id, $packing)
 	{
-		$departmentId = env('DEPARTMENT_ID', 1);
+		$departmentId = auth()->user()->department_id ?? 1;
 		Log::info('with in save createDepartmentStock');
 		$openingQty = isset($attributes['opn_quantity'][0]) ? (float)$attributes['opn_quantity'][0] : 0;
 		$openingCost = isset($attributes['opn_cost'][0]) ? (float)$attributes['opn_cost'][0] : 0;
@@ -882,7 +882,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	private function createItemLocations($itemmaster_id, $attributes)
 	{
 		Log::info('with in save createItemLocations');
-		$departmentId = env('DEPARTMENT_ID', 1);
+		$departmentId = auth()->user()->department_id ?? 1;
 		$unitdat = DB::table('units')
 			// ->where('deleted_at', '0000-00-00 00:00:00')
 			->whereNull('deleted_at')
@@ -1303,7 +1303,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 					foreach($attributes['locid'] as $k => $v) {
 	// 						$itlocid = isset($attributes['itlocid'][$k])?$attributes['itlocid'][$k]:0;
 	// 						if($itlocid!='')
-	// 							DB::table('item_location')->where('id', $itlocid)->where('department_id', env('DEPARTMENT_ID', 1))->update(['quantity' => $attributes['locqty'][$k],'opn_qty' => $attributes['locqty'][$k], 'bin_id' => $attributes['binid'][$k]]);
+	// 							DB::table('item_location')->where('id', $itlocid)->where('department_id', auth()->user()->department_id ?? 1)->update(['quantity' => $attributes['locqty'][$k],'opn_qty' => $attributes['locqty'][$k], 'bin_id' => $attributes['binid'][$k]]);
 	// 						else {
 	// 						    $unitdat = DB::table('units')->where('deleted_at')->first();
 	// 							$itemLocation = new ItemLocation();
@@ -1528,7 +1528,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	 */
 	private function updateItemUnits($id, $attributes)
 	{
-		$departmentId = env('DEPARTMENT_ID', 1);
+		$departmentId = auth()->user()->department_id ?? 1;
 		$dtrow = DB::table('parameter1')->select('from_date')->first();
 		$c = 1;
 		
@@ -1685,7 +1685,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	 */
 	private function updateItemLocations($id, $attributes)
 	{
-		$departmentId = env('DEPARTMENT_ID', 1);
+		$departmentId = auth()->user()->department_id ?? 1;
 		
 		// Get base unit
 		$baseUnit = ItemUnit::where('itemmaster_id', $id)
@@ -1883,7 +1883,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	// 		->where('u.itemmaster_id', $id)
 	// 		->where('u.status', 1)
 	// 		->where(function($query) {
-	// 			$query->where('ID.department_id', env('DEPARTMENT_ID', 1))
+	// 			$query->where('ID.department_id', auth()->user()->department_id ?? 1)
 	// 				->orWhereNull('ID.department_id');
 	// 		})
 	// 		->orderBy('u.id', 'ASC')
@@ -4961,7 +4961,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				return -4; // No unit available
 			}
 			
-			$departmentId = env('DEPARTMENT_ID', 1);
+			$departmentId = auth()->user()->department_id ?? 1;
 			
 			// Create item
 			$this->itemmaster->fill([
@@ -5114,7 +5114,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			->leftJoin('location', 'location.id', '=', 'item_location.location_id')
 			->where('item_location.status', 1)
 			->where('item_location.item_id', $id)
-			->where('item_location.department_id', env('DEPARTMENT_ID', 1))
+			->where('item_location.department_id', auth()->user()->department_id ?? 1)
 			->whereNull('item_location.deleted_at')
 			->select(
 				'item_location.*','bin_location.code',
@@ -6722,7 +6722,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$imported = 0;
 			$skipped = 0;
 			$errors = [];
-			$departmentId = env('DEPARTMENT_ID', 1);
+			$departmentId = auth()->user()->department_id ?? 1;
 			
 			// Get default unit once
 			$defaultUnit = DB::table('units')
@@ -7778,7 +7778,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			$itemlog = DB::table('item_log')
 								  ->where('item_id', $itemid)
 								//   ->where('department_id', auth()->user()->department_id)
-								  ->where('department_id', env('DEPARTMENT_ID', 1))
+								  ->where('department_id', auth()->user()->department_id ?? 1)
 								  ->where('status',1)
 								  ->whereNull('deleted_at')
 								  ->select('item_log.*')

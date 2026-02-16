@@ -279,7 +279,7 @@ class QuotationSalesController extends Controller
 		$res = $this->voucherno->getVoucherNo('QS'); //echo '<pre>';print_r($res);exit;
 		//$vno = $res->no;//echo '<pre>';print_r($currency);exit;
 		$location = $this->location->locationList();
-		$row = DB::table('quotation_sales')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
+		$row = DB::table('quotation_sales')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
 		$apr = ($this->acsettings->doc_approve==1)?[1]:[0,1,2];
 		if($row && in_array($row->doc_status, $apr))
 			$lastid = $row->id;

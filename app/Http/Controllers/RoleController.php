@@ -4,19 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Role;
+use App\Permission;
 use DB;
-use Hash;
-use Session;
-use Auth;
 
 
-
-class UserController extends Controller
+class RoleController extends Controller
 {
-
-
     /**
      * Display a listing of the resource.
      *
@@ -24,14 +18,9 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $data = array();
-		$users = User:: all();//orderBy('id','DESC')->paginate(5);
-        /* return view('users.index',compact('data'))
-            ->with('i', ($request->input('page', 1) - 1) * 5); */
-			//echo '<pre>';print_r($users);exit;
-		return view('body.users.index')
-					->withUsers($users)
-					->withData($data);
+        $roles = Role::orderBy('id','DESC')->paginate(50); //echo '<pre>';print_r($roles);exit;
+        return view('body.roles.index',compact('roles'))
+            ->with('i', ($request->input('page', 1) - 1) * 5);
     }
 
 
@@ -42,10 +31,8 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::pluck('display_name', 'id');
-		$depts = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
-		$loc = DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
-        return view('body.users.add',compact('roles','depts'),compact('loc','loc'));
+        $permission = Permission::get();
+        return view('roles.create',compact('permission'));
     }
 
 
@@ -58,28 +45,28 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|same:confirm-password',
-            'roles' => 'required'
+            'name' => 'required|unique:roles,name',
+            'display_name' => 'required',
+            'description' => 'required',
+            'permission' => 'required',
         ]);
 
 
-        $input = $request->all();
-        // Ensure optional location defaults to 0 instead of null/empty.
-        if (!isset($input['location_id']) || $input['location_id'] === '' || $input['location_id'] === null) {
-            $input['location_id'] = 0;
+        $role = new Role();
+        $role->name = $request->input('name');
+        $role->display_name = $request->input('display_name');
+        $role->description = $request->input('description');
+        $role->save();
+
+
+        foreach ($request->input('permission') as $key => $value) {
+            $role->attachPermission($value);
         }
-        $input['password'] = Hash::make($input['password']);
 
-        $user = User::create($input);
-        $user->syncRoles($request->input('roles', []));
 
-        return redirect()->route('users.index')
-                        ->with('success','User created successfully');
+        return redirect()->route('roles.index')
+                        ->with('success','Role created successfully');
     }
-
-
     /**
      * Display the specified resource.
      *
@@ -88,8 +75,13 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        $user = User::find($id);
-        return view('users.show',compact('user'));
+        $role = Role::find($id);
+        $rolePermissions = Permission::join("role_has_permissions","role_has_permissions.permission_id","=","permissions.id")
+            ->where("role_has_permissions.role_id",$id)
+            ->get();
+
+
+        return view('roles.show',compact('role','rolePermissions'));
     }
 
 
@@ -101,15 +93,15 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        $user = User::find($id);
-        $roles = Role::pluck('display_name', 'id');
-        $userRole = $user->roles->pluck('id', 'id')->toArray();
-		$depts = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
-		$loc = DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
-        //return view('users.edit',compact('user','roles','userRole'));
-		
-		$roles = Role::pluck('display_name', 'id');
-        return view('body.users.edit',compact('roles','user','userRole','depts','loc'));
+        $role = Role::find($id);
+        $permission = Permission::get();
+        $rolePermissions = DB::table("role_has_permissions")->where("role_has_permissions.role_id",$id)
+            ->lists('role_has_permissions.permission_id','role_has_permissions.permission_id');
+
+ 
+
+
+        return view('roles.edit',compact('role','permission','rolePermissions'));
     }
 
 
@@ -123,35 +115,30 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $this->validate($request, [
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email,'.$id,
-            'password' => 'same:confirm-password',
-            'roles' => 'required'
+            'display_name' => 'required',
+            'description' => 'required',
+            'permission' => 'required',
         ]);
 
 
-        $input = $request->all();
-        // Ensure optional location defaults to 0 instead of null/empty.
-        if (!isset($input['location_id']) || $input['location_id'] === '' || $input['location_id'] === null) {
-            $input['location_id'] = 0;
+        $role = Role::find($id);
+        $role->display_name = $request->input('display_name');
+        $role->description = $request->input('description');
+        $role->save();
+
+
+        DB::table("permission_role")->where("permission_role.role_id",$id)
+            ->delete();
+
+
+        foreach ($request->input('permission') as $key => $value) {
+            $role->attachPermission($value);
         }
-        if(!empty($input['password'])){ 
-            $input['password'] = Hash::make($input['password']);
-        }else{
-            $input = array_except($input,array('password'));    
-        }
 
 
-        $user = User::find($id);
-        $user->update($input);
-        $user->syncRoles($request->input('roles', []));
-
-
-        return redirect()->route('users.index')
-                        ->with('success','User updated successfully');
+        return redirect()->route('roles.index')
+                        ->with('success','Role updated successfully');
     }
-
-
     /**
      * Remove the specified resource from storage.
      *
@@ -160,46 +147,8 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        User::find($id)->delete();
-        return redirect()->route('users.index')
-                        ->with('success','User deleted successfully');
+        DB::table("roles")->where('id',$id)->delete();
+        return redirect()->route('roles.index')
+                        ->with('success','Role deleted successfully');
     }
-	
-	public function deluser($id)
-    {
-        User::find($id)->delete();
-		Session::flash('message', 'User deleted successfully.');
-        return redirect()->route('users.index');
-                        //->with('success','User deleted successfully');
-    }
-	
-	public function changePassword() {
-		
-        return view('body.users.password');
-	}
-	
-	public function updatePassword(Request $request) {
-		
-	  $data = User::find(Auth::User()->id);
-	  if(Hash::check($request->password, $data->password)) {
-		  
-		  if(!empty($request->password)) { 
-			   $input['password'] = Hash::make($request->new_password);
-			   $data->update($input);
-			   Session::flash('message', 'Password changed successfully.');
-			   return redirect('users/reset/password');
-		  } else {
-			  Session::flash('error', 'Invalid password entry!');
-			  return redirect('users/reset/password');
-		  }
-	  } else {
-		  Session::flash('error', 'Invalid current password!');
-		  return redirect('users/reset/password');
-	  }
-	  
-	
-	   
-	}
 }
-
-

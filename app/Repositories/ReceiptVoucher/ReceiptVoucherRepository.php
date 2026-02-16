@@ -36,7 +36,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			return (int) $user->department_id;
 		}
 
-		return (int) env('DEPARTMENT_ID');
+		return (int) auth()->user()->department_id ?? 1;
 	}
 	
 	public function all()

@@ -30,7 +30,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	public function allLoc()
 	{
 		return $this->location->leftJoin('account_master','account_master.id','=','location.customer_id')
-					->where('location.status',1)->where('location.department_id',env('DEPARTMENT_ID'))
+					->where('location.status',1)->where('location.department_id',auth()->user()->department_id ?? 1)
 					->select('account_master.master_name','location.*')
 					->get();
 	}
@@ -46,7 +46,7 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 			
 			$this->location->code = $attributes['code'];
 			$this->location->name = $attributes['name'];
-			$this->location->department_id = env('DEPARTMENT_ID');
+			$this->location->department_id = auth()->user()->department_id ?? 1;
 			$this->location->is_default = $attributes['default'];
 			$this->location->is_conloc = $attributes['is_conloc'];
 			$this->location->customer_id = $attributes['customer_id'];
@@ -98,18 +98,18 @@ class LocationRepository extends AbstractValidator implements LocationInterface 
 	public function locationList()
 	{
 		if(Auth::user()->location_id > 0)
-			return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id',env('DEPARTMENT_ID'))->get();
+			return $this->location->where('status',1)->where('id', Auth::user()->location_id)->where('department_id',auth()->user()->department_id ?? 1)->get();
 		else
-			return $this->location->where('status',1)->where('is_conloc',0)->where('department_id',env('DEPARTMENT_ID'))->get();
+			return $this->location->where('status',1)->where('is_conloc',0)->where('department_id',auth()->user()->department_id ?? 1)->get();
 	}
 	public function locationFrom()
 	{
-return $this->location->where('status',1)->where('department_id','!=',env('DEPARTMENT_ID'))->get();
+return $this->location->where('status',1)->where('department_id','!=',auth()->user()->department_id ?? 1)->get();
 
 	}
 	public function locationTo()
 	{
-     return $this->location->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->get();
+     return $this->location->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->get();
 
 	}
 	public function activeLocationList()

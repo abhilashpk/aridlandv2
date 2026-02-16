@@ -28,15 +28,19 @@
 </div>
 <!-- header logo: style can be found in header-->
 <header class="header">
-    <nav class="navbar navbar-static-top" role="navigation">
-        <a href="index " class="logo">
+    <nav class="navbar navbar-static-top" role="navigation" style="height: 78px;">
+        
+        <a href="index " class="logo">     
+            <div class="media profile-left">                     
 			<!--<h2 class="text-center">NumakPro ERP</h2>-->
             <!-- Add the class icon to your logo image or logo icon to add the margining -->
             <img src="{{asset('assets/numaklogo-small.jpg')}}" alt="logo"/>
+            </div>
         </a>
         <!-- Header Navbar: style can be found in header-->
         <!-- Sidebar toggle button-->
         <!-- Sidebar toggle button-->
+        
         <div>
             <a href="#" class="navbar-btn sidebar-toggle" data-toggle="offcanvas" role="button"> 
 			<i class="fa fa-fw fa-bars"></i>
@@ -50,7 +54,7 @@
                     <a href="#" class="dropdown-toggle padding-user" data-toggle="dropdown">
                         <img src="{{asset('assets/img/authors/avatar.jpg')}}" width="35"
                              class="img-circle img-responsive pull-left"
-                             height="35" alt="User Image">
+                             height="45" alt="User Image">
                         <div class="riot">
                             <div>
 							{{Session::get('company')}} &#x276F;
@@ -107,10 +111,8 @@
         <!-- sidebar: style can be found in sidebar-->
         <section class="sidebar">
             <div id="menu" role="navigation">
-                <div class="nav_profile">
-                    <div class="media profile-left">
-                       
-                    </div>
+                <div class="nav_profile" style="margin-top: 20px;">
+
                 </div>
                 <ul class="navigation">
 					 <li {!! (Request::is('dashboard') ? 'class="active"' : '') !!}>

@@ -106,7 +106,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 		
 		$this->sales_order->voucher_no    = $attributes['voucher_no'];
 		$this->sales_order->reference_no  = $attributes['reference_no'];
-		$this->sales_order->department_id   = env('DEPARTMENT_ID');
+		$this->sales_order->department_id   = auth()->user()->department_id ?? 1;
 		$this->sales_order->voucher_date  = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->sales_order->lpo_date      = ($attributes['lpo_date']!='')?date('Y-m-d', strtotime($attributes['lpo_date'])):'';
 		$this->sales_order->customer_id   = $attributes['customer_id'];
@@ -735,10 +735,10 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 			try {
 				   
 				//VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id ?? 1;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -770,10 +770,10 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = env('DEPARTMENT_ID');
+							$dept = auth()->user()->department_id ?? 1;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -1504,7 +1504,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					 ->where('sales_order.status', 1)
 					 ->where('sales_order.customer_id', $customer_id)
 					 ->where('sales_order.is_settled',0)
-					 ->where('sales_order.department_id',env('DEPARTMENT_ID'))
+					 ->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 					 ->where('sales_order.is_transfer', 0);
 					
 					if($type) {
@@ -1748,7 +1748,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					  }
 					  
 
-		return $query->where('poi.deleted_at','0000-00-00 00:00:00')->where('isd.department_id',env('DEPARTMENT_ID'))
+		return $query->where('poi.deleted_at','0000-00-00 00:00:00')->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','ci.balance_quantity as qs_balance_quantity','isd.packing','isd.pkno')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.id')
@@ -1777,7 +1777,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					  ->leftjoin('itemstock_department AS isd', function($join){
 						  $join->on('isd.itemmaster_id','=','im.id');
 					  })
-					  ->where('poi.status',1)->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->where('poi.status',1)->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity')
 					  ->whereIn('poi.is_transfer',[0,2])
 					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
@@ -1815,7 +1815,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity','isd.packing','isd.pkno','im.batch_req')
 					  ->whereIn('poi.is_transfer',[0,2])
 					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
-					  ->where('isd.department_id',env('DEPARTMENT_ID'))
+					  ->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
 					  ->get();
@@ -1847,7 +1847,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity')
 					  ->whereIn('poi.is_transfer_po',[0,2])
 					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
-					   ->where('isd.department_id',env('DEPARTMENT_ID'))
+					   ->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
 					  ->get();
@@ -1933,7 +1933,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
-								->where('sales_order.department_id',env('DEPARTMENT_ID'))
+								->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1970,7 +1970,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
-								->where('sales_order.department_id',env('DEPARTMENT_ID'))
+								->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -2007,7 +2007,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
-								->where('sales_order.department_id',env('DEPARTMENT_ID'))
+								->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -2048,7 +2048,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
-								->where('sales_order.department_id',env('DEPARTMENT_ID'))
+								->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -2092,7 +2092,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								})->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
-								->where('sales_order.department_id',env('DEPARTMENT_ID'))
+								->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 								->where('SOI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -2136,7 +2136,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','sales_order.job_id');
 								})
-								->where('sales_order.department_id',env('DEPARTMENT_ID'))
+								->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 								->where('QSI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -2731,7 +2731,7 @@ public function getPendingReportJob($attributes)
 	
 	public function salesOrderListCount()
 	{
-		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',auth()->user()->department_id ?? 1);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_order.customer_id');
 						} )
@@ -2740,7 +2740,7 @@ public function getPendingReportJob($attributes)
 	
 	public function salesOrderList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',env('DEPARTMENT_ID'))
+		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',auth()->user()->department_id ?? 1)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_order.customer_id');
 						} )

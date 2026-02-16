@@ -260,7 +260,7 @@ class PurchaseInvoiceController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id ?? 1)
                          ->where('is_default', 1) ->first();
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1);//'Purchase Stock' voucher from account settings...
 		if($this->mod_location->is_active==1) {
@@ -279,7 +279,7 @@ class PurchaseInvoiceController extends Controller
 							  ->select('currency.code')
 							 ->first();					 
 					 
-		$lastid = DB::table('purchase_invoice')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('purchase_invoice')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 	    $footertxt = DB::table('header_footer')->where('doc','PI')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -311,7 +311,7 @@ class PurchaseInvoiceController extends Controller
 			$deptid = '';
 		}
 		$is_dept = true;
-		$deptid =env('DEPARTMENT_ID');
+		$deptid =auth()->user()->department_id ?? 1;
 		
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=1,$is_dept,$deptid); //'Purchase Stock' voucher from account settings...
 		
@@ -694,7 +694,7 @@ class PurchaseInvoiceController extends Controller
 		$ispdc = false; 
 		$ar = [1,2]; $rv_amount = 0; $voucherno = '';
 		$remrv = (isset($attributes['remove_rv']))?$attributes['remove_rv']:'';
-		$vt = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id',env('DEPARTMENT_ID'))
+		$vt = DB::table('account_setting')->where('id',$attributes['voucher_id'])->where('department_id',auth()->user()->department_id ?? 1)
 		                                  ->select('voucher_name')->first();
 		foreach($ar as $val) {
 			if($val==1) {
@@ -773,7 +773,7 @@ class PurchaseInvoiceController extends Controller
 		$request->merge(['credit' => $rv_amount]);
 		$request->merge(['currency_id' => $pmode]);
 		
-		DB::table('purchase_invoice')->where('id',$id)->where('department_id',env('DEPARTMENT_ID'))->update(['advance' => $rv_amount,
+		DB::table('purchase_invoice')->where('id',$id)->where('department_id',auth()->user()->department_id ?? 1)->update(['advance' => $rv_amount,
 								'balance_amount' => DB::raw('net_amount - '.$rv_amount) ]);
 		/* DB::table('sales_invoice')->where('id',$id)->update(['advance' => DB::raw('advance + '.$rv_amount),
 							'balance' => (DB::raw('balance' > 0)?DB::raw('balance - '.$rv_amount):DB::raw('net_total - '.$rv_amount) ]); */

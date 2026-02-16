@@ -59,7 +59,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		$this->purchase_order->is_draft = (isset($attributes['is_draft']))?$attributes['is_draft']:'';
 		$this->purchase_order->prefix = (isset($attributes['prefix']))?$attributes['prefix']:'';
 		$this->purchase_order->is_intercompany = (isset($attributes['is_intercompany']))?$attributes['is_intercompany']:'';
-		$this->purchase_order->department_id =env('DEPARTMENT_ID');
+		$this->purchase_order->department_id =auth()->user()->department_id ?? 1;
 		$this->purchase_order->doc_nos =(isset($attributes['po_no']))?$attributes['po_no']:'';
 		return true;
 	}
@@ -349,10 +349,10 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		  try {
 
 			//VOUCHER NO LOGIC.....................
-				$dept = env('DEPARTMENT_ID');
+				$dept = auth()->user()->department_id ?? 1;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+				$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -381,10 +381,10 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 						// Check if it's a duplicate voucher number error
 						if (strpos($ex->getMessage(), 'Duplicate entry') !== false || strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
-							$dept = env('DEPARTMENT_ID');
+							$dept = auth()->user()->department_id ?? 1;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', env('DEPARTMENT_ID'));
+							$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -1019,9 +1019,9 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function getPOdata($supplier_id = null)
 	{
 		if($supplier_id)
-			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0)->where('purchase_order.supplier_id',$supplier_id);
+			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id ?? 1)->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0)->where('purchase_order.supplier_id',$supplier_id);
 		else
-			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0);
+			$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id ?? 1)->where('purchase_order.is_transfer',0)->where('purchase_order.is_settled',0);
 		
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
@@ -1037,7 +1037,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function findPOdata($id)
 	{
 		//echo '<pre>';print_r($id);exit;
-		$query = $this->purchase_order->where('purchase_order.id', $id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_order->where('purchase_order.id', $id)->where('purchase_order.department_id',auth()->user()->department_id ?? 1);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
 						} )
@@ -1093,7 +1093,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					  ->get();*/
 					  
 					  
-		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',auth()->user()->department_id ?? 1);
 		
 		return $query->join('purchase_order_item AS poi', function($join) {
 							$join->on('poi.purchase_order_id','=','purchase_order.id');
@@ -1214,7 +1214,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	public function getItems($id)
 	{
 		
-		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_order->where('purchase_order.id',$id)->where('purchase_order.department_id',auth()->user()->department_id ?? 1);
 		
 		return $query->join('purchase_order_item AS poi', function($join) {
 							$join->on('poi.purchase_order_id','=','purchase_order.id');
@@ -1293,7 +1293,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id ?? 1)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1342,7 +1342,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id ?? 1)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1386,7 +1386,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id ?? 1)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1430,7 +1430,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								->leftJoin('jobmaster AS J', function($join) {
 									$join->on('J.id','=','purchase_order.job_id');
 								})
-								->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+								->where('purchase_order.department_id',auth()->user()->department_id ?? 1)
 								->where('POI.status',1);
 								
 						if( $date_from!='' && $date_to!='' ) { 
@@ -1476,7 +1476,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	
 	public function purchaseOrderListCount()
 	{
-		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'));
+		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id ?? 1);
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
 						} )
@@ -1485,7 +1485,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 	
 	public function purchaseOrderList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',env('DEPARTMENT_ID'))
+		$query = $this->purchase_order->where('purchase_order.status',1)->where('purchase_order.department_id',auth()->user()->department_id ?? 1)
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_order.supplier_id');
 						} );

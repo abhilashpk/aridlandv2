@@ -107,10 +107,10 @@ class SuppliersDOController extends Controller
 		$res = $this->voucherno->getVoucherNo('SDO');
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id ?? 1)
                          ->where('is_default', 1) ->first();
 		$footertxt = DB::table('header_footer')->where('doc','SDO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
-		$lastid = DB::table('supplier_do')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
+		$lastid = DB::table('supplier_do')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','SDO')

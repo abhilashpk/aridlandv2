@@ -516,7 +516,7 @@ class SalesInvoiceController extends Controller
 	public function add($id = null, $doctype = null) {
 		//$this->objUtility->reEvalItemCostQuantity([200],$this->acsettings);
 		$acarr = ['Discount in Sales', 'Stock Account', 'Stock Excess', 'Cost Difference', 'Cost of Sales'];
-		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', env('DEPARTMENT_ID'))
+		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', auth()->user()->department_id ?? 1)
 							->leftJoin('account_master AS am', function($join) {
 								$join->on('am.id','=','other_account_setting.account_id');
 								$join->where('am.status','=',1);
@@ -539,7 +539,7 @@ class SalesInvoiceController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id ?? 1)
                          ->where('is_default', 1) ->first();
 		
 		$sideptid = (Session::has('SI_deptid'))?Session::get('SI_deptid'):'';
@@ -551,7 +551,7 @@ class SalesInvoiceController extends Controller
 		
 		//echo '<pre>';print_r($vouchers);exit;
 		$lastid = $this->sales_invoice->getLastId();
-		$locdefault = DB::table('location')->where('is_default',1)->where('department_id',env('DEPARTMENT_ID'))->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$locdefault = DB::table('location')->where('is_default',1)->where('department_id',auth()->user()->department_id ?? 1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
 		$sales_location = DB::table('parameter3')
 							 ->join('location', 'location.id', '=', 'parameter3.location_id')
 							 ->join('account_master', 'account_master.id', '=', 'parameter3.account_id')
@@ -586,7 +586,7 @@ class SalesInvoiceController extends Controller
 			$deptid = '';
 		}
          $is_dept = true;
-		 $deptid =env('DEPARTMENT_ID');
+		 $deptid =auth()->user()->department_id ?? 1;
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -684,7 +684,7 @@ class SalesInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount;
 			$is_dept = true;
-		    $deptid =env('DEPARTMENT_ID');
+		    $deptid =auth()->user()->department_id ?? 1;
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
 			//echo '<pre>';print_r($docItems);exit;
 			return view('body.salesinvoice.addpi') //addpi  addpisp
@@ -734,12 +734,12 @@ class SalesInvoiceController extends Controller
 		if($vouchers) { 
 			$prefix = $vouchers[0]->prefix;
 			$isprefix = $vouchers[0]->is_prefix;
-			$dept = env('DEPARTMENT_ID');//Session::get('dpt_id');
+			$dept = auth()->user()->department_id ?? 1;//Session::get('dpt_id');
 			$vtype = $vouchers[0]->voucher_type_id;
 
 			$usedNos = DB::table('sales_invoice')
                 //->where('voucher_type', $voucherType)
-                ->where('department_id', env('DEPARTMENT_ID'))
+                ->where('department_id', auth()->user()->department_id ?? 1)
                 ->where('deleted_at', '0000-00-00 00:00:00')
                 ->pluck('voucher_no');
 
@@ -797,7 +797,7 @@ class SalesInvoiceController extends Controller
 	public function addc($id = null, $doctype = null) {
 		//$this->objUtility->reEvalItemCostQuantity([200],$this->acsettings);
 			$acarr = ['Discount in Sales', 'Stock Account', 'Stock Excess', 'Cost Difference', 'Cost of Sales'];
-		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', env('DEPARTMENT_ID'))
+		$acounts = DB::table('other_account_setting')->where('other_account_setting.status', 1)->where('other_account_setting.department_id', auth()->user()->department_id ?? 1)
 							->leftJoin('account_master AS am', function($join) {
 								$join->on('am.id','=','other_account_setting.account_id');
 								$join->where('am.status','=',1);
@@ -821,7 +821,7 @@ class SalesInvoiceController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id ?? 1)
                          ->where('is_default', 1) ->first();
 		
 		$sideptid = (Session::has('SI_deptid'))?Session::get('SI_deptid'):'';
@@ -868,7 +868,7 @@ class SalesInvoiceController extends Controller
 			$deptid = '';
 		}
          $is_dept = true;
-		 $deptid =env('DEPARTMENT_ID');
+		 $deptid =auth()->user()->department_id ?? 1;
 		$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid); //'Sales Stock' voucher from account settings...		
 		
 		if($this->mod_si_roundoff->is_active==1)
@@ -966,7 +966,7 @@ class SalesInvoiceController extends Controller
 			}
 			$nettotal = $total - $discount;
 			$is_dept = true;
-		    $deptid =env('DEPARTMENT_ID');
+		    $deptid =auth()->user()->department_id ?? 1;
 			$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=3,$is_dept,$deptid);
 			//echo '<pre>';print_r($docItems);exit;
 			return view('body.salesinvoice.addcpi') //addpi  addpisp
@@ -1016,12 +1016,12 @@ class SalesInvoiceController extends Controller
 			if($vouchers) { 
 			$prefix = $vouchers[0]->prefix;
 			$isprefix = $vouchers[0]->is_prefix;
-			$dept = env('DEPARTMENT_ID');//Session::get('dpt_id');
+			$dept = auth()->user()->department_id ?? 1;//Session::get('dpt_id');
 			$vtype = $vouchers[0]->voucher_type_id;
 
 			$usedNos = DB::table('sales_invoice')
                 //->where('voucher_type', $voucherType)
-                ->where('department_id', env('DEPARTMENT_ID'))
+                ->where('department_id', auth()->user()->department_id ?? 1)
                 ->where('deleted_at', '0000-00-00 00:00:00')
                 ->pluck('voucher_no');
 

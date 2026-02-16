@@ -557,7 +557,7 @@ li.dropdown-footer a {
 /****** 4.LEFT SIDEBAR ******/
 .left-side {
   position: absolute;
-  width: 250px; }
+  width: 240px; }
 
 li.active > a > .arrow {
   position: absolute;

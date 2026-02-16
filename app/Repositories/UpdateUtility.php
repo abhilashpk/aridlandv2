@@ -104,6 +104,16 @@ class UpdateUtility
 				->where('id', $item->id)
 				->update([ 'cur_quantity' => DB::raw('cur_quantity - '.$baseqty),
 							'issued_qty' => DB::raw('issued_qty + '.$baseqty) ]);
+
+			$deptId = $attributes['department_id'] ?? (auth()->user()->department_id ?? 1);
+			DB::table('itemstock_department')
+				->where('department_id', $deptId)
+				->where('itemmaster_id', $attributes['item_id'][$key])
+				->where('is_baseqty', 1)
+				->update([
+					'cur_quantity' => DB::raw('cur_quantity - '.$baseqty),
+					'issued_qty' => DB::raw('issued_qty + '.$baseqty),
+				]);
 							
 			//UPDATE into ITEM STOCK LOG 
 			$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])

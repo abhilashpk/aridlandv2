@@ -267,11 +267,11 @@ class SalesOrderController extends Controller
 		$currency = $this->currency->activeCurrencyList();
 		$res = $this->voucherno->getVoucherNo('SO'); //echo '<pre>';print_r($res);exit;
 		//$vno = $res->no;
-		$row = DB::table('sales_order')->where('status',1)->where('department_id',env('DEPARTMENT_ID'))->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
+		$row = DB::table('sales_order')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
 		$apr = ($this->acsettings->doc_approve==1)?[1]:[0,1,2];
 		$location = $this->location->locationList();
 		$defaultInter = DB::table('location')
-                         ->where('department_id', env('DEPARTMENT_ID'))
+                         ->where('department_id', auth()->user()->department_id ?? 1)
                          ->where('is_default', 1) ->first();
 		
 		$footertxt = DB::table('header_footer')->where('doc','SO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
