@@ -57,7 +57,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 	private function jobmasterEntry($attributes) {
 	    
 	    	$jcount=DB::table('jobmaster')->where('jobmaster.id', $attributes['job_id'])->where('status',1)->where('is_salary_job',0)
-		                    ->where('deleted_at','0000-00-00 00:00:00')->count();
+		                    ->whereNull('deleted_at')->count();
       if($jcount==0){
 		
 		$id = DB::table('jobmaster')
@@ -450,8 +450,8 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 				if($idarr) {
 					foreach($idarr as $id) {
 						DB::table('purchase_order')->where('id', $id)->update(['is_editable' => 1]);
-						$row1 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-						$row2 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+						$row1 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->whereNull('deleted_at')->count();
+						$row2 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->whereNull('deleted_at')->where('is_transfer',1)->count();
 						if($row1==$row2) {
 							DB::table('purchase_order')
 									->where('id', $id)
@@ -467,8 +467,8 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					if($idarr) {
 						foreach($idarr as $id) {
 							DB::table('quotation_sales')->where('id', $id)->update(['is_editable' => 1]);
-							$row1 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-							$row2 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+							$row1 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->whereNull('deleted_at')->count();
+							$row2 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->whereNull('deleted_at')->where('is_transfer',1)->count();
 							if($row1==$row2) {
 								DB::table('quotation_sales')
 										->where('id', $id)
@@ -749,7 +749,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 				$dept = auth()->user()->department_id ?? 1;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				$qry = DB::table('sales_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -787,7 +787,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 							$dept = auth()->user()->department_id ?? 1;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+							$qry = DB::table('sales_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
@@ -1691,7 +1691,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 									   $join->on('U.id','=','PI.unit_id');
 								   })
 								   ->where('PI.status',1)
-								   ->where('PI.deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('PI.deleted_at')
 								   ->select('PI.*','sales_order.id','IM.item_code','U.unit_name')
 								   ->get();
 								   
@@ -1772,7 +1772,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 						$query->where('im.class_id',$val);
 					  }
 					  
-		return $query->where('poi.deleted_at','0000-00-00 00:00:00')->where('isd.department_id',auth()->user()->department_id ?? 1)
+		return $query->whereNull('poi.deleted_at')->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','ci.balance_quantity as qs_balance_quantity','isd.packing','isd.pkno')
 					  ->groupBy('poi.id')
 					  ->orderBY('poi.id')
@@ -1803,7 +1803,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					  ->where('poi.status',1)->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity')
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
 					  ->get();
@@ -1837,7 +1837,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					  ->where('poi.status',1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity','isd.packing','isd.pkno','im.batch_req')
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
@@ -1869,7 +1869,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					  ->where('poi.status',1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.cur_quantity')
 					  ->whereIn('poi.is_transfer_po',[0,2])
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					   ->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
@@ -2684,9 +2684,9 @@ public function getPendingReportJob($attributes)
 						->where('sales_order.id', $id)
 						->where('D.invoice_type','SO')
 						->where('QSI.status',1)
-						->where('QSI.deleted_at','0000-00-00 00:00:00')
+						->whereNull('QSI.deleted_at')
 						->where('D.status',1)
-						->where('D.deleted_at','0000-00-00 00:00:00')
+						->whereNull('D.deleted_at')
 						->select('D.*')
 						->get();
 	}
@@ -2701,7 +2701,7 @@ public function getPendingReportJob($attributes)
 	
 	public function getjobDescription($id)
 	{
-		return DB::table('joborder_details')->where('joborder_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		return DB::table('joborder_details')->where('joborder_id',$id)->where('status',1)->whereNull('deleted_at')->get();
 	}
 
 

@@ -1200,10 +1200,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 		
 		  $result =  $query->where('account_transaction.voucher_type','!=','OBD')
 							->where('account_transaction.status',1)
-							->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+							->whereNull('account_transaction.deleted_at')
 							->where('account_master.status',1)
-							->where('account_master.deleted_at','0000-00-00 00:00:00')
-							->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+							->whereNull('account_master.deleted_at')
+							->whereNull('account_transaction.deleted_at')
 							->select('account_master.id','account_master.master_name','account_master.cl_balance','account_master.category',
 									 'account_transaction.transaction_type','account_transaction.amount','account_master.op_balance')
 							->orderBy('account_master.id','ASC')
@@ -1215,7 +1215,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function supplierList(){
 		return $query = $this->accountmaster->where('account_master.status',1)
 		                              ->where('account_master.category','=','SUPPLIER')
-									  //->where('account_master.deleted_at','0000-00-00 00:00:00')
+									  //->whereNull('account_master.deleted_at')
 									  ->select('account_master.id','account_master.master_name')
 									  ->get();
 
@@ -1223,7 +1223,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function customerList(){
 		return $query = $this->accountmaster->where('account_master.status',1)
 		                              ->where('account_master.category','=','CUSTOMER')
-									  //->where('account_master.deleted_at','0000-00-00 00:00:00')
+									  //->whereNull('account_master.deleted_at')
 									  ->select('account_master.id','account_master.master_name')
 									  ->get();
 
@@ -1687,7 +1687,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								$join->on('ag.id','=','account_master.account_group_id');
 							} )
 						//->where('ag.category','=','CASH')
-						->where('ag.deleted_at', '0000-00-00 00:00:00')
+						->whereNull('ag.deleted_at')
 						->select('account_master.id','account_master.account_id','account_master.master_name','account_master.cl_balance',
 								 'account_master.op_balance','account_master.credit_limit','account_master.pdc_amount','account_master.vat_no','account_master.category')
 						->get();
@@ -1922,7 +1922,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$join->on('ag.id','=','account_master.account_group_id');
 								})
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->whereIn('account_master.account_group_id', $attributes['group_ids'])
 								->where('account_transaction.voucher_type','!=','OBD')
 								->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
@@ -1938,7 +1938,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','account_master.id','account_setting.voucher_name','sales_invoice.voucher_no','sales_invoice.voucher_date','SI.tax_code',
 												'sales_invoice.total','sales_invoice.vat_amount',DB::raw('"SI" AS type'),'sales_invoice.net_total')
@@ -1969,7 +1969,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','account_master.id','account_setting.voucher_name','purchase_invoice.voucher_no','purchase_invoice.voucher_date','PI.tax_code',
 												'purchase_invoice.total','purchase_invoice.vat_amount',DB::raw('"PI" AS type'),'purchase_invoice.net_amount')
@@ -2043,7 +2043,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$join->on('ag.id','=','account_master.account_group_id');
 								})
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->whereIn('account_master.id', $attributes['account_ids'])
 								->where('account_transaction.voucher_type','!=','OBD')
 								->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
@@ -2089,7 +2089,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 							}
 							
 							  $qry1->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('account_master.id', $attributes['account_id'])
 									->where('account_transaction.voucher_type','!=','OBD')
 									->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
@@ -2105,7 +2105,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									})
 									->join('jobmaster', 'jobmaster.id', '=', 'RVE.job_id')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('account_master.id', $attributes['account_id'])
 									->where('account_transaction.voucher_type','!=','OBD')
 									->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
@@ -2126,7 +2126,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 							}
 							
 							  $qry3->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('account_master.id', $attributes['account_id'])
 									->where('account_transaction.voucher_type','!=','OBD')
 									->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
@@ -2147,7 +2147,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 							}
 							
 							  $qry4->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('account_master.id', $attributes['account_id'])
 									->where('account_transaction.voucher_type','!=','OBD')
 									->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
@@ -2160,7 +2160,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 					//DB::enableQueryLog();
 					$query = DB::table('account_transaction')->where('account_transaction.status',1)
 									->join('account_master', 'account_master.id', '=', 'account_transaction.account_master_id')
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('account_transaction.voucher_type','!=','OBD')
 									->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 									->where('account_transaction.amount', '!=', 0);
@@ -2236,7 +2236,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									})
 									->join('jobmaster', 'jobmaster.id', '=', 'SI.job_id')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('voucher_type','!=','OB')
 									->where('account_master.id', $attributes['account_id'])
 									->where( function ($query) use ($date_from, $date_to) {
@@ -2259,7 +2259,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								})
 								->join('jobmaster', 'jobmaster.id', '=', 'RVE.job_id')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->where('voucher_type','!=','OB')
 								->where('account_master.id', $attributes['account_id'])
 								->where( function ($query) use ($date_from, $date_to) {
@@ -2278,7 +2278,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									})
 									->join('jobmaster', 'jobmaster.id', '=', 'SS.job_id')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('voucher_type','!=','OB')
 									->where('account_master.id', $attributes['account_id'])
 									->where( function ($query) use ($date_from, $date_to) {
@@ -2297,7 +2297,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									})
 									->join('jobmaster', 'jobmaster.id', '=', 'PS.job_id')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('voucher_type','!=','OB')
 									->where('account_master.id', $attributes['account_id'])
 									->where( function ($query) use ($date_from, $date_to) {
@@ -2314,7 +2314,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 					$query = DB::table('account_transaction')
 									->join('account_master', 'account_master.id', '=', 'account_transaction.account_master_id')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where('voucher_type','!=','OB')
 									//->where('account_master.id', $attributes['account_id'])
 									->where( function ($qry) use ($date_from, $date_to) {
@@ -2364,7 +2364,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									})
 								->join('jobmaster', 'jobmaster.id', '=', 'SI.job_id')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->where('voucher_type','!=','OB')
 								->where('account_master.id', $attributes['account_id'])
 								->where( function ($query) use ($date_from, $date_to) {
@@ -2388,7 +2388,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								})
 								->join('jobmaster', 'jobmaster.id', '=', 'RVE.job_id')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->where('voucher_type','!=','OB')
 								->where('account_master.id', $attributes['account_id'])
 								->where( function ($query) use ($date_from, $date_to) {
@@ -2407,7 +2407,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									})
 								->join('jobmaster', 'jobmaster.id', '=', 'SS.job_id')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->where('voucher_type','!=','OB')
 								->where('account_master.id', $attributes['account_id'])
 								->where( function ($query) use ($date_from, $date_to) {
@@ -2431,7 +2431,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									})
 								->join('jobmaster', 'jobmaster.id', '=', 'PS.job_id')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->where('voucher_type','!=','OB')
 								->where('account_master.id', $attributes['account_id'])
 								->where( function ($query) use ($date_from, $date_to) {
@@ -2453,7 +2453,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$query = DB::table('account_transaction')
 								->join('account_master', 'account_master.id', '=', 'account_transaction.account_master_id')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->where('voucher_type','!=','OB')
 								//->where('account_master.id', $attributes['account_id'])
 								->where( function ($qry) use ($date_from, $date_to) {
@@ -2501,7 +2501,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 		$qry1 = DB::table('account_transaction')
 								->join('account_master', 'account_master.id', '=', 'account_transaction.account_master_id')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->where('voucher_type','!=','OB')
 								->where('account_master.id', $id)
 								->where( function ($query) use ($date_from, $date_to) {
@@ -2531,7 +2531,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			
 		$qry1 = DB::table('pdc_received')
 						->join('account_master', 'account_master.id', '=', 'pdc_received.customer_id')
-						->where('pdc_received.deleted_at', '0000-00-00 00:00:00')
+						->whereNull('pdc_received.deleted_at')
 						//->where('pdc_received.reference', '')
 						->where('pdc_received.customer_id', $attributes['account_id']);
 						
@@ -2546,7 +2546,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 						
 		$qry2 = DB::table('pdc_issued')
 						->join('account_master', 'account_master.id', '=', 'pdc_issued.supplier_id')
-						->where('pdc_issued.deleted_at', '0000-00-00 00:00:00')
+						->whereNull('pdc_issued.deleted_at')
 						//->where('pdc_issued.reference', '')
 						->where('pdc_issued.supplier_id', $attributes['account_id']);
 						
@@ -2622,7 +2622,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									 ->where('receipt_voucher.voucher_type', '=', 'PDCR');
 							})
 							->where('account_transaction.status',1)
-							->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+							->whereNull('account_transaction.deleted_at')
 							->where('account_transaction.voucher_type','!=','OB')
 							->where('account_master.id', $attributes['account_id'])
 							->where( function ($query) use ($date_from, $date_to) {
@@ -2650,7 +2650,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									 ->where('payment_voucher.voucher_type', '=', 'PDCI');
 							})
 							->where('account_transaction.status',1)
-							->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+							->whereNull('account_transaction.deleted_at')
 							->where('account_transaction.voucher_type','!=','OB')
 							->where('account_master.id', $attributes['account_id'])
 							->where( function ($query) use ($date_from, $date_to) {
@@ -2702,7 +2702,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									  })
 									->where('account_transaction.voucher_type','OB')
 									->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
-									->where('account_transaction.status',1)->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+									->where('account_transaction.status',1)->whereNull('account_transaction.deleted_at');
 									
 							if($department_id!='') {
 								$opqry->where('account_transaction.department_id', $department_id);
@@ -2763,7 +2763,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											  })
 											  ->where('account_transaction.voucher_type','OB')
 											  ->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
-											  ->where('account_transaction.status',1)->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											  ->where('account_transaction.status',1)->whereNull('account_transaction.deleted_at');
 							if($grparr)
 								$query->whereIn('account_master.account_group_id', $grparr); //MY24
 											  
@@ -2798,7 +2798,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											  $join->on('ac.id' ,'=', 'ag.category_id');
 										  })
 										  //->whereBetween('account_transaction.created_at', array($date_from, $date_to))
-										  ->where('account_transaction.status',1)->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										  ->where('account_transaction.status',1)->whereNull('account_transaction.deleted_at')
 										  ->where('account_transaction.voucher_type','=','OB');
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24
@@ -2861,7 +2861,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											  ->where('account_transaction.voucher_type','OB')
 											  ->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->where('account_transaction.status',1)
-											  ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											  ->whereNull('account_transaction.deleted_at');
 								
 								if($grparr)
 								    $query->whereIn('account_master.account_group_id', $grparr); //MY24
@@ -2932,7 +2932,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											  ->where('account_transaction.status',1)
-											  ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											  ->whereNull('account_transaction.deleted_at');
 											  
 							if($trim_zero)				  
 									$query->where('account_transaction.amount','!=',0.00);
@@ -2972,7 +2972,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											  ->where('account_transaction.status',1)
-											  ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											  ->whereNull('account_transaction.deleted_at');
 											  
 							if($trim_zero)				  
 									$query->where('account_transaction.amount','!=',0.00);
@@ -3015,7 +3015,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											  ->where('account_transaction.status',1)
-											  ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											  ->whereNull('account_transaction.deleted_at');
 											  
 							if($trim_zero)				  
 									$query->where('account_transaction.amount','!=',0.00);
@@ -3069,7 +3069,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											  ->where('account_transaction.voucher_type','OB')
 											  ->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->whereIn('account_master.account_group_id', $grparr)
-											  ->where('account_transaction.status',1)->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											  ->where('account_transaction.status',1)->whereNull('account_transaction.deleted_at');
 											  
 							if($department_id!='') {
 								$query->where('account_transaction.department_id', $department_id);
@@ -3098,7 +3098,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											  $join->on('ac.id' ,'=', 'ag.category_id');
 										  })
 										  //->whereBetween('account_transaction.created_at', array($date_from, $date_to))
-										  ->where('account_transaction.status',1)->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										  ->where('account_transaction.status',1)->whereNull('account_transaction.deleted_at')
 										  ->whereIn('account_master.account_group_id', $grparr)
 										  ->where('account_transaction.voucher_type','=','OB');
 										  
@@ -3143,7 +3143,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24
@@ -3187,7 +3187,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24
@@ -3232,7 +3232,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24
@@ -3297,7 +3297,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24		
 							
@@ -3340,7 +3340,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24		
@@ -3385,7 +3385,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24		
@@ -3444,7 +3444,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24		
 							
@@ -3485,7 +3485,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24		
 							
@@ -3529,7 +3529,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											   ->where('account_transaction.status',1)
-											   ->where('account_transaction.deleted_at','0000-00-00 00:00:00');
+											   ->whereNull('account_transaction.deleted_at');
 						
 						if($grparr)
 							$query->whereIn('account_master.account_group_id', $grparr); //MY24		
@@ -3593,7 +3593,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 														$join->on('ac.id' ,'=', 'ag.category_id');
 												  })
 												  ->whereBetween('account_transaction.created_at', array($date_from, $date_to))
-												  ->where('account_transaction.status',1)->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+												  ->where('account_transaction.status',1)->whereNull('account_transaction.deleted_at')
 												  ->whereIn('account_master.id', $arr);
 												  
 							if($department_id!='') {
@@ -3655,7 +3655,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												  $join->on('ac.id' ,'=', 'ag.category_id');
 											  })
 											  ->whereBetween('account_transaction.created_at', array($date_from, $date_to))
-											  ->where('account_transaction.status',1)->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+											  ->where('account_transaction.status',1)->whereNull('account_transaction.deleted_at')
 											  ->whereIn('account_master.account_group_id', $grparr);
 											  
 						if($department_id!='') {
@@ -3756,7 +3756,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.transaction_type','=','Dr')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -3797,7 +3797,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.transaction_type','=','Dr')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -3839,7 +3839,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_transaction.transaction_type','=','Cr')
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -3876,7 +3876,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_transaction.transaction_type','=','Cr')
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -3929,7 +3929,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_master.cl_balance','!=',0)
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -4000,7 +4000,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_master.cl_balance','!=',0)
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -4045,7 +4045,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_master.cl_balance','!=',0)
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -4109,7 +4109,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_master.cl_balance','!=',0)
 										->where('account_transaction.voucher_type','!=','OBD')
 										->where('account_transaction.status',1)
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+										->whereNull('account_transaction.deleted_at')
 										->where( function ($query) use ($date_from, $date_to) {
 											$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 												  ->orWhere('account_transaction.voucher_type','OB');
@@ -4154,7 +4154,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
@@ -4230,7 +4230,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
@@ -4270,7 +4270,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
@@ -4334,7 +4334,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
@@ -4384,7 +4384,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_category.status',1)
 									->where('account_master.status',1)
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->whereBetween('account_transaction.created_at', array($date_from, $date_to));
 									
 						if($department_id!='') {
@@ -4418,7 +4418,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_category.status',1)
 									->where('account_master.status',1)
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->whereBetween('account_transaction.created_at', array($date_from, $date_to));
 									
 						if($department_id!='') {
@@ -4453,7 +4453,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_category.status',1)
 									->where('account_master.status',1)
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->whereBetween('account_transaction.created_at', array($date_from, $date_to));
 									
 						if($department_id!='') {
@@ -4487,7 +4487,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_category.status',1)
 									->where('account_master.status',1)
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->whereBetween('account_transaction.created_at', array($date_from, $date_to));
 									
 						if($department_id!='') {
@@ -4541,8 +4541,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_transaction.amount','!=',0)
 										->where('account_transaction.status',1)
 										->whereBetween('account_transaction.invoice_date',[$date_from, $date_to])
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
-										->where('account_master.deleted_at','0000-00-00 00:00:00');
+										->whereNull('account_transaction.deleted_at')
+										->whereNull('account_master.deleted_at');
 										
 						if($department_id!='') {
 							$query1->where('account_transaction.department_id', $department_id);
@@ -4591,8 +4591,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_transaction.amount','!=',0)
 										->where('account_transaction.status',1)
 										->whereBetween('account_transaction.invoice_date',[$date_from, $date_to])
-										->where('account_transaction.deleted_at','0000-00-00 00:00:00')
-										->where('account_master.deleted_at','0000-00-00 00:00:00');
+										->whereNull('account_transaction.deleted_at')
+										->whereNull('account_master.deleted_at');
 										
 						if($department_id!='') {
 							$query3->where('account_transaction.department_id', $department_id);
@@ -4655,7 +4655,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_category.status',1)
 										->where('account_master.status',1)
 										//->where('account_master.cl_balance', '!=', 0)
-										->where('account_master.deleted_at','0000-00-00 00:00:00');
+										->whereNull('account_master.deleted_at');
 										
 						if($department_id!='') {
 							$query1->where('account_master.department_id', $department_id);
@@ -4701,7 +4701,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('account_category.status',1)
 										->where('account_master.status',1)
 										//->where('account_master.cl_balance','!=',0)
-										->where('account_master.deleted_at','0000-00-00 00:00:00');
+										->whereNull('account_master.deleted_at');
 										
 						if($department_id!='') {
 							$query3->where('account_master.department_id', $department_id);
@@ -4775,8 +4775,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->where('account_transaction.voucher_type','!=','OBD')
         									->where('account_transaction.status',1)
 										    ->whereBetween('account_transaction.invoice_date',[$date_from, $date_to])
-										    ->where('account_transaction.deleted_at','0000-00-00 00:00:00')
-											->where('account_master.deleted_at','0000-00-00 00:00:00');
+										    ->whereNull('account_transaction.deleted_at')
+											->whereNull('account_master.deleted_at');
 											
 						if($department_id!='') {
 							$query1->where('account_transaction.department_id', $department_id);
@@ -4844,8 +4844,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
         									->where('account_transaction.amount', '!=', 0)
         									->where('account_transaction.status',1)
 										    ->whereBetween('account_transaction.invoice_date',[$date_from, $date_to])
-										    ->where('account_transaction.deleted_at','0000-00-00 00:00:00')
-											->where('account_master.deleted_at','0000-00-00 00:00:00');
+										    ->whereNull('account_transaction.deleted_at')
+											->whereNull('account_master.deleted_at');
 											
 						if($department_id!='') {
 							$query3->where('account_transaction.department_id', $department_id);
@@ -4943,7 +4943,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
         									->whereIn('account_category.parent_id',[2,3])//Current Liability
         									->where('account_category.status',1)
         									->where('account_master.status',1)
-											->where('account_master.deleted_at','0000-00-00 00:00:00');
+											->whereNull('account_master.deleted_at');
 						
 											
 						if($department_id!='') {
@@ -5002,7 +5002,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
         									->where('account_category.parent_id',1)//fixed asses account_category.id',8
         									->where('account_category.status',1)
         									->where('account_master.status',1)
-											->where('account_master.deleted_at','0000-00-00 00:00:00');
+											->whereNull('account_master.deleted_at');
 											
 					if($department_id!='') {
 						$query3->where('account_master.department_id', $department_id);
@@ -5526,8 +5526,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.status',1)
 									->where('account_transaction.amount','>',0)
 									->where('account_transaction.status',1)
-									->where('account_master.deleted_at','=','0000-00-00 00:00:00')
-									->where('account_transaction.deleted_at','=','0000-00-00 00:00:00')
+									->whereNull('account_master.deleted_at')
+									->whereNull('account_transaction.deleted_at')
 									->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 									->select('account_group.name AS group_name','account_group.id','account_master.account_id','account_master.master_name',//'account_master.cl_balance',
 											 'account_transaction.amount','account_transaction.transaction_type','account_master.id AS acid')
@@ -5599,17 +5599,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'partywise':
 				
 				//VAT INPUT...........
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')//->where('PI.is_import',0)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
@@ -5617,93 +5617,93 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 					
 											//->get();
 											
-				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->leftJoin('pi_other_cost AS PIO', 'PIO.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',1)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->where('PIO.status',1)->where('PIO.deleted_at','0000-00-00 00:00:00')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 									
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_return_item AS IT', 'IT.purchase_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','PR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
-				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_split_item AS IT', 'IT.purchase_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','PS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','PS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 						
 
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_invoice_item AS IT', 'IT.sales_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_total AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 											//->get();
 				
-				$query13 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query13 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_split_item AS IT', 'IT.sales_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','SS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','SS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 						
 													
 			
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_return_item AS IT', 'IT.sales_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
@@ -5712,7 +5712,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -5724,81 +5724,81 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 					//->where('JE.entry_type','Dr')
 					//->whereNotIn('JE.account_id',[25,26,27])
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','JE.amount AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type',DB::raw('"SR" AS tax_code'),
 											'PI.voucher_no','PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
 				
 				//VAT INPUT EXPENSE FROM PURCHASE NON STOCK.......
-				$query10 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query10 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -5809,11 +5809,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
@@ -5839,7 +5839,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no','SI.tax_code',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount',DB::raw('"SI" AS type'),'sales_invoice.net_total')
@@ -5854,16 +5854,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'detail':
 				
 				//VAT INPUT........... vat_amount vatinput_import
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->leftjoin('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PI')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -5875,16 +5875,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->groupBy('PI.id');
 											//->get();
 											
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -5895,16 +5895,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw("(SELECT purchase_return_item.tax_include FROM purchase_return_item WHERE purchase_return_item.purchase_return_id = PI.id LIMIT 1) AS tax_include"));//->groupBy('PI.id');
 													
 					
-				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_split_item AS IT', 'IT.purchase_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','PS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','PS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 											if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -5917,15 +5917,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								
 				
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -5937,15 +5937,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													)->groupBy('PI.id');
 											//->get();
 											
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 								
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -5957,16 +5957,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													)->groupBy('PI.id');
 											//->get();
 											
-						$qry4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+						$qry4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 										//	->join('sales_split_item AS IT', 'IT.sales_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','SS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','SS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 										if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
 									$qry4->where('PI.department_id', $attributes['department_id']);	
@@ -5977,7 +5977,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -5988,11 +5988,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6003,18 +6003,18 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw('"0" AS tax_include'));
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6024,17 +6024,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','JE.description AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6046,15 +6046,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6065,15 +6065,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw("(SELECT purchase_invoice_item.tax_include FROM purchase_invoice_item WHERE purchase_invoice_item.purchase_invoice_id = PI.id LIMIT 1) AS tax_include"));//->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6085,7 +6085,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 													
 				//VAT INPUT EXPENSE FROM PURCHASE NON STOCK.......
-				$query10 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query10 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -6096,11 +6096,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6111,17 +6111,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw('"0" AS tax_include'));
 													
 				//VAT OUTPUT FROM SALES NON STOCK.......
-				$query11 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query11 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('journal AS PI', 'PI.id', '=', 'JE.journal_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','SIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6131,7 +6131,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 													
-				$query12 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query12 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -6142,11 +6142,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6156,18 +6156,18 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 													
-				$query13 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query13 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6177,17 +6177,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','JE.description AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 												
-				$query14 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query14 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -6198,16 +6198,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw('"0" AS tax_include'));
 			
 			
-				$query15 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query15 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_rental AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PIR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
 											->where('PI.status',1)->where('PI.deleted_at',null)
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								/* if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -6217,16 +6217,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 			
-			$query16 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+			$query16 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('rental_sales AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->where('AT.voucher_type','SIR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
 											->where('PI.status',1)->where('PI.deleted_at',null)
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								/* if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -6244,10 +6244,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->join('account_transaction AS AT', 'AT.account_master_id', '=', 'account_master.id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','ZR')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to));
 									$query17->select(DB::raw('"Vat Input ZR" AS vat_name') ,'account_master.transaction_type','purchase_invoice.vat_amount','purchase_invoice.document_type AS voucher_type','purchase_invoice.voucher_no','account_master.id AS acid','purchase_invoice.discount','purchase_invoice.subtotal','purchase_invoice.voucher_date',
 									'purchase_invoice.total AS gross_total','purchase_invoice.net_amount AS net_total','account_master.master_name','account_master.vat_no AS trn_no ','AT.transaction_type AS trtype','AT.id',	DB::raw('"0" AS tax_include'))
@@ -6260,10 +6260,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->join('account_transaction AS AT', 'AT.account_master_id', '=', 'account_master.id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','ZR')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to));
 												$query18->select(DB::raw('"Vat Output ZR" AS vat_name'),'account_master.transaction_type','sales_invoice.vat_amount','sales_invoice.document_type AS voucher_type','sales_invoice.voucher_no','account_master.id AS acid','sales_invoice.discount','sales_invoice.subtotal','sales_invoice.voucher_date',
 															 'sales_invoice.total AS gross_total','sales_invoice.net_total','account_master.master_name','account_master.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id',	DB::raw('"0" AS tax_include'))
@@ -6286,9 +6286,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6302,9 +6302,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6319,10 +6319,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 												->where('account_master.status',1)
 												->where('purchase_invoice.status',1)
-												->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+												->whereNull('purchase_invoice.deleted_at')
 												->where('purchase_invoice_item.status',1)
 												->where('purchase_invoice_item.tax_code','SR')
-												->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+												->whereNull('purchase_invoice_item.deleted_at')
 												->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 												->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 														 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6336,10 +6336,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 												->where('account_master.status',1)
 												->where('sales_invoice.status',1)
-												->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+												->whereNull('sales_invoice.deleted_at')
 												->where('sales_invoice_item.status',1)
 												->where('sales_invoice_item.tax_code','SR')
-												->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+												->whereNull('sales_invoice_item.deleted_at')
 												->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 												->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 														 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6355,10 +6355,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','RC')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6372,10 +6372,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','RC')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6390,10 +6390,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','ZR')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6407,10 +6407,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','ZR')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6425,10 +6425,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','EX')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6442,10 +6442,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','EX')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6462,10 +6462,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','SR')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6479,10 +6479,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','SR')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6535,10 +6535,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','RC')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6552,10 +6552,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','ZR')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6569,10 +6569,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','ZR')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6586,10 +6586,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','EX')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -6603,10 +6603,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','EX')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -6617,82 +6617,82 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'summary_taxcode':
 				
 				//VAT INPUT...........
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',0)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											//->get();
 											
-				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->leftJoin('pi_other_cost AS PIO', 'PIO.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',1)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->where('PIO.status',1)->where('PIO.deleted_at','0000-00-00 00:00:00')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_return_item AS IT', 'IT.purchase_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','PR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 				
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_invoice_item AS IT', 'IT.sales_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_total AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											//->get();
 											
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_return_item AS IT', 'IT.sales_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
@@ -6700,7 +6700,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->get();
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -6711,45 +6711,45 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
 											);
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
 											);
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
@@ -6757,32 +6757,32 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
@@ -6807,17 +6807,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'partywise':
 				
 				//VAT INPUT...........
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')//->where('PI.is_import',0)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
@@ -6825,93 +6825,93 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 					
 											//->get();
 											
-				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->leftJoin('pi_other_cost AS PIO', 'PIO.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',1)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->where('PIO.status',1)->where('PIO.deleted_at','0000-00-00 00:00:00')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 									
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_return_item AS IT', 'IT.purchase_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','PR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
-				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_split_item AS IT', 'IT.purchase_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','PS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','PS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 						
 
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_invoice_item AS IT', 'IT.sales_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_total AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 											//->get();
 				
-				$query13 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query13 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_split_item AS IT', 'IT.sales_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','SS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','SS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 						
 													
 			
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_return_item AS IT', 'IT.sales_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
@@ -6920,7 +6920,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -6931,81 +6931,81 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type',DB::raw('"SR" AS tax_code'),
 											'PI.voucher_no','PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
 				
 				//VAT INPUT EXPENSE FROM PURCHASE NON STOCK.......
-				$query10 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query10 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -7016,11 +7016,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
@@ -7046,7 +7046,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no','SI.tax_code',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount',DB::raw('"SI" AS type'),'sales_invoice.net_total')
@@ -7061,16 +7061,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'detail':
 				
 				//VAT INPUT........... vat_amount vatinput_import
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->leftjoin('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PI')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -7082,16 +7082,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->groupBy('PI.id');
 											//->get();
 											
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -7102,16 +7102,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw("(SELECT purchase_return_item.tax_include FROM purchase_return_item WHERE purchase_return_item.purchase_return_id = PI.id LIMIT 1) AS tax_include"));//->groupBy('PI.id');
 													
 					
-				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_split_item AS IT', 'IT.purchase_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','PS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','PS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 											if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -7124,15 +7124,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								
 				
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -7144,15 +7144,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													)->groupBy('PI.id');
 											//->get();
 											
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 								
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7164,16 +7164,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													)->groupBy('PI.id');
 											//->get();
 											
-						$qry4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+						$qry4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 										//	->join('sales_split_item AS IT', 'IT.sales_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','SS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','SS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 										if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
 									$qry4->where('PI.department_id', $attributes['department_id']);	
@@ -7184,7 +7184,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -7195,11 +7195,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7210,18 +7210,18 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw('"0" AS tax_include'));
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7231,17 +7231,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','JE.description AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7253,15 +7253,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7272,15 +7272,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw("(SELECT purchase_invoice_item.tax_include FROM purchase_invoice_item WHERE purchase_invoice_item.purchase_invoice_id = PI.id LIMIT 1) AS tax_include"));//->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7292,7 +7292,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 													
 				//VAT INPUT EXPENSE FROM PURCHASE NON STOCK.......
-				$query10 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query10 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -7303,11 +7303,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7318,17 +7318,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw('"0" AS tax_include'));
 													
 				//VAT OUTPUT FROM SALES NON STOCK.......
-				$query11 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query11 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('journal AS PI', 'PI.id', '=', 'JE.journal_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','SIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7338,7 +7338,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 													
-				$query12 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query12 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -7349,11 +7349,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7363,18 +7363,18 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 													
-				$query13 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query13 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7384,17 +7384,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','JE.description AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 												
-				$query14 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query14 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -7405,16 +7405,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													DB::raw('"0" AS tax_include'));
 			
 			
-				$query15 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query15 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_rental AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PIR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
 											->where('PI.status',1)->where('PI.deleted_at',null)
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								/* if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -7424,16 +7424,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id',
 													DB::raw('"0" AS tax_include'));
 			
-			$query16 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+			$query16 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('rental_sales AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->where('AT.voucher_type','SIR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
 											->where('PI.status',1)->where('PI.deleted_at',null)
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								/* if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -7451,10 +7451,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->join('account_transaction AS AT', 'AT.account_master_id', '=', 'account_master.id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','ZR')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to));
 									$query17->select(DB::raw('"Vat Input ZR" AS vat_name') ,'account_master.transaction_type','purchase_invoice.vat_amount','purchase_invoice.document_type AS voucher_type','purchase_invoice.voucher_no','account_master.id AS acid','purchase_invoice.discount','purchase_invoice.subtotal','purchase_invoice.voucher_date',
 									'purchase_invoice.total AS gross_total','purchase_invoice.net_amount AS net_total','account_master.master_name','account_master.vat_no AS trn_no ','AT.transaction_type AS trtype','AT.id',	DB::raw('"0" AS tax_include'))
@@ -7467,10 +7467,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->join('account_transaction AS AT', 'AT.account_master_id', '=', 'account_master.id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','ZR')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to));
 												$query18->select(DB::raw('"Vat Output ZR" AS vat_name'),'account_master.transaction_type','sales_invoice.vat_amount','sales_invoice.document_type AS voucher_type','sales_invoice.voucher_no','account_master.id AS acid','sales_invoice.discount','sales_invoice.subtotal','sales_invoice.voucher_date',
 															 'sales_invoice.total AS gross_total','sales_invoice.net_total','account_master.master_name','account_master.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id',	DB::raw('"0" AS tax_include'))
@@ -7493,9 +7493,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7509,9 +7509,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7526,10 +7526,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 												->where('account_master.status',1)
 												->where('purchase_invoice.status',1)
-												->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+												->whereNull('purchase_invoice.deleted_at')
 												->where('purchase_invoice_item.status',1)
 												->where('purchase_invoice_item.tax_code','SR')
-												->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+												->whereNull('purchase_invoice_item.deleted_at')
 												->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 												->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 														 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7543,10 +7543,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 												->where('account_master.status',1)
 												->where('sales_invoice.status',1)
-												->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+												->whereNull('sales_invoice.deleted_at')
 												->where('sales_invoice_item.status',1)
 												->where('sales_invoice_item.tax_code','SR')
-												->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+												->whereNull('sales_invoice_item.deleted_at')
 												->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 												->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 														 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7562,10 +7562,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','RC')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7579,10 +7579,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','RC')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7597,10 +7597,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','ZR')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7614,10 +7614,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','ZR')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7632,10 +7632,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','EX')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7649,10 +7649,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','EX')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7669,10 +7669,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','SR')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7686,10 +7686,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','SR')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7742,10 +7742,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','RC')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7759,10 +7759,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','ZR')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7776,10 +7776,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','ZR')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7793,10 +7793,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','EX')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -7810,10 +7810,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','EX')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -7824,82 +7824,82 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'summary_taxcode':
 				
 				//VAT INPUT...........
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',0)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											//->get();
 											
-				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->leftJoin('pi_other_cost AS PIO', 'PIO.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',1)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->where('PIO.status',1)->where('PIO.deleted_at','0000-00-00 00:00:00')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_return_item AS IT', 'IT.purchase_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','PR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 				
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_invoice_item AS IT', 'IT.sales_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_total AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											//->get();
 											
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_return_item AS IT', 'IT.sales_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
@@ -7907,7 +7907,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->get();
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -7918,45 +7918,45 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
 											);
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
 											);
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
@@ -7964,32 +7964,32 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
@@ -8015,17 +8015,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'partywise':
 				
 				//VAT INPUT...........
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')//->where('PI.is_import',0)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
@@ -8033,32 +8033,32 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 					
 											//->get();
 											
-				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->leftJoin('pi_other_cost AS PIO', 'PIO.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',1)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->where('PIO.status',1)->where('PIO.deleted_at','0000-00-00 00:00:00')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 									
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_return_item AS IT', 'IT.purchase_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','PR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
@@ -8066,47 +8066,47 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_invoice_item AS IT', 'IT.sales_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_total AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 											//->get();
 				
-				$query13 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query13 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_split AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_split_item AS IT', 'IT.sales_split_id', '=', 'PI.id')
-										->where('AT.voucher_type','SS')	->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+										->where('AT.voucher_type','SS')	->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 						
 													
 			
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_return_item AS IT', 'IT.sales_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
@@ -8115,7 +8115,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -8126,81 +8126,81 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type',DB::raw('"SR" AS tax_code'),
 											'PI.voucher_no','PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no')->groupBy('PI.id');
 				
 				
 				//VAT INPUT EXPENSE FROM PURCHASE NON STOCK.......
-				$query10 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query10 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -8211,11 +8211,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no');
@@ -8241,7 +8241,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no','SI.tax_code',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount',DB::raw('"SI" AS type'),'sales_invoice.net_total')
@@ -8256,16 +8256,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'detail':
 				
 				//VAT INPUT........... vat_amount vatinput_import
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PI')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -8276,16 +8276,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->groupBy('PI.id');
 											//->get();
 											
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -8295,15 +8295,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id');//->groupBy('PI.id');
 				
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -8313,15 +8313,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.total AS gross_total','PI.net_total AS net_total','SP.master_name','SP.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id')->groupBy('PI.id');
 											//->get();
 											
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 								
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8332,7 +8332,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->get();
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -8343,11 +8343,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8357,18 +8357,18 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id');
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8377,17 +8377,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$query6->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','AM.id AS acid',DB::raw('"0" AS discount'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','JE.description AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id');
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8398,15 +8398,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8416,15 +8416,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id');//->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8434,7 +8434,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id');//->groupBy('PI.id');
 				
 				//VAT INPUT EXPENSE FROM PURCHASE NON STOCK.......
-				$query10 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query10 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -8445,11 +8445,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8459,17 +8459,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id');
 													
 				//VAT OUTPUT FROM SALES NON STOCK.......
-				$query11 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query11 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('journal AS PI', 'PI.id', '=', 'JE.journal_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','SIN')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SIN')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8478,7 +8478,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$query11->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','AM.id AS acid',DB::raw('"0" AS discount'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id');
 													
-				$query12 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query12 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -8489,11 +8489,11 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8502,18 +8502,18 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$query12->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','AM.id AS acid',DB::raw('"0" AS discount'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id');
 													
-				$query13 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query13 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8522,17 +8522,17 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$query13->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','AM.id AS acid',DB::raw('"0" AS discount'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','JE.description AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id');
 												
-				$query14 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query14 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								if(isset($attributes['department_id']) &&  $attributes['department_id']!='') 
@@ -8542,16 +8542,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no','AT.transaction_type AS trtype','AT.id');
 			
 			
-				$query15 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query15 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_rental AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->where('AT.voucher_type','PIR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
 											->where('PI.status',1)->where('PI.deleted_at',null)
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								/* if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -8560,16 +8560,16 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								$query15->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','AM.id AS acid','PI.discount',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no','AT.transaction_type AS trtype','AT.id');
 			
-			$query16 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+			$query16 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('rental_sales AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->where('AT.voucher_type','SIR')
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
 											->where('PI.status',1)->where('PI.deleted_at',null)
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to));
 											
 								/* if(isset($attributes['department_id']) && $attributes['department_id']!='') 
@@ -8594,9 +8594,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -8610,9 +8610,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -8627,10 +8627,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 												->where('account_master.status',1)
 												->where('purchase_invoice.status',1)
-												->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+												->whereNull('purchase_invoice.deleted_at')
 												->where('purchase_invoice_item.status',1)
 												->where('purchase_invoice_item.tax_code','SR')
-												->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+												->whereNull('purchase_invoice_item.deleted_at')
 												->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 												->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 														 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -8644,10 +8644,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 												->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 												->where('account_master.status',1)
 												->where('sales_invoice.status',1)
-												->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+												->whereNull('sales_invoice.deleted_at')
 												->where('sales_invoice_item.status',1)
 												->where('sales_invoice_item.tax_code','SR')
-												->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+												->whereNull('sales_invoice_item.deleted_at')
 												->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 												->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 														 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -8662,10 +8662,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('purchase_invoice.status',1)
-													->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice.deleted_at')
 													->where('purchase_invoice_item.status',1)
 													->where('purchase_invoice_item.tax_code','ZR')
-													->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('purchase_invoice_item.deleted_at')
 													->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -8679,10 +8679,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 													->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 													->where('account_master.status',1)
 													->where('sales_invoice.status',1)
-													->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice.deleted_at')
 													->where('sales_invoice_item.status',1)
 													->where('sales_invoice_item.tax_code','ZR')
-													->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+													->whereNull('sales_invoice_item.deleted_at')
 													->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 													->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 															 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -8699,10 +8699,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','SR')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -8716,10 +8716,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','SR')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -8772,10 +8772,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','RC')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -8789,10 +8789,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','ZR')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -8806,10 +8806,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','ZR')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -8823,10 +8823,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('purchase_invoice.status',1)
-											->where('purchase_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice.deleted_at')
 											->where('purchase_invoice_item.tax_code','EX')
 											->where('purchase_invoice_item.status',1)
-											->where('purchase_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('purchase_invoice_item.deleted_at')
 											->whereBetween('purchase_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','purchase_invoice.voucher_no','purchase_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','purchase_invoice.total','purchase_invoice.vat_amount','purchase_invoice.net_amount',
@@ -8840,10 +8840,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->leftJoin('area', 'area.id', '=', 'account_master.area_id')
 											->where('account_master.status',1)
 											->where('sales_invoice.status',1)
-											->where('sales_invoice.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice.deleted_at')
 											->where('sales_invoice_item.tax_code','EX')
 											->where('sales_invoice_item.status',1)
-											->where('sales_invoice_item.deleted_at','0000-00-00 00:00:00')
+											->whereNull('sales_invoice_item.deleted_at')
 											->whereBetween('sales_invoice.voucher_date', array($date_from, $date_to))
 											->select('account_master.master_name','account_master.vat_no','sales_invoice.voucher_no','sales_invoice.voucher_date','account_master.vat_no',
 													 'area.code','account_master.area_id','account_master.id','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.net_total',
@@ -8854,82 +8854,82 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			case 'summary_taxcode':
 				
 				//VAT INPUT...........
-				$query1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',0)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											//->get();
 											
-				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$qry1 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->leftJoin('pi_other_cost AS PIO', 'PIO.purchase_invoice_id', '=', 'PI.id')
 											->where('AT.voucher_type','PI')->where('PI.is_import',1)
-											->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->where('PIO.status',1)->where('PIO.deleted_at','0000-00-00 00:00:00')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											
-				$query2 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query2 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.collection_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_return_item AS IT', 'IT.purchase_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','PR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 				
 				//VAT OUTPUT................
-				$query3 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query3 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_invoice_item AS IT', 'IT.sales_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','SI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_total AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 											//->get();
 											
-				$query4 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query4 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.payment_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('sales_return AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.customer_id')
 											->join('sales_return_item AS IT', 'IT.sales_return_id', '=', 'PI.id')
-											->where('AT.voucher_type','SR')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','SR')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
@@ -8937,7 +8937,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->get();
 				
 				//VAT INPUT EXPENSES.......
-				$query5 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query5 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('journal_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
@@ -8948,45 +8948,45 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											 }) */
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','JV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','JV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
 											);
 				
 				
-				$query6 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query6 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('petty_cash_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('petty_cash AS PI', 'PI.id', '=', 'JE.petty_cash_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
 											//->where('JE.entry_type','Dr')
-											->where('AT.voucher_type','PC')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PC')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
 											);
 													
-				$query7 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query7 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.expense_account')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('payment_voucher_entry AS JE', 'JE.id', '=', 'AT.voucher_type_id')
 											->join('payment_voucher AS PI', 'PI.id', '=', 'JE.payment_voucher_id')
 											->join('account_master AS SP', 'SP.id', '=', 'JE.account_id')
-											->where('AT.voucher_type','PV')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
-											->where('JE.status',1)->where('JE.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PV')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
+											->where('JE.status',1)->whereNull('JE.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.debit AS gross_total','PI.debit AS net_total','PI.supplier_name AS master_name','PI.trn_no'
@@ -8994,32 +8994,32 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				
 				
 				//VAT INPUT IMPORT...........
-				$query8 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query8 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatinput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
 											)->groupBy('PI.id');
 				
 				//VAT OUTPUT IMPORT...........
-				$query9 = DB::table('vat_master')->where('vat_master.status',1)->where('vat_master.deleted_at','0000-00-00 00:00:00')
+				$query9 = DB::table('vat_master')->where('vat_master.status',1)->whereNull('vat_master.deleted_at')
 											->join('account_master AS AM', 'AM.id', '=', 'vat_master.vatoutput_import')
 											->join('account_transaction AS AT', 'AT.account_master_id', '=', 'AM.id')
 											->join('purchase_invoice AS PI', 'PI.id', '=', 'AT.voucher_type_id')
 											->join('account_master AS SP', 'SP.id', '=', 'PI.supplier_id')
 											->join('purchase_invoice_item AS IT', 'IT.purchase_invoice_id', '=', 'PI.id')
-											->where('AT.voucher_type','PI')->where('AT.status',1)->where('AT.deleted_at','0000-00-00 00:00:00')
-											->where('AM.status',1)->where('AM.deleted_at','0000-00-00 00:00:00')
-											->where('PI.status',1)->where('PI.deleted_at','0000-00-00 00:00:00')
-											->where('SP.status',1)->where('SP.deleted_at','0000-00-00 00:00:00')
+											->where('AT.voucher_type','PI')->where('AT.status',1)->whereNull('AT.deleted_at')
+											->where('AM.status',1)->whereNull('AM.deleted_at')
+											->where('PI.status',1)->whereNull('PI.deleted_at')
+											->where('SP.status',1)->whereNull('SP.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no','IT.tax_code',
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
@@ -9082,8 +9082,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								->where('account_transaction.voucher_type','!=','OBD')
 								->where('account_transaction.status',1)
 								->where('account_master.status',1)
-								->where('account_master.deleted_at','0000-00-00 00:00:00')
-								->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+								->whereNull('account_master.deleted_at')
+								->whereNull('account_transaction.deleted_at')
 								->where('account_transaction.invoice_date','<=',now())
 								->select('account_master.id','account_master.master_name','account_master.cl_balance','account_master.category',
 										 'account_transaction.transaction_type','account_transaction.amount','account_master.op_balance')
@@ -9096,8 +9096,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								->where('account_transaction.voucher_type','!=','OBD')
 								->where('account_transaction.status',1)
 								->where('account_master.status',1)
-								->where('account_master.deleted_at','0000-00-00 00:00:00')
-								->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+								->whereNull('account_master.deleted_at')
+								->whereNull('account_transaction.deleted_at')
 								->whereBetween('account_transaction.invoice_date',[$date->from_date, $date->to_date]) //[$date->from_date, $date->to_date]
 								->select('account_master.id','account_master.master_name','account_master.cl_balance','account_master.op_balance',
 										 'account_transaction.transaction_type','account_transaction.amount','account_master.category')
@@ -9169,9 +9169,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$query1 = DB::table('account_master')
 								->leftjoin('account_transaction', 'account_transaction.account_master_id', '=', 'account_master.id')
 								->where('account_master.status',1)
-								->where('account_master.deleted_at','0000-00-00 00:00:00')
+								->whereNull('account_master.deleted_at')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00');
+								->whereNull('account_transaction.deleted_at');
 								
 								
 						if($trim_zero)
@@ -9191,9 +9191,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$query1 = DB::table('account_master')
 								->join('account_transaction', 'account_transaction.account_master_id', '=', 'account_master.id')
 								->where('account_master.status',1)
-								->where('account_master.deleted_at','0000-00-00 00:00:00')
+								->whereNull('account_master.deleted_at')
 								->where('account_transaction.status',1)
-								->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+								->whereNull('account_transaction.deleted_at')
 								->whereBetween('account_transaction.invoice_date', array($date_from, $date_to));
 								
 						if($trim_zero)
@@ -9236,7 +9236,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('PDCI.deleted_at','=','0000-00-00 00:00:00');
 								})
 								->where('account_master.status',1)
-								->where('account_master.deleted_at','0000-00-00 00:00:00');
+								->whereNull('account_master.deleted_at');
 								
 						if($trim_zero)
 							$query1->where('account_master.cl_balance','!=',0);
@@ -9268,7 +9268,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 										->where('PDCI.voucher_date','>=',$date_to);
 								})
 								->where('account_master.status',1)
-								->where('account_master.deleted_at','0000-00-00 00:00:00');
+								->whereNull('account_master.deleted_at');
 				
 				if($trim_zero)
 						$query1->where('account_master.cl_balance','!=',0);
@@ -9836,7 +9836,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 							->join('sales_invoice_item', 'sales_invoice_item.sales_invoice_id', '=', 'sales_invoice.id')
 							->join('itemmaster', 'itemmaster.id', '=', 'sales_invoice_item.item_id')
 							->where('account_transaction.status',1)
-							->where('account_transaction.deleted_at', '0000-00-00 00:00:00')
+							->whereNull('account_transaction.deleted_at')
 							->where('account_master.id', $attributes['account_id'])
 							->where('account_transaction.voucher_type','=','SI')
 							->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
@@ -10075,7 +10075,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
@@ -10143,7 +10143,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
@@ -10183,7 +10183,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
@@ -10247,7 +10247,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->where('account_master.cl_balance','!=',0)
 									->where('account_transaction.voucher_type','!=','OBD')
 									->where('account_transaction.status',1)
-									->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+									->whereNull('account_transaction.deleted_at')
 									->where( function ($query) use ($date_from, $date_to) {
 										$query->whereBetween('account_transaction.invoice_date', array($date_from, $date_to))
 											  ->orWhere('account_transaction.voucher_type','OB');
