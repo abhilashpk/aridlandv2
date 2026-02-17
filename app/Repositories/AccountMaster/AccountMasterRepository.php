@@ -6494,9 +6494,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->join('journal_entry', 'journal_entry.journal_id', '=', 'journal.id')
 											->where('journal_entry.account_id', $vatmaster->expense_account)
 											->where('journal_entry.status', 1)
-											->where('journal_entry.deleted_at','0000-00-00 00:00:00')
+											->whereNull('journal_entry.deleted_at')
 											->where('journal.status',1)
-											->where('journal.deleted_at','0000-00-00 00:00:00')
+											->whereNull('journal.deleted_at')
 											//->where('journal.group_id', 33)
 											->select('journal.supplier_name AS master_name','journal.trn_no AS vat_no','journal.voucher_no','journal.voucher_date',
 													 'journal.debit AS total','journal_entry.amount AS vat_amount','journal.credit AS net_amount',DB::raw('"JV" AS type'))
@@ -7701,9 +7701,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->join('journal_entry', 'journal_entry.journal_id', '=', 'journal.id')
 											->where('journal_entry.account_id', $vatmaster->expense_account)
 											->where('journal_entry.status', 1)
-											->where('journal_entry.deleted_at','0000-00-00 00:00:00')
+											->whereNull('journal_entry.deleted_at')
 											->where('journal.status',1)
-											->where('journal.deleted_at','0000-00-00 00:00:00')
+											->whereNull('journal.deleted_at')
 											//->where('journal.group_id', 33)
 											->select('journal.supplier_name AS master_name','journal.trn_no AS vat_no','journal.voucher_no','journal.voucher_date',
 													 'journal.debit AS total','journal_entry.amount AS vat_amount','journal.credit AS net_amount',DB::raw('"JV" AS type'))
@@ -8731,9 +8731,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->join('journal_entry', 'journal_entry.journal_id', '=', 'journal.id')
 											->where('journal_entry.account_id', $vatmaster->expense_account)
 											->where('journal_entry.status', 1)
-											->where('journal_entry.deleted_at','0000-00-00 00:00:00')
+											->whereNull('journal_entry.deleted_at')
 											->where('journal.status',1)
-											->where('journal.deleted_at','0000-00-00 00:00:00')
+											->whereNull('journal.deleted_at')
 											//->where('journal.group_id', 33)
 											->select('journal.supplier_name AS master_name','journal.trn_no AS vat_no','journal.voucher_no','journal.voucher_date',
 													 'journal.debit AS total','journal_entry.amount AS vat_amount','journal.credit AS net_amount',DB::raw('"JV" AS type'))
@@ -8744,9 +8744,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->where('payment_voucher_entry.account_id', $vatmaster->expense_account)
 											//->where('payment_voucher.group_id', 33)
 											->where('payment_voucher_entry.status', 1)
-											->where('payment_voucher_entry.deleted_at','0000-00-00 00:00:00')
+											->whereNull('payment_voucher_entry.deleted_at')
 											->where('payment_voucher.status',1)
-											->where('payment_voucher.deleted_at','0000-00-00 00:00:00')
+											->whereNull('payment_voucher.deleted_at')
 											->select('payment_voucher.supplier_name AS master_name','payment_voucher.trn_no AS vat_no','payment_voucher.voucher_no','payment_voucher.voucher_date',
 													 'payment_voucher.debit AS total','payment_voucher_entry.amount AS vat_amount','payment_voucher.credit AS net_amount',DB::raw('"PV" AS type'))
 											->orderBy('payment_voucher.id','ASC');
@@ -8757,8 +8757,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->where('petty_cash.status',1)
 											//->where('petty_cash.group_id', 33)
 											->where('petty_cash_entry.status', 1)
-											->where('petty_cash_entry.deleted_at','0000-00-00 00:00:00')
-											->where('petty_cash.deleted_at','0000-00-00 00:00:00')
+											->whereNull('petty_cash_entry.deleted_at')
+											->whereNull('petty_cash.deleted_at')
 											->select('petty_cash.supplier_name AS master_name','petty_cash.trn_no AS vat_no','petty_cash.voucher_no','petty_cash.voucher_date',
 													 'petty_cash.debit AS total','petty_cash_entry.amount AS vat_amount','petty_cash.credit AS net_amount',DB::raw('"PC" AS type'))
 											->orderBy('petty_cash.id','ASC');
@@ -8882,7 +8882,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->where('AM.status',1)->whereNull('AM.deleted_at')
 											->where('PI.status',1)->whereNull('PI.deleted_at')
 											->where('SP.status',1)->whereNull('SP.deleted_at')
-											->where('PIO.status',1)->where('PIO.deleted_at','0000-00-00 00:00:00')
+											->where('PIO.status',1)->whereNull('PIO.deleted_at')
 											->whereBetween('PI.voucher_date', array($date_from, $date_to))
 											->select('AM.master_name AS vat_name','AM.transaction_type','AT.amount AS vat_amount','AT.voucher_type','PI.voucher_no',DB::raw('"SR" AS tax_code'),
 													'PI.voucher_date','PI.total AS gross_total','PI.net_amount AS net_total','SP.master_name','SP.vat_no AS trn_no'
@@ -9228,12 +9228,12 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								->leftJoin('pdc_received AS PDCR', function($join){
 										$join->on('PDCR.customer_id','=','account_master.id')
 										->where('PDCR.status','=',0)
-										->where('PDCR.deleted_at','=','0000-00-00 00:00:00');
+										->whereNull('PDCR.deleted_at');
 								})
 								->leftJoin('pdc_issued AS PDCI', function($join){
 										$join->on('PDCI.supplier_id','=','account_master.id')
 										->where('PDCI.status','=',0)
-										->where('PDCI.deleted_at','=','0000-00-00 00:00:00');
+										->whereNull('PDCI.deleted_at');
 								})
 								->where('account_master.status',1)
 								->whereNull('account_master.deleted_at');
@@ -9256,14 +9256,14 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								->leftJoin('pdc_received AS PDCR', function($join) use($date_from,$date_to){
 										$join->on('PDCR.customer_id','=','account_master.id')
 										->where('PDCR.status','=',0)
-										->where('PDCR.deleted_at','=','0000-00-00 00:00:00')
+										->whereNull('PDCR.deleted_at')
 										->where('PDCR.voucher_date','<=',$date_from)
 										->where('PDCR.voucher_date','>=',$date_to);
 								})
 								->leftJoin('pdc_issued AS PDCI', function($join) use($date_from,$date_to){
 										$join->on('PDCI.supplier_id','=','account_master.id')
 										->where('PDCI.status','=',0)
-										->where('PDCI.deleted_at','=','0000-00-00 00:00:00')
+										->whereNull('PDCI.deleted_at')
 										->where('PDCI.voucher_date','<=',$date_from)
 										->where('PDCI.voucher_date','>=',$date_to);
 								})
@@ -9352,93 +9352,215 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 		
 	}
 	
+	// public function ajaxCreate($attributes)
+	// {
+		
+	// 	DB::beginTransaction();
+	// 	try { 
+			
+	// 		/* $check = $this->accountmaster->where('master_name', $attributes['master_name'])
+	// 		                            ->where('phone', $attributes['phone'])
+	// 		                             ->where('status',1)->count();
+	// 	    $checkp = $this->accountmaster ->where('phone', $attributes['phone'])
+	// 									  ->where('status',1)->count();							 
+	// 		if($check > 0 || $checkp>0)
+	// 			return 0; */
+			
+	// 		// $check = $this->accountmaster->where('master_name', $attributes['master_name'])->where('status',1)->whereNull('deleted_at')->count();
+	// 		$check = $this->accountmaster
+	// 			->where('master_name', $attributes['master_name'])
+	// 			->where('department_id', Auth::user()->department_id)
+	// 			->where('status',1)
+	// 			->whereNull('deleted_at')
+	// 			->count();
+			
+	// 		if ($check > 0) {
+	// 			DB::rollback();
+	// 			return 0;
+	// 		}
+			
+	// 		$group = DB::table('account_group')->where('category', $attributes['category'])
+	// 										->where('status',1)
+	// 										->whereNull('deleted_at')
+	// 										->select('id','category_id')
+	// 										->first();
+	// 		 	if(!$group) {
+	// 				DB::rollback();
+	// 				return -2; // Group not found
+	// 			}
+
+	// 		$settings = DB::table('parameter1')->select('from_date','to_date')->first();
+			
+	// 		//$this->accountmaster->account_id = $attributes['account_id'];//$code;
+	// 		$this->accountmaster->master_name = $attributes['master_name'];
+	// 		$this->accountmaster->account_category_id = $group->category_id;
+	// 		$this->accountmaster->account_group_id = $group->id;
+	// 		$this->accountmaster->transaction_type = ($attributes['category']=='CUSTOMER')?'Dr':'Cr';
+	// 		$this->accountmaster->address = $attributes['address'];
+	// 		$this->accountmaster->country_id = $attributes['country_id'];
+	// 		$this->accountmaster->area_id = $attributes['area_id'] ?? null;
+	// 		$this->accountmaster->phone = $attributes['phone'];
+	// 		$this->accountmaster->email = isset($attributes['email'])?$attributes['email']:'';
+	// 		$this->accountmaster->contact_name = isset($attributes['contact_name'])?$attributes['contact_name']:'';
+	// 		$this->accountmaster->salesman_id = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
+	// 		$this->accountmaster->credit_limit = isset($attributes['credit_limit'])?$attributes['credit_limit']:'';
+	// 		$this->accountmaster->duedays = isset($attributes['duedays'])?$attributes['duedays']:'';
+	// 		$this->accountmaster->terms_id = isset($attributes['terms_id'])?$attributes['terms_id']:'';
+	// 		$this->accountmaster->vat_no = $attributes['vat_no'];
+	// 		$this->accountmaster->created_at = now();
+	// 		$this->accountmaster->created_by = Auth::User()->id;
+	// 		$this->accountmaster->status = 1;
+	// 		$this->accountmaster->category = $attributes['category'];
+	// 		$this->accountmaster->department_id = Auth::user()->department_id ?? 0; // user department
+	// 		// $this->accountmaster->fill($attributes)->save();
+	// 		$this->accountmaster->save();
+			
+	// 		DB::table('account_transaction')
+	// 					->insert([  'voucher_type' 		=> 'OB',
+	// 								'voucher_type_id'   => $this->accountmaster->id,
+	// 								'account_master_id' => $this->accountmaster->id,
+	// 								'transaction_type'  => ($attributes['category']=='CUSTOMER')?'Dr':'Cr',
+	// 								'amount'   			=> 0,
+	// 								'status' 			=> 1,
+	// 								'created_at' 		=> now(),
+	// 								'created_by' 		=> Auth::User()->id,
+	// 								'description' 		=> '',
+	// 								'reference'			=> '',
+	// 								'invoice_date'		=> $settings->from_date,
+	// 								'department_id'		=> Auth::user()->department_id ?? 0 // user department
+	// 							]);
+			
+	// 		DB::table('account_master')->where('id', $this->accountmaster->id)->update(['account_id' => 'ACM'.$this->accountmaster->id]);
+			
+	// 		DB::commit();
+	// 		return $this->accountmaster->id;
+			
+	// 	} catch(\Exception $e) {
+				
+	// 		DB::rollback(); return $e->getLine().' '.$e->getMessage();exit;
+	// 		return -1;
+	// 	}
+	// }
+
+
 	public function ajaxCreate($attributes)
 	{
-		
 		DB::beginTransaction();
-		try { 
-			
-			/* $check = $this->accountmaster->where('master_name', $attributes['master_name'])
-			                            ->where('phone', $attributes['phone'])
-			                             ->where('status',1)->count();
-		    $checkp = $this->accountmaster ->where('phone', $attributes['phone'])
-										  ->where('status',1)->count();							 
-			if($check > 0 || $checkp>0)
-				return 0; */
-			
-			// $check = $this->accountmaster->where('master_name', $attributes['master_name'])->where('status',1)->whereNull('deleted_at')->count();
+		try {
 			$check = $this->accountmaster
 				->where('master_name', $attributes['master_name'])
 				->where('department_id', Auth::user()->department_id)
-				->where('status',1)
+				->where('status', 1)
 				->whereNull('deleted_at')
 				->count();
-			
+
 			if ($check > 0) {
 				DB::rollback();
 				return 0;
 			}
-			
-			$group = DB::table('account_group')->where('category', $attributes['category'])
-											->where('status',1)
-											->whereNull('deleted_at')
-											->select('id','category_id')
-											->first();
-			 	if(!$group) {
-					DB::rollback();
-					return -2; // Group not found
-				}
 
-			$settings = DB::table('parameter1')->select('from_date','to_date')->first();
-			
-			//$this->accountmaster->account_id = $attributes['account_id'];//$code;
-			$this->accountmaster->master_name = $attributes['master_name'];
+			$group = DB::table('account_group')
+				->where('category', $attributes['category'])
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->select('id', 'category_id')
+				->first();
+
+			if (!$group) {
+				DB::rollback();
+				return -2;
+			}
+
+			$settings = DB::table('parameter1')->select('from_date', 'to_date')->first();
+
+			// ── Core identity ──────────────────────────────────────────────
+			$this->accountmaster->master_name         = $attributes['master_name'];
 			$this->accountmaster->account_category_id = $group->category_id;
-			$this->accountmaster->account_group_id = $group->id;
-			$this->accountmaster->transaction_type = ($attributes['category']=='CUSTOMER')?'Dr':'Cr';
-			$this->accountmaster->address = $attributes['address'];
-			$this->accountmaster->country_id = $attributes['country_id'];
-			$this->accountmaster->area_id = $attributes['area_id'] ?? null;
-			$this->accountmaster->phone = $attributes['phone'];
-			$this->accountmaster->email = isset($attributes['email'])?$attributes['email']:'';
-			$this->accountmaster->contact_name = isset($attributes['contact_name'])?$attributes['contact_name']:'';
-			$this->accountmaster->salesman_id = isset($attributes['salesman_id'])?$attributes['salesman_id']:'';
-			$this->accountmaster->credit_limit = isset($attributes['credit_limit'])?$attributes['credit_limit']:'';
-			$this->accountmaster->duedays = isset($attributes['duedays'])?$attributes['duedays']:'';
-			$this->accountmaster->terms_id = isset($attributes['terms_id'])?$attributes['terms_id']:'';
-			$this->accountmaster->vat_no = $attributes['vat_no'];
-			$this->accountmaster->created_at = now();
-			$this->accountmaster->created_by = Auth::User()->id;
-			$this->accountmaster->status = 1;
-			$this->accountmaster->category = $attributes['category'];
-			$this->accountmaster->department_id = Auth::user()->department_id ?? 0; // user department
-			// $this->accountmaster->fill($attributes)->save();
+			$this->accountmaster->account_group_id    = $group->id;
+			$this->accountmaster->transaction_type    = ($attributes['category'] == 'CUSTOMER') ? 'Dr' : 'Cr';
+			$this->accountmaster->category            = $attributes['category'];
+
+			// ── Contact & address ─────────────────────────────────────────
+			$this->accountmaster->address      = $attributes['address']      ?? '';
+			$this->accountmaster->city         = $attributes['city']         ?? '';
+			$this->accountmaster->state        = $attributes['state']        ?? '';
+			$this->accountmaster->pin          = $attributes['pin']          ?? '';
+			$this->accountmaster->phone        = $attributes['phone']        ?? '';
+			$this->accountmaster->fax          = $attributes['fax']          ?? '';
+			$this->accountmaster->email        = $attributes['email']        ?? '';
+			$this->accountmaster->contact_name = $attributes['contact_name'] ?? '';
+			$this->accountmaster->reference    = $attributes['reference']    ?? '';
+			$this->accountmaster->vat_no       = $attributes['vat_no']       ?? '';
+			$this->accountmaster->country_id   = $attributes['country_id']   ?? null;
+			$this->accountmaster->area_id      = $attributes['area_id']      ?? null;
+
+			// ── Financial settings ────────────────────────────────────────
+			$this->accountmaster->currency_id  = $attributes['currency_id']  ?? $settings->currency_id ?? null;
+			$this->accountmaster->salesman_id  = $attributes['salesman_id']  ?? null;
+			$this->accountmaster->terms_id     = $attributes['terms_id']     ?? null;
+			$this->accountmaster->credit_limit = $attributes['credit_limit'] ?? 0;
+			$this->accountmaster->duedays      = $attributes['duedays']      ?? 0;
+
+			// ── Balance columns — all default to 0 ───────────────────────
+			$this->accountmaster->op_balance   = $attributes['op_balance']   ?? 0;
+			$this->accountmaster->cl_balance   = $attributes['cl_balance']   ?? 0;
+			$this->accountmaster->fcop_balance = $attributes['fcop_balance'] ?? 0;
+			$this->accountmaster->fy_balance   = $attributes['fy_balance']   ?? 0;
+			$this->accountmaster->pdc_amount   = $attributes['pdc_amount']   ?? 0;
+
+			// ── Tinyint flags — all default to 0 ─────────────────────────
+			$this->accountmaster->job_assign     = $attributes['job_assign']     ?? 0;
+			$this->accountmaster->job_compulsary = $attributes['job_compulsary'] ?? 0;
+			$this->accountmaster->is_hide        = $attributes['is_hide']        ?? 0;
+			$this->accountmaster->non_edit       = $attributes['non_edit']       ?? 0;
+			$this->accountmaster->vat_assign     = $attributes['vat_assign']     ?? 0;
+			$this->accountmaster->vat_percentage = $attributes['vat_percentage'] ?? 0;
+			$this->accountmaster->listorder      = $attributes['listorder']      ?? '';
+
+			// ── Passport / nationality (if applicable) ────────────────────
+			$this->accountmaster->passport_no  = $attributes['passport_no']  ?? '';
+			$this->accountmaster->passport_exp = $attributes['passport_exp'] ?? null;
+			$this->accountmaster->nationality  = $attributes['nationality']  ?? '';
+			$this->accountmaster->ac_no        = $attributes['ac_no']        ?? '';
+
+			// ── Audit columns — NOT NULL in schema, must always be set ────
+			$this->accountmaster->created_by   = Auth::user()->id;
+			$this->accountmaster->created_at   = now();
+			$this->accountmaster->modify_by    = 0;   // no modifier yet
+			$this->accountmaster->modified_at  = now(); // required NOT NULL
+			$this->accountmaster->deleted_by   = 0;   // required NOT NULL
+			$this->accountmaster->status       = 1;
+			$this->accountmaster->department_id = Auth::user()->department_id ?? 0;
+
 			$this->accountmaster->save();
-			
-			DB::table('account_transaction')
-						->insert([  'voucher_type' 		=> 'OB',
-									'voucher_type_id'   => $this->accountmaster->id,
-									'account_master_id' => $this->accountmaster->id,
-									'transaction_type'  => ($attributes['category']=='CUSTOMER')?'Dr':'Cr',
-									'amount'   			=> 0,
-									'status' 			=> 1,
-									'created_at' 		=> now(),
-									'created_by' 		=> Auth::User()->id,
-									'description' 		=> '',
-									'reference'			=> '',
-									'invoice_date'		=> $settings->from_date,
-									'department_id'		=> Auth::user()->department_id ?? 0 // user department
-								]);
-			
-			DB::table('account_master')->where('id', $this->accountmaster->id)->update(['account_id' => 'ACM'.$this->accountmaster->id]);
-			
+
+			// ── Set account_id after we have the PK ───────────────────────
+			DB::table('account_master')
+				->where('id', $this->accountmaster->id)
+				->update(['account_id' => 'ACM' . $this->accountmaster->id]);
+
+			// ── Opening balance transaction ───────────────────────────────
+			DB::table('account_transaction')->insert([
+				'voucher_type'      => 'OB',
+				'voucher_type_id'   => $this->accountmaster->id,
+				'account_master_id' => $this->accountmaster->id,
+				'transaction_type'  => ($attributes['category'] == 'CUSTOMER') ? 'Dr' : 'Cr',
+				'amount'            => 0,
+				'status'            => 1,
+				'created_at'        => now(),
+				'created_by'        => Auth::user()->id,
+				'description'       => '',
+				'reference'         => '',
+				'invoice_date'      => $settings->from_date,
+				'department_id'     => Auth::user()->department_id ?? 0,
+			]);
+
 			DB::commit();
 			return $this->accountmaster->id;
-			
-		} catch(\Exception $e) {
-				
-			DB::rollback(); return $e->getLine().' '.$e->getMessage();exit;
-			return -1;
+
+		} catch (\Exception $e) {
+			DB::rollback();
+			return $e->getLine() . ' ' . $e->getMessage();
 		}
 	}
 	
@@ -10007,7 +10129,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 							$join->on('IL.item_id','=','itemmaster.id');
 						} )
 						->where('IL.status',1)
-						->where('IL.deleted_at','0000-00-00 00:00:00')
+						->whereNull('IL.deleted_at')
 						->where('u.is_baseqty','=',1);
 		
 		$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
@@ -10043,7 +10165,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 							$join->on('IL.item_id','=','itemmaster.id');
 						} )
 						->where('IL.status',1)
-						->where('IL.deleted_at','0000-00-00 00:00:00')
+						->whereNull('IL.deleted_at')
 						->where('u.is_baseqty','=',1);
 		
 		$query->whereBetween('IL.voucher_date', array($date_from, $date_to));
@@ -10293,13 +10415,13 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$join->on('account_transaction.voucher_type_id', '=', 'pdc_received.id');
 									$join->where('account_transaction.voucher_type', '=', 'DB');
 									$join->where('account_transaction.status', '=', 1);
-									$join->where('account_transaction.deleted_at', '=', '0000-00-00 00:00:00');
+									$join->whereNull('account_transaction.deleted_at');
 									//$join->where('account_transaction.voucher_type_id', '=', 'pdc_received.id');
 								})
 								//->where('pdc_received.status',0)
 								->where('pdc_received.cr_account_id',$data->acid)
 								->where('pdc_received.amount','>',0)
-								->where('pdc_received.deleted_at','0000-00-00 00:00:00')
+								->whereNull('pdc_received.deleted_at')
 								->where('pdc_received.voucher_date', '<=', $date_to)
 								//->whereBetween('pdc_received.voucher_date', array($date_from, $date_to))
 								->select('account_transaction.id','account_transaction.invoice_date','pdc_received.voucher_date','pdc_received.voucher_no','pdc_received.amount','pdc_received.cheque_date','pdc_received.cheque_no','pdc_received.status',
@@ -10317,13 +10439,13 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									$join->on('account_transaction.voucher_type_id', '=', 'pdc_issued.id');
 									$join->where('account_transaction.voucher_type', '=', 'CB');
 									$join->where('account_transaction.status', '=', 1);
-									$join->where('account_transaction.deleted_at', '=', '0000-00-00 00:00:00');
+									$join->whereNull('account_transaction.deleted_at');
 									//$join->where('account_transaction.voucher_type_id', '=', 'pdc_received.id');
 								})
 								//->where('pdc_received.status',0)
 								->where('pdc_issued.dr_account_id',$data->acid)
 								->where('pdc_issued.amount','>',0)
-								->where('pdc_issued.deleted_at','0000-00-00 00:00:00')
+								->whereNull('pdc_issued.deleted_at')
 								->where('pdc_issued.voucher_date', '<=', $date_to)//->whereBetween('pdc_issued.voucher_date', array($date_from, $date_to))
 								//->where('account_transaction.invoice_date', '<=', $date_to)
 								->select('account_transaction.id','account_transaction.invoice_date','pdc_issued.voucher_date','pdc_issued.voucher_no','pdc_issued.amount',

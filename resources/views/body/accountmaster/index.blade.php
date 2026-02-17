@@ -572,6 +572,7 @@ $(function() {
 				  console.log('Response:', data); 
 					if(data > 0) {
 						$('#sucessmsg').toggle();
+						 location.reload();
 					} else if(data == 0){
 						$('#addressDtls').toggle();
 						alert('Customer name already exist!');

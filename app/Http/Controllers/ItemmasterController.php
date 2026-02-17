@@ -100,6 +100,7 @@ class ItemmasterController extends Controller
 		}
 		return $arr;
 	}
+	
 	public function ajaxgetItem(Request $request)
 	{
 		$columns = array( 
