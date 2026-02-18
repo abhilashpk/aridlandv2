@@ -1169,16 +1169,16 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 
 					//VOUCHER NO LOGIC.....................
 					// 2️⃣ Get the highest numeric part from voucher_master
-					$maxNumeric = DB::table('payment_voucher')
-						->where('deleted_at', '0000-00-00 00:00:00')
-						->where('department_id', auth()->user()->department_id ?? 1)
-						->where('status', 1)
-						->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
-						->value('max_no');
-					
-					$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
-					$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
-					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+						$maxNumeric = DB::table('payment_voucher')
+							->whereNull('deleted_at')
+							->where('department_id', auth()->user()->department_id ?? 1)
+							->where('status', 1)
+							->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+							->value('max_no');
+						
+						$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
+						$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->whereNull('deleted_at')->first();//echo '<pre>';print_r($accset);
+						$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 					//VOUCHER NO LOGIC.....................
 					//exit;
 					//exit;
@@ -1202,18 +1202,19 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 						} catch (\Illuminate\Database\QueryException $ex) {
 
 							// Check if it's a duplicate voucher number error
-							if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
-								strpos($ex->getMessage(), 'duplicate key value') !== false) {
-									$maxNumeric = DB::table('payment_voucher')
-									->where('deleted_at', '0000-00-00 00:00:00')
-									->where('department_id', auth()->user()->department_id ?? 1)
-									->where('status', 1)
-									->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
-									->value('max_no');
-								
-								$dept = auth()->user()->department_id ?? 1;//isset($attributes['department_id'])?$attributes['department_id']:0;
-								$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->first();
-								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+								if (strpos($ex->getMessage(), 'Duplicate entry') !== false ||
+									strpos($ex->getMessage(), 'duplicate key value') !== false) {
+										$maxNumeric = DB::table('payment_voucher')
+										->whereNull('deleted_at')
+										->where('department_id', auth()->user()->department_id ?? 1)
+										->where('status', 1)
+										->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+										->value('max_no');
+									
+									$dept = auth()->user()->department_id ?? 1;//isset($attributes['department_id'])?$attributes['department_id']:0;
+									$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->whereNull('deleted_at')->first();
+									// Duplicate manual voucher: fallback to auto next voucher number.
+									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, null, $attributes['prefix']);
 
 								$retryCount++;
 							} else {
@@ -1910,8 +1911,12 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				DB::table('account_transaction')->where('voucher_type', 'OB')->where('department_id', auth()->user()->department_id ?? 1)->where('voucher_type_id', $account_id)->where('account_master_id',$account_id)->update(['amount' => 0]);
 			}
 					
-			DB::table('payment_voucher')->where('id', $id)->update(['deleted_by' => Auth::User()->id   ]);
-			$this->payment_voucher->delete();
+				DB::table('payment_voucher')->where('id', $id)->update([
+					'status' => 0,
+					'deleted_at' => date('Y-m-d H:i:s'),
+					'deleted_by' => Auth::User()->id
+				]);
+				$this->payment_voucher->delete();
 		
 			DB::commit();
 			return true;
@@ -2682,16 +2687,16 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 				$id = $pdcs->id;
 				DB::table('pdc_issued')->where('id',$id)->where('department_id',auth()->user()->department_id ?? 1)->update(['status' => 1,'dr_bank_id' => $trnarr['crid'][$key], 'voucher_date' => date('Y-m-d', strtotime($trnarr['vdate'])) ]); //JL27
 				
-				$trans = DB::table('account_transaction')
-									->where('voucher_type', 'CB')
-									->where('voucher_type_id', $id)
-									->where('status',1)
-									->where('department_id', auth()->user()->department_id ?? 1)
-									->where('deleted_at','0000-00-00 00:00:00')
-									->get();
-				if($trans) {
-					if($this->setAccountTransactionReSubmit($id, $trnarr, 'Cr', $key))
-						$this->setAccountTransactionReSubmit($id, $trnarr, 'Dr', $key);
+					$trans = DB::table('account_transaction')
+										->where('voucher_type', 'CB')
+										->where('voucher_type_id', $id)
+										->where('status',1)
+										->where('department_id', auth()->user()->department_id ?? 1)
+										->where('deleted_at','0000-00-00 00:00:00')
+										->get();
+					if($trans && $trans->count() > 0) {
+						if($this->setAccountTransactionReSubmit($id, $trnarr, 'Cr', $key))
+							$this->setAccountTransactionReSubmit($id, $trnarr, 'Dr', $key);
 					
 				} else {
 					if($this->setAccountTransaction($id, $trnarr, 'Cr', $key))
@@ -2700,23 +2705,24 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 			}
 			
 			//update PDC transfer status.......
-			if($id) {
+			if($id && isset($pdcs->voucher_id)) {
+				$sourceVoucherId = $pdcs->voucher_id;
 				if($trnarr['vtype'][$key]=="PDCI") {
 					
 					 DB::table('payment_voucher')
-						->where('id', $val)
+						->where('id', $sourceVoucherId)
 						->update(['is_transfer' => 1]);
 						
 				} else if($trnarr['vtype'][$key]=="JV") {
 					
 					 DB::table('journal')
-						 ->where('id', $val)
+						 ->where('id', $sourceVoucherId)
 						 ->update(['is_transfer' => 1]);
 						 
 				} else if($trnarr['vtype'][$key]=="OBD") {
 					
 					 DB::table('opening_balance_tr')
-						 ->where('id', $val)
+						 ->where('id', $sourceVoucherId)
 						 ->update(['amount_transfer' => 1]);
 				}
 			}
@@ -2788,6 +2794,7 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 	{
 		$account_master_id = ($type=='Cr')?$trans['crid'][$key]:$trans['drid'][$key];
 		$description = ($type=='Dr')?$trans['cname'][$key]:'';
+		$versionNo = isset($trans['version_no']) ? (int)$trans['version_no'] : 1;
 		
 		$status = (isset($trans['status']))?$trans['status']:1;
 		if(isset($trans['status']) && $trans['status']==0) {
@@ -2807,12 +2814,12 @@ class PaymentVoucherRepository extends AbstractValidator implements PaymentVouch
 							'status' 			=> $status,
 							'created_at' 		=> date('Y-m-d H:i:s'),
 							'created_by' 		=> Auth::User()->id,
-							'description'		=> $description,
-							'reference'			=> $trans['id'][$key],
-							'invoice_date'		=> date('Y-m-d', strtotime($trans['vdate'])),
-							'reference_from'	=> $trans['ref'][$key],
-							'version_no'		=> $attributes['version_no']
-						]);
+								'description'		=> $description,
+								'reference'			=> $trans['id'][$key],
+								'invoice_date'		=> date('Y-m-d', strtotime($trans['vdate'])),
+								'reference_from'	=> $trans['ref'][$key],
+								'version_no'		=> $versionNo
+							]);
 						
 		if($type=='Dr') {
 			$this->objUtility->tallyClosingBalance( $trans['drid'][$key] );

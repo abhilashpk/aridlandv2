@@ -43,6 +43,11 @@
 			<p>{{ Session::get('message') }}</p>
 		</div>
 		@endif
+		@if(Session::has('error'))
+		<div class="alert alert-danger">
+			<p>{{ Session::get('error') }}</p>
+		</div>
+		@endif
 		
         <section class="content">
             <div class="row">
@@ -53,11 +58,11 @@
                             <i class="fa fa-fw fa-list-alt"></i> Role List
                         </h3>
                         <div class="pull-right">
-                            <!--<a href="{{ url('user/add') }}" class="btn btn-primary btn-sm">
-									<span class="btn-label">
-									<i class="glyphicon glyphicon-plus"></i>
-								</span> Add New
-							</a>-->
+                            <a href="{{ route('roles.create') }}" class="btn btn-primary btn-sm">
+                                <span class="btn-label">
+                                    <i class="glyphicon glyphicon-plus"></i>
+                                </span> Add New
+                            </a>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -69,8 +74,10 @@
 										<th>Name</th>
 										<th>Description</th>
 										<th>View Permission</th>
-										<th></th>
-										<th></th>
+										<th>Users Assigned</th>
+										@can('role-delete')
+										<th>Action</th>
+										@endcan
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -88,17 +95,25 @@
 											
 										</td>
 										<td>
-											<!--<p>
-												<button class="btn btn-primary btn-xs" onClick="location.href='{{ url('user/edit/'.$role->id) }}'">
-												<span class="glyphicon glyphicon-pencil"></span></button>
-											</p>-->
+											{{ $role->assigned_users_count }}
 										</td>
+										@can('role-delete')
 										<td>
-											<!--<p>
-												<button class="btn btn-danger btn-xs delete" onClick="funDelete('{{ $role->id }}')"><span
-															class="glyphicon glyphicon-trash"></span></button>
-											</p>-->
+											@if($role->assigned_users_count === 0)
+												<form action="{{ route('roles.destroy', $role->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this role?');">
+													@csrf
+													@method('DELETE')
+													<button type="submit" class="btn btn-danger btn-xs">
+														<span class="glyphicon glyphicon-trash"></span> Delete
+													</button>
+												</form>
+											@else
+												<button type="button" class="btn btn-default btn-xs" disabled>
+													Assigned
+												</button>
+											@endif
 										</td>
+										@endcan
                                     </tr>
 									@endforeach
                                     </tbody>
@@ -124,15 +139,5 @@
 <script type="text/javascript" src="{{asset('assets/vendors/iCheck/js/icheck.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/vendors/bootstrap-fileinput/js/fileinput.min.js')}}"></script>
 <!-- end of page level js -->
-<script>
-
-function funDelete(id) {
-	var con = confirm('Are you sure delete this user?');
-	if(con==true) {
-		var url = "{{ url('user/delete/') }}";
-	 location.href = url+'/'+id;
-	}
-}
-</script>
 
 @stop

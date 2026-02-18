@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
-use App\Permission;
+use App\Models\User;
+use Spatie\Permission\Models\Permission;
 use DB;
 
 
@@ -18,7 +19,23 @@ class RoleController extends Controller
      */
     public function index(Request $request)
     {
-        $roles = Role::orderBy('id','DESC')->paginate(50); //echo '<pre>';print_r($roles);exit;
+        $roles = Role::orderBy('id','DESC')->paginate(50);
+        $roleIds = $roles->pluck('id')->all();
+        $assignedCounts = [];
+        if (!empty($roleIds)) {
+            $assignedCounts = DB::table('model_has_roles')
+                ->select('role_id', DB::raw('COUNT(*) AS total'))
+                ->whereIn('role_id', $roleIds)
+                ->whereIn('model_type', [User::class, 'App\\User'])
+                ->groupBy('role_id')
+                ->pluck('total', 'role_id')
+                ->toArray();
+        }
+
+        foreach ($roles as $role) {
+            $role->assigned_users_count = (int)($assignedCounts[$role->id] ?? 0);
+        }
+
         return view('body.roles.index',compact('roles'))
             ->with('i', ($request->input('page', 1) - 1) * 5);
     }
@@ -31,8 +48,8 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $permission = Permission::get();
-        return view('roles.create',compact('permission'));
+        $permission = Permission::orderBy('display_name')->get();
+        return view('body.roles.create', compact('permission'));
     }
 
 
@@ -47,25 +64,27 @@ class RoleController extends Controller
         $this->validate($request, [
             'name' => 'required|unique:roles,name',
             'display_name' => 'required',
-            'description' => 'required',
-            'permission' => 'required',
+            'description' => 'nullable',
+            'permission' => 'nullable|array',
         ]);
 
 
         $role = new Role();
         $role->name = $request->input('name');
+        $role->guard_name = 'web';
         $role->display_name = $request->input('display_name');
         $role->description = $request->input('description');
         $role->save();
 
 
-        foreach ($request->input('permission') as $key => $value) {
-            $role->attachPermission($value);
+        $permissionIds = $request->input('permission', []);
+        if (!empty($permissionIds)) {
+            $role->syncPermissions($permissionIds);
         }
 
 
         return redirect()->route('roles.index')
-                        ->with('success','Role created successfully');
+                        ->with('message','Role created successfully');
     }
     /**
      * Display the specified resource.
@@ -147,8 +166,19 @@ class RoleController extends Controller
      */
     public function destroy($id)
     {
-        DB::table("roles")->where('id',$id)->delete();
+        $role = Role::findOrFail($id);
+        $assignedUsers = DB::table('model_has_roles')
+            ->where('role_id', $role->id)
+            ->whereIn('model_type', [User::class, 'App\\User'])
+            ->count();
+
+        if ($assignedUsers > 0) {
+            return redirect()->route('roles.index')
+                            ->with('error', 'Cannot delete role. It is assigned to users.');
+        }
+
+        $role->delete();
         return redirect()->route('roles.index')
-                        ->with('success','Role deleted successfully');
+                        ->with('message','Role deleted successfully');
     }
 }

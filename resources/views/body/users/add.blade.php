@@ -88,10 +88,10 @@
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
                                         <strong>Role<font color="red">*</font>:</strong>
-                                        <select id="role_id" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="role_id" required>
+                                        <select id="roles" class="form-control select2" style="width:100%; background-color:#85d3ef;" name="roles[]" required>
                                             <option value="">Select Role...</option>
                                             @foreach ($roles as $key => $row)
-                                            <option value="{{$key}}">{{ $row }}</option>
+                                            <option value="{{$key}}" {{ (old('roles.0') == $key) ? 'selected' : '' }}>{{ $row }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -100,7 +100,7 @@
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Department:</strong>
-										<select id="department_id" class="form-control select2" style="width:100%" name="department_id" disabled>
+										<select id="department_id" class="form-control select2" style="width:100%" name="department_id">
                                             <option value="">Department None</option>
 											@foreach ($depts as $row)
 											<option value="{{$row->id}}" {{ (Auth::check() && Auth::user()->department_id == $row->id) ? 'selected' : '' }}>

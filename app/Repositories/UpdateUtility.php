@@ -956,9 +956,9 @@ class UpdateUtility
 	}
 
 
-	function generateVoucherNo($voucher_id, $maxNumeric, $departmentId = null, $manualVoucherNo = null)
+	function generateVoucherNo($voucher_id, $maxNumeric, $departmentId = null, $manualVoucherNo = null, $prefix = null)
     {
-        return DB::transaction(function () use ($voucher_id, $maxNumeric, $departmentId, $manualVoucherNo) {
+        return DB::transaction(function () use ($voucher_id, $maxNumeric, $departmentId, $manualVoucherNo, $prefix) {
             $now = Carbon::now();
 
 			// 1️⃣ Lock settings row
@@ -968,8 +968,18 @@ class UpdateUtility
 
             $setting = $qry->lockForUpdate()->first();
 
+			$settingPrefix = ($setting && $setting->is_prefix==1) ? (string)$setting->prefix : '';
+			if ($prefix !== null && $prefix !== '') {
+				$settingPrefix = (string)$prefix;
+			}
+
 			// ✅ If user entered manually
 			if (!empty($manualVoucherNo)) {
+				$manualVoucherNo = trim((string)$manualVoucherNo);
+				// If prefix-based voucher and user entered only digits, prepend prefix.
+				if ($settingPrefix !== '' && preg_match('/^\d+$/', $manualVoucherNo)) {
+					$manualVoucherNo = $settingPrefix . $manualVoucherNo;
+				}
 				
 				// Update current counter if manual number is higher
 				$numPart = (int)preg_replace('/\D/', '', $manualVoucherNo);
@@ -992,7 +1002,7 @@ class UpdateUtility
 		    $voucherNo = ($prefix ? $prefix : '') . $setting->voucher_no;
 
             // 4️⃣ Update settings
-            DB::table('account_setting')->where('voucher_type_id', $setting->voucher_type_id)->update([
+            DB::table('account_setting')->where('id', $setting->id)->update([
                 'voucher_no' => $nextNo,
                 'modified_at' => $now,
             ]);

@@ -12,14 +12,13 @@ use App\Repositories\StockTransferin\StockTransferinInterface;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
-use Input;
 use Session;
 use Response;
 use DB;
-use Excel;
 use App;
 use Auth;
 use DateTime;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportDataController extends Controller
 {
@@ -132,26 +131,100 @@ class ImportDataController extends Controller
 	}
 	
 	//JAN25
-	public function save() { //cost_avg
+	public function save(Request $request) { //cost_avg
 		
-		if(Input::hasFile('import_file')){
+		if($request->hasFile('import_file')){
 			
-			$path = Input::file('import_file')->getRealPath();
-			$data = Excel::load($path, function($reader) { })->get();
+			$path = $request->file('import_file')->getRealPath();
+			$sheetRows = IOFactory::load($path)->getActiveSheet()->toArray(null, true, true, true);
+			$headerKey = null;
+			$headerRow = [];
+			foreach ($sheetRows as $rowKey => $rowData) {
+				$hasAnyValue = false;
+				foreach ($rowData as $value) {
+					if ($value !== null && trim((string) $value) !== '') {
+						$hasAnyValue = true;
+						break;
+					}
+				}
+				if ($hasAnyValue) {
+					$headerKey = $rowKey;
+					$headerRow = $rowData;
+					break;
+				}
+			}
+
+			$data = collect();
+			if ($headerKey !== null) {
+				unset($sheetRows[$headerKey]);
+				$sheetRows = array_values($sheetRows);
+				$headers = [];
+				foreach ($headerRow as $column => $heading) {
+					$normalized = strtolower(trim((string) $heading));
+					$normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized);
+					$normalized = trim($normalized, '_');
+					$header = $normalized !== '' ? $normalized : 'column_'.$column;
+					if ($header === 'group') {
+						$header = 'group_name';
+					} elseif ($header === 'subgroup') {
+						$header = 'subgroup_name';
+					} elseif ($header === 'quantity') {
+						$header = 'opn_quantity';
+					} elseif ($header === 'rate') {
+						$header = 'opn_cost';
+					} elseif ($header === 'sales_price') {
+						$header = 'sell_price';
+					} elseif ($header === 'wsales_price') {
+						$header = 'wsale_price';
+					}
+					$headers[$column] = $header;
+				}
+
+				$data = collect($sheetRows)
+					->map(function ($row) use ($headers) {
+						$mapped = [];
+						foreach ($headers as $column => $header) {
+							$mapped[$header] = $row[$column] ?? null;
+						}
+						return (object) $mapped;
+					})
+					->filter(function ($row) {
+						foreach ((array) $row as $value) {
+							if ($value !== null && $value !== '') {
+								return true;
+							}
+						}
+						return false;
+					})
+					->values();
+			}
 			//echo '<pre>';print_r($data);exit;
 			if(!empty($data) && $data->count()) {
 				
 				//EXCEL FORMAT ITEM:   Item Code|Description|Unit|Quantity|Rate|Sales Price|Item Class
-				if(Input::get('type')=='items') {
+				if($request->get('type')=='items') {
 					
-					if($this->itemmaster->ImportItems($data))  //$this->itemmaster->ImportItemsUpdate($data)
+					$importResult = $this->itemmaster->ImportItems($data);  //$this->itemmaster->ImportItemsUpdate($data)
+					if(is_array($importResult)) {
+						$ok = ($importResult['success'] ?? false) && (($importResult['imported'] ?? 0) > 0);
+						if($ok) {
+							$message = 'Items imported: '.($importResult['imported'] ?? 0);
+							if(($importResult['skipped'] ?? 0) > 0) {
+								$message .= ', skipped: '.($importResult['skipped'] ?? 0);
+							}
+							Session::flash('message', $message);
+						} else {
+							$errors = isset($importResult['errors']) && is_array($importResult['errors']) ? implode(' | ', array_slice($importResult['errors'], 0, 3)) : '';
+							Session::flash('error', 'Something went wrong, Items import process is failed! '.trim($errors));
+						}
+					} else if($importResult)
 						Session::flash('message', 'Items have been imported successfully.');
 					else
 						Session::flash('error', 'Something went wrong, Items import process is failed!');
 					
 					return redirect('importdata/items');
 					
-				}  else if(Input::get('type')=='tallyitems') {
+				}  else if($request->get('type')=='tallyitems') {
 				//EXCEL FORMAT ITEM:   Item Code|Description|Unit|Cost|TO Qty|QI Qty
 				
 				$vat = DB::table('vat_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('percentage')->first();
@@ -165,7 +238,7 @@ class ImportDataController extends Controller
 					$item = DB::table('itemmaster')->where( function ($query) use($row) {
 														$query->where('item_code', '=', $row->item_code);
 															  
-												   })->select('id','description')->get();
+												   })->select('id','description')->first();
 												    
 												    
 				    }
@@ -211,28 +284,28 @@ class ImportDataController extends Controller
 				        $oc_amount[]='';
 				        
     				    if($sti) {
-            				Input::merge(['voucher_id' => $sti->id]);
-            				Input::merge(['curno' => $sti->voucher_no]);
-            				Input::merge(['voucher_no' => $sti->voucher_no]);
-            				Input::merge(['voucher_date' => '']);
-            				Input::merge(['is_mfg' => 0]);
-            				Input::merge(['account_dr' => $sti->dr_account_master_id]);
-            				Input::merge(['account_cr' => $sti->cr_account_master_id]);
-            				Input::merge(['item_id' => $itemid]);
-            				Input::merge(['item_name' => $itemname]);
-            				Input::merge(['unit_id' => $units]);
-            				Input::merge(['quantity' => $qty]);
-            				Input::merge(['cost' => $price]);
-            				Input::merge(['dr_acnt_id' =>$dr_account_id]);
-            				Input::merge(['oc_amount' =>$oc_amount]);
+            				$request->merge(['voucher_id' => $sti->id]);
+            				$request->merge(['curno' => $sti->voucher_no]);
+            				$request->merge(['voucher_no' => $sti->voucher_no]);
+            				$request->merge(['voucher_date' => '']);
+            				$request->merge(['is_mfg' => 0]);
+            				$request->merge(['account_dr' => $sti->dr_account_master_id]);
+            				$request->merge(['account_cr' => $sti->cr_account_master_id]);
+            				$request->merge(['item_id' => $itemid]);
+            				$request->merge(['item_name' => $itemname]);
+            				$request->merge(['unit_id' => $units]);
+            				$request->merge(['quantity' => $qty]);
+            				$request->merge(['cost' => $price]);
+            				$request->merge(['dr_acnt_id' =>$dr_account_id]);
+            				$request->merge(['oc_amount' =>$oc_amount]);
     			       }
-			       //echo '<pre>';print_r(Input::all());exit;
+			       //echo '<pre>';print_r($request->all());exit;
 			       
 				    }
 				}
 				
 				if(isset($sti) && $sti!='' ) {
-				    $trin = $this->stock_transferin->create(Input::all());
+				    $trin = $this->stock_transferin->create($request->all());
 				}
 					foreach ($data as $row) {
 				    if(isset($row->to_quantity) && $row->to_quantity!='') {
@@ -268,54 +341,54 @@ class ImportDataController extends Controller
 				        $unitt[]=$unit_id;
 				        $actcost[]='';
 				    if($sto) {
-				Input::merge(['voucher_id' => $sto->id]);
-				Input::merge(['curno' => $sto->voucher_no]);
-				Input::merge(['voucher_no' => $sto->voucher_no]);
-				Input::merge(['voucher_date' => '']);
-				Input::merge(['is_mfg' => 0]);
-				Input::merge(['account_dr' => $sto->dr_account_master_id]);
-				Input::merge(['account_cr' => $sto->cr_account_master_id]);
-				Input::merge(['item_id' => $itemidd]);
-				Input::merge(['item_name' => $itemnamee]);
-				Input::merge(['unit_id' => $unitt]);
-				Input::merge(['quantity' => $qtyy]);
-				Input::merge(['cost' => $pricee]);
-				Input::merge(['actcost' => $actcost]);
+				$request->merge(['voucher_id' => $sto->id]);
+				$request->merge(['curno' => $sto->voucher_no]);
+				$request->merge(['voucher_no' => $sto->voucher_no]);
+				$request->merge(['voucher_date' => '']);
+				$request->merge(['is_mfg' => 0]);
+				$request->merge(['account_dr' => $sto->dr_account_master_id]);
+				$request->merge(['account_cr' => $sto->cr_account_master_id]);
+				$request->merge(['item_id' => $itemidd]);
+				$request->merge(['item_name' => $itemnamee]);
+				$request->merge(['unit_id' => $unitt]);
+				$request->merge(['quantity' => $qtyy]);
+				$request->merge(['cost' => $pricee]);
+				$request->merge(['actcost' => $actcost]);
 			       }
-			       //echo '<pre>';print_r(Input::all());exit;
+			       //echo '<pre>';print_r($request->all());exit;
 			       
 				    
 				    }
 				}
 				if(isset($sto) && $sto!='' ){
-				$trout = $this->stock_transferout->create(Input::all());
+				$trout = $this->stock_transferout->create($request->all());
 				}
 				Session::flash('message', 'Items have been uploaded successfully.');
 					
 					return redirect('importdata/tallyitems');
 				
 				}
-				else if(Input::get('type')=='accounts') {
+				else if($request->get('type')=='accounts') {
 					
 					 ################## CUSTOMER/SUPPLIER EXCEL IMPORT FORMAT:   Account Name|address_1|address_2|State|Phone|TRN No|Fax|Email  ######################
-					if($this->accountmaster->ImportAccounts($data, Input::get('actype')))
+					if($this->accountmaster->ImportAccounts($data, $request->get('actype')))
 						Session::flash('message', 'Accounts have been imported successfully.');
 					else
 						Session::flash('error', 'Something went wrong, Accounts import process is failed!');
 					
 					return redirect('importdata/accounts');
 					
-				} else if(Input::get('type')=='accountmaster') { //JAN25
+				} else if($request->get('type')=='accountmaster') { //JAN25
 					
 					 ################## OTHER ACCOUNTS EXCEL IMPORT FORMAT:   Account Name | Type | Amount  ######################
-					if($this->accountmaster->ImportAccountMaster($data, Input::all()))
+					if($this->accountmaster->ImportAccountMaster($data, $request->all()))
 						Session::flash('message', 'Accounts have been imported successfully.');
 					else
 						Session::flash('error', 'Something went wrong, Accounts import process is failed!');
 					
 					return redirect('importdata/accounts');
 				
-				} else if(Input::get('type')=='clstock') { //CONSIGNMENT LOCATION STOCK...
+				} else if($request->get('type')=='clstock') { //CONSIGNMENT LOCATION STOCK...
 					$notfound = [];
 					$defaultloc = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_conloc',0)->select('id')->first();
 					$customerid = 1793; $custname = 'ENOC'; $no = 0;
@@ -377,70 +450,70 @@ class ImportDataController extends Controller
 					
 					//DO POSTING...
 					$vdata = DB::table('voucher_no')->where('voucher_type','CDO')->select('no')->first();
-					Input::merge(['curno' => $vdata->no]);
-					Input::merge(['default_location' => 0 ]);
-					Input::merge(['voucher_no' => $vdata->no]);
-					Input::merge(['reference_no' => '']);
-					Input::merge(['voucher_date' => '']);
-					Input::merge(['lpo_date' => '']);
-					Input::merge(['customer_name' => $custname]);
-					Input::merge(['customer_id' => $customerid]);
-					Input::merge(['salesman' => '']);
-					Input::merge(['salesman_id' => '']);
-					Input::merge(['document_type' => 'QS']);
-					Input::merge(['document_id' => '']);
-					Input::merge(['description' => '']);
-					Input::merge(['terms_id' => '']);
-					Input::merge(['job_id' => '']);
-					Input::merge(['location_id' => 1]);
-					Input::merge(['total' => 0]);
-					Input::merge(['total_fc' => 0]);
-					Input::merge(['discount' => 0]);
-					Input::merge(['discount_fc' => 0]);
-					Input::merge(['subtotal' => 0]);
-					Input::merge(['subtotal_fc' => 0]);
-					Input::merge(['vat' => 0]);
-					Input::merge(['vat_fc' => '']);
-					Input::merge(['net_amount_hid' => 0]);
-					Input::merge(['net_amount' => 0 ]);
-					Input::merge(['net_amount_fc' => '']);
-					Input::merge(['footer_id' => '']);
-					Input::merge(['footer' => '']);
+					$request->merge(['curno' => $vdata->no]);
+					$request->merge(['default_location' => 0 ]);
+					$request->merge(['voucher_no' => $vdata->no]);
+					$request->merge(['reference_no' => '']);
+					$request->merge(['voucher_date' => '']);
+					$request->merge(['lpo_date' => '']);
+					$request->merge(['customer_name' => $custname]);
+					$request->merge(['customer_id' => $customerid]);
+					$request->merge(['salesman' => '']);
+					$request->merge(['salesman_id' => '']);
+					$request->merge(['document_type' => 'QS']);
+					$request->merge(['document_id' => '']);
+					$request->merge(['description' => '']);
+					$request->merge(['terms_id' => '']);
+					$request->merge(['job_id' => '']);
+					$request->merge(['location_id' => 1]);
+					$request->merge(['total' => 0]);
+					$request->merge(['total_fc' => 0]);
+					$request->merge(['discount' => 0]);
+					$request->merge(['discount_fc' => 0]);
+					$request->merge(['subtotal' => 0]);
+					$request->merge(['subtotal_fc' => 0]);
+					$request->merge(['vat' => 0]);
+					$request->merge(['vat_fc' => '']);
+					$request->merge(['net_amount_hid' => 0]);
+					$request->merge(['net_amount' => 0 ]);
+					$request->merge(['net_amount_fc' => '']);
+					$request->merge(['footer_id' => '']);
+					$request->merge(['footer' => '']);
 					
-					Input::merge(['title' => []]);
-					Input::merge(['desc' => []]);
-					Input::merge(['num' => $no]);
-					Input::merge(['clocid' => '']);
-					Input::merge(['clocqty' => '']);
-					Input::merge(['tblConLoc_length' => '']);
-					Input::merge(['lcid' => $locarr]);
-					Input::merge(['qtyreq' => $locqty]);
-					Input::merge(['posts_length' => '']);
+					$request->merge(['title' => []]);
+					$request->merge(['desc' => []]);
+					$request->merge(['num' => $no]);
+					$request->merge(['clocid' => '']);
+					$request->merge(['clocqty' => '']);
+					$request->merge(['tblConLoc_length' => '']);
+					$request->merge(['lcid' => $locarr]);
+					$request->merge(['qtyreq' => $locqty]);
+					$request->merge(['posts_length' => '']);
 					
-					Input::merge(['item_id' => $items]);
-					Input::merge(['item_code' => $itemscode]);
-					Input::merge(['item_name' => $itemsname]);
-					Input::merge(['unit_id' => $unitid]);
-					Input::merge(['quantity' => $itemsqty]);
-					Input::merge(['cost' => $itemscost]);
-					Input::merge(['tax_code' => $txcod]);
-					Input::merge(['tax_include' => $tinc]);
-					Input::merge(['hidunit' => $hdu]);
-					Input::merge(['packing' => $pkng]);
-					Input::merge(['vatdiv' => $vat]);
-					Input::merge(['line_vat' => $vtln]);
-					Input::merge(['vatline_amt' => $vtamt]);
-					Input::merge(['line_discount' => $vtds]);
-					Input::merge(['item_total' => $itmt]);
-					Input::merge(['line_total' => $lnt]);
-					Input::merge(['conloc_id' => $itemsloc]);
-					Input::merge(['conloc_qty' => $itemsqty]); //itemslocqty exit;
+					$request->merge(['item_id' => $items]);
+					$request->merge(['item_code' => $itemscode]);
+					$request->merge(['item_name' => $itemsname]);
+					$request->merge(['unit_id' => $unitid]);
+					$request->merge(['quantity' => $itemsqty]);
+					$request->merge(['cost' => $itemscost]);
+					$request->merge(['tax_code' => $txcod]);
+					$request->merge(['tax_include' => $tinc]);
+					$request->merge(['hidunit' => $hdu]);
+					$request->merge(['packing' => $pkng]);
+					$request->merge(['vatdiv' => $vat]);
+					$request->merge(['line_vat' => $vtln]);
+					$request->merge(['vatline_amt' => $vtamt]);
+					$request->merge(['line_discount' => $vtds]);
+					$request->merge(['item_total' => $itmt]);
+					$request->merge(['line_total' => $lnt]);
+					$request->merge(['conloc_id' => $itemsloc]);
+					$request->merge(['conloc_qty' => $itemsqty]); //itemslocqty exit;
 					
 					//echo '<pre>';print_r($notfound);
-					$id = $this->customerdo->create(Input::all());
+					$id = $this->customerdo->create($request->all());
 					
 					
-				} else if(Input::get('type')=='opn-balance' || Input::get('type')=='opn-balance-sup') { 
+				} else if($request->get('type')=='opn-balance' || $request->get('type')=='opn-balance-sup') { 
 					########## EXCEL Invoice No | Invoice Date | Description | Type | Amount #######
 					 $amount_dr = $amount_cr = 0; $OBDupdate = false;
 					foreach ($data as $dkey => $row) { 
@@ -457,7 +530,7 @@ class ImportDataController extends Controller
 							$openingBalance->reference_no = $row->invoice_no;
 							$openingBalance->description = ($row->description=='')?$row->invoice_no:'';
 							$openingBalance->amount = (float)$row->amount;
-							$openingBalance->account_master_id = Input::get('account_id');
+							$openingBalance->account_master_id = $request->get('account_id');
 							$openingBalance->cheque_no = '';
 							$openingBalance->cheque_date = '';
 							$openingBalance->bank_id = '';
@@ -475,7 +548,7 @@ class ImportDataController extends Controller
 							DB::table('account_transaction')
 									->insert([  'voucher_type' 		=> 'OBD',
 												'voucher_type_id'   => $openingBalance->id,
-												'account_master_id' => Input::get('account_id'),
+												'account_master_id' => $request->get('account_id'),
 												'transaction_type'  => $trtype,
 												'amount'   			=> (float)$row->amount,
 												'status' 			=> 1,
@@ -499,8 +572,8 @@ class ImportDataController extends Controller
 					if($OBDupdate) {
 						DB::table('account_transaction')
 							->where('voucher_type','OB')
-							->where('voucher_type_id',Input::get('account_id'))
-							->where('account_master_id',Input::get('account_id'))
+							->where('voucher_type_id',$request->get('account_id'))
+							->where('account_master_id',$request->get('account_id'))
 							->update([  'transaction_type'  => $trtype,
 										'amount'   			=> $amount,
 										'description' 		=> $description,
@@ -512,14 +585,14 @@ class ImportDataController extends Controller
 										'lpo_no'			=> ''//$row->lpo_no
 									]);
 									
-						DB::table('account_master')->where('id',Input::get('account_id'))->update(['op_balance' => $amount]);
+						DB::table('account_master')->where('id',$request->get('account_id'))->update(['op_balance' => $amount]);
 					}
 					
 					Session::flash('message', 'Opening Transactions have been updated successfully.');
 					
 					return redirect('importdata/opn-balance');
 					
-				} else if(Input::get('type')=='vehicle') { //VEHICLE IMPORT....
+				} else if($request->get('type')=='vehicle') { //VEHICLE IMPORT....
 				    
 				    foreach ($data as $dkey => $row) { 
 				        
@@ -555,7 +628,7 @@ class ImportDataController extends Controller
 					
 					return redirect('importdata/cust-vehicle');
 					
-				} else if(Input::get('type')=='jobmaster') { //JOBMASTER IMPORT....
+				} else if($request->get('type')=='jobmaster') { //JOBMASTER IMPORT....
 				    
 				    foreach ($data as $dkey => $row) {    
 				        
@@ -573,7 +646,7 @@ class ImportDataController extends Controller
 				    }
 				}
 				
-				else if(Input::get('type')=='joborder') { //JOBORDER IMPORT....
+				else if($request->get('type')=='joborder') { //JOBORDER IMPORT....
 				    
 				    foreach ($data as $dkey => $row) {  
 				        $cust = DB::table('account_master')->where('account_id', $row->customer)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
@@ -625,4 +698,6 @@ class ImportDataController extends Controller
 	}
 	
 }
+
+
 

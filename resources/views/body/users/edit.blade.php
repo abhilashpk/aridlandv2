@@ -101,7 +101,7 @@
 								<div class="col-xs-12 col-sm-12 col-md-12">
 									<div class="form-group">
 										<strong>Department:</strong>
-										<select id="department_id" class="form-control select2" style="width:100%" name="department_id">
+										<select id="department_id" class="form-control select2" style="width:100%" name="department_id" disabled>
                                             <option value="">Department None</option>
 											@foreach ($depts as $row)
 											<option value="{{$row->id}}" {{ ($user->department_id==$row->id)?'selected':'';}}>{{ $row->name }}</option>
