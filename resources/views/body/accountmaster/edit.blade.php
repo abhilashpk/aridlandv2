@@ -636,6 +636,11 @@ input[type=number]::-webkit-outer-spin-button {
                                     <label for="input-text" class="col-sm-2 control-label">Open Balance Net</label>
                                     <div class="col-sm-10">
                                         <input type="number" class="form-control" id="op_balance" step="any" name="op_balance" value="{{ $masterrow->op_balance }}">
+										@if($masterrow->category == 'CUSTOMER' || $masterrow->category == 'SUPPLIER')
+										<div style="margin-top:8px;">
+											<button type="button" class="btn btn-warning btn-sm" id="btn-reset-ob">Reset OB</button>
+										</div>
+										@endif
                                     </div>
                                 </div>
 								
@@ -851,6 +856,52 @@ $(document).ready(function () {
 	if ( $('.itemdivPrntch').children().length == 1 ) {
 		$('.itemdivPrntch').find('.btn-remove-itemch').hide();
 	}
+
+	$(document).on('click', '#btn-reset-ob', function(e) {
+		e.preventDefault();
+		if(!confirm('Reset opening balance and clear OB detail rows?')) {
+			return false;
+		}
+
+		// Queue existing OBD row ids for removal.
+		var remitem = $('#remitem').val();
+		$('.itemdivPrnt .itemdivChld').each(function() {
+			var trid = $(this).find('input[name="tr_id[]"]').val();
+			if(trid) {
+				remitem = (remitem === '' || remitem === undefined) ? trid : (remitem + ',' + trid);
+			}
+		});
+		$('#remitem').val(remitem || '');
+
+		// Keep one blank detail row in UI and clear values.
+		var $rows = $('.itemdivPrnt .itemdivChld');
+		if($rows.length > 0) {
+			$rows.slice(1).remove();
+			var $first = $('.itemdivPrnt .itemdivChld:first');
+			$first.find('input[name="tr_id[]"]').val('');
+			$first.find('input[name="tr_date[]"]').val('');
+			$first.find('input[name="reference_no[]"]').val('');
+			$first.find('input[name="description[]"]').val('');
+			$first.find('input[name="amount[]"]').val('');
+			$first.find('input[name="cnvt_amt[]"]').val('');
+			$first.find('input[name="jobno[]"]').val('');
+			$first.find('input[name="duedate[]"]').val('');
+			$first.find('input[name="rate[]"]').val(1);
+			$first.find('select[name="tr_type[]"]').val('').trigger('change');
+		}
+
+		// Reset summary balances.
+		$('#op_balance').val('0.00');
+		$('#cl_balance').val('0.00');
+		$('#fcop_balance').val('0.00');
+
+		$('.itemdivPrnt').find('.btn-add-item').show();
+		if ( $('.itemdivPrnt').children().length <= 1 ) {
+			$('.itemdivPrnt').find('.btn-remove-item').hide();
+		}
+
+		return false;
+	});
 	
 	//$('#addressDtls').toggle();
 	var urlcode = "{{ url('itemmaster/checkcode/') }}";

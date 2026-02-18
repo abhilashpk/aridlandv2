@@ -9,6 +9,7 @@ use Input;
 use Session;
 use DB;
 use App;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionController extends Controller
 {
@@ -122,12 +123,16 @@ class PermissionController extends Controller
 		if (!is_array($permission_ids)) {
 			$permission_ids = [];
 		}
+		$permission_ids = array_values(array_unique(array_map('intval', $permission_ids)));
 		$permission_role = $this->makeArr( DB::table('role_has_permissions')->where('role_id',$role_id)->select('permission_id')->get() );
+		$permission_role = array_map('intval', $permission_role);
 		//echo '<pre>';print_r($permission_role);exit;
 		foreach($permission_ids as $id) {
 			if(!in_array($id, $permission_role)) {
-				DB::table('role_has_permissions')->insert(['permission_id' => $id, 'role_id' => $role_id]);
-				
+				DB::table('role_has_permissions')->updateOrInsert(
+					['permission_id' => $id, 'role_id' => $role_id],
+					[]
+				);
 			}
 		}
 		
@@ -145,4 +150,3 @@ class PermissionController extends Controller
 
 	
 }
-

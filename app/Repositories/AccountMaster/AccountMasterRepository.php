@@ -67,9 +67,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->master_name = $attributes['master_name'];
 				$this->accountmaster->account_category_id = $attributes['category_id'];
 				$this->accountmaster->account_group_id = $attributes['group_id'];
-				$this->accountmaster->op_balance = $attributes['op_balance'];
-				$this->accountmaster->cl_balance = $attributes['op_balance'];
-				$this->accountmaster->fcop_balance = $attributes['fcop_balance'];
+				$this->accountmaster->op_balance = $attributes['op_balance'] ?? 0;
+				$this->accountmaster->cl_balance = $attributes['op_balance'] ?? 0;
+				$this->accountmaster->fcop_balance = $attributes['fcop_balance'] ?? 0;
 				$this->accountmaster->department_id = Auth::user()->department_id ?? 0;
 				$this->accountmaster->currency_id = $attributes['currency_id'];
 				$this->accountmaster->salesman_id = $attributes['salesman_id'];
@@ -80,7 +80,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->area_id = isset($attributes['area_id'])?$attributes['area_id']:'';
 				$this->accountmaster->job_assign = isset($attributes['job_assign'])?$attributes['job_assign']:'';
 				$this->accountmaster->job_compulsary = isset($attributes['job_compulsary'])?$attributes['job_compulsary']:'';
-				$this->accountmaster->is_hide = isset($attributes['is_hide'])?$attributes['is_hide']: 0;
+				$hideFlag = (isset($attributes['is_hide']) && $attributes['is_hide'] !== '') ? (int)$attributes['is_hide'] : 0;
+				$this->accountmaster->is_hide = $hideFlag;
 				
 				$fcamount = 0;
 				$opBalance = $attributes['op_balance'] ?? 0;
@@ -91,6 +92,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				if($fcopBalance === '' || $fcopBalance === null) {
 					$fcopBalance = 0;
 				}
+				$this->accountmaster->fcop_balance = $fcopBalance;
 				if($attributes['actype']=='') {
 					//$this->accountmaster->transaction_type = $attributes['transaction'];category
 					if($attributes['transaction']=='Cr') {
@@ -130,9 +132,13 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->vat_percentage = isset($attributes['vat_percentage'])?$attributes['vat_percentage']:0;
 				$this->accountmaster->category = $attributes['category'];
 				$this->accountmaster->ac_no = isset($attributes['account_no'])?$attributes['account_no']:'';
-				$this->accountmaster->fill($attributes)->save();
+				$this->accountmaster->save();
 				
 				$reference_no = ''; $fc = 0;
+				$settings = DB::table('parameter1')->select('from_date')->first();
+				$obInvoiceDate = ($settings && $settings->from_date)
+					? date('Y-m-d', strtotime($settings->from_date.' -1 day'))
+					: date('Y-m-d', strtotime('-1 day'));
 				
 				$attributes['tr_type'] = $this->cleanInput($attributes['tr_type']);
 				$attributes['tr_date'] = $this->cleanInput($attributes['tr_date']);
@@ -152,9 +158,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 
 							//$invoice_date = isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d');
 							if(isset($attributes['tr_date'][$key])) {
-								$invoice_date = ($attributes['tr_date'][$key]=='')?( date('Y-m-d',(strtotime ( '-1 day' , strtotime ( $attributes['invoice_date'] ) ) )) ):date('Y-m-d',strtotime( $attributes['tr_date'][$key]));
+								$invoice_date = ($attributes['tr_date'][$key]=='') ? $obInvoiceDate : date('Y-m-d',strtotime( $attributes['tr_date'][$key]));
 							} else
-								$invoice_date = date('Y-m-d',(strtotime ( '-1 day' , strtotime ( $attributes['invoice_date'] ) ) )); //date('Y-m-d');
+								$invoice_date = $obInvoiceDate; //date('Y-m-d');
 
 							$openingBalance = new OpeningBalanceTr;
 							$openingBalance->tr_type = $attributes['tr_type'][$key];
@@ -166,7 +172,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								$openingBalance->tr_date = $invoice_date_pdc = date('Y-m-d');
 							} else {
 								$openingBalance->amount = $tramount = $attributes['amount'][$key]; //isset($attributes['cnvt_amt'][$key])?$attributes['cnvt_amt'][$key]:$attributes['amount'][$key];
-								$openingBalance->tr_date = isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d',(strtotime ( '-1 day' , strtotime ( $attributes['invoice_date'] ) ) ));   //isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d'); //date('Y-m-d',strtotime( $attributes['tr_date'][$key] ));
+								$openingBalance->tr_date = isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):$obInvoiceDate;   //isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d'); //date('Y-m-d',strtotime( $attributes['tr_date'][$key] ));
 							}
 							$openingBalance->account_master_id = $this->accountmaster->id;
 							$openingBalance->cheque_no = isset($attributes['cheque_no'][$key])?$attributes['cheque_no'][$key]:'';
@@ -394,7 +400,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 						if($attributes['op_balance']!='' && $OBDupdate==false) {
 							$openingBalance = new OpeningBalanceTr;
 							$openingBalance->tr_type = $transaction_type;
-							$openingBalance->tr_date = date('Y-m-d',(strtotime ( '-1 day' , strtotime ( $attributes['invoice_date'] ) ) ));//$attributes['invoice_date']; 
+							$openingBalance->tr_date = $obInvoiceDate;//$attributes['invoice_date']; 
 							$openingBalance->reference_no = 'OB Prior Year';
 							$openingBalance->description = 'Opening Balance';
 							$openingBalance->amount = ($amount < 0)?(-1*$amount):$amount;
@@ -414,7 +420,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											'created_by' 		=> Auth::User()->id,
 											'description' 		=> 'Opening Balance',
 											'reference'			=> 'OB Prior Year',
-											'invoice_date'		=> date('Y-m-d',(strtotime ( '-1 day' , strtotime ( $attributes['invoice_date'] ) ) )),//isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime($attributes['tr_date'][$key])):date('Y-m-d'),
+											'invoice_date'		=> $obInvoiceDate,//isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime($attributes['tr_date'][$key])):date('Y-m-d'),
 											'fc_amount'			=> isset($attributes['amount'][$key])?$attributes['amount'][$key]:(($amount < 0)?(-1*$amount):$amount),
 											'is_fc'				=> isset($attributes['currency'][$key])?(($attributes['bcurrency']!=$attributes['currency'][$key])?1:0):0,
 											'department_id'		=> auth()->user()->department_id,
@@ -452,7 +458,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									'created_by' 		=> Auth::User()->id,
 									'description' 		=> 'Opening Balance',
 									'reference'			=> ($reference_no=='')?'OB Prior Year':$reference_no,
-									'invoice_date'		=> $attributes['invoice_date'],
+									'invoice_date'		=> $obInvoiceDate,
 									'fc_amount'			=> $fcamount,
 									'is_fc'				=> $fc,
 									'department_id'		=> Auth::user()->department_id ?? 0,
@@ -485,6 +491,10 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			try {
 			    
 			    $trn_type_update = false;
+				$settings = DB::table('parameter1')->select('from_date')->first();
+				$obInvoiceDate = ($settings && $settings->from_date)
+					? date('Y-m-d', strtotime($settings->from_date.' -1 day'))
+					: date('Y-m-d', strtotime('-1 day'));
 				//$this->accountmaster->account_id = $attributes['account_id'];
 				$this->accountmaster->master_name = $attributes['master_name'];
 				$this->accountmaster->account_category_id = $attributes['category_id'];
@@ -575,7 +585,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 						
 							$openingBalance = OpeningBalanceTr::find($attributes['tr_id'][$key]);
 							$openingBalance->tr_type = $trntype = $attributes['tr_type'][$key];
-							$openingBalance->tr_date = isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d');
+							$openingBalance->tr_date = (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key] != '')
+								? date('Y-m-d',strtotime($attributes['tr_date'][$key]))
+								: $obInvoiceDate;
 							$openingBalance->reference_no = isset($attributes['reference_no'][$key])?$attributes['reference_no'][$key]:'';
 							$openingBalance->description = isset($attributes['description'][$key])?$attributes['description'][$key]:'';
 							$openingBalance->amount = $tramount = $attributes['amount'][$key]; //isset($attributes['cnvt_amt'][$key])?$attributes['cnvt_amt'][$key]:$attributes['amount'][$key];
@@ -648,7 +660,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											->where('entry_id', $dr_entry)
 											->update([ 	'reference'  => $attributes['reference_no'][$key],
 														'amount'   			=> $attributes['amount'][$key],
-														'voucher_date'		=> (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key]!='')?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d'), //date('Y-m-d', strtotime($attributes['tr_date'][$key])),
+														'voucher_date'		=> (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key]!='')?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):$obInvoiceDate, //date('Y-m-d', strtotime($attributes['tr_date'][$key])),
 														'customer_id' => $attributes['frmaccount_id'][$key],
 														'cheque_no' => $attributes['cheque_no'][$key],
 														'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
@@ -692,7 +704,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											//->where('cr_account_id', $attributes['account_id'][$key])
 											->update([ 	'reference'  => $attributes['reference_no'][$key],
 														'amount'   			=> $attributes['amount'][$key],
-														'voucher_date'		=> (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key]!='')?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d'),  //date('Y-m-d', strtotime($attributes['tr_date'][$key])),
+														'voucher_date'		=> (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key]!='')?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):$obInvoiceDate,  //date('Y-m-d', strtotime($attributes['tr_date'][$key])),
 														'supplier_id' => $attributes['frmaccount_id'][$key],
 														'cheque_no' => $attributes['cheque_no'][$key],
 														'cheque_date' => ($attributes['cheque_date'][$key]!='')?date('Y-m-d', strtotime($attributes['cheque_date'][$key])):date('Y-m-d'),
@@ -712,7 +724,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 											  'amount' => $attributes['amount'][$key], //isset($attributes['cnvt_amt'][$key])?$attributes['cnvt_amt'][$key]:$attributes['amount'][$key],
 											  'description' => isset($attributes['description'][$key])?$attributes['description'][$key]:'',
 											  'reference' => isset($attributes['reference_no'][$key])?$attributes['reference_no'][$key]:'OB Prior Year',
-											  'invoice_date' => date('Y-m-d',strtotime($attributes['tr_date'][$key])),
+											  'invoice_date' => (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key] != '')
+											  	? date('Y-m-d',strtotime($attributes['tr_date'][$key]))
+											  	: $obInvoiceDate,
 											  'loc_proj'	=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
 											  'eqp_type'	=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
 											  'lpo_no'		=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:''
@@ -730,7 +744,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 
 								$openingBalance = new OpeningBalanceTr;
 								$openingBalance->tr_type = $attributes['tr_type'][$key];
-								$openingBalance->tr_date = (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key]!='')?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):date('Y-m-d'); //date('Y-m-d',strtotime($attributes['tr_date'][$key]));
+								$openingBalance->tr_date = (isset($attributes['tr_date'][$key]) && $attributes['tr_date'][$key]!='')?date('Y-m-d',strtotime( $attributes['tr_date'][$key] )):$obInvoiceDate; //date('Y-m-d',strtotime($attributes['tr_date'][$key]));
 								$openingBalance->reference_no = $attributes['reference_no'][$key];
 								$openingBalance->description = isset($attributes['description'][$key])?$attributes['description'][$key]:'';
 								$openingBalance->amount = $tramount = $attributes['amount'][$key]; //isset($attributes['cnvt_amt'][$key])?$attributes['cnvt_amt'][$key]:$attributes['amount'][$key];
@@ -771,9 +785,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 								
 								//$invoice_date = date('Y-m-d',strtotime($attributes['tr_date'][$key]));
 								if(isset($attributes['tr_date'][$key])) {
-									$invoice_date = ($attributes['tr_date'][$key]=='')?date('Y-m-d'):date('Y-m-d',strtotime( $attributes['tr_date'][$key]));
+									$invoice_date = ($attributes['tr_date'][$key]=='')?$obInvoiceDate:date('Y-m-d',strtotime( $attributes['tr_date'][$key]));
 								} else
-									$invoice_date = date('Y-m-d');
+									$invoice_date = $obInvoiceDate;
 								
 								
 								if($attributes['category']=='PDCR') {  //PDC Received.... frmaccount_id
@@ -962,44 +976,13 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 						
 					}
 
-					//update OB TR details if not there OB details but amount is there.
+					// For simple OB accounts, edit should not auto-create an OBD invoice row.
 					if($attributes['op_balance']!='' && $OBDupdate==false) {
                         $trntype = 'Dr';
 						if($attributes['op_balance'] > 0)
 							$trntype = 'Dr';
 						else if($attributes['op_balance'] < 0)
 							$trntype = 'Cr';
-
-						$openingBalance = new OpeningBalanceTr;
-						$openingBalance->tr_type = $trntype;
-						$openingBalance->tr_date = date('Y-m-d',(strtotime ( '-1 day' , strtotime ( $attributes['invoice_date'] ) ) ));//$attributes['invoice_date']; 
-						$openingBalance->reference_no = 'OB Prior Year';
-						$openingBalance->description = 'Opening Balance';
-						$openingBalance->amount = ($attributes['op_balance'] < 0)?(-1*$attributes['op_balance']):$attributes['op_balance'];
-						$openingBalance->fc_amount = ($attributes['op_balance'] < 0)?(-1*$attributes['op_balance']):$attributes['op_balance'];
-						$openingBalance->account_master_id = $this->accountmaster->id;
-						$openingBalance->status = 1; 
-						$openingBalance->save();
-
-						DB::table('account_transaction')
-							->insert([  'voucher_type' 		=> 'OBD',
-										'voucher_type_id'   => $openingBalance->id,
-										'account_master_id' => $this->accountmaster->id,
-										'transaction_type'  => $trntype,
-										'amount'   			=> ($attributes['op_balance'] < 0)?(-1*$attributes['op_balance']):$attributes['op_balance'],
-										'status' 			=> 1,
-										'created_at' 		=> now(),
-										'created_by' 		=> Auth::User()->id,
-										'description' 		=> 'Opening Balance',
-										'reference'			=> 'OB Prior Year',
-										'invoice_date'		=> $attributes['invoice_date'],//isset($attributes['tr_date'][$key])?date('Y-m-d',strtotime($attributes['tr_date'][$key])):date('Y-m-d'),
-										'fc_amount'			=> isset($attributes['amount'][$key])?$attributes['amount'][$key]:(($attributes['op_balance'] < 0)?(-1*$attributes['op_balance']):$attributes['op_balance']),
-										'is_fc'				=> isset($attributes['currency'][$key])?(($attributes['bcurrency']!=$attributes['currency'][$key])?1:0):0,
-										'department_id'		=> auth()->user()->department_id,
-										'loc_proj'			=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
-										'eqp_type'			=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
-										'lpo_no'			=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:''
-									]);
 					} else {
 
 						if($amt_dr > $amt_cr)
@@ -1071,7 +1054,8 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									->update(['transaction_type' => isset($trntype)?$trntype:'', //($attributes['op_balance'] > 0)?'Dr':'Cr',
 											  'amount' => ($attributes['op_balance']<0)?(-1*$attributes['op_balance']):$attributes['op_balance'],
 											  'fc_amount'			=> $fcamount,
-											  'is_fc'				=> $fc
+											  'is_fc'				=> $fc,
+											  'invoice_date'		=> $obInvoiceDate
 											  /* 'loc_proj'			=> isset($attributes['loc_proj'][$key])?$attributes['loc_proj'][$key]:'',
 											  'eqp_type'			=> isset($attributes['eqp_type'][$key])?$attributes['eqp_type'][$key]:'',
 											  'lpo_no'				=> isset($attributes['lpo_no'][$key])?$attributes['lpo_no'][$key]:'' */
@@ -9304,6 +9288,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$transaction_type = $attributes['transaction'];
 			
 			$settings = DB::table('parameter1')->select('from_date','to_date')->first();
+			$obInvoiceDate = ($settings && $settings->from_date)
+				? date('Y-m-d', strtotime($settings->from_date.' -1 day'))
+				: date('Y-m-d', strtotime('-1 day'));
 			
 			//$this->accountmaster->account_id = $attributes['account_id'];//$code;
 			$this->accountmaster->master_name = $attributes['master_name'];
@@ -9323,8 +9310,12 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$this->accountmaster->category = $attributes['category'];
 			$this->accountmaster->vat_assign =  isset($attributes['vtas'])?$attributes['vtas']:0;
 			$this->accountmaster->vat_percentage = isset($attributes['vtpr'])?$attributes['vtpr']:0;
+			$this->accountmaster->op_balance = 0;
+			$this->accountmaster->cl_balance = 0;
+			$this->accountmaster->fcop_balance = 0;
 			$this->accountmaster->department_id = Auth::user()->department_id ?? 0; // user department
-			$this->accountmaster->fill($attributes)->save();
+			$this->accountmaster->is_hide = (isset($attributes['is_hide']) && $attributes['is_hide'] !== '') ? (int)$attributes['is_hide'] : 0;
+			$this->accountmaster->save();
 			
 			DB::table('account_transaction')
 						->insert([  'voucher_type' 		=> 'OB',
@@ -9337,7 +9328,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 									'created_by' 		=> Auth::User()->id,
 									'description' 		=> '',
 									'reference'			=> '',
-									'invoice_date'		=> $settings->from_date ]);
+									'invoice_date'		=> $obInvoiceDate ]);
 			
 			DB::table('account_master')->where('id', $this->accountmaster->id)->update(['account_id' => 'ACM'.$this->accountmaster->id]);
 			
@@ -9472,6 +9463,12 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			}
 
 			$settings = DB::table('parameter1')->select('from_date', 'to_date')->first();
+			$obInvoiceDate = ($settings && $settings->from_date)
+				? date('Y-m-d', strtotime($settings->from_date.' -1 day'))
+				: date('Y-m-d', strtotime('-1 day'));
+			$toNumber = static function ($value, $default = 0) {
+				return ($value === '' || $value === null) ? $default : $value;
+			};
 
 			// ── Core identity ──────────────────────────────────────────────
 			$this->accountmaster->master_name         = $attributes['master_name'];
@@ -9498,15 +9495,15 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$this->accountmaster->currency_id  = $attributes['currency_id']  ?? $settings->currency_id ?? null;
 			$this->accountmaster->salesman_id  = $attributes['salesman_id']  ?? null;
 			$this->accountmaster->terms_id     = $attributes['terms_id']     ?? null;
-			$this->accountmaster->credit_limit = $attributes['credit_limit'] ?? 0;
-			$this->accountmaster->duedays      = $attributes['duedays']      ?? 0;
+			$this->accountmaster->credit_limit = $toNumber($attributes['credit_limit'] ?? null, 0);
+			$this->accountmaster->duedays      = (int)$toNumber($attributes['duedays'] ?? null, 0);
 
 			// ── Balance columns — all default to 0 ───────────────────────
-			$this->accountmaster->op_balance   = $attributes['op_balance']   ?? 0;
-			$this->accountmaster->cl_balance   = $attributes['cl_balance']   ?? 0;
-			$this->accountmaster->fcop_balance = $attributes['fcop_balance'] ?? 0;
-			$this->accountmaster->fy_balance   = $attributes['fy_balance']   ?? 0;
-			$this->accountmaster->pdc_amount   = $attributes['pdc_amount']   ?? 0;
+			$this->accountmaster->op_balance   = $toNumber($attributes['op_balance'] ?? null, 0);
+			$this->accountmaster->cl_balance   = $toNumber($attributes['cl_balance'] ?? null, 0);
+			$this->accountmaster->fcop_balance = $toNumber($attributes['fcop_balance'] ?? null, 0);
+			$this->accountmaster->fy_balance   = $toNumber($attributes['fy_balance'] ?? null, 0);
+			$this->accountmaster->pdc_amount   = $toNumber($attributes['pdc_amount'] ?? null, 0);
 
 			// ── Tinyint flags — all default to 0 ─────────────────────────
 			$this->accountmaster->job_assign     = $attributes['job_assign']     ?? 0;
@@ -9514,7 +9511,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 			$this->accountmaster->is_hide        = $attributes['is_hide']        ?? 0;
 			$this->accountmaster->non_edit       = $attributes['non_edit']       ?? 0;
 			$this->accountmaster->vat_assign     = $attributes['vat_assign']     ?? 0;
-			$this->accountmaster->vat_percentage = $attributes['vat_percentage'] ?? 0;
+			$this->accountmaster->vat_percentage = $toNumber($attributes['vat_percentage'] ?? null, 0);
 			$this->accountmaster->listorder      = $attributes['listorder']      ?? '';
 
 			// ── Passport / nationality (if applicable) ────────────────────
@@ -9551,7 +9548,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				'created_by'        => Auth::user()->id,
 				'description'       => '',
 				'reference'         => '',
-				'invoice_date'      => $settings->from_date,
+				'invoice_date'      => $obInvoiceDate,
 				'department_id'     => Auth::user()->department_id ?? 0,
 			]);
 
