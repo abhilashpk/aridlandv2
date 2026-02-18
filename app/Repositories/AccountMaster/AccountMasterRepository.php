@@ -80,7 +80,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->area_id = isset($attributes['area_id'])?$attributes['area_id']:'';
 				$this->accountmaster->job_assign = isset($attributes['job_assign'])?$attributes['job_assign']:'';
 				$this->accountmaster->job_compulsary = isset($attributes['job_compulsary'])?$attributes['job_compulsary']:'';
-				$this->accountmaster->is_hide = isset($attributes['is_hide'])?$attributes['is_hide']:'';
+				$this->accountmaster->is_hide = isset($attributes['is_hide'])?$attributes['is_hide']: 0;
 				
 				$fcamount = 0;
 				$opBalance = $attributes['op_balance'] ?? 0;
@@ -502,7 +502,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 				$this->accountmaster->area_id = isset($attributes['area_id'])?$attributes['area_id']:'';
 				$this->accountmaster->job_assign = $attributes['job_assign'];
 				$this->accountmaster->job_compulsary = $attributes['job_compulsary'];
-				$this->accountmaster->is_hide = $attributes['is_hide'];
+				$this->accountmaster->is_hide = isset($attributes['is_hide'])?$attributes['is_hide']: 0;
 				$this->accountmaster->address = isset($attributes['address'])?$attributes['address']:'';
 				$this->accountmaster->city = isset($attributes['city'])?$attributes['city']:'';
 				$this->accountmaster->state = isset($attributes['state'])?$attributes['state']:'';
