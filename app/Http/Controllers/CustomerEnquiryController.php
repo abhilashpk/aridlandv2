@@ -14,6 +14,7 @@ use App\Repositories\Forms\FormsInterface;
 use App\Repositories\Location\LocationInterface;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Http\Request;
 
@@ -305,6 +306,7 @@ class CustomerEnquiryController extends Controller
 
 		// ✅ This will auto redirect back if validation fails
 		$request->validate($rules, $messages);
+		Log::info ('request:',[$request]);
 
 		// Merge default values for ALL required database fields
 		$data = array_merge([
@@ -661,26 +663,26 @@ class CustomerEnquiryController extends Controller
 	{	
 		//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('quotation_order_id');
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'customer_name' => 'required','customer_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
+			$request->validate(
+			[
+				'customer_name' => 'required',
+				'customer_id'   => 'required',
+				'item_code.*'   => 'required',
+				'item_id.*'     => 'required',
+				'unit_id.*'     => 'required',
+				'quantity.*'    => 'required',
+				'cost.*'        => 'required',
 			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
+			[
+				'customer_name.required' => 'Customer Name is required.',
+				'customer_id.required'   => 'Customer name is invalid.',
+				'item_code.*.required'   => 'Item code is required.',
+				'item_id.*.required'     => 'Item code is invalid.',
+				'unit_id.*.required'     => 'Item unit is required.',
+				'quantity.*.required'    => 'Item quantity is required.',
+				'cost.*.required'        => 'Item cost is required.',
 			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('customer_enquiry/edit/'.$id)->withInput()->withErrors();
-		}
+		);    
 		
 		$this->customer_enquiry->update($id, $request->all()); 
 		

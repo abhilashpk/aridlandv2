@@ -66,7 +66,7 @@ class QuotationRentalController extends Controller
     public function index() {
 		
 		$data = array();
-		$quotations = DB::table('quotation_sales')->where('status',1)->where('is_rental',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$quotations = DB::table('quotation_sales')->where('status',1)->where('is_rental',1)->whereNull('deleted_at')->get();
 	
 		//$quotations = [];//$this->quotation_sales->quotationSalesList();//
 		//echo '<pre>';print_r($quotations);exit;
@@ -205,7 +205,7 @@ class QuotationRentalController extends Controller
 		$res = $this->voucherno->getVoucherNo('QR');
 		//$vno = $res->no;//echo '<pre>';print_r($currency);exit;
 		$location = $this->location->locationList();
-		$row = DB::table('quotation_sales')->where('status',1)->where('is_rental',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id','doc_status')->first();
+		$row = DB::table('quotation_sales')->where('status',1)->where('is_rental',1)->whereNull('deleted_at')->orderBy('id','DESC')->select('id','doc_status')->first();
 		$apr = ($this->acsettings->doc_approve==1)?[1]:[0,1,2];
 		if($row && in_array($row->doc_status, $apr))
 			$lastid = $row->id;
@@ -274,43 +274,87 @@ class QuotationRentalController extends Controller
 					->withData($data);
 	}
 	
-	public function save(Request $request) { //echo '<pre>';print_r( $request->all() );exit;
+	// public function save(Request $request) { //echo '<pre>';print_r( $request->all() );exit;
 		
-		/* $this->validate($request, [
-        'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
-    ]); */
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'customer_name' => 'required','customer_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
+	// 	/* $this->validate($request, [
+    //     'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
+    // ]); */
+	// 	if( $this->validate(
+	// 		$request, 
+	// 		[//'reference_no' => 'required',
+	// 		 'customer_name' => 'required','customer_id' => 'required',
+	// 		 'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 		 'unit_id.*' => 'required',
+	// 		 'quantity.*' => 'required',
+	// 		 'cost.*' => 'required'
+	// 		],
+	// 		[//'reference_no.required' => 'Reference no. is required.',
+	// 		 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+	// 		 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 		 'unit_id.*' => 'Item unit is required.',
+	// 		 'quantity.*' => 'Item quantity is required.',
+	// 		 'cost.*' => 'Item cost is required.'
+	// 		]
+	// 	)) {
+	// 		//echo '<pre>';print_r($request->flash());exit;
+	// 		return redirect('quotation_rental/add')->withInput()
+    //     			->withErrors(['error' => 'Something went wrong. Please check the form.']);
+
+	// 	}
+		
+	// 	$id = $this->quotation_sales->create($request->all());
+	// 	if($id) {
+	// 		Session::flash('message', 'Quotation added successfully.'); 
+	// 		return redirect('quotation_rental/add');
+	// 	} else {
+	// 		Session::flash('error', 'Something went wrong, Order failed to add!');
+	// 		return redirect('quotation_rental/add');
+	// 	}
+		
+		
+	// }
+
+
+	public function save(Request $request)
+	{
+		// Proper Validation
+		$request->validate(
+			[
+				'customer_name' => 'required',
+				'customer_id'   => 'required',
+				'item_code.*'   => 'required',
+				'item_id.*'     => 'required',
+				'unit_id.*'     => 'required',
+				'quantity.*'    => 'required|numeric|min:0.01',
+				'cost.*'        => 'required|numeric|min:0',
 			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
+			[
+				'customer_name.required' => 'Customer Name is required.',
+				'customer_id.required'   => 'Customer name is invalid.',
+				'item_code.*.required'   => 'Item code is required.',
+				'item_id.*.required'     => 'Item code is invalid.',
+				'unit_id.*.required'     => 'Item unit is required.',
+				'quantity.*.required'    => 'Item quantity is required.',
+				'quantity.*.numeric'     => 'Item quantity must be numeric.',
+				'quantity.*.min'         => 'Item quantity must be greater than 0.',
+				'cost.*.required'        => 'Item cost is required.',
+				'cost.*.numeric'         => 'Item cost must be numeric.',
+				'cost.*.min'             => 'Item cost must be 0 or greater.',
 			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('quotation_rental/add')->withInput()->withErrors();
-		}
-		
+		);
+
+		// If validation passes, code continues
 		$id = $this->quotation_sales->create($request->all());
-		if($id) {
-			Session::flash('message', 'Quotation added successfully.'); 
-			return redirect('quotation_rental/add');
+
+		if ($id) {
+			Session::flash('message', 'Quotation added successfully.');
 		} else {
 			Session::flash('error', 'Something went wrong, Order failed to add!');
-			return redirect('quotation_rental/add');
 		}
-		
-		
+
+		return redirect('quotation_rental/add');
 	}
+
 	
 	public function destroy($id)
 	{
@@ -385,26 +429,30 @@ class QuotationRentalController extends Controller
 	{	
 		//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('quotation_order_id');
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'customer_name' => 'required','customer_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
+		$request->validate(
+			[
+				'customer_name' => 'required',
+				'customer_id'   => 'required',
+				'item_code.*'   => 'required',
+				'item_id.*'     => 'required',
+				'unit_id.*'     => 'required',
+				'quantity.*'    => 'required|numeric|min:0.01',
+				'cost.*'        => 'required|numeric|min:0',
 			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
+			[
+				'customer_name.required' => 'Customer Name is required.',
+				'customer_id.required'   => 'Customer name is invalid.',
+				'item_code.*.required'   => 'Item code is required.',
+				'item_id.*.required'     => 'Item code is invalid.',
+				'unit_id.*.required'     => 'Item unit is required.',
+				'quantity.*.required'    => 'Item quantity is required.',
+				'quantity.*.numeric'     => 'Item quantity must be numeric.',
+				'quantity.*.min'         => 'Item quantity must be greater than 0.',
+				'cost.*.required'        => 'Item cost is required.',
+				'cost.*.numeric'         => 'Item cost must be numeric.',
+				'cost.*.min'             => 'Item cost must be 0 or greater.',
 			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('quotation_rental/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		$this->quotation_sales->update($id, $request->all()); 
 		//echo '<pre>';print_r($request->all());exit;

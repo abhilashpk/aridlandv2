@@ -293,7 +293,7 @@
 									</thead>
 								</table>
 								
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php $i = 0; $num = count($orditems); @endphp
 								<!-- ROWCHNG -->
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
@@ -565,7 +565,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" class="form-control spl" readonly value="{{(old('total'))?old('total'):($orderrow->is_fc==1)?$orderrow->total_fc:$orderrow->total}}">
+										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" class="form-control spl" readonly 
+										{{-- value="{{(old('total'))?old('total'):($orderrow->is_fc==1)?$orderrow->total_fc:$orderrow->total}}" --}}
+										value="{{ old('total') ? old('total') : ($orderrow->is_fc == 1 ? $orderrow->total_fc : $orderrow->total) }}"
+										>
 										</div>
 										<div class="col-xs-2">
 										<span class="small" id="c_label">Currency Dhs</span>	<input type="number" id="total_fc" step="any" name="total_fc" class="form-control spl" value="{{(old('total_fc'))?old('total_fc'):$orderrow->total}}" readonly placeholder="0">
@@ -581,7 +584,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="discount" name="discount" class="form-control spl discount-cal" value="{{(old('discount'))?old('discount'):($orderrow->is_fc==1)?$orderrow->discount_fc:$orderrow->discount}}">
+											<input type="number" step="any" id="discount" name="discount" class="form-control spl discount-cal" 
+											{{-- value="{{(old('discount'))?old('discount'):($orderrow->is_fc==1)?$orderrow->discount_fc:$orderrow->discount}}" --}}
+											value="{{ old('discount') ? old('discount') : ($orderrow->is_fc == 1 ? $orderrow->discount_fc : $orderrow->discount) }}"
+											>
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="discount_fc" name="discount_fc" class="form-control spl" value="{{(old('discount_fc'))?old('discount_fc'):$orderrow->discount}}" placeholder="0">
@@ -597,7 +603,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly value="{{(old('subtotal'))?old('subtotal'):($orderrow->is_fc==1)?$orderrow->subtotal_fc:$orderrow->subtotal}}">
+											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly 
+											{{-- value="{{(old('subtotal'))?old('subtotal'):($orderrow->is_fc==1)?$orderrow->subtotal_fc:$orderrow->subtotal}}" --}}
+											value="{{ old('subtotal') ? old('subtotal') : ($orderrow->is_fc == 1 ? $orderrow->subtotal_fc : $orderrow->subtotal) }}"
+											>
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="subtotal_fc" name="subtotal_fc" class="form-control spl" value="{{(old('subtotal_fc'))?old('subtotal_fc'):$orderrow->subtotal}}" readonly placeholder="0">
@@ -613,7 +622,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="vat" name="vat" class="form-control spl" value="{{(old('vat'))?old('vat'):($orderrow->is_fc==1)?$orderrow->vat_amount_fc:$orderrow->vat_amount}}" readonly>
+											<input type="number" step="any" id="vat" name="vat" class="form-control spl" 
+											{{-- value="{{(old('vat'))?old('vat'):($orderrow->is_fc==1)?$orderrow->vat_amount_fc:$orderrow->vat_amount}}"  --}}
+											value="{{ old('vat') ? old('vat') : ($orderrow->is_fc == 1 ? $orderrow->vat_amount_fc : $orderrow->vat_amount) }}"
+											readonly>
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="vat_fc" name="vat_fc" class="form-control spl" placeholder="0" value="{{(old('vat_fc'))?old('vat_fc'):$orderrow->vat_amount}}" readonly>
@@ -632,7 +644,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly value="{{(old('net_amount'))?old('net_amount'):($orderrow->is_fc==1)?$orderrow->net_total_fc:$orderrow->net_total}}">
+											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly 
+											{{-- value="{{(old('net_amount'))?old('net_amount'):($orderrow->is_fc==1)?$orderrow->net_total_fc:$orderrow->net_total}}" --}}
+											value="{{ old('net_amount') ? old('net_amount') : ($orderrow->is_fc == 1 ? $orderrow->net_amount_fc : $orderrow->net_amount) }}"
+											>
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="{{(old('net_amount_fc'))?old('net_amount_fc'):$orderrow->net_total}}" readonly placeholder="0">

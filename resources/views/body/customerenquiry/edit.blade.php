@@ -327,7 +327,7 @@
 									</thead>
 								</table>
 								
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php $i = 0; $num = count($orditems); @endphp
 								<!-- ROWCHNG -->
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
@@ -445,23 +445,37 @@
 								<?php $i++; } } else { ?>
 								@foreach($orditems as $item)
 								{{--*/ $i++; /*--}}
-									<?php if($orderrow->is_fc==1) {
-										 $unit_price = $item->unit_price / $orderrow->currency_rate;
-										 $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
-										 $vat_amount = round($item->vat_amount / $orderrow->currency_rate,2);
-										 $total = $orderrow->total / $orderrow->currency_rate;
-										 $vat_amount_net = $orderrow->vat_amount / $orderrow->currency_rate;
-										 $net_total = round($orderrow->net_total / $orderrow->currency_rate,2);
-									  } else {
-										 $unit_price = $item->unit_price;
-										 $line_total = $item->line_total;
-										 $vat_amount = $item->vat_amount;
-										 $total = $orderrow->total;
-										 $vat_amount_net = $orderrow->vat_amount;
-										 $net_total = $orderrow->net_total;
-									  }
+									<?//php if($orderrow->is_fc==1) {
+										// $unit_price = $item->unit_price / $orderrow->currency_rate;
+										// $line_total = number_format($item->line_total / $orderrow->currency_rate,2, '.', '');
+										 //$vat_amount = round($item->vat_amount / $orderrow->currency_rate,2);
+										 //$total = $orderrow->total / $orderrow->currency_rate;
+										 //$vat_amount_net = $orderrow->vat_amount / $orderrow->currency_rate;
+										// $net_total = round($orderrow->net_total / $orderrow->currency_rate,2);
+									  //} else {
+										// $unit_price = $item->unit_price;
+										// $line_total = $item->line_total;
+										// $vat_amount = $item->vat_amount;
+										// $total = $orderrow->total;
+										// $vat_amount_net = $orderrow->vat_amount;
+										// $net_total = $orderrow->net_total;
+									  //}
 									
 									?>
+
+									<?php 
+									$rate = ($orderrow->is_fc == 1 && $orderrow->currency_rate > 0)
+											? $orderrow->currency_rate
+											: 1;
+
+									$unit_price     = $item->unit_price / $rate;
+									$line_total     = number_format($item->line_total / $rate,2,'.','');
+									$vat_amount     = round($item->vat_amount / $rate,2);
+									$total          = $orderrow->total / $rate;
+									$vat_amount_net = $orderrow->vat_amount / $rate;
+									$net_total      = round($orderrow->net_total / $rate,2);
+									?>
+
 									<div class="itemdivChld">							
 										<table border="0" class="table-dy-row">
 											<tr>

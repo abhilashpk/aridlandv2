@@ -57,37 +57,76 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 	}
 	
 	//set input fields values
+	// private function setInputValue($attributes)
+	// {
+	// 	//echo '<pre>';print_r( $attributes );exit;
+	// 	$this->customer_enquiry->voucher_no = $attributes['voucher_no'] ?? 0;
+    // 	$this->customer_enquiry->reference_no = $attributes['reference_no'] ?? '';
+	// 	$this->customer_enquiry->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
+	// 	$this->customer_enquiry->customer_id = $attributes['customer_id'] ?? 0;
+    // 	$this->customer_enquiry->salesman_id = $attributes['salesman_id'] ?? 0;
+	// 	// Provide default empty string for subject and description
+    // 	$this->customer_enquiry->subject = $attributes['subject'] ?? '';
+    // 	$this->customer_enquiry->description = $attributes['description'] ?? '';
+
+	// 	$this->customer_enquiry->job_id 		 = $attributes['job_id'];
+	// 	$this->customer_enquiry->header_id 	 = $attributes['header_id'];
+	// 	$this->customer_enquiry->footer_id 	 = $attributes['footer_id'];
+	// 	$this->customer_enquiry->is_fc 		  = isset($attributes['is_fc'])?1:0;
+	// 	$this->customer_enquiry->currency_id   = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
+	// 	$this->customer_enquiry->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
+	// 	$this->customer_enquiry->is_export		= isset($attributes['is_export'])?1:0;
+	// 	$this->customer_enquiry->vehicle_id		= isset($attributes['vehicle_id'])?$attributes['vehicle_id']:'';
+	// 	$this->customer_enquiry->job_type		= isset($attributes['job_type'])?$attributes['job_type']:'';
+	// 	$this->customer_enquiry->jobnature		= isset($attributes['jobnature'])?$attributes['jobnature']:'';
+	// 	$this->customer_enquiry->fabrication		= isset($attributes['fabrication'])?$attributes['fabrication']:'';
+	// 	$this->customer_enquiry->prefix			= isset($attributes['prefix'])?$attributes['prefix']:'';
+	// 	$this->customer_enquiry->kilometer		= isset($attributes['kilometer'])?$attributes['kilometer']:'';
+	// 	$this->customer_enquiry->terms_id 	 = isset($attributes['terms_id'])?$attributes['terms_id']:'';
+	// 	$this->customer_enquiry->lead_id 	 = isset($attributes['lead_id'])?$attributes['lead_id']:$attributes['lead_id'];
+	// 	$this->customer_enquiry->location_id = isset($attributes['location_id'])?$attributes['location_id']:$attributes['location_id'];
+		
+	// 	return true;
+	// }
+
 	private function setInputValue($attributes)
 	{
-		//echo '<pre>';print_r( $attributes );exit;
-		$this->customer_enquiry->voucher_no = $attributes['voucher_no'] ?? '';
-    	$this->customer_enquiry->reference_no = $attributes['reference_no'] ?? '';
-		$this->customer_enquiry->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
-		$this->customer_enquiry->customer_id = $attributes['customer_id'] ?? 0;
-    	$this->customer_enquiry->salesman_id = $attributes['salesman_id'] ?? 0;
-		// Provide default empty string for subject and description
-    	$this->customer_enquiry->subject = $attributes['subject'] ?? '';
-    	$this->customer_enquiry->description = $attributes['description'] ?? '';
+		$this->customer_enquiry->voucher_no   = $attributes['voucher_no']   ?? 0;
+		$this->customer_enquiry->reference_no = $attributes['reference_no'] ?? '';
+		$this->customer_enquiry->voucher_date = !empty($attributes['voucher_date'])
+			? date('Y-m-d', strtotime($attributes['voucher_date']))
+			: date('Y-m-d');
 
-		$this->customer_enquiry->job_id 		 = $attributes['job_id'];
-		$this->customer_enquiry->header_id 	 = $attributes['header_id'];
-		$this->customer_enquiry->footer_id 	 = $attributes['footer_id'];
-		$this->customer_enquiry->is_fc 		  = isset($attributes['is_fc'])?1:0;
-		$this->customer_enquiry->currency_id   = (isset($attributes['currency_id']))?$attributes['currency_id']:'';
-		$this->customer_enquiry->currency_rate = (isset($attributes['currency_rate']))?$attributes['currency_rate']:'';
-		$this->customer_enquiry->is_export		= isset($attributes['is_export'])?1:0;
-		$this->customer_enquiry->vehicle_id		= isset($attributes['vehicle_id'])?$attributes['vehicle_id']:'';
-		$this->customer_enquiry->job_type		= isset($attributes['job_type'])?$attributes['job_type']:'';
-		$this->customer_enquiry->jobnature		= isset($attributes['jobnature'])?$attributes['jobnature']:'';
-		$this->customer_enquiry->fabrication		= isset($attributes['fabrication'])?$attributes['fabrication']:'';
-		$this->customer_enquiry->prefix			= isset($attributes['prefix'])?$attributes['prefix']:'';
-		$this->customer_enquiry->kilometer		= isset($attributes['kilometer'])?$attributes['kilometer']:'';
-		$this->customer_enquiry->terms_id 	 = isset($attributes['terms_id'])?$attributes['terms_id']:'';
-		$this->customer_enquiry->lead_id 	 = isset($attributes['lead_id'])?$attributes['lead_id']:$attributes['lead_id'];
-		$this->customer_enquiry->location_id = isset($attributes['location_id'])?$attributes['location_id']:$attributes['location_id'];
-		
+		$this->customer_enquiry->customer_id  = $attributes['customer_id'] ?? 0;
+		$this->customer_enquiry->salesman_id  = $attributes['salesman_id'] ?? 0;
+		$this->customer_enquiry->subject      = $attributes['subject'] ?? '';
+		$this->customer_enquiry->description  = $attributes['description'] ?? '';
+
+		$this->customer_enquiry->job_id       = $attributes['job_id'] ?? 0;
+		$this->customer_enquiry->header_id    = $attributes['header_id'] ?? 0;
+		$this->customer_enquiry->footer_id    = $attributes['footer_id'] ?? 0;
+
+		$this->customer_enquiry->is_fc        = isset($attributes['is_fc']) ? 1 : 0;
+		$this->customer_enquiry->currency_id  = $attributes['currency_id'] ?? 0;
+		$this->customer_enquiry->currency_rate= $attributes['currency_rate'] ?? 0;
+
+		$this->customer_enquiry->is_export    = isset($attributes['is_export']) ? 1 : 0;
+
+		$this->customer_enquiry->vehicle_id   = $attributes['vehicle_id'] ?? 0;
+		$this->customer_enquiry->job_type     = $attributes['job_type'] ?? 0;
+		$this->customer_enquiry->jobnature    = $attributes['jobnature'] ?? 0;
+
+		$this->customer_enquiry->fabrication  = $attributes['fabrication'] ?? '';
+		$this->customer_enquiry->prefix       = $attributes['prefix'] ?? '';
+		$this->customer_enquiry->kilometer    = $attributes['kilometer'] ?? '';
+
+		$this->customer_enquiry->terms_id     = $attributes['terms_id'] ?? 0;
+		$this->customer_enquiry->lead_id      = $attributes['lead_id'] ?? 0;
+		$this->customer_enquiry->location_id  = $attributes['location_id'] ?? 0;
+
 		return true;
 	}
+
 	
 	private function setJobdetails($attributes) {
 							
@@ -517,8 +556,9 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 					$this->customer_enquiry->status 	   = 1;
 					$this->customer_enquiry->created_at = now();
 					$this->customer_enquiry->created_by = 1;
-					$this->customer_enquiry->fill($attributes)->save();
-					
+					// $this->customer_enquiry->fill($attributes)->save();
+					$this->customer_enquiry->save();
+
 					//check workshop version active...
 					if($this->module->is_active==1 && $this->customer_enquiry->id) {
 						$this->setJobdetails($attributes);
@@ -594,15 +634,36 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 						$net_amount = $subtotal + $tax_total;
 					/*CHG*/
 						
-					if( isset($attributes['is_fc']) ) {
-						$total_fc 	   = $line_total / $attributes['currency_rate'];
-						$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
-						$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
-						$tax_fc 	   = $tax_total / $attributes['currency_rate'];
+					// if( isset($attributes['is_fc']) ) {
+					// 	$total_fc 	   = $line_total / $attributes['currency_rate'];
+					// 	$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
+					// 	$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
+					// 	$tax_fc 	   = $tax_total / $attributes['currency_rate'];
+					// 	$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
+					// 	$subtotal_fc	   = $subtotal / $attributes['currency_rate'];
+					// } else {
+					// 	$total_fc = $discount_fc = $tax_fc = $net_amount_fc = $vat_fc = $subtotal_fc = 0;
+					// }
+
+					$rate = (float) ($attributes['currency_rate'] ?? 0);
+
+					if (!empty($attributes['is_fc']) && $rate > 0) {
+
+						$total_fc      = $line_total / $rate;
+						$discount_fc   = ($attributes['discount'] ?? 0) / $rate;
+						$vat_fc        = ($attributes['vat_fc'] ?? 0) / $rate;
+						$tax_fc        = $tax_total / $rate;
 						$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
-						$subtotal_fc	   = $subtotal / $attributes['currency_rate'];
+						$subtotal_fc   = $subtotal / $rate;
+
 					} else {
-						$total_fc = $discount_fc = $tax_fc = $net_amount_fc = $vat_fc = $subtotal_fc = 0;
+
+						$total_fc = 0;
+						$discount_fc = 0;
+						$tax_fc = 0;
+						$net_amount_fc = 0;
+						$vat_fc = 0;
+						$subtotal_fc = 0;
 					}
 					
 					//update discount, total amount
@@ -915,16 +976,37 @@ class CustomerEnquiryRepository extends AbstractValidator implements CustomerEnq
 					$net_amount = $subtotal + $tax_total;
 				/*CHG*/
 					
-				if( isset($attributes['is_fc']) ) {
-					$total_fc 	   = $line_total / $attributes['currency_rate'];
-					$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
-					$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
-					$tax_fc 	   = $tax_total / $attributes['currency_rate'];
-					$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
-					$subtotal_fc	   = $subtotal / $attributes['currency_rate']; //CHG
-				} else {
-					$total_fc = 0; $discount_fc = 0; $tax_fc = 0; $net_amount_fc = 0; $vat_fc = $subtotal_fc = 0;
-				}
+				// if( isset($attributes['is_fc']) ) {
+				// 	$total_fc 	   = $line_total / $attributes['currency_rate'];
+				// 	$discount_fc   = $attributes['discount'] / $attributes['currency_rate'];
+				// 	$vat_fc 	   = $attributes['vat_fc'] / $attributes['currency_rate'];
+				// 	$tax_fc 	   = $tax_total / $attributes['currency_rate'];
+				// 	$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
+				// 	$subtotal_fc	   = $subtotal / $attributes['currency_rate']; //CHG
+				// } else {
+				// 	$total_fc = 0; $discount_fc = 0; $tax_fc = 0; $net_amount_fc = 0; $vat_fc = $subtotal_fc = 0;
+				// }
+
+				$rate = (float) ($attributes['currency_rate'] ?? 0);
+
+					if (!empty($attributes['is_fc']) && $rate > 0) {
+
+						$total_fc      = $line_total / $rate;
+						$discount_fc   = ($attributes['discount'] ?? 0) / $rate;
+						$vat_fc        = ($attributes['vat_fc'] ?? 0) / $rate;
+						$tax_fc        = $tax_total / $rate;
+						$net_amount_fc = $total_fc - $discount_fc + $tax_fc;
+						$subtotal_fc   = $subtotal / $rate;
+
+					} else {
+
+						$total_fc = 0;
+						$discount_fc = 0;
+						$tax_fc = 0;
+						$net_amount_fc = 0;
+						$vat_fc = 0;
+						$subtotal_fc = 0;
+					}
 				
 				//update discount, total amount
 				DB::table('customer_enquiry')
