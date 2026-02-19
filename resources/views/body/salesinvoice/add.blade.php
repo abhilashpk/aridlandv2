@@ -1434,7 +1434,7 @@ $(document).ready(function () {
 	$('.itemdivPrnt').find('.btn-add-item:not(:last)').hide();
 	<?php } ?>
 	
-<?php if(!Session::has('is_cash') && $hasVoucher && $vouchers[0]->is_cash_voucher==1) { ?> //cash customer.... 
+	<?php if(!Session::has('is_cash') && $hasVoucher && $vouchers[0]->is_cash_voucher==1) { ?> //cash customer.... 
 		$('#customer_name').removeAttr("data-toggle");
 		if( $('#newcustomerInfo').is(":hidden") )
 			$('#newcustomerInfo').toggle();
@@ -1448,7 +1448,7 @@ $(document).ready(function () {
 			$('#newcustomerInfo').toggle();
 		if( $('#customerInfo').is(":hidden") ) 
 			$('#customerInfo').toggle();
-		<?php if($siscsh==0) { ?>
+	<?php if($siscsh==0) { ?>
 			$('#customer_name').attr("data-toggle", "modal");
 			$('#customer_id').val('');
 			$('#dr_account_id').val('');
@@ -1466,27 +1466,27 @@ $(document).ready(function () {
 	$('.descdivPrntItm').toggle();$('.locPrntItm').toggle();
 
 	$('.loccom-radio').iCheck('check');
-	 $('#locationRadio').hide();
+	$('#locationRadio').hide();
 
 	$(document).on('ifChecked', '.locinter-radio', function (e) {
-      $('.loccom-radio').iCheck('uncheck');
-      $('.locfrom-radio').iCheck('uncheck');
-	   $('.locfrom-radio').iCheck('disable');
-      $('#locationRadioGroup').hide();
+      	$('.loccom-radio').iCheck('uncheck');
+      	$('.locfrom-radio').iCheck('uncheck');
+	   	$('.locfrom-radio').iCheck('disable');
+      	$('#locationRadioGroup').hide();
 		$('#locationRadio').show();
     
 
-	   let locID   = {{$interid}};
+	   	let locID   = {{$interid}};
         let locCode = "{{$intercode}}";
 		let prefix ='ISI';
 		let newPrefix = prefix + locCode; 
-		 $('#prefixBox').text(newPrefix);
+		$('#prefixBox').text(newPrefix);
         $('input[name="prefix"]').val(newPrefix);
-          $('input[name="is_intercompany"]').val(1);
+        $('input[name="is_intercompany"]').val(1);
 		// Check only the default location radio
-    $('.locin-radio[data-id="' + locID + '"]').iCheck('check');
+    	$('.locin-radio[data-id="' + locID + '"]').iCheck('check');
     
-    // Disable all location radios so user cannot change
+    	// Disable all location radios so user cannot change
    
 
 		$('#selected_locfrom_id').val(locID);
@@ -1496,18 +1496,18 @@ $(document).ready(function () {
 
 	$(document).on('ifChecked', '.loccom-radio', function (e) {
 
-        $('.locinter-radio').iCheck('uncheck');
+			$('.locinter-radio').iCheck('uncheck');
 
-         $('.locfrom-radio').iCheck('enable');
-         $('#locationRadioGroup').show();
-		$('#locationRadio').hide();
-        $('.locfrom-radio').iCheck('uncheck');
-		 $('#prefixBox').text('SI');
-        $('input[name="prefix"]').val('');
-		 $('input[name="is_intercompany"]').val('');
-       $('#selected_locfrom_id').val('');
-	   $('#default_location').val('');
-});
+			$('.locfrom-radio').iCheck('enable');
+			$('#locationRadioGroup').show();
+			$('#locationRadio').hide();
+			$('.locfrom-radio').iCheck('uncheck');
+			$('#prefixBox').text('SI');
+			$('input[name="prefix"]').val('');
+			$('input[name="is_intercompany"]').val('');
+		$('#selected_locfrom_id').val('');
+		$('#default_location').val('');
+	});
     
 	$(document).on('ifChecked', '.locfrom-radio', function (e) {
           var val = $(this).val();
@@ -1517,8 +1517,8 @@ $(document).ready(function () {
     
          $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
              
-			  let prefix ='SI'; //$('input[name="prefix"]').val('QS');   // Example: LT
-             let newPrefix = prefix + locCode;               // LTWH1
+				let prefix ='SI'; //$('input[name="prefix"]').val('QS');   // Example: LT
+             	let newPrefix = prefix + locCode;               // LTWH1
 
                // show new prefix on screen
                 $('#prefixBox').text(newPrefix);
@@ -1529,8 +1529,8 @@ $(document).ready(function () {
               $('#selected_locfrom_id').val(val);
               $('#default_location').val(val);
         
-     });
-      });
+     	});
+    });
 
 
 	var urlvchr = "{{ url('sales_invoice/checkvchrno/') }}"; //CHNG
@@ -1619,9 +1619,11 @@ $(document).ready(function () {
 	});
 });
 
+
 	//calculation item net total, tax and discount...
 	function getNetTotal() {
 		//console.log('nt');
+		 console.log('Recalculating totals...');
 		var lineTotal = 0;
 		$( '.line-total' ).each(function() { 
 		  var res = this.id.split('_');
@@ -1905,7 +1907,7 @@ $(document).ready(function () {
 $(function() {	
 	$(':input[type=number]').on('mousewheel',function(e){ $(this).blur(); });
 	var rowNum = 1;
-	 $('#voucher_date').datepicker( { dateFormat: 'dd-mm-yyyy',minDate: new Date('{{$settings->from_date}}'),maxDate: new Date('{{$settings->to_date}}') } );
+	$('#voucher_date').datepicker( { dateFormat: 'dd-mm-yyyy',minDate: new Date('{{$settings->from_date}}'),maxDate: new Date('{{$settings->to_date}}') } );
 	
 	$('.lpo_date1').datepicker( { 
 			dateFormat: 'dd-mm-yyyy',
@@ -1917,7 +1919,7 @@ $(function() {
 	$(document).on('click', '#infoadd', function(e) { 
 		   e.preventDefault();
            $('.infodivPrnt').toggle();
-      });
+    });
 	
 	//item more info view section
 	$(document).on('click', '.more-info', function(e) { 
@@ -2177,6 +2179,7 @@ $(function() {
 			$('#voucher_no').val('');
 		}
 	});
+
 	$(document).on('click', '.btn-add-desc', function(e) 
     { 
         e.preventDefault();
@@ -2221,7 +2224,7 @@ $(function() {
 	$('#duedays').on('blur', function(e){
 	    var days=$('#duedays').val()
 	    calculateDueDate(parseInt(days));
-   });
+    });
 
 	$('#sales_type').on('change', function(e){
 		if(e.target.value=='ltol') {
@@ -2584,6 +2587,16 @@ $(function() {
 		
 	});
 	
+	$(document).on('input', '.line-quantity', function(e) {  // Changed from 'blur' to 'input' for real-time updates
+        var res = this.id.split('_');
+        var curNum = res[1];
+        if($('#itmcst_'+curNum).val()=='')
+            var isPrice = getAutoPrice(curNum);
+        var res = getLineTotal(curNum);
+        if(res) 
+            getNetTotal();
+    });
+
 	$(document).on('blur', '.line-cost', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1]; 

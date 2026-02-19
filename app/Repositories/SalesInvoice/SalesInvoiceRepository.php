@@ -21,7 +21,7 @@ use DB;
 use Session;
 use Auth;
 use File;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 
@@ -466,108 +466,258 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		return array('line_total' => $line_total, 'tax_total' => $tax_total, 'cost_value' => $cost_value, 'type' => $type,'item_total' => $item_total );
 	}
 	
+	// private function setTransferStatusItem($attributes, $key, $doctype, $mode=null)
+	// {
+	// 	//if quantity partially deliverd, update pending quantity.
+	// 	if($doctype=='SQ') {
+	// 		if(isset($attributes['quote_sales_item_id'])) {
+	// 			if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+	// 				if( isset($attributes['quote_sales_item_id'][$key]) ) {
+	// 					$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+	// 					//update as partially delivered.
+	// 					DB::table('quotation_sales_item')
+	// 								->where('id', $attributes['quote_sales_item_id'][$key])
+	// 								->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+	// 				}
+	// 			} else {
+	// 					//update as completely delivered.
+	// 					DB::table('quotation_sales_item')
+	// 								->where('id', $attributes['quote_sales_item_id'][$key])
+	// 								->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+	// 			}
+	// 		}
+	// 	} else if($doctype=='SO') {
+	// 		if(isset($attributes['sales_order_item_id'])) {
+	// 			if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+	// 				if( isset($attributes['sales_order_item_id'][$key]) ) {
+	// 					//$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+	// 					$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+	// 					//update as partially delivered.
+	// 					DB::table('sales_order_item')
+	// 								->where('id', $attributes['sales_order_item_id'][$key])
+	// 								->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+	// 				}
+	// 			} else {
+	// 					//update as completely delivered.
+	// 					DB::table('sales_order_item')
+	// 								->where('id', $attributes['sales_order_item_id'][$key])
+	// 								->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+	// 			}
+	// 		}
+	// 	}
+	// 	else if($doctype=='CDO') {
+		    
+	// 	    //QUANTIITY CROSS CHECK WI DO .....MY22
+	// 		/*if($attributes['document_id']!='') {
+	// 			$cdorow = DB::table('customer_do_item')->where('customer_do_id',$attributes['document_id'])->where('item_id',$attributes['item_id'][$key])
+	// 										 ->where('unit_id',$attributes['unit_id'][$key])->where('status',1)->whereNull('deleted_at')
+	// 										 ->first(); 
+	// 			if($cdorow) {
+	// 				$attributes['customer_do_item_id'][$key] = $cdorow->id;
+	// 				$attributes['actual_quantity'][$key] = ($cdorow->is_transfer==2)?$cdorow->balance_quantity:$cdorow->quantity;
+	// 			}
+	// 		}*/
+	// 		if($mode=='edit') { //exit;
+			    
+    // 				if(isset($attributes['quantity_old']) && ($attributes['quantity'][$key] != $attributes['quantity_old'][$key])) {
+    // 					if($attributes['doc_row_id'][$key] > 0 && ($attributes['quantity_old'][$key] != $attributes['quantity'][$key]) ) {
+    // 						$quantity 	 = ($attributes['quantity_old'][$key] > $attributes['quantity'][$key])?($attributes['quantity_old'][$key] - $attributes['quantity'][$key]):($attributes['quantity'][$key] > $attributes['quantity_old'][$key]);
+    						
+    // 						$DOqtyarr = DB::table('sales_invoice_item')->where('doc_row_id', $attributes['doc_row_id'][$key])->where('id','!=', $attributes['order_item_id'][$key])
+    // 						                            ->select('id', DB::raw('SUM(quantity) AS quantity'))->groupBY('item_id')->get();
+    // 						$DOqty = ((isset($DOqtyarr[0]))?$DOqtyarr[0]->quantity:0) + $attributes['quantity'][$key];          
+    // 						//update as partially delivered.
+    						
+    // 						$DOrow = DB::table('customer_do_item')->where('id', $attributes['doc_row_id'][$key])->select('quantity')->first();
+    // 						if($DOrow->quantity==$DOqty) {
+    // 						    DB::table('customer_do_item')
+    // 									->where('id', $attributes['doc_row_id'][$key])
+    // 									->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 1]); 
+    // 						} else {
+    // 						    DB::table('customer_do_item')
+    // 									->where('id', $attributes['doc_row_id'][$key])
+    // 									->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 2]);
+    // 						}
+    									
+    //     				} elseif($attributes['doc_row_id'][$key] > 0 && ($attributes['quantity_old'][$key] == $attributes['quantity'][$key])) {
+    //     						//update as completely delivered.
+    //     						DB::table('customer_do_item')
+    //     									->where('id', $attributes['doc_row_id'][$key])
+    //     									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+    //     				}
+	// 		        }
+
+	// 		} else {
+			    
+    // 			if(isset($attributes['customer_do_item_id'])) {
+    // 				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+    // 					if( isset($attributes['customer_do_item_id'][$key]) ) {
+    // 						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+    // 						//update as partially delivered.
+    // 						DB::table('customer_do_item')
+    // 									->where('id', $attributes['customer_do_item_id'][$key])
+    // 									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+    // 					}
+    // 				} else {
+    // 						//update as completely delivered.
+    // 						DB::table('customer_do_item')
+    // 									->where('id', $attributes['customer_do_item_id'][$key])
+    // 									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+    // 				}
+    // 			}
+	// 		}
+	// 	}
+	// }
+
+
 	private function setTransferStatusItem($attributes, $key, $doctype, $mode=null)
 	{
-		//if quantity partially deliverd, update pending quantity.
-		if($doctype=='SQ') {
-			if(isset($attributes['quote_sales_item_id'])) {
-				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-					if( isset($attributes['quote_sales_item_id'][$key]) ) {
-						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-						//update as partially delivered.
-						DB::table('quotation_sales_item')
-									->where('id', $attributes['quote_sales_item_id'][$key])
-									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
-					}
+		if ($doctype == 'SQ') {
+
+			if (isset($attributes['quote_sales_item_id'][$key])) {
+				if (isset($attributes['actual_quantity'][$key]) &&
+					($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+
+					$quantity = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+					DB::table('quotation_sales_item')
+						->where('id', $attributes['quote_sales_item_id'][$key])
+						->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
 				} else {
-						//update as completely delivered.
-						DB::table('quotation_sales_item')
-									->where('id', $attributes['quote_sales_item_id'][$key])
-									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+					DB::table('quotation_sales_item')
+						->where('id', $attributes['quote_sales_item_id'][$key])
+						->update(['balance_quantity' => 0, 'is_transfer' => 1]);
 				}
 			}
-		} else if($doctype=='SO') {
-			if(isset($attributes['sales_order_item_id'])) {
-				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-					if( isset($attributes['sales_order_item_id'][$key]) ) {
-						//$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-						//update as partially delivered.
-						DB::table('sales_order_item')
-									->where('id', $attributes['sales_order_item_id'][$key])
-									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+
+		} else if ($doctype == 'SO') {
+
+			if ($mode == 'edit') {
+				if (isset($attributes['actual_quantity']) &&
+					($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+
+					if ($attributes['doc_row_id'][$key] > 0 &&
+						($attributes['actual_quantity'][$key] != $attributes['quantity'][$key])) {
+
+						$DOqtyarr = DB::table('sales_invoice_item')
+							->where('doc_row_id', $attributes['doc_row_id'][$key])
+							->where('id', '!=', $attributes['order_item_id'][$key])
+							->select('id', DB::raw('SUM(quantity) AS quantity'))
+							->groupBy('item_id')->get();
+
+						$DOqty = ((isset($DOqtyarr[0])) ? $DOqtyarr[0]->quantity : 0)
+								+ $attributes['quantity'][$key];
+
+						$DOrow = DB::table('sales_order_item')
+							->where('id', $attributes['doc_row_id'][$key])
+							->select('quantity')->first();
+
+						if ($DOrow && $DOrow->quantity == $DOqty) {
+							DB::table('sales_order_item')
+								->where('id', $attributes['doc_row_id'][$key])
+								->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 1]);
+						} else {
+							DB::table('sales_order_item')
+								->where('id', $attributes['doc_row_id'][$key])
+								->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 2]);
+						}
 					}
-				} else {
-						//update as completely delivered.
-						DB::table('sales_order_item')
-									->where('id', $attributes['sales_order_item_id'][$key])
-									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
 				}
-			}
-		}
-		else if($doctype=='CDO') {
-		    
-		    //QUANTIITY CROSS CHECK WI DO .....MY22
-			/*if($attributes['document_id']!='') {
-				$cdorow = DB::table('customer_do_item')->where('customer_do_id',$attributes['document_id'])->where('item_id',$attributes['item_id'][$key])
-											 ->where('unit_id',$attributes['unit_id'][$key])->where('status',1)->whereNull('deleted_at')
-											 ->first(); 
-				if($cdorow) {
-					$attributes['customer_do_item_id'][$key] = $cdorow->id;
-					$attributes['actual_quantity'][$key] = ($cdorow->is_transfer==2)?$cdorow->balance_quantity:$cdorow->quantity;
-				}
-			}*/
-			if($mode=='edit') { //exit;
-			    
-    				if(isset($attributes['quantity_old']) && ($attributes['quantity'][$key] != $attributes['quantity_old'][$key])) {
-    					if($attributes['doc_row_id'][$key] > 0 && ($attributes['quantity_old'][$key] != $attributes['quantity'][$key]) ) {
-    						$quantity 	 = ($attributes['quantity_old'][$key] > $attributes['quantity'][$key])?($attributes['quantity_old'][$key] - $attributes['quantity'][$key]):($attributes['quantity'][$key] > $attributes['quantity_old'][$key]);
-    						
-    						$DOqtyarr = DB::table('sales_invoice_item')->where('doc_row_id', $attributes['doc_row_id'][$key])->where('id','!=', $attributes['order_item_id'][$key])
-    						                            ->select('id', DB::raw('SUM(quantity) AS quantity'))->groupBY('item_id')->get();
-    						$DOqty = ((isset($DOqtyarr[0]))?$DOqtyarr[0]->quantity:0) + $attributes['quantity'][$key];          
-    						//update as partially delivered.
-    						
-    						$DOrow = DB::table('customer_do_item')->where('id', $attributes['doc_row_id'][$key])->select('quantity')->first();
-    						if($DOrow->quantity==$DOqty) {
-    						    DB::table('customer_do_item')
-    									->where('id', $attributes['doc_row_id'][$key])
-    									->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 1]); 
-    						} else {
-    						    DB::table('customer_do_item')
-    									->where('id', $attributes['doc_row_id'][$key])
-    									->update(['balance_quantity' => DB::raw('quantity - '.$DOqty), 'is_transfer' => 2]);
-    						}
-    									
-        				} elseif($attributes['doc_row_id'][$key] > 0 && ($attributes['quantity_old'][$key] == $attributes['quantity'][$key])) {
-        						//update as completely delivered.
-        						DB::table('customer_do_item')
-        									->where('id', $attributes['doc_row_id'][$key])
-        									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
-        				}
-			        }
 
 			} else {
-			    
-    			if(isset($attributes['customer_do_item_id'])) {
-    				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-    					if( isset($attributes['customer_do_item_id'][$key]) ) {
-    						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-    						//update as partially delivered.
-    						DB::table('customer_do_item')
-    									->where('id', $attributes['customer_do_item_id'][$key])
-    									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
-    					}
-    				} else {
-    						//update as completely delivered.
-    						DB::table('customer_do_item')
-    									->where('id', $attributes['customer_do_item_id'][$key])
-    									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
-    				}
-    			}
+				if (isset($attributes['sales_order_item_id'][$key])) {
+					if (isset($attributes['actual_quantity'][$key]) &&
+						($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
+
+						$quantity = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
+						DB::table('sales_order_item')
+							->where('id', $attributes['sales_order_item_id'][$key])
+							->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
+					} else {
+						DB::table('sales_order_item')
+							->where('id', $attributes['sales_order_item_id'][$key])
+							->update(['balance_quantity' => 0, 'is_transfer' => 1]);
+					}
+				}
 			}
+
+		} else if ($doctype == 'CDO') {
+
+			// =====================================================
+			// No do_item_id from form — find DO item via document_id + item_id
+			// =====================================================
+			if (!isset($attributes['document_id']) || $attributes['document_id'] == '') return;
+
+			$doIds = array_filter(explode(',', $attributes['document_id']));
+			if (empty($doIds)) return;
+
+			$siQty  = (float) $attributes['quantity'][$key];
+			$itemId = $attributes['item_id'][$key];
+
+			// Find active DO item not yet fully transferred
+			$doItem = DB::table('customer_do_item')
+				->whereIn('customer_do_id', $doIds)
+				->where('item_id', $itemId)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->where('is_transfer', '!=', 1)
+				->orderBy('id', 'ASC')
+				->first();
+
+			if (!$doItem) {
+				\Log::warning('CDO setTransferStatusItem: DO item not found', [
+					'doIds'  => $doIds,
+					'itemId' => $itemId,
+				]);
+				return;
+			}
+
+			// New balance after SI takes siQty from DO
+			$newBalance = (float)$doItem->balance_quantity - $siQty;
+			$newBalance  = max(0, $newBalance);
+			$isTransfer  = ($newBalance <= 0) ? 1 : 2; // 1=fully transferred, 2=partial
+
+			DB::table('customer_do_item')
+				->where('id', $doItem->id)
+				->update([
+					'balance_quantity' => $newBalance,
+					'is_transfer'      => $isTransfer,
+				]);
+
+			\Log::info('CDO setTransferStatusItem: DO item updated', [
+				'do_item_id'    => $doItem->id,
+				'old_balance'   => $doItem->balance_quantity,
+				'si_qty'        => $siQty,
+				'new_balance'   => $newBalance,
+				'is_transfer'   => $isTransfer,
+			]);
+
+			// Link SI item back to DO item for delete restore
+			if (isset($attributes['item_row_id'][$key])) {
+				DB::table('sales_invoice_item')
+					->where('id', $attributes['item_row_id'][$key])
+					->update(['doc_row_id' => $doItem->id]);
+			}
+
+			// Update DO header doc_status
+			$doId = $doItem->customer_do_id;
+
+			$pendingCount = DB::table('customer_do_item')
+				->where('customer_do_id', $doId)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->where('is_transfer', '!=', 1)
+				->count();
+
+			DB::table('customer_do')
+				->where('id', $doId)
+				->update([
+					'doc_status'  => ($pendingCount == 0) ? 2 : 1,
+					'is_transfer' => ($pendingCount == 0) ? 1 : 0,
+					'is_editable' => ($pendingCount == 0) ? 1 : 0,
+				]);
 		}
 	}
+
 	
 	private function setTransferStatusService($attributes, $key, $doctype)
 	{
@@ -1606,7 +1756,59 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 									}
 								}
 							}*/
+
+							// Store item_row_id for log linking
+							$attributes['item_row_id'][$key] = $itemObj->id;
 							
+							// =====================================================
+							// CHECK CDO LOGS FIRST before any stock movement
+							// =====================================================
+							$DOlogs = false;
+							if (isset($attributes['document_type']) && $attributes['document_type'] == 'CDO') {
+								$DOlogs = $this->checkCDOLogs($attributes, $key);
+							}
+
+							// =====================================================
+							// STOCK UPDATE — skip deduction if DO already did it
+							// =====================================================
+							if ($this->mod_do_qty->is_active == 1) {
+
+								if (!$DOlogs) {
+									// Direct SI — deduct stock normally
+									$sale_cost   = $this->objUtility->updateItemQuantitySales($attributes, $key);
+									$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
+									$logid       = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add');
+								} else {
+									// From CDO — use cost from DO log
+									$sale_cost = 0;
+									if ($DOlogs) {
+										if (!empty($DOlogs->sale_cost) && $DOlogs->sale_cost > 0) {
+											$sale_cost = $DOlogs->sale_cost;
+										} elseif (!empty($DOlogs->unit_cost) && $DOlogs->unit_cost > 0) {
+											$sale_cost = $DOlogs->unit_cost; // fallback to unit_cost
+										} else {
+											// Final fallback — get from item_unit
+											$itemUnit = DB::table('item_unit')
+												->where('itemmaster_id', $attributes['item_id'][$key])
+												->where('is_baseqty', 1)
+												->first();
+											$sale_cost = $itemUnit ? $itemUnit->cost_avg : 0;
+										}
+									}
+									$CostAvg_log = $this->updateLastPurchaseCostOnTransfer($attributes, $key, 0, $DOlogs);
+									$logid       = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add');
+								}
+
+								$cost_value += $sale_cost * $attributes['quantity'][$key];
+
+							} else {
+								$sale_cost   = $this->objUtility->updateItemQuantitySales($attributes, $key);
+								$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
+								$logid       = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add');
+								$cost_value += $sale_cost * $attributes['quantity'][$key];
+							}
+
+
 							//VAT calculate from subtotal...
 							if(!isset($attributes['vatfrm_subtotal'])) {
 								//update item transfer status...
@@ -1618,32 +1820,36 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								$this->setTransferStatusService($attributes, $key, $attributes['document_type']);
 							}
 							
-							//stock update section............................
-							//CHECK WHEATHER Update Quantity by CDO
-							$attributes['item_row_id'][$key] = $itemObj->id; //OCT24
-							if($this->mod_do_qty->is_active==1) {
-								$sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);
-								$DOlogs = $this->checkCDOLogs($attributes, $key);//APR25
-								if(!$DOlogs) { //CHECK CDO LOG INSERTED IN LOG TABLE OR NOT...
-									//update last purchase cost and cost average....
-									$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0); 
-									$logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add' );
-									$cost_value += $sale_cost * $attributes['quantity'][$key];
-									
-								} else {
-									//APR25
-									$CostAvg_log = $this->updateLastPurchaseCostOnTransfer($attributes, $key, 0, $DOlogs);
-									$logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add' );
-									$cost_value += $sale_cost * $attributes['quantity'][$key];
-									
-								}
-							} else {
-								 $sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);///echo '<pre>';print_r($sale_cost);exit;
-								 $CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
-								 $logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add' );
-								 $cost_value += $sale_cost * $attributes['quantity'][$key];	
-							}
-							//}
+							// //stock update section............................
+							// //CHECK WHEATHER Update Quantity by CDO
+							// $attributes['item_row_id'][$key] = $itemObj->id; //OCT24
+
+							// // CHECK DO LOGS FIRST before any stock movement
+							// $DOlogs = false;
+							// if (isset($attributes['document_type']) && $attributes['document_type'] == 'CDO') {
+							// 	$DOlogs = $this->checkCDOLogs($attributes, $key);
+							// }
+
+							// if ($this->mod_do_qty->is_active == 1) {
+							// 	// updateItemQuantitySales now handles skip internally via DOlogs
+							// 	$sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);
+								
+							// 	if (!$DOlogs) {
+							// 		$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
+							// 		$logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add');
+							// 	} else {
+							// 		$CostAvg_log = $this->updateLastPurchaseCostOnTransfer($attributes, $key, 0, $DOlogs);
+							// 		$logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add');
+							// 	}
+							// 	$cost_value += $sale_cost * $attributes['quantity'][$key];							
+							// } else {
+							// 	//  $sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);
+							// 	 $sale_cost = $this->updateItemQuantitySales($attributes, $key);///echo '<pre>';print_r($sale_cost);exit;
+							// 	 $CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
+							// 	 $logid = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add' );
+							// 	 $cost_value += $sale_cost * $attributes['quantity'][$key];	
+							// }
+							// //}
 						//}
 						
 						//################ Location Stock Entry ####################
@@ -2149,6 +2355,103 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		}
 		
 	}
+
+
+	public function updateItemQuantitySales($attributes, $key, $bquantity=null) {
+		
+		// FIX: If SI is from DO and DO already deducted stock, skip item_unit update
+		$isFromDO = (isset($attributes['document_type']) && $attributes['document_type'] == 'CDO');
+		$DOlogs = false;
+		if ($isFromDO) {
+			$DOlogs = $this->checkCDOLogs($attributes, $key);
+		}
+		
+		$item = DB::table('item_unit')
+			->where('itemmaster_id', $attributes['item_id'][$key])
+			->where('is_baseqty', 1)->first();
+		
+		if ($item) {
+			if (isset($attributes['unit_id'][$key]) && isset($attributes['packing'][$key])) {
+				$baseqty = ($attributes['unit_id'][$key] == 2)
+					? ($attributes['quantity'][$key] / $attributes['packing'][$key])
+					: ($attributes['quantity'][$key] * $attributes['packing'][$key]);
+			} else {
+				$packing = isset($attributes['packing'][$key]) ? $attributes['packing'][$key] : 1;
+				$qty = is_null($bquantity) ? $attributes['quantity'][$key] : $bquantity;
+				$baseqty = $qty * $packing;
+			}
+			
+			// FIX: Only deduct if NOT from DO (DO already deducted)
+			if (!$DOlogs) {
+				DB::table('item_unit')->where('id', $item->id)->update([
+					'cur_quantity' => DB::raw('cur_quantity - ' . $baseqty),
+					'issued_qty'   => DB::raw('issued_qty + ' . $baseqty),
+				]);
+				
+				$deptId = $attributes['department_id'] ?? (auth()->user()->department_id ?? 1);
+				DB::table('itemstock_department')
+					->where('department_id', $deptId)
+					->where('itemmaster_id', $attributes['item_id'][$key])
+					->where('is_baseqty', 1)
+					->update([
+						'cur_quantity' => DB::raw('cur_quantity - ' . $baseqty),
+						'issued_qty'   => DB::raw('issued_qty + ' . $baseqty),
+					]);
+			}
+			
+			// FIX: Consistent deleted_at filter
+			$stocks = DB::table('item_log')
+				->where('item_id', $attributes['item_id'][$key])
+				->where('trtype', 1)
+				->where('status', 1)
+				->whereNull('deleted_at')  // ← FIXED: was '0000-00-00 00:00:00'
+				->where('cur_quantity', '>', 0)
+				->orderBy('id', 'ASC')->get();
+			
+			$squantity = $attributes['quantity'][$key];
+			
+			if (!empty($stocks)) {
+				$sale_cost = $sale_qty = 0;
+				foreach ($stocks as $stock) {
+					if ($stock->cur_quantity > 0) {
+						if ($stock->cur_quantity >= $squantity) {
+							$cur_quantity = $stock->cur_quantity - $squantity;
+							$break = true;
+							$sale_cost += (($stock->pur_cost == 0) ? $stock->unit_cost : $stock->pur_cost) * $squantity;
+							$sale_qty += $squantity;
+						} else {
+							$squantity = $squantity - $stock->cur_quantity;
+							$cur_quantity = 0;
+							$break = ($squantity > 0) ? false : true;
+							$sale_cost += (($stock->pur_cost == 0) ? $stock->unit_cost : $stock->pur_cost) * $stock->cur_quantity;
+							$sale_qty += $stock->cur_quantity;
+						}
+						
+						// FIX: Only update item_log if NOT already done by DO
+						if (!$DOlogs) {
+							DB::table('item_log')
+								->where('id', $stock->id)
+								->update(['cur_quantity' => $cur_quantity]);
+						}
+						
+						if ($break) break;
+					}
+				}
+				$itm_sale_cost = ($sale_qty > 0) ? $sale_cost / $sale_qty : 0;
+				return $itm_sale_cost;
+			} else {
+				$stocks = DB::table('item_log')
+					->where('item_id', $attributes['item_id'][$key])
+					->where('trtype', 1)
+					->where('status', 1)
+					->whereNull('deleted_at')  // ← FIXED
+					->select('pur_cost')
+					->orderBy('id', 'DESC')->first();
+				return $stocks ? $stocks->pur_cost : 0;
+			}
+		}
+	}
+
 
 	private function voucherNoGenerate($attributes) {
 
@@ -3290,130 +3593,371 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 	}
 	
 	
+	// public function delete($id)
+	// {
+		
+	// 	$this->sales_invoice = $this->sales_invoice->find($id);
+	// 	DB::beginTransaction();
+	// 	try {
+			
+	// 		//Update control of SQ,SO,CDO...  //APR25
+	// 		if($this->sales_invoice->document_id > 0) {
+	// 			if($this->sales_invoice->document_type=='SQ') {
+	// 				DB::table('quotation_sales')->where('id', $this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
+	// 				DB::table('quotation_sales_item')->where('quotation_sales_id', $this->sales_invoice->document_id)->update(['is_transfer' => 0]);
+
+	// 			} else if($this->sales_invoice->document_type=='SO') {
+	// 				DB::table('sales_order')->where('id', $this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
+
+	// 				DB::table('sales_order_item')->where('sales_order_id', $this->sales_invoice->document_id)->update(['is_transfer' => 0]);
+
+	// 			} else if($this->sales_invoice->document_type=='CDO') { 
+	// 			    //APR25
+	// 			    $ids = explode(',', $this->sales_invoice->document_id);
+				    
+	// 			    //$sicount = DB::table('sales_invoice')->where('id','!=',$id)->where('document_id', $this->sales_invoice->document_id)->where('status',1)->whereNull('deleted_at')->count();
+	// 			   // if($sicount==0) {
+	// 				    DB::table('customer_do')->whereIn('id', $ids)->update(['is_transfer' => 0, 'is_editable' => 0]);
+
+	// 				    DB::table('customer_do_item')->whereIn('customer_do_id', $ids)->update(['is_transfer' => 0]);
+					    
+	// 				    foreach($ids as $idd) {
+	// 				        $dorow = DB::table('item_log')->join('customer_do_item','customer_do_item.id','=','item_log.item_row_id')
+	// 				                    ->where('item_log.document_type','CDO')->where('item_log.document_id',$idd)->where('department_id', auth()->user()->department_id ?? 1)
+	// 				                    ->select('customer_do_item.quantity','customer_do_item.balance_quantity')->first();
+	// 				        if($dorow)
+	// 				            DB::table('item_log')->where('document_type','CDO')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id',$idd)->update(['quantity' => $dorow->quantity, 'status' => 1,'deleted_at' => null]); //($dorow->balance_quantity > 0)?$dorow->balance_quantity:
+	// 				    }
+	// 			    //}
+				    
+				    
+	// 			}
+	// 		}
+			
+	// 		//inventory update...
+	// 		$items = DB::table('sales_invoice_item')->where('sales_invoice_id', $id)->select('id','item_id','unit_id','quantity')->get();
+	// 		//echo '<pre>';print_r($items);exit;
+	// 		foreach($items as $item) {
+	// 			$this->objUtility->updateLastPurchaseCostAndCostAvgonDelete($item,$id);
+
+	// 			DB::table('con_location')->where('invoice_id',$item->id)->where('is_do',0)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+	// 		}
+	// 		DB::table('sales_invoice_item')->where('sales_invoice_id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+			
+	// 		//Transaction update....
+	// 		if($this->sales_invoice->is_rental == 1) {         
+	// 			DB::table('account_transaction')->where('voucher_type', 'SRL')->where('department_id',auth()->user()->department_id ?? 1)->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+	// 		}else{
+	// 		    DB::table('account_transaction')->where('voucher_type', 'SI')->where('department_id',auth()->user()->department_id ?? 1)->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+	// 		}
+			
+	// 		//DB::table('account_master')->where('id', $this->sales_invoice->dr_account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$this->sales_invoice->net_total)]);
+	// 		$this->objUtility->tallyClosingBalance($this->sales_invoice->dr_account_id);
+			
+	// 		//DB::table('account_master')->where('id', $this->sales_invoice->cr_account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$this->sales_invoice->total)]);
+	// 		$this->objUtility->tallyClosingBalance($this->sales_invoice->cr_account_id);
+			
+	// 		$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//DB::table('account_master')->where('master_name', 'VAT OUTPUT')->where('status', 1)->first();
+	// 		if($vatrow) {
+	// 			//DB::table('account_master')->where('id', $vatrow->payment_account)->update(['cl_balance' => DB::raw('cl_balance - '.$this->sales_invoice->vat_amount)]);
+	// 			//$this->objUtility->tallyClosingBalance($vatrow->payment_account);
+	// 			$this->objUtility->tallyClosingBalance($vatrow->collection_account);
+	// 		}
+			
+	// 		//Quotatio/Sales order unlock....
+	// 		/*if($this->sales_invoice->document_type=='SO') {
+	// 			DB::table('sales_order')->where('id',$this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
+	// 		} else if($this->sales_invoice->document_type=='SO') {
+	// 			DB::table('quotation_sales')->where('id',$this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
+	// 		}*/
+			
+	// 		//Jobmaster unlock...
+	// 		if($this->matservice->is_active==1)
+	// 			DB::table('jobmaster')->where('id',$this->sales_invoice->job_id)->update(['is_close' => 0]);
+			
+	// 		foreach($items as $item) {
+	// 			$sirow = DB::table('item_location_si')->where('department_id', auth()->user()->department_id ?? 1)->where('invoice_id',$item->id)->where('is_do',0)->get();
+				
+	// 			foreach($sirow as $prow) {
+	// 				DB::table('item_location_si')->where('department_id', auth()->user()->department_id ?? 1)->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+					
+	// 				DB::table('item_location')->where('department_id', auth()->user()->department_id ?? 1)->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+	// 							->update(['quantity' => DB::raw('quantity + '.$prow->quantity) ]);
+								
+	// 			}
+	// 			//REMOVE FROM CONSIGNMENT LOCATION
+	// 			DB::table('con_location')->where('invoice_id',$item->id)->where('is_do',0)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+	// 		}
+	// 		DB::table('sales_invoice')->where('id', $id)
+	// 								  ->update(['deleted_by' => Auth::User()->id ]);	
+            
+            
+    //         //MAY25 BATCH REMOVE..
+	// 		$batch_log = DB::table('batch_log')
+	// 	                        ->where('document_type','SI')
+	// 	                        ->where('document_id', $id)
+	// 			                ->whereNull('deleted_at')
+	// 			                ->select('id','quantity','item_id','batch_id','doc_row_id')->get();
+				                
+	// 		foreach($batch_log as $blog) {	                
+	// 			DB::table('batch_log')->where('id', $blog->id)->update(['deleted_at' => date('Y-m-d h:i:s'), 'deleted_by' => Auth::User()->id]);
+				
+	// 			DB::table('item_batch')->where('id', $blog->batch_id)->update(['quantity' => DB::raw('quantity + '.$blog->quantity) ]);
+				
+	// 		}
+			
+			
+	// 		$this->sales_invoice->delete();
+			
+	// 		DB::commit();
+	// 		return true; 
+	// 	} catch(\Exception $e) {
+			
+	// 		DB::rollback(); echo $e->getLine().'-'.$e->getMessage().' '.$e->getFile();exit;
+	// 		return false;
+	// 	}
+	// }
+
+
 	public function delete($id)
 	{
-		
 		$this->sales_invoice = $this->sales_invoice->find($id);
+
 		DB::beginTransaction();
 		try {
-			
-			//Update control of SQ,SO,CDO...  //APR25
-			if($this->sales_invoice->document_id > 0) {
-				if($this->sales_invoice->document_type=='SQ') {
-					DB::table('quotation_sales')->where('id', $this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
-					DB::table('quotation_sales_item')->where('quotation_sales_id', $this->sales_invoice->document_id)->update(['is_transfer' => 0]);
+			$isFromDO = ($this->sales_invoice->document_type == 'CDO');
+			$doIds    = ($isFromDO && $this->sales_invoice->document_id)
+						? array_filter(explode(',', $this->sales_invoice->document_id))
+						: [];
 
-				} else if($this->sales_invoice->document_type=='SO') {
-					DB::table('sales_order')->where('id', $this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
+			// =====================================================
+			// STEP 1: Get SI items before soft delete
+			// =====================================================
+			$items = DB::table('sales_invoice_item')
+				->where('sales_invoice_id', $id)
+				->where('status', 1)
+				->select('id','item_id','unit_id','quantity','doc_row_id','packing')
+				->get();
 
-					DB::table('sales_order_item')->where('sales_order_id', $this->sales_invoice->document_id)->update(['is_transfer' => 0]);
+			// =====================================================
+			// STEP 2: Per-item stock restoration
+			// =====================================================
+			foreach ($items as $item) {
+				$this->objUtility->updateLastPurchaseCostAndCostAvgonDelete($item, $id);
+			}
 
-				} else if($this->sales_invoice->document_type=='CDO') { 
-				    //APR25
-				    $ids = explode(',', $this->sales_invoice->document_id);
-				    
-				    //$sicount = DB::table('sales_invoice')->where('id','!=',$id)->where('document_id', $this->sales_invoice->document_id)->where('status',1)->whereNull('deleted_at')->count();
-				   // if($sicount==0) {
-					    DB::table('customer_do')->whereIn('id', $ids)->update(['is_transfer' => 0, 'is_editable' => 0]);
+			// =====================================================
+			// STEP 3: Restore item_location
+			// =====================================================
+			foreach ($items as $item) {
+				$siLocRows = DB::table('item_location_si')
+					->where('department_id', auth()->user()->department_id ?? 1)
+					->where('invoice_id', $item->id)
+					->whereNull('deleted_at')
+					// No is_do filter — handle both cases below
+					->get();
 
-					    DB::table('customer_do_item')->whereIn('customer_do_id', $ids)->update(['is_transfer' => 0]);
-					    
-					    foreach($ids as $idd) {
-					        $dorow = DB::table('item_log')->join('customer_do_item','customer_do_item.id','=','item_log.item_row_id')
-					                    ->where('item_log.document_type','CDO')->where('item_log.document_id',$idd)->where('department_id', auth()->user()->department_id ?? 1)
-					                    ->select('customer_do_item.quantity','customer_do_item.balance_quantity')->first();
-					        if($dorow)
-					            DB::table('item_log')->where('document_type','CDO')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id',$idd)->update(['quantity' => $dorow->quantity, 'status' => 1,'deleted_at' => null]); //($dorow->balance_quantity > 0)?$dorow->balance_quantity:
-					    }
-				    //}
-				    
-				    
+				foreach ($siLocRows as $prow) {
+					DB::table('item_location_si')
+						->where('id', $prow->id)
+						->update([
+							'status'     => 0,
+							'deleted_at' => date('Y-m-d H:i:s')
+						]);
+
+					// is_do=0: SI directly deducted → restore location
+					// is_do=1: DO deducted → restored in Step 4 via DO logic
+					if ($prow->is_do == 0) {
+						DB::table('item_location')
+							->where('department_id', auth()->user()->department_id ?? 1)
+							->where('location_id', $prow->location_id)
+							->where('item_id', $prow->item_id)
+							->update([
+								'quantity' => DB::raw('quantity + ' . $prow->quantity)
+							]);
+					}
+				}
+
+				DB::table('con_location')
+					->where('invoice_id', $item->id)
+					->where('is_do', 0)
+					->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+			}
+
+			// =====================================================
+			// STEP 4: CDO-specific restore
+			// =====================================================
+			if ($isFromDO && !empty($doIds)) {
+
+				// 4a. Restore each DO item balance using doc_row_id
+				foreach ($items as $siItem) {
+					if ($siItem->doc_row_id > 0) {
+						$doItem = DB::table('customer_do_item')
+							->where('id', $siItem->doc_row_id)
+							->first();
+
+						if ($doItem) {
+							$newBalance    = $doItem->balance_quantity + $siItem->quantity;
+							$fullyRestored = ($newBalance >= $doItem->quantity);
+
+							DB::table('customer_do_item')
+								->where('id', $siItem->doc_row_id)
+								->update([
+									'is_transfer'      => $fullyRestored ? 0 : $doItem->is_transfer,
+									'balance_quantity'  => $newBalance,
+								]);
+
+							// Restore DO item_location (is_do=1 rows)
+							$doLocRow = DB::table('item_location_si')
+								->where('invoice_id', $siItem->id)
+								->where('is_do', 1)
+								->where('status', 0)
+								->orderBy('id', 'DESC')
+								->first();
+
+							if ($doLocRow) {
+								DB::table('item_location')
+									->where('department_id', auth()->user()->department_id ?? 1)
+									->where('location_id', $doLocRow->location_id)
+									->where('item_id', $siItem->item_id)
+									->update([
+										'quantity' => DB::raw('quantity + ' . $doLocRow->quantity)
+									]);
+							}
+						}
+					}
+				}
+
+				// 4b. Restore DO item_log cur_quantity per item
+				foreach ($doIds as $doId) {
+					$doItemLogs = DB::table('item_log')
+						->where('document_type', 'CDO')
+						->where('document_id', $doId)
+						->where('department_id', auth()->user()->department_id ?? 1)
+						->get();
+
+					foreach ($doItemLogs as $doLog) {
+						$doItem = DB::table('customer_do_item')
+							->where('id', $doLog->item_row_id)
+							->first();
+
+						if ($doItem) {
+							DB::table('item_log')
+								->where('id', $doLog->id)
+								->update([
+									'cur_quantity' => $doItem->quantity,
+									'status'       => 1,
+									'deleted_at'   => null,
+								]);
+						}
+					}
+
+					// 4c. Restore DO header
+					DB::table('customer_do')
+						->where('id', $doId)
+						->update([
+							'is_transfer' => 0,
+							'is_editable' => 0,
+							'doc_status'  => 0,
+							'status'      => 1,
+						]);
 				}
 			}
-			
-			//inventory update...
-			$items = DB::table('sales_invoice_item')->where('sales_invoice_id', $id)->select('id','item_id','unit_id','quantity')->get();
-			//echo '<pre>';print_r($items);exit;
-			foreach($items as $item) {
-				$this->objUtility->updateLastPurchaseCostAndCostAvgonDelete($item,$id);
 
-				DB::table('con_location')->where('invoice_id',$item->id)->where('is_do',0)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+			// =====================================================
+			// STEP 5: Reset SQ/SO transfer status (non-CDO)
+			// =====================================================
+			if ($this->sales_invoice->document_id > 0 && !$isFromDO) {
+				if ($this->sales_invoice->document_type == 'SQ') {
+					DB::table('quotation_sales')
+						->where('id', $this->sales_invoice->document_id)
+						->update(['is_transfer' => 0, 'is_editable' => 0]);
+					DB::table('quotation_sales_item')
+						->where('quotation_sales_id', $this->sales_invoice->document_id)
+						->update(['is_transfer' => 0]);
+
+				} else if ($this->sales_invoice->document_type == 'SO') {
+					DB::table('sales_order')
+						->where('id', $this->sales_invoice->document_id)
+						->update(['is_transfer' => 0, 'is_editable' => 0]);
+					DB::table('sales_order_item')
+						->where('sales_order_id', $this->sales_invoice->document_id)
+						->update(['is_transfer' => 0]);
+				}
 			}
-			DB::table('sales_invoice_item')->where('sales_invoice_id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
-			
-			//Transaction update....
-			if($this->sales_invoice->is_rental == 1) {         
-				DB::table('account_transaction')->where('voucher_type', 'SRL')->where('department_id',auth()->user()->department_id ?? 1)->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
-			}else{
-			    DB::table('account_transaction')->where('voucher_type', 'SI')->where('department_id',auth()->user()->department_id ?? 1)->where('voucher_type_id',$id)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
-			}
-			
-			//DB::table('account_master')->where('id', $this->sales_invoice->dr_account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$this->sales_invoice->net_total)]);
+
+			// =====================================================
+			// STEP 6: Standard cleanup
+			// =====================================================
+			DB::table('sales_invoice_item')
+				->where('sales_invoice_id', $id)
+				->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+
+			$voucherType = ($this->sales_invoice->is_rental == 1) ? 'SRL' : 'SI';
+			DB::table('account_transaction')
+				->where('voucher_type', $voucherType)
+				->where('department_id', auth()->user()->department_id ?? 1)
+				->where('voucher_type_id', $id)
+				->update([
+					'status'     => 0,
+					'deleted_at' => date('Y-m-d H:i:s'),
+					'deleted_by' => Auth::User()->id,
+				]);
+
 			$this->objUtility->tallyClosingBalance($this->sales_invoice->dr_account_id);
-			
-			//DB::table('account_master')->where('id', $this->sales_invoice->cr_account_id)->update(['cl_balance' => DB::raw('cl_balance - '.$this->sales_invoice->total)]);
 			$this->objUtility->tallyClosingBalance($this->sales_invoice->cr_account_id);
-			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//DB::table('account_master')->where('master_name', 'VAT OUTPUT')->where('status', 1)->first();
-			if($vatrow) {
-				//DB::table('account_master')->where('id', $vatrow->payment_account)->update(['cl_balance' => DB::raw('cl_balance - '.$this->sales_invoice->vat_amount)]);
-				//$this->objUtility->tallyClosingBalance($vatrow->payment_account);
+
+			$vatrow = $this->getVatAccounts(null);
+			if ($vatrow) {
 				$this->objUtility->tallyClosingBalance($vatrow->collection_account);
 			}
-			
-			//Quotatio/Sales order unlock....
-			/*if($this->sales_invoice->document_type=='SO') {
-				DB::table('sales_order')->where('id',$this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
-			} else if($this->sales_invoice->document_type=='SO') {
-				DB::table('quotation_sales')->where('id',$this->sales_invoice->document_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
-			}*/
-			
-			//Jobmaster unlock...
-			if($this->matservice->is_active==1)
-				DB::table('jobmaster')->where('id',$this->sales_invoice->job_id)->update(['is_close' => 0]);
-			
-			foreach($items as $item) {
-				$sirow = DB::table('item_location_si')->where('department_id', auth()->user()->department_id ?? 1)->where('invoice_id',$item->id)->where('is_do',0)->get();
-				
-				foreach($sirow as $prow) {
-					DB::table('item_location_si')->where('department_id', auth()->user()->department_id ?? 1)->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
-					
-					DB::table('item_location')->where('department_id', auth()->user()->department_id ?? 1)->where('location_id', $prow->location_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
-								->update(['quantity' => DB::raw('quantity + '.$prow->quantity) ]);
-								
-				}
-				//REMOVE FROM CONSIGNMENT LOCATION
-				DB::table('con_location')->where('invoice_id',$item->id)->where('is_do',0)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+
+			if ($this->matservice->is_active == 1) {
+				DB::table('jobmaster')
+					->where('id', $this->sales_invoice->job_id)
+					->update(['is_close' => 0]);
 			}
-			DB::table('sales_invoice')->where('id', $id)
-									  ->update(['deleted_by' => Auth::User()->id ]);	
-            
-            
-            //MAY25 BATCH REMOVE..
-			$batch_log = DB::table('batch_log')
-		                        ->where('document_type','SI')
-		                        ->where('document_id', $id)
-				                ->whereNull('deleted_at')
-				                ->select('id','quantity','item_id','batch_id','doc_row_id')->get();
-				                
-			foreach($batch_log as $blog) {	                
-				DB::table('batch_log')->where('id', $blog->id)->update(['deleted_at' => date('Y-m-d h:i:s'), 'deleted_by' => Auth::User()->id]);
-				
-				DB::table('item_batch')->where('id', $blog->batch_id)->update(['quantity' => DB::raw('quantity + '.$blog->quantity) ]);
-				
+
+			// Batch reversal
+			$batchLogs = DB::table('batch_log')
+				->where('document_type', 'SI')
+				->where('document_id', $id)
+				->whereNull('deleted_at')
+				->select('id','quantity','batch_id')
+				->get();
+
+			foreach ($batchLogs as $blog) {
+				DB::table('batch_log')
+					->where('id', $blog->id)
+					->update([
+						'deleted_at' => date('Y-m-d H:i:s'),
+						'deleted_by' => Auth::User()->id,
+					]);
+				DB::table('item_batch')
+					->where('id', $blog->batch_id)
+					->update(['quantity' => DB::raw('quantity + ' . $blog->quantity)]);
 			}
-			
-			
+
+			// =====================================================
+			// STEP 7: Final SI delete
+			// =====================================================
+			DB::table('sales_invoice')
+				->where('id', $id)
+				->update(['deleted_by' => Auth::User()->id]);
+
 			$this->sales_invoice->delete();
-			
+
 			DB::commit();
-			return true; 
-		} catch(\Exception $e) {
-			
-			DB::rollback(); echo $e->getLine().'-'.$e->getMessage().' '.$e->getFile();exit;
+			return true;
+
+		} catch (\Exception $e) {
+			DB::rollback();
+			echo $e->getLine() . '-' . $e->getMessage() . ' ' . $e->getFile();
+			exit;
 			return false;
 		}
 	}
+
 	
 	public function suppliersDOList()
 	{
@@ -6162,20 +6706,46 @@ if($attributes['vehicle_no']!='') {
 	
 	
 	//APR25
-	private function checkCDOLogs($attributes, $key) {
+	// private function checkCDOLogs($attributes, $key) {
 		
-		$ids = explode(',', $attributes['document_id']);
-		$row = DB::table('item_log')->where('document_type','CDO')
-						->whereIn('document_id', $ids)
-						->where('department_id', auth()->user()->department_id ?? 1)
-						->where('item_id',$attributes['item_id'][$key])
-						->where('status',1)->whereNull('deleted_at')
-						->select('id', DB::raw('SUM(quantity) AS quantity'))
-						->groupBY('item_id')
-						->first();
+	// 	$ids = explode(',', $attributes['document_id']);
+	// 	$row = DB::table('item_log')->where('document_type','CDO')
+	// 					->whereIn('document_id', $ids)
+	// 					->where('department_id', auth()->user()->department_id ?? 1)
+	// 					->where('item_id',$attributes['item_id'][$key])
+	// 					->where('status',1)->whereNull('deleted_at')
+	// 					->select('id', DB::raw('SUM(quantity) AS quantity'))
+	// 					->groupBY('item_id')
+	// 					->first();
 		
-		//return ($row)?true:false;
-		return $row;
+	// 	//return ($row)?true:false;
+	// 	return $row;
+	// }
+
+
+	private function checkCDOLogs($attributes, $key)
+	{
+		if (!isset($attributes['document_id']) || $attributes['document_id'] == '') {
+			return false;
+		}
+
+		$ids = array_filter(explode(',', $attributes['document_id']));
+
+		if (empty($ids)) return false;
+
+		// Check active CDO log exists for this item
+		$row = DB::table('item_log')
+			->where('document_type', 'CDO')
+			->whereIn('document_id', $ids)
+			->where('department_id', auth()->user()->department_id ?? 1)
+			->where('item_id', $attributes['item_id'][$key])
+			->where('status', 1)
+			->whereNull('deleted_at')  // consistent null check
+			->select('id', DB::raw('SUM(quantity) AS quantity'), DB::raw('SUM(cur_quantity) AS cur_quantity'), DB::raw('AVG(sale_cost) AS sale_cost'), DB::raw('AVG(unit_cost) AS unit_cost'))
+			->groupBy('item_id')
+			->first();
+
+		return $row ?: false;
 	}
 	
 	//APR25

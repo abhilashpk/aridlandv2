@@ -2066,6 +2066,7 @@ $('.dimnInfodivPrntItm').toggle();
 "use strict";
 var taxinclude = false;
 $('#optHide').toggle(); var srvat={{$vatdata->percentage}};
+
 $(document).ready(function () { 
 	$('#cheque_no').hide();$('#cheque_date').hide();$('#bank_id').hide();$('.pdcr').hide();
 	
@@ -2208,6 +2209,7 @@ $(document).ready(function () {
 		
 	});
 });
+
 
 	//calculation item net total, tax and discount...
 	function getNetTotal() {

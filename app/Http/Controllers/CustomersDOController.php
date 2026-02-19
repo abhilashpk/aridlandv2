@@ -75,7 +75,7 @@ class CustomersDOController extends Controller
 		$orders = [];//$this->customerdo->customerDOList();
 		$salesmans = $this->salesman->getSalesmanList();
 		$jobs = $this->jobmaster->activeJobmasterList();
-		$cus =DB::table('account_master')->where('category','CUSTOMER')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+		$cus =DB::table('account_master')->where('category','CUSTOMER')->where('status',1)->whereNull('deleted_at')
 		->select('id','master_name')->get(); //$this->accountmaster->customerList();
 		return view('body.customersdo.index')
 					->withOrders($orders)
@@ -232,8 +232,8 @@ class CustomersDOController extends Controller
                          ->where('is_default', 1) ->first();
 		$res = $this->voucherno->getVoucherNo('CDO');//echo '<pre>';print_r($res);exit;
 		$vno = $res->no;
-		$lastid = DB::table('customer_do')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','DESC')->select('id')->first();
-		$footertxt = DB::table('header_footer')->where('doc','CDO')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->first();
+		$lastid = DB::table('customer_do')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->whereNull('deleted_at')->orderBy('id','DESC')->select('id')->first();
+		$footertxt = DB::table('header_footer')->where('doc','CDO')->where('status',1)->whereNull('deleted_at')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
 							->where('report_view.code','DO')
@@ -438,7 +438,7 @@ class CustomersDOController extends Controller
 							->select('report_view_detail.id')
 							->first();
 		//DEC22
-		$infodata = DB::table('customer_do_info')->where('customer_do_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','ASC')->get();	
+		$infodata = DB::table('customer_do_info')->where('customer_do_id',$id)->where('status',1)->whereNull('deleted_at')->orderBy('id','ASC')->get();	
 		
 							
 	//	echo '<pre>';print_r($item_unit); exit;
@@ -636,7 +636,7 @@ class CustomersDOController extends Controller
 							->select('report_view_detail.id')
 							->first();
 		//DEC22
-		$infodata = DB::table('customer_do_info')->where('customer_do_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','ASC')->get();	
+		$infodata = DB::table('customer_do_info')->where('customer_do_id',$id)->where('status',1)->whereNull('deleted_at')->orderBy('id','ASC')->get();	
 		
 							
 	//	echo '<pre>';print_r($item_unit); exit;
@@ -745,7 +745,7 @@ class CustomersDOController extends Controller
 	
 			$data = DB::table('customer_do')->where('customer_do.customer_id',$id)
 			                    ->join('jobmaster', 'jobmaster.id', '=', 'customer_do.job_id')
-			                   ->where('customer_do.status',1)->where('customer_do.deleted_at','0000-00-00 00:00:00')
+			                   ->where('customer_do.status',1)->whereNull('customer_do.deleted_at')
 			                   ->select('jobmaster.id','jobmaster.code')->orderBy('jobmaster.id', 'DESC')->get();
 			return $data;
 		}
@@ -1101,7 +1101,7 @@ class CustomersDOController extends Controller
 							->select('report_view_detail.id')
 							->first();
 							
-		$infodata = DB::table('customer_do_info')->where('customer_do_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','ASC')->get();	
+		$infodata = DB::table('customer_do_info')->where('customer_do_id',$id)->where('status',1)->whereNull('deleted_at')->orderBy('id','ASC')->get();	
 		//echo '<pre>';print_r($cngetItemLocation); print_r($cnitemlocedit); exit;
 		return view('body.customersdo.edit')
 					->withItems($itemmaster)
@@ -1145,8 +1145,8 @@ class CustomersDOController extends Controller
 					->where('sales_invoice.document_type','CDO')
 					->where('sales_invoice_item.doc_row_id', $row->id)
 					->where('sales_invoice_item.status', 1)
-					->where('sales_invoice_item.deleted_at', '0000-00-00 00:00:00')
-					->where('sales_invoice.deleted_at', '0000-00-00 00:00:00')
+					->whereNull('sales_invoice_item.deleted_at')
+					->whereNull('sales_invoice.deleted_at')
 					->select(DB::raw('SUM(sales_invoice_item.quantity) AS si_quantity'))
 					->get();
 					
