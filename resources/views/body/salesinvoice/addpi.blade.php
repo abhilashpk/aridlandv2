@@ -941,7 +941,15 @@
 																<?php } ?>
 																</tbody>
 															</table>
-														</div><script>document.getElementById('iloc_'+{{$i}}).value='{{$tQty}}';</script><!-- NOV24 -->
+														</div>
+														{{-- <script>document.getElementById('iloc_'+{{$i}}).value='{{$tQty}}';</script><!-- NOV24 --> --}}
+														<script>
+																const el = document.getElementById('iloc_{{$i}}');
+																if (el) {
+																	el.value = '{{$tQty}}';
+																}
+															</script>
+
 															<?php  } ?>
 													</div>
 												</div>
@@ -2628,7 +2636,7 @@ newEntry.find($('.dimn-view')).attr('id', 'itmInfo_' + rowNum);
 				var cur_quantity = parseFloat(data.cur_quantity);
 				var min_quantity = parseFloat(data.min_quantity);
 				<?php //if($settings->item_quantity==1) { ?>
-				@permission('-qty-sale')
+				@can('-qty-sale')
 				if(cur_quantity == 0 || cur_quantity < 0) {
 					alert('Item is out of stock!');
 					$('#itmqty_'+curNum).val('');
@@ -2641,7 +2649,7 @@ newEntry.find($('.dimn-view')).attr('id', 'itmInfo_' + rowNum);
 					$('#itmqty_'+curNum).focus();
 					return false;
 				}
-				@endpermission
+				@endcan
 				<?php //} ?>
 			});
 		}
@@ -2657,7 +2665,7 @@ newEntry.find($('.dimn-view')).attr('id', 'itmInfo_' + rowNum);
 		if(res) 
 			getNetTotal();
 
-		@permission('si-create')
+		@can('si-create')
 			//MAR18
 			var rate = 1;
 			if( $('#is_fc').is(":checked") ) { 
@@ -2669,7 +2677,7 @@ newEntry.find($('.dimn-view')).attr('id', 'itmInfo_' + rowNum);
 				$('#itmcst_'+curNum).val('');
 				$('#itmcst_'+curNum).focus();
 			}
-		@endpermission
+		@endcan
 	});
 	
 	

@@ -2624,7 +2624,7 @@ $(document).on('keyup', '.line-quantity', function(e) {
 				var cur_quantity = parseFloat(data.cur_quantity);
 				var min_quantity = parseFloat(data.min_quantity);
 				<?php //if($settings->item_quantity==1) { ?>
-				@permission('-qty-sale')
+				@can('-qty-sale')
 				if(cur_quantity == 0 || cur_quantity < 0) {
 					alert('Item is out of stock!');
 					$('#itmqty_'+curNum).val('');
@@ -2637,7 +2637,7 @@ $(document).on('keyup', '.line-quantity', function(e) {
 					$('#itmqty_'+curNum).focus();
 					return false;
 				}
-				@endpermission
+				@endcan
 				<?php //} ?>
 			});
 		}
