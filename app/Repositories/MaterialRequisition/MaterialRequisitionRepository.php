@@ -87,7 +87,10 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('MR', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+				$manualVoucherNo = (
+					isset($attributes['autoincrement']) && (int)$attributes['autoincrement'] === 0
+				) ? ($attributes['voucher_no'] ?? null) : null;
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('MR', $maxNumeric, $dept, $manualVoucherNo);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -117,7 +120,10 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('MR', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+							$manualVoucherNo = (
+								isset($attributes['autoincrement']) && (int)$attributes['autoincrement'] === 0
+							) ? ($attributes['voucher_no'] ?? null) : null;
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('MR', $maxNumeric, $dept, $manualVoucherNo);
 
 							$retryCount++;
 						} else {
@@ -273,7 +279,10 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 
 	public function update($id, $attributes)
 	{
-		$this->material_requisition = $this->find($id);
+		$this->material_requisition = $this->material_requisition
+			->where('id', $id)
+			->where('department_id', auth()->user()->department_id)
+			->first();
 
 		if (!$this->material_requisition) {
 			return false;
@@ -457,7 +466,9 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	
 	public function findPOdata($id)
 	{
-		$query = $this->material_requisition->where('material_requisition.id', $id);
+		$query = $this->material_requisition
+					->where('material_requisition.id', $id)
+					->where('material_requisition.department_id', auth()->user()->department_id);
 		return $query->leftJoin('jobmaster AS J', function($join){
 						  $join->on('J.id','=','material_requisition.job_id');
 						})
@@ -474,7 +485,9 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	
 	public function getItems($id)
 	{
-		$query = $this->material_requisition->where('material_requisition.id',$id);
+		$query = $this->material_requisition
+					->where('material_requisition.id',$id)
+					->where('material_requisition.department_id', auth()->user()->department_id);
 		
 		return $query->join('material_requisition_item AS GI', function($join) {
 							$join->on('GI.material_requisition_id','=','material_requisition.id');
@@ -820,7 +833,9 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 	
 	public function materialReqListCount()
 	{
-		$query = $this->material_requisition->where('material_requisition.status',1);
+		$query = $this->material_requisition
+					->where('material_requisition.status',1)
+					->where('material_requisition.department_id',auth()->user()->department_id);
 		return $query->join('jobmaster AS J', function($join) {
 							$join->on('J.id','=','material_requisition.job_id');
 						} )

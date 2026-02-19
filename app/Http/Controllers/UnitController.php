@@ -9,6 +9,8 @@ use Session;
 use Response;
 use App;
 use DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class UnitController extends Controller
 {
@@ -55,9 +57,12 @@ class UnitController extends Controller
 	// }
 
 	public function save(Request $request) {
+        if (!$this->canManageMaster('unit-create')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         // ✓ Add validation
         $validated = $request->validate([
-            'unit_name' => 'required|max:100|unique:units,unit_name',
+            'unit_name' => 'required|max:100|unique:units,unit_name,NULL,id,deleted_at,NULL',
             'description' => 'nullable|max:120',
             'fracount' => 'nullable|integer|min:0|max:127' // tinyint range
         ]);
@@ -78,6 +83,9 @@ class UnitController extends Controller
     }
 	
 	public function edit($id) { 
+		if (!$this->canManageMaster('unit-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 
 		$data = array();
 		$unitrow = $this->unit->find($id);//print_r($unitrow);
@@ -94,9 +102,12 @@ class UnitController extends Controller
 	// }
 
 	public function update($id, Request $request) {
+        if (!$this->canManageMaster('unit-edit')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         // ✓ Add validation
         $validated = $request->validate([
-            'unit_name' => 'required|max:100|unique:units,unit_name,' . $id,
+            'unit_name' => 'required|max:100|unique:units,unit_name,' . $id . ',id,deleted_at,NULL',
             'description' => 'nullable|max:120',
             'fracount' => 'nullable|integer|min:0|max:127'
         ]);
@@ -118,6 +129,9 @@ class UnitController extends Controller
 
 
 	public function destroy($id) {
+        if (!$this->canManageMaster('unit-delete')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         // ✓ Define protected units with clear names
         $protectedUnits = [1 => 'NOS', 2 => 'PCS'];
         
@@ -127,9 +141,9 @@ class UnitController extends Controller
         }
         
         // ✓ Check if unit is in use
-        $inUse = DB::table('products')->where('unit_id', $id)->exists();
+        $inUse = in_array((int) $id, $this->getInUseUnitIds([(int) $id]), true);
         if ($inUse) {
-            Session::flash('error', 'Cannot delete unit that is currently in use by products.');
+            Session::flash('error', 'Cannot delete unit that is currently in use.');
             return redirect('unit');
         }
         
@@ -156,17 +170,14 @@ class UnitController extends Controller
 	}
 	public function destroyGroup(Request $request)
 	{
-		$ids = $request->get('ids');
-		if($ids) {
-			$idarr = explode(',', $ids);
-			DB::table('units')->whereIn('id',$idarr)->update(['deleted_at' => date('Y-m-d H:i:s')]);
-			Session::flash('message', 'Units deleted successfully.');
-		}
-		return redirect('unit');
+		return $this->destroyUnits($request);
 	}
 
 
 	public function destroyUnits(Request $request) {
+        if (!$this->canManageMaster('unit-delete')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         $ids = $request->get('ids');
         
         if ($ids) {
@@ -184,10 +195,7 @@ class UnitController extends Controller
                 }
                 
                 // ✓ Check if any units are in use
-                $inUse = DB::table('products')
-                    ->whereIn('unit_id', $idarr)
-                    ->pluck('unit_id')
-                    ->toArray();
+                $inUse = $this->getInUseUnitIds(array_map('intval', $idarr));
                 
                 $idarr = array_diff($idarr, $inUse);
                 
@@ -212,5 +220,96 @@ class UnitController extends Controller
         }
         
         return redirect('unit');
+    }
+
+    private function getInUseUnitIds(array $unitIds): array
+    {
+        if (empty($unitIds)) {
+            return [];
+        }
+
+        $tables = [
+            'item_unit',
+            'item_log',
+            'itemstock_department',
+            'item_location',
+            'purchase_invoice_item',
+            'sales_invoice_item',
+            'purchase_order_item',
+            'sales_order_item',
+            'quotation_item',
+            'quotation_sales_item',
+            'supplier_do_item',
+            'customer_do_item',
+            'goods_issued_item',
+            'goods_return_item',
+            'material_requisition_item',
+            'production_item',
+            'proforma_invoice_item',
+            'purchase_return_item',
+            'sales_return_item',
+            'stock_transferin_item',
+            'stock_transferout_item',
+            'location_transfer_item',
+            'customer_enquiry_item',
+            'purchase_enquiry_item',
+        ];
+
+        $inUse = [];
+        foreach ($tables as $table) {
+            if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'unit_id')) {
+                continue;
+            }
+
+            $query = DB::table($table)->whereIn('unit_id', $unitIds);
+            if (Schema::hasColumn($table, 'status')) {
+                $query->where('status', 1);
+            }
+            if (Schema::hasColumn($table, 'deleted_at')) {
+                $query->whereNull('deleted_at');
+            }
+
+            $used = $query->pluck('unit_id')->map(fn ($v) => (int) $v)->toArray();
+            if (!empty($used)) {
+                $inUse = array_merge($inUse, $used);
+            }
+        }
+
+        return array_values(array_unique($inUse));
+    }
+
+    private function canManageMaster(?string $permission = null): bool
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($permission !== null) {
+            if (method_exists($user, 'can')) {
+                return $user->can($permission);
+            }
+            if (method_exists($user, 'hasPermissionTo')) {
+                return $user->hasPermissionTo($permission);
+            }
+            return false;
+        }
+
+        $permissions = ['unit-create', 'unit-edit', 'unit-delete'];
+
+        if (method_exists($user, 'can')) {
+            foreach ($permissions as $perm) {
+                if ($user->can($perm)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (method_exists($user, 'hasAnyPermission')) {
+            return $user->hasAnyPermission($permissions);
+        }
+
+        return false;
     }
 }

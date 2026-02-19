@@ -19,6 +19,7 @@ use Session;
 use Response;
 use DB;
 use DNS1D;
+use Auth;
 use App;
 
 class ItemmasterController extends Controller
@@ -531,6 +532,9 @@ class ItemmasterController extends Controller
 
 	
 	public function add() {
+		if (!$this->canManageMaster('item-create')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 
 		$data = array();
 		$arrData = $this->getGroupCategory();
@@ -554,6 +558,9 @@ class ItemmasterController extends Controller
 	}
 	
 	public function save(Request $request) {
+		if (!$this->canManageMaster('item-create')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		
 		// Minimal validation - only critical fields
 		$request->validate([
@@ -625,6 +632,9 @@ class ItemmasterController extends Controller
 	
 	public function destroy($id)
 	{
+		if (!$this->canManageMaster('item-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		try {
 			$status = $this->itemmaster->check_item($id);
 			if($status) {
@@ -958,6 +968,9 @@ class ItemmasterController extends Controller
 
 
 	public function edit($id) { 
+    if (!$this->canManageMaster('item-edit')) {
+        return redirect()->back()->with('error', 'Unauthorized action.');
+    }
     Log::info('ItemMaster edit START', ['id' => $id]);
 
     // Load formData with defaults
@@ -1194,6 +1207,9 @@ private function getDefaultFormData()
 	
 	public function update($id, Request $request)
 	{
+		if (!$this->canManageMaster('item-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 	//	echo '<pre>';print_r($request->all());
 	  // $status = $this->itemmaster->check_item($id);
 	//	if($status) {
@@ -2085,6 +2101,40 @@ private function getDefaultFormData()
 					->withNum($n)
 					->withInfo($info);
 	}
+
+	private function canManageMaster(?string $permission = null): bool
+	{
+		$user = Auth::user();
+		if (!$user) {
+			return false;
+		}
+
+		if ($permission !== null) {
+			if (method_exists($user, 'can')) {
+				return $user->can($permission);
+			}
+			if (method_exists($user, 'hasPermissionTo')) {
+				return $user->hasPermissionTo($permission);
+			}
+			return false;
+		}
+
+		$permissions = ['item-create', 'item-edit', 'item-delete'];
+
+		if (method_exists($user, 'can')) {
+			foreach ($permissions as $perm) {
+				if ($user->can($perm)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		if (method_exists($user, 'hasAnyPermission')) {
+			return $user->hasAnyPermission($permissions);
+		}
+
+		return false;
+	}
     
 }
-

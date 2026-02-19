@@ -493,7 +493,7 @@
                                 </div>
 								
 								
-								<input type="hidden" step="any" id="discount" name="discount" class="form-control" placeholder="0">
+								<input type="hidden" step="any" id="discount" name="discount" class="form-control" value="{{ old('discount', 0) }}" placeholder="0">
 								<input type="hidden" step="any" id="discount_fc" name="discount_fc" class="form-control" placeholder="0">
 								
 								<div class="form-group">

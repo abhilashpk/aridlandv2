@@ -1641,6 +1641,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	 */
 	private function updateDepartmentStockOnEdit($itemmaster_id, $attributes, $key, $unit_id, $departmentId)
 	{
+		$dtrow = DB::table('parameter1')->select('from_date')->first();
 		$newOpnQty = $attributes['opn_quantity'][$key] ?? 0;
 		$newOpnCost = $attributes['opn_cost'][$key] ?? 0;
 		$sellPrice = $attributes['sell_price'][$key] ?? 0;
@@ -1677,6 +1678,71 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					'pkno' => $pkno,
 					'last_purchase_cost' => $newOpnCost,
 				]);
+		} else {
+			DB::table('itemstock_department')->insert([
+				'itemmaster_id' => $itemmaster_id,
+				'department_id' => $departmentId,
+				'unit_id' => $unit_id,
+				'packing' => $attributes['packing'][$key] ?? '',
+				'opn_cost' => $newOpnCost,
+				'opn_quantity' => $newOpnQty,
+				'cur_quantity' => $newOpnQty,
+				'received_qty' => $newOpnQty,
+				'issued_qty' => 0,
+				'min_quantity' => $minQty,
+				'reorder_level' => $reorderLevel,
+				'vat' => $vat,
+				'is_baseqty' => 1,
+				'pur_count' => 1,
+				'last_purchase_cost' => $newOpnCost,
+				'cost_avg' => $newOpnCost,
+				'status' => 1,
+				'sell_price' => $sellPrice,
+				'wsale_price' => $wsalePrice,
+				'pkno' => $pkno,
+			]);
+		}
+
+		$oqLog = DB::table('item_log')
+			->where('item_id', $itemmaster_id)
+			->where('department_id', $departmentId)
+			->where('document_type', 'OQ')
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->orderBy('id', 'desc')
+			->first();
+
+		if ($oqLog) {
+			DB::table('item_log')
+				->where('id', $oqLog->id)
+				->update([
+					'unit_id' => $unit_id,
+					'quantity' => $newOpnQty,
+					'unit_cost' => $newOpnCost,
+					'cur_quantity' => $newOpnQty,
+					'cost_avg' => $newOpnCost,
+					'pur_cost' => $newOpnCost,
+					'voucher_date' => $dtrow->from_date ?? now()->toDateString(),
+				]);
+		} else {
+			DB::table('item_log')->insert([
+				'document_type' => 'OQ',
+				'department_id' => $departmentId,
+				'item_id' => $itemmaster_id,
+				'unit_id' => $unit_id,
+				'quantity' => $newOpnQty,
+				'unit_cost' => $newOpnCost,
+				'trtype' => 1,
+				'cur_quantity' => $newOpnQty,
+				'cost_avg' => $newOpnCost,
+				'pur_cost' => $newOpnCost,
+				'sale_cost' => '',
+				'packing' => 1,
+				'status' => 1,
+				'created_at' => now(),
+				'created_by' => Auth::id(),
+				'voucher_date' => $dtrow->from_date ?? now()->toDateString(),
+			]);
 		}
 	}
 
@@ -2114,15 +2180,16 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 
 	public function itemmasterListCount()
 	{
+		$departmentId = auth()->user()->department_id ?? 1;
 		return $this->itemmaster
 		->where('itemmaster.status', 1)
 		->join('item_unit AS u', function ($join) {
 			$join->on('u.itemmaster_id','=','itemmaster.id')
 				->where('u.is_baseqty', 1);
 		})
-		->join('itemstock_department AS ID', function ($join) {
+		->join('itemstock_department AS ID', function ($join) use ($departmentId) {
 			$join->on('ID.itemmaster_id','=','itemmaster.id')
-				->where('ID.department_id', 1);
+				->where('ID.department_id', $departmentId);
 		})
 		->count();
 
@@ -7832,16 +7899,18 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	}
 
 	private function getItemOpnQtyFromLog($item_id){
-       $oqtyin = DB::table('item_log')->where('item_id', $item_id)->where('document_type', 'OQ')->where('trtype',1)->where('status',1)->whereNull('deleted_at')->sum('quantity');
+		$departmentId = auth()->user()->department_id ?? 1;
+       $oqtyin = DB::table('item_log')->where('item_id', $item_id)->where('department_id', $departmentId)->where('document_type', 'OQ')->where('trtype',1)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 		return ['opq' => $oqtyin];
 	}
 	
 
 	private function getItemQtyFromLog($item_id)
 	{
-		$qtyin = DB::table('item_log')->where('item_id', $item_id)->where('trtype',1)->where('status',1)->whereNull('deleted_at')->sum('quantity');
+		$departmentId = auth()->user()->department_id ?? 1;
+		$qtyin = DB::table('item_log')->where('item_id', $item_id)->where('department_id', $departmentId)->where('trtype',1)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 		
-		$qtyout = DB::table('item_log')->where('item_id', $item_id)->where('trtype',0)->where('status',1)->whereNull('deleted_at')->sum('quantity');
+		$qtyout = DB::table('item_log')->where('item_id', $item_id)->where('department_id', $departmentId)->where('trtype',0)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 		
 		return ['in' => $qtyin, 'out' => $qtyout];
 	}

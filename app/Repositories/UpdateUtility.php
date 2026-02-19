@@ -1122,6 +1122,9 @@ class UpdateUtility
                 $qry->where('department_id', $departmentId);
 
             $setting = $qry->lockForUpdate()->first();
+			if (!$setting) {
+				throw new \RuntimeException("Voucher settings not found for {$doc}");
+			}
 
 			// ✅ If user entered manually
 			if (!empty($manualVoucherNo)) {
@@ -1146,7 +1149,10 @@ class UpdateUtility
 		    $voucherNo = ($prefix ? $prefix : '') . $setting->no;
 
             // 4️⃣ Update settings
-            DB::table('voucher_no')->where('voucher_type', $doc)->update(['no' => $nextNo,'modified_at' => $now]);
+			$qry2 = DB::table('voucher_no')->where('voucher_type', $doc);
+			if($departmentId)
+				$qry2->where('department_id', $departmentId);
+            $qry2->update(['no' => $nextNo,'modified_at' => $now]);
 
             return $voucherNo;
         });

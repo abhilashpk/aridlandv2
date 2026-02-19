@@ -9,6 +9,7 @@ use Notification;
 use Session;
 use App;
 use DB;
+use Illuminate\Support\Facades\Auth;
 
 class SubcategoryController extends Controller
 {
@@ -22,7 +23,7 @@ class SubcategoryController extends Controller
 		$this->middleware('auth');
 	}
 
-	protected function index() {
+	public function index() {
 
 		$data = array();
 		// $subcategories = $this->category->subcategoryList();
@@ -53,6 +54,9 @@ class SubcategoryController extends Controller
 	// }
 
 	public function save(Request $request) {
+        if (!$this->canManageMaster('it-subcategory-create')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         // ✓ Add validation
         $validated = $request->validate([
             'category_name' => 'required|max:120',
@@ -71,6 +75,9 @@ class SubcategoryController extends Controller
     }
 	
 	public function edit($id) { 
+		if (!$this->canManageMaster('it-subcategory-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 
 		$data = array();
 		$catrow = $this->category->find($id);//print_r($grouprow);
@@ -81,6 +88,9 @@ class SubcategoryController extends Controller
 	
 	public function update($id, Request $request)
 	{
+		if (!$this->canManageMaster('it-subcategory-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$this->category->update($id, $request->all());//print_r($request->all());exit;
 		//Session::flash('message', 'Category updated successfully');
 		return redirect('subcategory');
@@ -88,6 +98,9 @@ class SubcategoryController extends Controller
 	
 	public function destroy($id)
 	{
+		if (!$this->canManageMaster('it-subcategory-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$this->category->delete($id);
 		//check group name is already in use.........
 		// code here ********************************
@@ -119,6 +132,9 @@ class SubcategoryController extends Controller
 
 	public function destroyGroup(Request $request)
 	{
+		if (!$this->canManageMaster('it-subcategory-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$ids = $request->get('ids');
 		if($ids) {
 			$idarr = explode(',', $ids);
@@ -129,6 +145,9 @@ class SubcategoryController extends Controller
 	}
 
 	public function destroySubcategories(Request $request) {
+        if (!$this->canManageMaster('it-subcategory-delete')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         $ids = $request->get('ids');
         
         if ($ids) {
@@ -147,5 +166,39 @@ class SubcategoryController extends Controller
         
         return redirect('subcategory');
     }
-}
 
+	private function canManageMaster(?string $permission = null): bool
+	{
+		$user = Auth::user();
+		if (!$user) {
+			return false;
+		}
+
+		if ($permission !== null) {
+			if (method_exists($user, 'can')) {
+				return $user->can($permission);
+			}
+			if (method_exists($user, 'hasPermissionTo')) {
+				return $user->hasPermissionTo($permission);
+			}
+			return false;
+		}
+
+		$permissions = ['it-subcategory-create', 'it-subcategory-edit', 'it-subcategory-delete'];
+
+		if (method_exists($user, 'can')) {
+			foreach ($permissions as $perm) {
+				if ($user->can($perm)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		if (method_exists($user, 'hasAnyPermission')) {
+			return $user->hasAnyPermission($permissions);
+		}
+
+		return false;
+	}
+}

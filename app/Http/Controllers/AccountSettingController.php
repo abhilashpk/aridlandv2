@@ -171,12 +171,12 @@ class AccountSettingController extends Controller
 	    $accounts = $this->other_account->getOtherAccountSettingCheck();
 		$cas = DB::table('voucher_account')
 					->join('account_master', 'account_master.id', '=', 'voucher_account.account_id')
-					->where('account_master.status',1)->where('account_master.deleted_at','0000-00-00 00:00:00')
+					->where('account_master.status',1)->whereNull('account_master.deleted_at')
 					->select('account_master.account_id as code','account_master.master_name','voucher_account.*')
 					->get(); 
 					
 		if(Session::get('department')==1) {
-			$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			$deptaccounts = DB::table('department_accounts')
 								->leftJoin('account_master AS M1', 'M1.id', '=', 'department_accounts.stock_acid')
 								->leftJoin('account_master AS M2', 'M2.id', '=', 'department_accounts.cost_acid')
@@ -197,11 +197,11 @@ class AccountSettingController extends Controller
 		
 		
 		$vataccounts = $this->vat_master->getVatAccounts();
-		$vatrow = DB::table('vat_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$vatrow = DB::table('vat_master')->where('status',1)->whereNull('deleted_at')->select('id')->first();
 		$vatid = $vatrow->id;
 		
 		if(Session::get('department')==1) {
-			$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+			$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			$deptaccountsvat = DB::table('vat_master')->where('vat_master.id', $vatid)
 								->join('vat_department', 'vat_department.vatmaster_id', '=', 'vat_master.id')
 								->leftJoin('account_master AS M1', 'M1.id', '=', 'vat_department.collection_account')
@@ -272,3 +272,6 @@ class AccountSettingController extends Controller
 	
 
 }
+
+
+

@@ -92,13 +92,12 @@ class UnitRepository extends AbstractValidator implements UnitInterface {
 	public function check_unit_name($name, $id = null) {
 		
 		if($id)
-			return $this->unit->where('unit_name',$name)->where('id', '!=', $id)->count();
+			return $this->unit->where('unit_name',$name)->where('id', '!=', $id)->whereNull('deleted_at')->count();
 		else
-			return $this->unit->where('unit_name',$name)->count();
+			return $this->unit->where('unit_name',$name)->whereNull('deleted_at')->count();
 	}
 	
 
 	
 	
 }
-

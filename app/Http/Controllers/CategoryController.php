@@ -9,6 +9,7 @@ use Notification;
 use Session;
 use App;
 use DB;
+use Illuminate\Support\Facades\Auth;
 
 class CategoryController extends Controller
 {
@@ -23,7 +24,7 @@ class CategoryController extends Controller
 
 	}
 
-	protected function index() {
+	public function index() {
 		//echo 'hi';
 		//return view('simple_tables');
 		$data = array();
@@ -42,6 +43,9 @@ class CategoryController extends Controller
 	}
 	
 	public function save(Request $request) {
+		if (!$this->canManageMaster('it-category-create')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		//print_r($request->all());
 		try {
 			$this->category->create($request->all());
@@ -53,6 +57,9 @@ class CategoryController extends Controller
 	}
 	
 	public function edit($id) { 
+		if (!$this->canManageMaster('it-category-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 
 		$data = array();
 		$catrow = $this->category->find($id);//print_r($grouprow);
@@ -63,6 +70,9 @@ class CategoryController extends Controller
 	
 	public function update($id, Request $request)
 	{
+		if (!$this->canManageMaster('it-category-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$this->category->update($id, $request->all());//print_r($request->all());exit;
 		//Session::flash('message', 'Category updated successfully');
 		return redirect('category');
@@ -78,6 +88,9 @@ class CategoryController extends Controller
 	// }
 
 	public function destroy(Request $request) { // ✓ Better name
+		if (!$this->canManageMaster('it-category-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$ids = $request->get('ids');
 		if ($ids) {
 			$idarr = array_filter(explode(',', $ids), 'is_numeric'); // ✓ Validate
@@ -101,6 +114,9 @@ class CategoryController extends Controller
 	}
 	public function destroyGroup(Request $request)
 	{
+		if (!$this->canManageMaster('it-category-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$ids = $request->get('ids');
 		if($ids) {
 			$idarr = explode(',', $ids);
@@ -110,5 +126,39 @@ class CategoryController extends Controller
 		}
 		return redirect('category');
 	}
-}
 
+	private function canManageMaster(?string $permission = null): bool
+	{
+		$user = Auth::user();
+		if (!$user) {
+			return false;
+		}
+
+		if ($permission !== null) {
+			if (method_exists($user, 'can')) {
+				return $user->can($permission);
+			}
+			if (method_exists($user, 'hasPermissionTo')) {
+				return $user->hasPermissionTo($permission);
+			}
+			return false;
+		}
+
+		$permissions = ['it-category-create', 'it-category-edit', 'it-category-delete'];
+
+		if (method_exists($user, 'can')) {
+			foreach ($permissions as $perm) {
+				if ($user->can($perm)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		if (method_exists($user, 'hasAnyPermission')) {
+			return $user->hasAnyPermission($permissions);
+		}
+
+		return false;
+	}
+}

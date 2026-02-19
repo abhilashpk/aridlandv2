@@ -9,6 +9,7 @@ use Session;
 use Response;
 use App;
 use DB;
+use Illuminate\Support\Facades\Auth;
 
 class GroupController extends Controller
 {
@@ -45,6 +46,9 @@ class GroupController extends Controller
 	// }
 
 	public function save(Request $request) {
+		if (!$this->canManageMaster('it-group-create')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$request->validate([
 			'group_name' => 'required|max:150',
 			'parent_id' => 'required|integer',
@@ -62,6 +66,9 @@ class GroupController extends Controller
 	}
 	
 	public function edit($id) { 
+		if (!$this->canManageMaster('it-group-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 
 		$data = array();
 		$grouprow = $this->group->find($id);//print_r($grouprow);
@@ -72,6 +79,9 @@ class GroupController extends Controller
 	
 	public function update($id, Request $request)
 	{
+		if (!$this->canManageMaster('it-group-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$this->group->update($id, $request->all());//print_r($request->all());exit;
 		//Session::flash('message', 'Category updated successfully');
 		return redirect('group');
@@ -79,6 +89,9 @@ class GroupController extends Controller
 	
 	public function destroy($id)
 	{
+		if (!$this->canManageMaster('it-group-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$this->group->delete($id);
 		//check group name is already in use.........
 		// code here ********************************
@@ -106,6 +119,9 @@ class GroupController extends Controller
 	// }
 
 	public function destroyGroup(Request $request) {
+		if (!$this->canManageMaster('it-group-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$ids = $request->get('ids');
 		if($ids) {
 			$idarr = array_filter(explode(',', $ids), 'is_numeric'); // Validate
@@ -118,5 +134,39 @@ class GroupController extends Controller
 		}
 		return redirect('group');
 	}
-}
 
+	private function canManageMaster(?string $permission = null): bool
+	{
+		$user = Auth::user();
+		if (!$user) {
+			return false;
+		}
+
+		if ($permission !== null) {
+			if (method_exists($user, 'can')) {
+				return $user->can($permission);
+			}
+			if (method_exists($user, 'hasPermissionTo')) {
+				return $user->hasPermissionTo($permission);
+			}
+			return false;
+		}
+
+		$permissions = ['it-group-create', 'it-group-edit', 'it-group-delete'];
+
+		if (method_exists($user, 'can')) {
+			foreach ($permissions as $perm) {
+				if ($user->can($perm)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		if (method_exists($user, 'hasAnyPermission')) {
+			return $user->hasAnyPermission($permissions);
+		}
+
+		return false;
+	}
+}

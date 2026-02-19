@@ -38,6 +38,18 @@
             </ol>
         </section>
         <!--section ends-->
+        @if ($errors->any())
+        <div class="alert alert-danger">
+            <p>{{ $errors->first() }}</p>
+        </div>
+        @endif
+
+        @if(Session::has('error'))
+        <div class="alert alert-danger">
+            <p>{{ Session::get('error') }}</p>
+        </div>
+        @endif
+
         <section class="content">
             <div class="row">
                 <div class="col-md-12">
@@ -58,21 +70,21 @@
                                 <div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Unit Name</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="unit_name" name="unit_name" value="{{ $unitrow->unit_name }}">
+                                        <input type="text" class="form-control" id="unit_name" name="unit_name" value="{{ old('unit_name', $unitrow->unit_name) }}">
                                     </div>
                                 </div>
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Unit Description</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="description" name="description" placeholder="Unit Description" value="{{ $unitrow->description }}">
+                                        <input type="text" class="form-control" id="description" name="description" placeholder="Unit Description" value="{{ old('description', $unitrow->description) }}" maxlength="120">
                                     </div>
                                 </div>
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Fra Count</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="fracount" name="fracount" placeholder="Fra Count" value="{{ $unitrow->fracount }}">
+                                        <input type="text" class="form-control" id="fracount" name="fracount" placeholder="Fra Count" value="{{ old('fracount', $unitrow->fracount) }}">
                                     </div>
                                 </div>
                                 

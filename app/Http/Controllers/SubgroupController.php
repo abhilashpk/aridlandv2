@@ -8,6 +8,7 @@ use App\Http\Requests;
 use Session;
 use App;
 use DB;
+use Illuminate\Support\Facades\Auth;
 
 class SubgroupController extends Controller
 {
@@ -44,6 +45,9 @@ class SubgroupController extends Controller
 	// }
 
 	public function save(Request $request) {
+        if (!$this->canManageMaster('it-subgroup-create')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         // ✓ Add validation
         $validated = $request->validate([
             'group_name' => 'required|max:150',
@@ -62,6 +66,9 @@ class SubgroupController extends Controller
     }
 	
 	public function edit($id) { 
+		if (!$this->canManageMaster('it-subgroup-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 
 		$data = array();
 		$grouprow = $this->group->find($id);//print_r($grouprow);
@@ -72,6 +79,9 @@ class SubgroupController extends Controller
 	
 	public function update($id, Request $request)
 	{
+		if (!$this->canManageMaster('it-subgroup-edit')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$this->group->update($id, $request->all());//print_r(Input::all());exit;
 		//Session::flash('message', 'Category updated successfully');
 		return redirect('subgroup');
@@ -79,6 +89,9 @@ class SubgroupController extends Controller
 	
 	public function destroy($id)
 	{
+		if (!$this->canManageMaster('it-subgroup-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
 		$this->group->delete($id);
 		//check group name is already in use.........
 		// code here ********************************
@@ -108,18 +121,24 @@ class SubgroupController extends Controller
         return response()->json(['valid' => $isAvailable]);
     }
 
-	public function destroyGroup()
+	public function destroyGroup(Request $request)
 	{
-		$ids = Input::get('ids');
+		if (!$this->canManageMaster('it-subgroup-delete')) {
+			return redirect()->back()->with('error', 'Unauthorized action.');
+		}
+		$ids = $request->get('ids');
 		if($ids) {
-			$idarr = explode(',', $ids);
-			DB::table('groupcat')->whereIn('id',$idarr)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+			$idarr = array_filter(explode(',', $ids), 'is_numeric');
+			DB::table('groupcat')->whereIn('id',$idarr)->update(['deleted_at' => now()]);
 			Session::flash('message', 'Subgroups deleted successfully.');
 		}
 		return redirect('subgroup');
 	}
 
 	public function destroySubgroups(Request $request) {
+        if (!$this->canManageMaster('it-subgroup-delete')) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         $ids = $request->get('ids');
         
         if ($ids) {
@@ -138,5 +157,39 @@ class SubgroupController extends Controller
         
         return redirect('subgroup');
     }
-}
 
+	private function canManageMaster(?string $permission = null): bool
+	{
+		$user = Auth::user();
+		if (!$user) {
+			return false;
+		}
+
+		if ($permission !== null) {
+			if (method_exists($user, 'can')) {
+				return $user->can($permission);
+			}
+			if (method_exists($user, 'hasPermissionTo')) {
+				return $user->hasPermissionTo($permission);
+			}
+			return false;
+		}
+
+		$permissions = ['it-subgroup-create', 'it-subgroup-edit', 'it-subgroup-delete'];
+
+		if (method_exists($user, 'can')) {
+			foreach ($permissions as $perm) {
+				if ($user->can($perm)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		if (method_exists($user, 'hasAnyPermission')) {
+			return $user->hasAnyPermission($permissions);
+		}
+
+		return false;
+	}
+}
