@@ -416,33 +416,32 @@ class SalesReturnController extends Controller
 	//
 	public function save(Request $request) {
 		
-		//echo '<pre>';print_r($request->all());exit;
-		
-		
-		
-		if( $this->validate(
-			$request, 
-			['sales_invoice_id' => 'required',
-			 //'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
-			 'location_id' =>'required','location_id' => 'required',
-			 'customer_name' => 'required','customer_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			['sales_invoice_id' => 'Sales Invoice no. is required.',
-			 //'reference_no' => 'Reference no. is required.',
-			 	'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
-			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
-
-			return redirect('sales_return/add')->withInput()->withErrors();
+		try {
+			$this->validate($request, [
+				'sales_invoice_id' => 'required',
+				'location_id'      => 'required',
+				'customer_name'    => 'required',
+				'customer_id'      => 'required',
+				'item_code.*'      => 'required',
+				'item_id.*'        => 'required',
+				'unit_id.*'        => 'required',
+				'quantity.*'       => 'required',
+				'cost.*'           => 'required',
+			], [
+				'sales_invoice_id.required' => 'Sales Invoice no. is required.',
+				'location_id.required'      => 'Location is required.',
+				'customer_name.required'    => 'Customer Name is required.',
+				'customer_id.required'      => 'Customer name is invalid.',
+				'item_code.*.required'      => 'Item code is required.',
+				'item_id.*.required'        => 'Item code is invalid.',
+				'unit_id.*.required'        => 'Item unit is required.',
+				'quantity.*.required'       => 'Item quantity is required.',
+				'cost.*.required'           => 'Item cost is required.',
+			]);
+		} catch (\Illuminate\Validation\ValidationException $e) {
+			return redirect('sales_return/add')
+				->withInput()
+				->withErrors($e->errors());
 		}
 		
 		//if dept active... set department cost and stock account...
@@ -635,30 +634,34 @@ class SalesReturnController extends Controller
 	public function update(Request $request)
 	{  
 		$id = $request->input('sales_return_id');
-		if( $this->validate(
-			$request, 
-			['sales_invoice_id' => 'required',
-			 //'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable', 
-			  'location_id' =>'required','location_id' => 'required',
-			 'customer_name' => 'required','customer_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			['sales_invoice_id' => 'Sales Invoice no. is required.',
-			 //'reference_no' => 'Reference no. is required.',
-			 	'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
-			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
+			try {
+				$this->validate($request, [
+					'sales_invoice_id' => 'required',
+					'location_id'      => 'required',
+					'customer_name'    => 'required',
+					'customer_id'      => 'required',
+					'item_code.*'      => 'required',
+					'item_id.*'        => 'required',
+					'unit_id.*'        => 'required',
+					'quantity.*'       => 'required',
+					'cost.*'           => 'required',
+				], [
+					'sales_invoice_id.required' => 'Sales Invoice no. is required.',
+					'location_id.required'      => 'Location is required.',
+					'customer_name.required'    => 'Customer Name is required.',
+					'customer_id.required'      => 'Customer name is invalid.',
+					'item_code.*.required'      => 'Item code is required.',
+					'item_id.*.required'        => 'Item code is invalid.',
+					'unit_id.*.required'        => 'Item unit is required.',
+					'quantity.*.required'       => 'Item quantity is required.',
+					'cost.*.required'           => 'Item cost is required.',
+				]);
+			} catch (\Illuminate\Validation\ValidationException $e) {
+				return redirect('sales_return/edit/'.$id)
+					->withInput()
+					->withErrors($e->errors());
+			}
 
-			return redirect('sales_return/edit/'.$id)->withInput()->withErrors();
-		}
 		$attributes=$request->all();
 		if( $this->sales_return->update($id, $attributes) ){
         #### mail

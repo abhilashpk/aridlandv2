@@ -530,6 +530,7 @@ $(function() {
     });
 
 	$(document).on('click', '.loc-info', function(e) { 
+		console.log('info triggered');
 	   e.preventDefault();
 	   var res = this.id.split('_');
 	   var curNum = res[1];  

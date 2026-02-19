@@ -95,13 +95,13 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('sr-print')
+								@can('sr-print')
 								 <a href="{{ url('sales_return/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
                         </div>
@@ -337,8 +337,19 @@
 													<td width="29%">
 														<input type="text" name="item_name[]" value="{{ old('item_name')[$i]}}" id="itmdes_{{$j}}" autocomplete="off" class="form-control" placeholder="Item Description">
 													</td>
-													<td width="7%">
+													{{-- <td width="7%">
 														<select id="itmunt_{{$j}}" class="form-control select2 <?php if($errors->has('unit_id.'.$i)) echo 'form-error';?> line-unit" style="width:100%" name="unit_id[]"><option value="{{old('unit_id')[$i]}}">{{old('hidunit')[$i]}}</option></select>
+													</td> --}}
+													<td width="7%">
+														<select id="itmunt_{{$j}}" 
+																class="form-control select2 {{ $errors->has('unit_id.'.$i) ? 'form-error' : '' }} line-unit" 
+																style="width:100%" 
+																name="unit_id[]">
+															<option value="{{ old('unit_id')[$i] ?? '' }}" 
+																	selected>
+																{{ old('hidunit')[$i] ?? '' }}
+															</option>
+														</select>
 													</td>
 													<td width="8%">
 														<input type="number" id="itmqty_{{$j}}" step="any" name="quantity[]" value="{{ old('quantity')[$i]}}" autocomplete="off" class="form-control <?php if($errors->has('quantity.'.$i)) echo 'form-error';?> line-quantity" placeholder="Qty.">
@@ -354,7 +365,7 @@
 														<select id="txincld_{{$j}}" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option value="0">No</option><option value="1">Yes</option></select>
 													</td>
 													<td width="9%">
-														<input type="hidden" id="hidunit_{{$j}}" name="hidunit[]" class="hidunt" value="{{old('hidunit')[$i]}}">
+														<input type="hidden" id="hidunit_{{$j}}" name="hidunit[]" class="hidunt" value="{{ old('hidunit')[$i] ?? '' }}">														
 														<input type="hidden" id="packing_{{$j}}" name="packing[]" value="{{ old('packing')[$i]}}">
 														<input type="text" id="vatdiv_{{$j}}" step="any" readonly name="vatdiv[]" value="{{ old('vatdiv')[$i]}}" class="form-control vatdiv" placeholder="VAT Amt"> 
 														<input type="hidden" id="vat_{{$j}}" name="line_vat[]" value="{{ old('line_vat')[$i]}}" class="form-control vat">

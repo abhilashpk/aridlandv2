@@ -433,6 +433,7 @@ Route::get('/itemmaster/asmitem_data/{n}', [ItemmasterController::class, 'getAsm
 Route::post('/itemmaster/asmitem_data', [ItemmasterController::class, 'ajaxgetAsmItem']);
 Route::get('/itemmaster/get_assembly_items/{id}/{qty}/{n}', [ItemmasterController::class, 'getAssemblyItems']);
 Route::get('/itemmaster/sts', [ItemmasterController::class, 'status_chk']);
+Route::get('/itemmaster/view_locinfo/{id}', [ItemmasterController::class, 'viewLocInfo']);
 Route::get('/itemmaster/view_locinfo/{id}/{n}', [ItemmasterController::class, 'viewLocInfo']);
 Route::get('/itemmaster/view_intralocinfo/{id}', [ItemmasterController::class, 'viewIntraLocInfo']);
 Route::get('/itemmaster/get_locqty/{id}', [ItemmasterController::class, 'getLocqty']);

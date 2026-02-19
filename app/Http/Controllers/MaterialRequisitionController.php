@@ -349,40 +349,73 @@ class MaterialRequisitionController extends Controller
 	}
 	
 	
-	public function update(Request $request,$id)
+	// public function update(Request $request,$id)
+	// {
+	//     if( $this->validate(
+	// 			$request, 
+	// 			[ 
+	// 			 //'supplier_name' => 'required','supplier_id' => 'required',
+	// 			 //'jobname' => 'required','job_id' => 'required',
+	// 			 'locfrom_id' =>'required','locfrom_id' => 'required',
+	// 			 'location_id' =>'required','location_id' => 'required',
+	// 			  'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 			// 'unit_id.*' => 'required',
+	// 			 'quantity.*' => 'required',
+	// 			 //'cost.*' => 'required' 
+	// 			],
+	// 			[
+				
+	// 			// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
+	// 			// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
+	// 			'locfrom_id.required' => 'From Location is required.','locfrom_id.required' => 'Location From is invalid.',
+	// 			'location_id.required' => 'TO Location is required.','location_id.required' => 'Location To is invalid.',
+	// 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 			 //'unit_id.*' => 'Item unit is required.',
+	// 			 'quantity.*' => 'Item quantity is required.',
+	// 			 //'cost.*' => 'Item cost is required.' 
+	// 			]
+	// 		)) {
+			    
+	// 			return redirect('material_requisition/edit/'.$id)->withInput()->withErrors(['error' => 'Something went wrong. Please check the form.']);
+	// 		}
+	    
+	// 	$this->material_requisition->update($id, $request->all());
+	// 	Session::flash('message', 'Material Requisition updated successfully');
+	// 	return redirect('material_requisition');
+	// }
+
+
+	public function update(Request $request, $id)
 	{
-	    if( $this->validate(
-				$request, 
-				[ 
-				 //'supplier_name' => 'required','supplier_id' => 'required',
-				 //'jobname' => 'required','job_id' => 'required',
-				 'locfrom_id' =>'required','locfrom_id' => 'required',
-				 'location_id' =>'required','location_id' => 'required',
-				  'item_code.*'  => 'required', 'item_id.*' => 'required',
-				// 'unit_id.*' => 'required',
-				 'quantity.*' => 'required',
-				 //'cost.*' => 'required' 
+		try {
+			$this->validate(
+				$request,
+				[
+					'locfrom_id'  => 'required',
+					'location_id' => 'required',
+					'item_code.*' => 'required',
+					'item_id.*'   => 'required',
+					'quantity.*'  => 'required',
 				],
 				[
-				
-				// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
-				// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
-				'locfrom_id.required' => 'From Location is required.','locfrom_id.required' => 'Location From is invalid.',
-				'location_id.required' => 'TO Location is required.','location_id.required' => 'Location To is invalid.',
-				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-				 //'unit_id.*' => 'Item unit is required.',
-				 'quantity.*' => 'Item quantity is required.',
-				 //'cost.*' => 'Item cost is required.' 
+					'locfrom_id.required'    => 'From Location is required.',
+					'location_id.required'   => 'To Location is required.',
+					'item_code.*.required'   => 'Item code is required.',
+					'item_id.*.required'     => 'Item code is invalid.',
+					'quantity.*.required'    => 'Item quantity is required.',
 				]
-			)) {
-			    
-				return redirect('material_requisition/edit/'.$id)->withInput()->withErrors();
-			}
-	    
+			);
+		} catch (\Illuminate\Validation\ValidationException $e) {
+			return redirect('material_requisition/edit/' . $id)
+				->withInput()
+				->withErrors($e->errors());
+		}
+
 		$this->material_requisition->update($id, $request->all());
 		Session::flash('message', 'Material Requisition updated successfully');
 		return redirect('material_requisition');
 	}
+	
 	
 	public function getViews($id) { 
 

@@ -1657,7 +1657,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_invoice')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id',auth()->user()->department_id ?? 1);
+				$qry = DB::table('sales_invoice')->whereNull('deleted_at')->where('status', 1)->where('department_id',auth()->user()->department_id ?? 1);
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
@@ -4290,7 +4290,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			return $this->sales_invoice->where('sales_invoice.status',1)
 								   ->leftJoin('receipt_voucher_tr AS RV', function($join){
 									   $join->on('RV.sales_invoice_id','=','sales_invoice.id');
-									   $join->where('RV.deleted_at','=','0000-00-00 00:00:00');
+									   $join->whereNull('RV.deleted_at');
 									   $join->where('RV.status','=',1);
 									  
 								   }) 
@@ -5052,7 +5052,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								'sales_invoice.amount_transfer','S.name AS salesman','sales_invoice.discount',
 								'sales_invoice.voucher_date','POI.quantity','POI.balance_quantity','POI.unit_price','AM.account_id','AM.master_name',
 								'AM.vat_no','sales_invoice.net_total','POI.tax_code','J.code AS jobcode','sales_invoice.less_amount','sales_invoice.less_amount2','sales_invoice.less_amount3',
-								DB::raw("(SELECT SUM(SI.quantity) FROM sales_invoice_item SI WHERE (SI.sales_invoice_id=sales_invoice.id) AND (SI.status=1) AND (SI.deleted_at='0000-00-00 00:00:00')
+								DB::raw("(SELECT SUM(SI.quantity) FROM sales_invoice_item SI WHERE (SI.sales_invoice_id=sales_invoice.id) AND (SI.status=1) AND (SI.deleted_at=null)
 								)AS quantity") )
 								->groupBy('sales_invoice.id')
 								->orderBY('sales_invoice.voucher_date','ASC')
@@ -5119,7 +5119,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 			return $query->select('sales_invoice.voucher_no','sales_invoice.reference_no','sales_invoice.total','sales_invoice.vat_amount','sales_invoice.amount_transfer','S.name AS salesman','sales_invoice.discount',
 								  'sales_invoice.voucher_date','POI.balance_quantity','POI.unit_price','AM.account_id','AM.master_name','AM.vat_no','sales_invoice.net_total','POI.tax_code',
 								  'sales_invoice.subtotal',DB::raw('SUM(POI.item_total) AS item_total'),DB::raw('SUM(POI.vat_amount) AS item_vat'),
-								  DB::raw("(SELECT SUM(SI.quantity) FROM sales_invoice_item SI WHERE (SI.sales_invoice_id=sales_invoice.id) AND (SI.status=1) AND (SI.deleted_at='0000-00-00 00:00:00')
+								  DB::raw("(SELECT SUM(SI.quantity) FROM sales_invoice_item SI WHERE (SI.sales_invoice_id=sales_invoice.id) AND (SI.status=1) AND (SI.deleted_at=null)
 								)AS quantity"))
 							->groupBy('sales_invoice.id')->get();
 		}
@@ -5159,7 +5159,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								'sales_invoice.amount_transfer','S.name AS salesman','sales_invoice.discount',
 								'sales_invoice.voucher_date','POI.quantity','POI.balance_quantity','POI.unit_price','AM.account_id','AM.master_name',
 								'AM.vat_no','sales_invoice.net_total','POI.tax_code','J.code AS jobcode','sales_invoice.less_amount','sales_invoice.less_amount2','sales_invoice.less_amount3',
-								DB::raw("(SELECT SUM(SI.quantity) FROM sales_invoice_item SI WHERE (SI.sales_invoice_id=sales_invoice.id) AND (SI.status=1) AND (SI.deleted_at='0000-00-00 00:00:00')
+								DB::raw("(SELECT SUM(SI.quantity) FROM sales_invoice_item SI WHERE (SI.sales_invoice_id=sales_invoice.id) AND (SI.status=1) AND (SI.deleted_at=null)
 								)AS quantity") )
 								->groupBy('sales_invoice.id')
 								->orderBY('sales_invoice.voucher_date','ASC')
@@ -6866,11 +6866,11 @@ if($attributes['vehicle_no']!='') {
 		           if($finalqty==0)
 		                DB::table('item_log')->where('document_type','CDO')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id',$pid)->update(['quantity' => 0, 'status'=> 0, 'deleted_at'=>date('Y-m-d H:i:s')]);
 		           else
-		                DB::table('item_log')->where('document_type','CDO')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>'0000-00-00 00:0:00']);
+		                DB::table('item_log')->where('document_type','CDO')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>null]);
 		           $siquantity = $siquantity - $drow->quantity;
 		       } else {
 		           $finalqty = $siquantity_act - $siquantity;  //echo $finalqty.' b';
-		           DB::table('item_log')->where('document_type','CDO')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>'0000-00-00 00:0:00']);
+		           DB::table('item_log')->where('document_type','CDO')->where('department_id', auth()->user()->department_id ?? 1)->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>null]);
 		       }
 		    }
 		        

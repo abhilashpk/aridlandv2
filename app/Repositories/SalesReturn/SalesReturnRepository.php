@@ -630,7 +630,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 					//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id',auth()->user()->department_id ?? 1);
+				$qry = DB::table('sales_return')->whereNull('deleted_at')->where('status', 1)->where('department_id',auth()->user()->department_id ?? 1);
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
@@ -642,8 +642,57 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 					$retryCount = 0;
 					$saved = false;
 
+					// Add these defaults to $attributes before the while loop
+					$attributes['description']      = $attributes['description']      ?? '';
+					$attributes['foot_description'] = $attributes['foot_description'] ?? '';
+					$attributes['reference_no']     = $attributes['reference_no']     ?? $attributes['sales_invoice_no'] ?? '';
+					$attributes['currency_id']      = $attributes['currency_id']      ?? '';
+					$attributes['currency_rate']    = $attributes['currency_rate']    ?? 1;
+					$attributes['job_id']           = $attributes['job_id']           ?? 0;
+					$attributes['is_fc']            = $attributes['is_fc']            ?? 0;
+					$attributes['is_prior']         = $attributes['is_prior']         ?? 0;
+					$attributes['is_intercompany']  = $attributes['is_intercompany']  ?? 0;
+					$attributes['department_id']    = $attributes['department_id']    ?? auth()->user()->department_id ?? 1;
+					$attributes['discount']         = $attributes['discount']         ?? 0;
+
+
 					while (!$saved && $retryCount < $maxRetries) {
 						try {
+								// ✅ ADD THIS BLOCK before setInputValue
+								if (empty($attributes['dr_account_id'])) {
+									// Try to get from sales_invoice
+									$invoice = DB::table('sales_invoice')
+										->where('id', $attributes['sales_invoice_id'] ?? 0)
+										->select('dr_account_id', 'cr_account_id')
+										->first();
+
+									$attributes['dr_account_id'] = $invoice->dr_account_id
+																?? $invoice->account_id
+																?? null;
+
+									// If still null, get from customer master
+									if (empty($attributes['dr_account_id'])) {
+										$customer = DB::table('customer_master')   // adjust table name
+											->where('id', $attributes['customer_id'])
+											->select('account_id', 'dr_account_id')
+											->first();
+
+										$attributes['dr_account_id'] = $customer->dr_account_id
+																	?? $customer->account_id
+																	?? null;
+									}
+
+									// Last resort: fallback to cr_account_id or fail loudly
+									if (empty($attributes['dr_account_id'])) {
+										$attributes['dr_account_id'] = $attributes['cr_account_id'] ?? null;
+									}
+								}
+
+								// ✅ Guard: stop early with clear message
+								if (empty($attributes['dr_account_id'])) {
+									throw new \Exception('dr_account_id could not be resolved for customer_id: ' . $attributes['customer_id']);
+								}
+								
 								if ($this->setInputValue($attributes)) {
 
 									$this->sales_return->status = 1;
@@ -662,7 +711,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 
 									$dept = auth()->user()->department_id ?? 1;
 									// ⿢ Get the highest numeric part from voucher_master
-									$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+									$qry = DB::table('sales_return')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 
 									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 									
@@ -736,7 +785,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																	->where('department_id',auth()->user()->department_id ?? 1)
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys) {
 											DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id ?? 1)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 										} else {
@@ -769,8 +818,8 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 									
 									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
-->where('department_id',auth()->user()->department_id ?? 1)																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+										->where('department_id',auth()->user()->department_id ?? 1)																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																	  ->whereNull('deleted_at')->select('id')->first();
 																	  
 									//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
 									$lcqty = $attributes['quantity'][$key];
@@ -1062,8 +1111,8 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                             		
 									$edit = DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->where('department_id',auth()->user()->department_id ?? 1)->first();
 									$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
-->where('department_id',auth()->user()->department_id ?? 1)  																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+									->where('department_id',auth()->user()->department_id ?? 1) ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
+																  ->whereNull('deleted_at')->select('id')->first();
 																  //echo '<pre>';print_r($edit);exit;
 									if($edit) {
 										
@@ -1103,7 +1152,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 								->where('department_id',auth()->user()->department_id ?? 1)
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+																  ->whereNull('deleted_at')->select('*')->first();
 																  
 								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
 								$lcqty = $attributes['quantity'][$key];
@@ -1114,11 +1163,14 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                         		   if($pkgar[0] > 0)
                         		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
                         		}
+
+								// ✅ $lq should be the raw entry quantity, 
+								 $lq = $attributes['quantity'][$key];
                         		
 								if($qtys) {
 									DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id ?? 1)->update(['quantity' => DB::raw('quantity - '.$lcqty) ]);
 									DB::table('item_location_sr')->where('invoice_id', $attributes['order_item_id'][$key] )
-->where('department_id',auth()->user()->department_id ?? 1)																 ->where('location_id', $qtys->location_id)
+								->where('department_id',auth()->user()->department_id ?? 1)	 ->where('location_id', $qtys->location_id)
 																 ->where('item_id', $qtys->item_id)
 																 ->where('unit_id', $qtys->unit_id)
 																 ->update(['quantity' => DB::raw('quantity - '.$lcqty),'qty_entry' => $lq ]);
@@ -1126,7 +1178,8 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								
 								$itemLocationSR = new ItemLocationSR();
 								$itemLocationSR->location_id = $attributes['default_location'];
-$itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$itemLocationSR->item_id = $value;
+								$itemLocationSR->department_id =auth()->user()->department_id ?? 1;
+								$itemLocationSR->item_id = $value;
 								$itemLocationSR->unit_id = $attributes['unit_id'][$key];
 								$itemLocationSR->quantity = $lcqty;
 								$itemLocationSR->status = 1;
@@ -1154,7 +1207,7 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 									foreach($curidarr as $ky => $rw) {					 
 										DB::table('con_location_sr')->where('invoice_id', $attributes['order_item_id'][$key])
 														 ->where('location_id', $rw)
-														 ->update(['quantity' => $curqty[$ky],'status' => 1, 'deleted_at' => '0000-00-00 00:00:00']);
+														 ->update(['quantity' => $curqty[$ky],'status' => 1, 'deleted_at' => null]);
 									
 									}
 								}
@@ -1221,7 +1274,7 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 										$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)
 										                                  ->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys) {
 											DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id ?? 1)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 										} else {
@@ -1256,7 +1309,7 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 								                                   ->where('department_id',auth()->user()->department_id ?? 1)
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 																  
 								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
 								$lcqty = $attributes['quantity'][$key];
@@ -1714,10 +1767,10 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 						// 	$join->on('V.id','=','sales_invoice.vehicle_id');
 						// })
 						->where('POI.status',1)
-						->where('POI.deleted_at','0000-00-00 00:00-00')
+						->whereNull('POI.deleted_at')
 						->where('sales_return.status',1)
 						->where('sales_return.department_id',auth()->user()->department_id ?? 1)
-						->where('sales_return.deleted_at','0000-00-00 00:00-00');
+						->whereNull('sales_return.deleted_at');
 				if(isset($attributes['job_id']))
 					$query->whereIn('sales_return.job_id', $attributes['job_id']);		
 				if(isset($attributes['group_id']))
@@ -1923,11 +1976,11 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 						->join('account_transaction', 'account_transaction.account_master_id', '=', 'account_master.id')
 						->where('account_transaction.voucher_type','!=','OBD')
 						->where('account_transaction.status',1)
-						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+						->whereNull('account_transaction.deleted_at')
 						->where('account_master.status',1)
-						->where('account_master.deleted_at','0000-00-00 00:00:00')
+						->whereNull('account_master.deleted_at')
 						->where('account_transaction.department_id',auth()->user()->department_id ?? 1)
-						->where('account_transaction.deleted_at','0000-00-00 00:00:00')
+						->whereNull('account_transaction.deleted_at')
 						->whereBetween('account_transaction.invoice_date',[$date->from_date, $date->to_date])
 						->select('account_master.id','account_master.master_name','account_master.cl_balance','account_master.category',
 								 'account_transaction.transaction_type','account_transaction.amount','account_master.op_balance','account_transaction.invoice_date')
@@ -1989,7 +2042,7 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
 							 ->where('status', 1)
-							 ->where('deleted_at','0000-00-00 00:00:00')
+							 ->whereNull('deleted_at')
 							 ->select('pur_cost','sale_reference')
 							 ->first();
 		
@@ -1998,7 +2051,7 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 										->where('department_id',auth()->user()->department_id ?? 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('cur_quantity','pur_cost')
 										->get();
 										
@@ -2044,7 +2097,7 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
 							 ->where('status', 1)
-							 ->where('deleted_at','0000-00-00 00:00:00')
+							 ->whereNull('deleted_at')
 							 ->select('pur_cost')
 							 ->first();
 		
@@ -2239,7 +2292,7 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 									   $join->on('IM.id','=','SI.item_id');
 								   })
 								   ->where('SI.status',1)
-								   ->where('SI.deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('SI.deleted_at')
 								   ->where('sales_return.status',1);
 							
 							if($date_from !='' && $date_to != '')	   
@@ -2270,10 +2323,10 @@ $itemLocationSR->department_id =auth()->user()->department_id ?? 1;								$item
 		if(Session::get('department')==1 && $department_id!=null) {
 			$vatres = DB::table('vat_department')->where('department_id', $department_id)->first();
 			if(!$vatres)
-				$vatres = DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+				$vatres = DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 			return $vatres;
 		} else {
-			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 		}
 	}
 	

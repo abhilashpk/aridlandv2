@@ -189,86 +189,194 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 		//throw new ValidationException('material_requisition validation error12!', $this->getErrors());
 	}
 	
+	// public function update($id, $attributes)
+	// {
+	// 	$this->material_requisition = $this->find($id);
+	// 	$line_total = 0;
+	// 	if($this->material_requisition->id && !empty( array_filter($attributes['item_id']))) {
+	// 		foreach($attributes['item_id'] as $key => $value) { 
+				
+	// 			if($attributes['order_item_id'][$key]!='') {
+					
+	// 				$lntotal = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
+	// 				$line_total += $lntotal;
+					
+	// 				$objMaterialReqItem = MaterialRequisitionItem::find($attributes['order_item_id'][$key]);//print_r($objMaterialReqItem);exit;//$attributes['order_item_id'][$key]);echo $attributes['order_item_id'][$key].'<pre>';
+	// 				$exi_quantity = $objMaterialReqItem->quantity;
+	// 				$items['item_name'] = $attributes['item_name'][$key];
+	// 				$items['item_id'] = $value;
+	// 				$items['unit_id'] = $attributes['unit_id'][$key];
+	// 				$items['quantity'] = isset($attributes['quantity'][$key])?$attributes['quantity'][$key]:0;
+	// 				$items['unit_price'] = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
+	// 				$items['remarks'] = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
+	// 				$items['total_price'] = $lntotal;
+	// 				$objMaterialReqItem->update($items);
+	// 					$zero = DB::table('material_requisition_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
+	// 					    if($zero && $zero->item_id != 0){
+	// 					     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+	// 					     DB::table('material_requisition_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
+	// 					     }
+										
+	// 			} else { //new entry...
+	// 				$objMaterialReqItem = new MaterialRequisitionItem();
+	// 				$arrResult 		= $this->setItemInputValue($attributes, $objMaterialReqItem, $key, $value);
+	// 				//if($arrResult['line_total']) {
+	// 					$line_total			     += $arrResult['line_total'];
+	// 					$objMaterialReqItem->status = 1;
+	// 					$itemObj =$this->material_requisition->doItem()->save($objMaterialReqItem);
+	// 						$zero = DB::table('material_requisition_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
+	// 				           if($zero && $zero->item_id != 0){
+	// 					         $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
+	// 					         DB::table('material_requisition_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
+	// 					       }
+	// 				//}
+	// 			}
+				
+	// 		}
+	// 	}
+		
+	// 	if($this->setInputValue($attributes)) {
+	// 		$this->material_requisition->modify_at = date('Y-m-d H:i:s');
+	// 		$this->material_requisition->modify_by = Auth::User()->id;
+	// 		$this->material_requisition->fill($attributes)->save();
+	// 	}
+		
+		
+	// 	//manage removed items...
+	// 	if($attributes['remove_item']!='')
+	// 	{
+	// 		$arrids = explode(',', $attributes['remove_item']);
+	// 		$remline_total = $remtax_total = 0;
+	// 		foreach($arrids as $row) {
+				
+	// 			$res = DB::table('material_requisition_item')->where('id',$row)->first();
+	// 			DB::table('material_requisition_item')->where('id', $row)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s')]);
+					
+	// 		}
+	// 	}
+	// 	$this->material_requisition->fill($attributes)->save();
+		
+	// 	$net_amount = $line_total - (float)$attributes['discount'];
+		
+		
+	// 	//update discount, total amount
+	// 	DB::table('material_requisition')
+	// 				->where('id', $this->material_requisition->id)
+	// 				->update(['total'    	  => $line_total,
+	// 						  //'discount' 	  => $attributes['discount'],
+	// 						  'net_amount'	  => $net_amount,
+	// 						 ]);
+									  
+	// 	return true;
+	// }
+
+
 	public function update($id, $attributes)
 	{
 		$this->material_requisition = $this->find($id);
+
+		if (!$this->material_requisition) {
+			return false;
+		}
+
+		// ── Defaults for nullable fields ──
+		$attributes['discount']     = $attributes['discount']     ?? 0;
+		$attributes['remove_item']  = $attributes['remove_item']  ?? '';
+
 		$line_total = 0;
-		if($this->material_requisition->id && !empty( array_filter($attributes['item_id']))) {
-			foreach($attributes['item_id'] as $key => $value) { 
-				
-				if($attributes['order_item_id'][$key]!='') {
-					
-					$lntotal = (float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key];
+
+		// ── Update / Insert line items ──
+		if (!empty(array_filter($attributes['item_id']))) {
+
+			foreach ($attributes['item_id'] as $key => $value) {
+
+				if (!empty($attributes['order_item_id'][$key])) {
+
+					// ── Existing item: UPDATE ──
+					$lntotal = (float)($attributes['cost'][$key] ?? 0)
+							* (float)($attributes['quantity'][$key] ?? 0);
 					$line_total += $lntotal;
-					
-					$objMaterialReqItem = MaterialRequisitionItem::find($attributes['order_item_id'][$key]);//print_r($objMaterialReqItem);exit;//$attributes['order_item_id'][$key]);echo $attributes['order_item_id'][$key].'<pre>';
-					$exi_quantity = $objMaterialReqItem->quantity;
-					$items['item_name'] = $attributes['item_name'][$key];
-					$items['item_id'] = $value;
-					$items['unit_id'] = $attributes['unit_id'][$key];
-					$items['quantity'] = isset($attributes['quantity'][$key])?$attributes['quantity'][$key]:0;
-					$items['unit_price'] = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
-					$items['remarks'] = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
-					$items['total_price'] = $lntotal;
-					$objMaterialReqItem->update($items);
-						$zero = DB::table('material_requisition_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
-						    if($zero && $zero->item_id != 0){
-						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
-						     DB::table('material_requisition_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
-						     }
-										
-				} else { //new entry...
+
+					$objMaterialReqItem = MaterialRequisitionItem::find($attributes['order_item_id'][$key]);
+
+					if (!$objMaterialReqItem) continue;
+
+					$objMaterialReqItem->update([
+						'item_name'   => $attributes['item_name'][$key]   ?? '',
+						'item_id'     => $value,
+						'unit_id'     => $attributes['unit_id'][$key]     ?? 0,
+						'quantity'    => $attributes['quantity'][$key]     ?? 0,
+						'unit_price'  => $attributes['cost'][$key]         ?? 0,
+						'remarks'     => $attributes['remarks'][$key]      ?? '',
+						'total_price' => $lntotal,
+					]);
+
+					// Fix zero unit_id
+					$this->fixZeroUnitId('material_requisition_item', $attributes['order_item_id'][$key], $value);
+
+				} else {
+
+					// ── New item: INSERT ──
 					$objMaterialReqItem = new MaterialRequisitionItem();
-					$arrResult 		= $this->setItemInputValue($attributes, $objMaterialReqItem, $key, $value);
-					//if($arrResult['line_total']) {
-						$line_total			     += $arrResult['line_total'];
-						$objMaterialReqItem->status = 1;
-						$itemObj =$this->material_requisition->doItem()->save($objMaterialReqItem);
-							$zero = DB::table('material_requisition_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
-					           if($zero && $zero->item_id != 0){
-						         $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
-						         DB::table('material_requisition_item')->where('id', $itemObj->id)->update(['unit_id' => $uid->unit_id]);
-						       }
-					//}
+					$arrResult = $this->setItemInputValue($attributes, $objMaterialReqItem, $key, $value);
+					$line_total += $arrResult['line_total'] ?? 0;
+
+					$objMaterialReqItem->status = 1;
+					$itemObj = $this->material_requisition->doItem()->save($objMaterialReqItem);
+
+					// Fix zero unit_id
+					$this->fixZeroUnitId('material_requisition_item', $itemObj->id, $value);
 				}
-				
 			}
 		}
-		
-		if($this->setInputValue($attributes)) {
+
+		// ── Update header record ──
+		if ($this->setInputValue($attributes)) {
 			$this->material_requisition->modify_at = date('Y-m-d H:i:s');
-			$this->material_requisition->modify_by = Auth::User()->id;
+			$this->material_requisition->modify_by = Auth::user()->id;
 			$this->material_requisition->fill($attributes)->save();
 		}
-		
-		
-		//manage removed items...
-		if($attributes['remove_item']!='')
-		{
+
+		// ── Remove deleted items ──
+		if (!empty($attributes['remove_item'])) {
 			$arrids = explode(',', $attributes['remove_item']);
-			$remline_total = $remtax_total = 0;
-			foreach($arrids as $row) {
-				
-				$res = DB::table('material_requisition_item')->where('id',$row)->first();
-				DB::table('material_requisition_item')->where('id', $row)->update(['status' => 0,'deleted_at' => date('Y-m-d H:i:s')]);
-					
+			foreach ($arrids as $row) {
+				if (!empty(trim($row))) {
+					DB::table('material_requisition_item')
+						->where('id', trim($row))
+						->update([
+							'status'     => 0,
+							'deleted_at' => date('Y-m-d H:i:s'),
+						]);
+				}
 			}
 		}
-		$this->material_requisition->fill($attributes)->save();
-		
+
+		// ── Update totals ──
 		$net_amount = $line_total - (float)$attributes['discount'];
-		
-		
-		//update discount, total amount
+
 		DB::table('material_requisition')
-					->where('id', $this->material_requisition->id)
-					->update(['total'    	  => $line_total,
-							  //'discount' 	  => $attributes['discount'],
-							  'net_amount'	  => $net_amount,
-							 ]);
-									  
+			->where('id', $this->material_requisition->id)
+			->update([
+				'total'      => $line_total,
+				'net_amount' => $net_amount,
+			]);
+
 		return true;
 	}
+
+	// ── Helper to fix unit_id = 0 ──
+	private function fixZeroUnitId(string $table, int $rowId, int $itemId): void
+	{
+		$zero = DB::table($table)->where('id', $rowId)->where('unit_id', 0)->first();
+		if ($zero && $zero->item_id != 0) {
+			$uid = DB::table('item_unit')->where('itemmaster_id', $itemId)->first();
+			if ($uid) {
+				DB::table($table)->where('id', $rowId)->update(['unit_id' => $uid->unit_id]);
+			}
+		}
+	}
+	
 	
 	public function delete($id)
 	{
