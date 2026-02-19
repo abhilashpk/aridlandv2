@@ -63,13 +63,13 @@
                             </h3>
 							
 							<div class="pull-right">
-							@permission('loc-tran-print')
+							@can('loc-tran-print')
 							 <a href="{{ url('location_transfer/print/'.$orderrow->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endpermission
+							@endcan
 							</div>
                         </div>
                         <div class="panel-body">
@@ -160,7 +160,7 @@
 									</thead>
 								</table>
 								<div class="itemdivPrnt">
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php $i = 0; $num = count($orditems); @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								@foreach($orditems as $item)

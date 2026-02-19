@@ -1459,7 +1459,7 @@ private function getDefaultFormData()
 					->withInfo($info);
 	}
 	
-	public function viewLocInfo($id,$n)
+	public function viewLocInfo($id, $n = null)
 	{
 		if (empty($id)) {
 			return view('body.itemmaster.viewlocinfo')

@@ -34,7 +34,7 @@ class LocationController extends Controller
 	public function add() {
 
 		$data = array();
-		$customers = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','CUSTOMER')->get();
+		$customers = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','CUSTOMER')->get();
 		return view('body.location.add')
 					->withCustomers($customers)
 					->withData($data);
@@ -76,7 +76,7 @@ class LocationController extends Controller
 
 		$data = array();
 		$locationrow = $this->location->find($id);
-		$customers = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','CUSTOMER')->get();
+		$customers = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','CUSTOMER')->get();
 		return view('body.location.edit')
 					->withLocationrow($locationrow)
 					->withCustomers($customers)

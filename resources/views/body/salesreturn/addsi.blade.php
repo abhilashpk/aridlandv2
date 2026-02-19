@@ -225,7 +225,8 @@
 										/*--}}
 										@endif
 											<label class="radio-inline iradio">
-											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}>
+											{{-- <input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}> --}}
+											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $orderrow->is_fc == 1 ? 'checked' : '' }}>
 										</label>
 										</div>
 										<div class="col-xs-5">
@@ -237,7 +238,8 @@
 												@else
 												{{--*/ $sel = "" /*--}}	
 												@endif
-												<option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option>
+												{{-- <option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option> --}}
+												<option value="{{$curr['id']}}" {{ old('currency_id', $orderrow->currency_id ?? '') == $curr['id'] ? 'selected' : '' }}>{{$curr['code']}}</option>
 												@endforeach
 											</select>
 										</div>
@@ -304,7 +306,7 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($pitems); /*--}}
+								@php $i = 0; $num = count($pitems); @endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
