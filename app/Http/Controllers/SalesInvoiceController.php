@@ -1360,30 +1360,66 @@ class SalesInvoiceController extends Controller
 	}
 	
 	
+	// public function destroy($id)
+	// {
+	// 	if( $this->sales_invoice->check_invoice($id) ) { 
+	// 		$this->sales_invoice->delete($id);
+			
+	// 		//AUTO COST REFRESH CHECK ENABLE OR NOT
+	// 		if($this->mod_autocost->is_active==1) {
+	// 			$arritems = [];
+	// 			$items = DB::table('sales_invoice_item')->where('sales_invoice_id',$id)->select('item_id')->get();
+	// 			foreach($items as $rw) {
+	// 				$arritems[] = $rw->item_id;
+	// 			}
+	// 			$this->objUtility->reEvalItemCostQuantity($arritems,$this->acsettings);
+	// 		}
+			
+	// 		$this->refreshDO($id);
+			
+	// 		Session::flash('message', 'Sales invoice deleted successfully.');
+	// 	} else {
+	// 		Session::flash('error', 'Sales invoice is already in use, you can\'t delete this!');
+	// 	}
+		
+	// 	return redirect('sales_invoice');
+	// }
+
+
 	public function destroy($id)
 	{
-		if( $this->sales_invoice->check_invoice($id) ) { 
-			$this->sales_invoice->delete($id);
-			
-			//AUTO COST REFRESH CHECK ENABLE OR NOT
-			if($this->mod_autocost->is_active==1) {
-				$arritems = [];
-				$items = DB::table('sales_invoice_item')->where('sales_invoice_id',$id)->select('item_id')->get();
-				foreach($items as $rw) {
-					$arritems[] = $rw->item_id;
+		if ($this->sales_invoice->check_invoice($id)) {
+
+			// Fetch items BEFORE delete while they still exist
+			$arritems = DB::table('sales_invoice_item')
+				->where('sales_invoice_id', $id)
+				->where('status', 1)
+				->pluck('item_id')
+				->unique()
+				->toArray();
+
+			$deleted = $this->sales_invoice->delete($id);
+
+			if ($deleted) {
+				// Auto cost refresh after successful delete
+				if ($this->mod_autocost->is_active == 1) {
+					$this->objUtility->reEvalItemCostQuantity(
+						$arritems,
+						$this->acsettings
+					);
 				}
-				$this->objUtility->reEvalItemCostQuantity($arritems,$this->acsettings);
+				Session::flash('message', 'Sales invoice deleted successfully.');
+			} else {
+				Session::flash('error', 'Delete failed, please try again.');
 			}
-			
-			$this->refreshDO($id);
-			
-			Session::flash('message', 'Sales invoice deleted successfully.');
+
 		} else {
-			Session::flash('error', 'Sales invoice is already in use, you can\'t delete this!');
+			Session::flash('error', "Sales invoice is already in use, you can't delete this!");
 		}
-		
+
 		return redirect('sales_invoice');
 	}
+	
 	
 	public function checkRefNo(Request $request) {
 
