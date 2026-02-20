@@ -412,7 +412,7 @@ thead
 											<i class="fa fa-fw fa-upload"></i>
 										Export Excel
 									</span>
-									</button>
+								</button>
 									
 								<button type="button" onclick="javascript:window.close();"
                                                      class="btn btn-responsive button-alignment btn-primary"
@@ -453,6 +453,13 @@ thead
 @yield('footer_scripts')
 <!-- end page level js -->
 </body>
+
+<script>
+function getExport() { 
+    document.getElementById('frmExport').submit(); 
+}
+</script>
+{{-- 
 <script>
 function getExport() { document.frmExport.submit(); }
 
@@ -461,5 +468,6 @@ $(document).ready(function () {
 	$('body').attr({style: 'min-height: inherit'});
 	
 });
-</script>
+
+</script> --}}
 </html>

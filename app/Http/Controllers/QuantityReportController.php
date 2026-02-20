@@ -10,7 +10,8 @@ use Notification;
 use Session;
 use App;
 use DB;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 
 class QuantityReportController extends Controller
 {
@@ -121,143 +122,244 @@ class QuantityReportController extends Controller
 		return $childs;
 	}
 	
-	protected function makeSummary($results)
+	// protected function makeSummary($results, $quantityType)
+	// {
+	// 	$arrSummarry = array();
+	// 	foreach($results as $rows)
+	// 	{
+	// 		$in = $out = $quantity = 0;
+	// 		foreach($rows as $row) {
+	// 			$itemcode = $row['item_code'];
+	// 			$description = $row['description'];
+	// 			$unit = $row['packing']; 
+	// 			$cost_avg = $row['cost_avg'];
+	// 			$opn_cost = $row['opn_cost'];
+	// 			$opn_quantity = $row['opn_quantity'];
+	// 			$binloc = $row['bin_location'];
+	// 			$mpqty=$row['mpqty'];
+	// 			$p1qty=$row['p1_qty'];
+	// 			$p2qty=$row['p2_qty'];
+	// 			$sell_price = isset($row['sell_price'])?$row['sell_price']:'';
+	// 			if($row['trtype']=='0')
+	// 				$out += $row['quantity'];
+	// 			else
+	// 				$in += $row['quantity'];
+				
+	// 		}
+	// 		$quantity = $in - $out;
+	// 		$p1 = explode(',', $row['p1_formula']);
+	// 		$p2 = explode(',', $row['p2_formula']);
+			
+	// 		$p1qty = $p2qty = '';
+	// 		if(isset($p1[1]) && $p1[1]!='')
+	// 		    $p1qty = ($p1[1]=="/")?number_format(($quantity/$p1[0]),2):($quantity*$p1[0]);
+			    
+	// 		if(isset($p2[1]) && $p2[1]!='')
+	// 		    $p2qty = ($p2[1]=="/")?number_format(($quantity/$p2[0]),2):($quantity*$p2[0]);
+			    
+	// 	/*	$p1qty = ($row['p1_formula'] > 0)?($quantity/$row['p1_formula']):$p1qty;
+	// 		$p2qty = ($row['p2_formula'] > 0)?($quantity*$row['p2_formula']):$p2qty; */
+	// 		/* if($out < $in)
+	// 			$quantity = $in - $out;
+	// 		elseif($out > $in)
+	// 			$quantity = $out - $in; */
+				
+	// 		$total = $quantity * $cost_avg;
+			
+	// 		if($quantityType=='positive' && $quantity > 0 ) {
+			    
+    // 			$arrSummarry[] = ['itemcode' => $itemcode, 
+    // 							  'unit' => $unit,
+    // 							  'quantity' => $quantity, 
+    // 							  'cost_avg' => $cost_avg,
+    // 							  'description' => $description,
+    // 							  'opn_cost' => $opn_cost,
+    // 							  'total' => $total,
+    // 							  'opn_quantity' => $opn_quantity,
+    // 							  'bin_loc' => $binloc,
+    // 							  'sell_price' => $sell_price,
+    // 							  'mpqty' => $mpqty,
+    // 							  'p1qty' => $p1qty,
+    // 							  'p2qty' => $p2qty
+    // 							  ];
+	// 		}
+			
+	// 		if($request->get('quantity_type')=='minus' && $quantity > 0 ) {
+			    
+	// 		    $arrSummarry[] = ['itemcode' => $itemcode, 
+    // 							  'unit' => $unit,
+    // 							  'quantity' => $quantity, 
+    // 							  'cost_avg' => $cost_avg,
+    // 							  'description' => $description,
+    // 							  'opn_cost' => $opn_cost,
+    // 							  'total' => $total,
+    // 							  'opn_quantity' => $opn_quantity,
+    // 							  'bin_loc' => $binloc,
+    // 							  'sell_price' => $sell_price,
+    // 							  'mpqty' => $mpqty,
+    // 							  'p1qty' => $p1qty,
+    // 							  'p2qty' => $p2qty
+    // 							  ];
+	// 		}
+			
+	// 		if($request->get('quantity_type')=='zero' && $quantity > 0 ) {
+			    
+	// 		    $arrSummarry[] = ['itemcode' => $itemcode, 
+    // 							  'unit' => $unit,
+    // 							  'quantity' => $quantity, 
+    // 							  'cost_avg' => $cost_avg,
+    // 							  'description' => $description,
+    // 							  'opn_cost' => $opn_cost,
+    // 							  'total' => $total,
+    // 							  'opn_quantity' => $opn_quantity,
+    // 							  'bin_loc' => $binloc,
+    // 							  'sell_price' => $sell_price,
+    // 							  'mpqty' => $mpqty,
+    // 							  'p1qty' => $p1qty,
+    // 							  'p2qty' => $p2qty
+    // 							  ];
+	// 		}
+			
+	// 		if($request->get('quantity_type')=='nonzero' && $quantity > 0 ) {
+			    
+	// 		    $arrSummarry[] = ['itemcode' => $itemcode, 
+    // 							  'unit' => $unit,
+    // 							  'quantity' => $quantity, 
+    // 							  'cost_avg' => $cost_avg,
+    // 							  'description' => $description,
+    // 							  'opn_cost' => $opn_cost,
+    // 							  'total' => $total,
+    // 							  'opn_quantity' => $opn_quantity,
+    // 							  'bin_loc' => $binloc,
+    // 							  'sell_price' => $sell_price,
+    // 							  'mpqty' => $mpqty,
+    // 							  'p1qty' => $p1qty,
+    // 							  'p2qty' => $p2qty
+    // 							  ];
+	// 		}
+			
+	// 		if($request->get('quantity_type')=='all' && $quantity > 0 ) {
+			    
+	// 		    $arrSummarry[] = ['itemcode' => $itemcode, 
+    // 							  'unit' => $unit,
+    // 							  'quantity' => $quantity, 
+    // 							  'cost_avg' => $cost_avg,
+    // 							  'description' => $description,
+    // 							  'opn_cost' => $opn_cost,
+    // 							  'total' => $total,
+    // 							  'opn_quantity' => $opn_quantity,
+    // 							  'bin_loc' => $binloc,
+    // 							  'sell_price' => $sell_price,
+    // 							  'mpqty' => $mpqty,
+    // 							  'p1qty' => $p1qty,
+    // 							  'p2qty' => $p2qty
+    // 							  ];
+	// 		}
+
+	// 	}
+	// 	return $arrSummarry;
+	// }
+
+
+	protected function makeSummary($results, $quantityType)
 	{
-		$arrSummarry = array();
-		foreach($results as $rows)
-		{
-			$in = $out = $quantity = 0;
-			foreach($rows as $row) {
-				$itemcode = $row['item_code'];
-				$description = $row['description'];
-				$unit = $row['packing']; 
-				$cost_avg = $row['cost_avg'];
-				$opn_cost = $row['opn_cost'];
-				$opn_quantity = $row['opn_quantity'];
-				$binloc = $row['bin_location'];
-				$mpqty=$row['mpqty'];
-				$p1qty=$row['p1_qty'];
-				$p2qty=$row['p2_qty'];
-				$sell_price = isset($row['sell_price'])?$row['sell_price']:'';
-				if($row['trtype']=='0')
-					$out += $row['quantity'];
-				else
-					$in += $row['quantity'];
-				
-			}
-			$quantity = $in - $out;
-			$p1 = explode(',', $row['p1_formula']);
-			$p2 = explode(',', $row['p2_formula']);
-			
-			$p1qty = $p2qty = '';
-			if(isset($p1[1]) && $p1[1]!='')
-			    $p1qty = ($p1[1]=="/")?number_format(($quantity/$p1[0]),2):($quantity*$p1[0]);
-			    
-			if(isset($p2[1]) && $p2[1]!='')
-			    $p2qty = ($p2[1]=="/")?number_format(($quantity/$p2[0]),2):($quantity*$p2[0]);
-			    
-		/*	$p1qty = ($row['p1_formula'] > 0)?($quantity/$row['p1_formula']):$p1qty;
-			$p2qty = ($row['p2_formula'] > 0)?($quantity*$row['p2_formula']):$p2qty; */
-			/* if($out < $in)
-				$quantity = $in - $out;
-			elseif($out > $in)
-				$quantity = $out - $in; */
-				
-			$total = $quantity * $cost_avg;
-			
-			if($request->get('quantity_type')=='positive' && $quantity > 0 ) {
-			    
-    			$arrSummarry[] = ['itemcode' => $itemcode, 
-    							  'unit' => $unit,
-    							  'quantity' => $quantity, 
-    							  'cost_avg' => $cost_avg,
-    							  'description' => $description,
-    							  'opn_cost' => $opn_cost,
-    							  'total' => $total,
-    							  'opn_quantity' => $opn_quantity,
-    							  'bin_loc' => $binloc,
-    							  'sell_price' => $sell_price,
-    							  'mpqty' => $mpqty,
-    							  'p1qty' => $p1qty,
-    							  'p2qty' => $p2qty
-    							  ];
-			}
-			
-			if($request->get('quantity_type')=='minus' && $quantity > 0 ) {
-			    
-			    $arrSummarry[] = ['itemcode' => $itemcode, 
-    							  'unit' => $unit,
-    							  'quantity' => $quantity, 
-    							  'cost_avg' => $cost_avg,
-    							  'description' => $description,
-    							  'opn_cost' => $opn_cost,
-    							  'total' => $total,
-    							  'opn_quantity' => $opn_quantity,
-    							  'bin_loc' => $binloc,
-    							  'sell_price' => $sell_price,
-    							  'mpqty' => $mpqty,
-    							  'p1qty' => $p1qty,
-    							  'p2qty' => $p2qty
-    							  ];
-			}
-			
-			if($request->get('quantity_type')=='zero' && $quantity > 0 ) {
-			    
-			    $arrSummarry[] = ['itemcode' => $itemcode, 
-    							  'unit' => $unit,
-    							  'quantity' => $quantity, 
-    							  'cost_avg' => $cost_avg,
-    							  'description' => $description,
-    							  'opn_cost' => $opn_cost,
-    							  'total' => $total,
-    							  'opn_quantity' => $opn_quantity,
-    							  'bin_loc' => $binloc,
-    							  'sell_price' => $sell_price,
-    							  'mpqty' => $mpqty,
-    							  'p1qty' => $p1qty,
-    							  'p2qty' => $p2qty
-    							  ];
-			}
-			
-			if($request->get('quantity_type')=='nonzero' && $quantity > 0 ) {
-			    
-			    $arrSummarry[] = ['itemcode' => $itemcode, 
-    							  'unit' => $unit,
-    							  'quantity' => $quantity, 
-    							  'cost_avg' => $cost_avg,
-    							  'description' => $description,
-    							  'opn_cost' => $opn_cost,
-    							  'total' => $total,
-    							  'opn_quantity' => $opn_quantity,
-    							  'bin_loc' => $binloc,
-    							  'sell_price' => $sell_price,
-    							  'mpqty' => $mpqty,
-    							  'p1qty' => $p1qty,
-    							  'p2qty' => $p2qty
-    							  ];
-			}
-			
-			if($request->get('quantity_type')=='all' && $quantity > 0 ) {
-			    
-			    $arrSummarry[] = ['itemcode' => $itemcode, 
-    							  'unit' => $unit,
-    							  'quantity' => $quantity, 
-    							  'cost_avg' => $cost_avg,
-    							  'description' => $description,
-    							  'opn_cost' => $opn_cost,
-    							  'total' => $total,
-    							  'opn_quantity' => $opn_quantity,
-    							  'bin_loc' => $binloc,
-    							  'sell_price' => $sell_price,
-    							  'mpqty' => $mpqty,
-    							  'p1qty' => $p1qty,
-    							  'p2qty' => $p2qty
-    							  ];
+		$arrSummarry = [];
+
+		foreach ($results as $rows) {
+
+			$in = 0;
+			$out = 0;
+
+			foreach ($rows as $row) {
+
+				$itemcode      = $row['item_code'] ?? '';
+				$description   = $row['description'] ?? '';
+				$unit          = $row['packing'] ?? '';
+				$cost_avg      = $row['cost_avg'] ?? 0;
+				$opn_cost      = $row['opn_cost'] ?? 0;
+				$opn_quantity  = $row['opn_quantity'] ?? 0;
+				$binloc        = $row['bin_location'] ?? '';
+				$mpqty         = $row['mpqty'] ?? '';
+				$sell_price    = $row['sell_price'] ?? '';
+
+				if (($row['trtype'] ?? '') == '0') {
+					$out += $row['quantity'] ?? 0;
+				} else {
+					$in += $row['quantity'] ?? 0;
+				}
 			}
 
+			$quantity = $in - $out;
+
+			// Formula calculation
+			$p1qty = '';
+			$p2qty = '';
+
+			$p1 = isset($row['p1_formula']) ? explode(',', $row['p1_formula']) : [];
+			$p2 = isset($row['p2_formula']) ? explode(',', $row['p2_formula']) : [];
+
+			if (isset($p1[1]) && $p1[1] != '') {
+				$p1qty = ($p1[1] == "/")
+					? number_format(($quantity / ($p1[0] ?? 1)), 2)
+					: ($quantity * ($p1[0] ?? 1));
+			}
+
+			if (isset($p2[1]) && $p2[1] != '') {
+				$p2qty = ($p2[1] == "/")
+					? number_format(($quantity / ($p2[0] ?? 1)), 2)
+					: ($quantity * ($p2[0] ?? 1));
+			}
+
+			$total = $quantity * $cost_avg;
+
+			// Quantity filter logic
+			$include = false;
+
+			switch ($quantityType) {
+				case 'positive':
+					$include = $quantity > 0;
+					break;
+
+				case 'minus':
+					$include = $quantity < 0;
+					break;
+
+				case 'zero':
+					$include = $quantity == 0;
+					break;
+
+				case 'nonzero':
+					$include = $quantity != 0;
+					break;
+
+				case 'all':
+				default:
+					$include = true;
+					break;
+			}
+
+			if ($include) {
+				$arrSummarry[] = [
+					'itemcode'      => $itemcode,
+					'unit'          => $unit,
+					'quantity'      => $quantity,
+					'cost_avg'      => $cost_avg,
+					'description'   => $description,
+					'opn_cost'      => $opn_cost,
+					'total'         => $total,
+					'opn_quantity'  => $opn_quantity,
+					'bin_loc'       => $binloc,
+					'sell_price'    => $sell_price,
+					'mpqty'         => $mpqty,
+					'p1qty'         => $p1qty,
+					'p2qty'         => $p2qty
+				];
+			}
 		}
+
 		return $arrSummarry;
 	}
+
 	
 
 	protected function sumLoc($results)
@@ -392,21 +494,25 @@ class QuantityReportController extends Controller
 			$voucher_head = 'Opening Quantity';
 			$result = $this->itemmaster->getQuantityReport($request->all()); 
 		//	echo '<pre>';print_r($result);exit;
-			$results = $this->makeSummary( $this->groupItem($result) );
+			// $results = $this->makeSummary( $this->groupItem($result) );
+			$results = $this->makeSummary($this->groupItem($result),$request->get('quantity_type'));
+
 			$titles = ['main_head' => 'Quantity Report','subhead' => 'Opening Quantity'];
 			
 		} else if($request->get('search_type')=='qtyhand_ason_date'|| $request->get('search_type')=='price_list_qty') {
 			$voucher_head = 'Quantity in Hand';
 			$result = $this->itemmaster->getQuantityReport($request->all()); 
 			
-			$results = $this->makeSummary( $this->groupItem($result) ); //echo '<pre>';print_r($result);exit;
+			// $results = $this->makeSummary( $this->groupItem($result) ); //echo '<pre>';print_r($result);exit;
+			$results = $this->makeSummary($this->groupItem($result),$request->get('quantity_type'));
 			$titles = ['main_head' => 'Quantity Report','subhead' => 'Quantity in Hand'];
 			
 		} else if($request->get('search_type')=='qtyhand_ason_priordate') {
 			$dt = ($request->get('date_to')=='')?date('d-m-Y'):date('d-m-Y', strtotime($request->get('date_to')));
 			$voucher_head = 'Quantity in Hand as on '.$dt;
 			$result = $this->itemmaster->getQuantityReport($request->all());
-			$results = $this->makeSummary( $this->groupItem($result) );
+			// $results = $this->makeSummary( $this->groupItem($result) );
+			$results = $this->makeSummary($this->groupItem($result),$request->get('quantity_type'));
 			$titles = ['main_head' => 'Quantity Report','subhead' => $voucher_head];
 			
 		} else if($request->get('search_type')=='opening_quantity_loc') {
@@ -551,7 +657,8 @@ class QuantityReportController extends Controller
 			$datareport[] = ['SI.No.','Item Code','Description','Unit','Quantity','Cost Avg','Total','Selling Price'];
 			
 			$result = $this->itemmaster->getQuantityReport($request->all()); 
-			$results = $this->makeSummary( $this->groupItem($result) );
+			// $results = $this->makeSummary( $this->groupItem($result) );
+			$results = $this->makeSummary($this->groupItem($result),$request->get('quantity_type'));
 			//echo '<pre>';print_r($result);exit;
 			$i = $total = $qtytotal = 0;
 			foreach($results as $result) {
@@ -631,19 +738,30 @@ class QuantityReportController extends Controller
 		
 	//	echo $voucher_head.'<pre>';print_r($datareport);exit;
 
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+		// Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
+        // // Set the spreadsheet title, creator, and description
+        // $excel->setTitle($voucher_head);
+        // $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
+        // $excel->setDescription($voucher_head);
 
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
+        // // Build the spreadsheet, passing in the payments array
+		// $excel->sheet('sheet1', function($sheet) use ($datareport) {
+		// 	$sheet->fromArray($datareport, null, 'A1', false, false);
+		// });
 
-		})->download('xlsx');
+		// })->download('xlsx');
+
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);
 		
 	}
 }

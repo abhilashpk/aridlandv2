@@ -43,9 +43,9 @@ class ProfitLossController2 extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				//$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -84,7 +84,7 @@ class ProfitLossController2 extends Controller
 		$categories = DB::table('account_category')
 			//->where('actype', 2)
 			->where('status', 1)
-			->where('deleted_at', '0000-00-00 00:00:00')
+			->whereNull('deleted_at')
 			->get();
 //echo '<pre>';print_r($categories);exit;
 		foreach ($categories as $category) {
@@ -108,7 +108,7 @@ class ProfitLossController2 extends Controller
 			// Get groups under this category
 			$groups = DB::table('account_group')
 				->where('category_id', $category->id)
-				->where('deleted_at', '0000-00-00 00:00:00')
+				->whereNull('deleted_at')
 				->get();
 
 			foreach ($groups as $group) {
@@ -127,7 +127,7 @@ class ProfitLossController2 extends Controller
 					$transactions = DB::table('account_transaction')
 						->where('account_master_id', $account->id)
 						->whereBetween('invoice_date', [$startDate, $endDate])
-						->where('deleted_at', '0000-00-00 00:00:00')
+						->whereNull('deleted_at')
 						->select('transaction_type', DB::raw('SUM(amount) as total'))
 						->groupBy('transaction_type')
 						->get();

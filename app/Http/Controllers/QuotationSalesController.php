@@ -252,6 +252,7 @@ class QuotationSalesController extends Controller
             
         echo json_encode($json_data);
 	}
+
 	public function docopen($id) { 
 		$data = array();
 		$orderrow = $this->quotation_sales->findPOdata($id);
@@ -1100,47 +1101,100 @@ private function createItem($row) {
 					->withData($data);
 	}
 	
-	public function getPrint($id,$rid=null,$pdf=null)
-	{
-		//$viewfile = DB::table('report_view')->where('code', 'QS')->where('status',1)->select('view_name')->first();
-		$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
-		// echo '<pre>';print_r($viewfile);exit;
-		if($viewfile->print_name=='') {
-			$attributes['document_id'] = $id;
-			$attributes['is_fc'] = '';
-			$result = $this->quotation_sales->getQuotation($attributes);
-			$itemdesc = $this->makeTreeArr($this->quotation_sales->getItemDesc($id));//echo '<pre>';print_r($result['details']);exit;
-			$titles = ['main_head' => 'Quotation Sales','subhead' => 'Quotation'];
-			$view = ($pdf=='PDF')?'pdfprint':'print';
-			$words = $this->number_to_word($result['details']->net_total);
-			$amount = $result['details']->net_total;
-			$arr = explode('.',number_format($amount,2));
-			if(sizeof($arr) >1 ) {
-				if($arr[1]!=00) {
-					$dec = $this->number_to_word($arr[1]);
-					$words .= ' and Fils '.$dec.' Only';
-				} else 
-					$words .= ' Only';
-			} else
-				$words .= ' Only';
+	// public function getPrint($id,$rid=null,$pdf=null)
+	// {
+	// 	//$viewfile = DB::table('report_view')->where('code', 'QS')->where('status',1)->select('view_name')->first();
+	// 	$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
+	// 	// echo '<pre>';print_r($viewfile);exit;
+	// 	if($viewfile->print_name=='') {
+	// 		$attributes['document_id'] = $id;
+	// 		$attributes['is_fc'] = '';
+	// 		$result = $this->quotation_sales->getQuotation($attributes);
+	// 		$itemdesc = $this->makeTreeArr($this->quotation_sales->getItemDesc($id));//echo '<pre>';print_r($result['details']);exit;
+	// 		$titles = ['main_head' => 'Quotation Sales','subhead' => 'Quotation'];
+	// 		$view = ($pdf=='PDF')?'pdfprint':'print';
+	// 		$words = $this->number_to_word($result['details']->net_total);
+	// 		$amount = $result['details']->net_total;
+	// 		$arr = explode('.',number_format($amount,2));
+	// 		if(sizeof($arr) >1 ) {
+	// 			if($arr[1]!=00) {
+	// 				$dec = $this->number_to_word($arr[1]);
+	// 				$words .= ' and Fils '.$dec.' Only';
+	// 			} else 
+	// 				$words .= ' Only';
+	// 		} else
+	// 			$words .= ' Only';
 			
-			return view('body.quotationsales.'.$view)
+	// 		return view('body.quotationsales.'.$view)
+	// 					->withDetails($result['details'])
+	// 					->withTitles($titles)
+	// 					->withFc($attributes['is_fc'])
+	// 					->withItemdesc($itemdesc)
+	// 					->withAmtwords($words)
+	// 					->withItems($result['items']);
+	// 	} else {
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		if(env('STIMULSOFT_VER')==2)
+	// 	        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 	    else
+	// 	        return view('body.quotationsales.viewer')->withPath($path)->withView($viewfile->print_name);
+			        
+	// 		//return view('body.quotationsales.viewer')->withPath($path)->withView($viewfile->print_name);
+	// 	}
+		
+	// }
+
+	// public function getPrint($id, $rid = null, $pdf = null)
+	public function getPrint($id, $fc = null)
+	{
+		$viewfile = DB::table('report_view_detail')
+						->where('id', $rid)
+						->select('print_name')
+						->first();
+
+		// ✅ Fix: handle null viewfile and use empty() check
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$attributes['document_id'] = $id;
+			// $attributes['is_fc']       = 0; // ✅ Fix: $fc was undefined, default to 0
+			$attributes['is_fc'] = ($fc) ? 1 : '';
+
+			$result   = $this->quotation_sales->getQuotation($attributes);
+			$itemdesc = $this->makeTreeArr($this->quotation_sales->getItemDesc($id));
+			$titles   = ['main_head' => 'Quotation', 'subhead' => 'Quotation'];
+			$view     = ($pdf == 'PDF') ? 'pdfprint' : 'print';
+
+			return view('body.quotation.' . $view)
 						->withDetails($result['details'])
 						->withTitles($titles)
 						->withFc($attributes['is_fc'])
 						->withItemdesc($itemdesc)
-						->withAmtwords($words)
 						->withItems($result['items']);
+
 		} else {
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(env('STIMULSOFT_VER')==2)
-		        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
-		    else
-		        return view('body.quotationsales.viewer')->withPath($path)->withView($viewfile->print_name);
-			        
-			//return view('body.quotationsales.viewer')->withPath($path)->withView($viewfile->print_name);
+
+			$path = app_path() . '/stimulsoft/classes.php';
+
+			// ✅ Fix: pass document_id so report knows what data to load
+			$attributes['document_id'] = $id;
+			$result = $this->quotation_sales->getQuotation($attributes);
+
+			if (env('STIMULSOFT_VER') == 2) {
+				return view('body.reports')
+							->withPath($path)
+							->withView($viewfile->print_name)
+							->withId($id)           // ✅ pass ID to blade
+							->withDetails($result['details'])
+							->withItems($result['items']);
+			} else {
+				return view('body.quotation.viewer')
+							->withPath($path)
+							->withView($viewfile->print_name)
+							->withId($id)           // ✅ pass ID to blade
+							->withDetails($result['details'])
+							->withItems($result['items']);
+			}
 		}
-		
 	}
 	
 	protected function makeTreeItm($result)

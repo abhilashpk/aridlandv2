@@ -454,6 +454,11 @@ thead
 <!-- end page level js -->
 </body>
 <script>
+function getExport() { 
+    document.getElementById('frmExport').submit(); 
+}
+</script>
+{{-- <script>
 function getExport() { document.frmExport.submit(); }
 
 $(document).ready(function () {
@@ -461,5 +466,5 @@ $(document).ready(function () {
 	$('body').attr({style: 'min-height: inherit'});
 	
 });
-</script>
+</script> --}}
 </html>

@@ -252,7 +252,14 @@ thead
                         </div>
                     </div>
 					
-					
+					<form class="form-horizontal" role="form" method="POST" name="frmExport" id="frmExport" action="{{ url('profit_loss/export') }}">
+						<input type="hidden" name="_token" value="{{ csrf_token() }}">
+						<input type="hidden" name="date_from" value="{{$fromdate}}" >
+						<input type="hidden" name="date_to" value="{{$todate}}" >
+						<input type="hidden" name="search_type" value="{{$type}}" >
+						<?php if($clstock) { ?><input type="text" name="cl_stock" value="{{$clstock}}"><?php } ?>
+						<?php if($opstock) { ?><input type="text" name="op_stock" value="{{$opstock}}"><?php } ?>
+					</form>
 					
                 </div>
             </div>

@@ -1,4 +1,13 @@
 <?php
+
+// ✅ Add at the very top of mysql.php after <?php
+set_error_handler(function($errno, $errstr) {
+    if (strpos($errstr, 'Creation of dynamic property') !== false) {
+        return true; // suppress only this deprecation
+    }
+    return false; // let everything else through
+});
+
 class StiMySqlAdapter {
 	public $version = '2022.1.1';
 	public $checkVersion = true;
@@ -23,6 +32,7 @@ class StiMySqlAdapter {
 		if ($code == 0) return StiResult::error($message);
 		return StiResult::error("[$code] $message");
 	}
+	
 	
 	/*private function connect() {
 		if ($this->info->isPdo) {
@@ -49,21 +59,64 @@ class StiMySqlAdapter {
 		return StiResult::success();
 	}*/
 
+	// private function connect() {		 
+
+	// 	  // 🔥 FIX: FORCE override with Laravel's database credentials
+	// 	$this->info->database = getenv('DB_DATABASE') ?: 'laravel';
+	// 	$this->info->host = getenv('DB_HOST') ?: 'localhost';
+	// 	$this->info->userId = getenv('DB_USERNAME') ?: 'root';
+	// 	$this->info->password = getenv('DB_PASSWORD') ?: 'mysql';
+	// 	$this->info->port = (int)(getenv('DB_PORT') ?: 3306);
+
+	// 	if ($this->info->isPdo) {
+	// 		try {
+	// 			$this->link = new PDO(
+	// 				$this->info->dsn,
+	// 				$this->info->userId,
+	// 				$this->info->password
+	// 			);
+	// 		} catch (PDOException $e) {
+	// 			return StiResult::error("[".$e->getCode()."] ".$e->getMessage());
+	// 		}
+	// 		return StiResult::success();
+	// 	}
+
+	// 	$this->link = new mysqli(
+	// 		$this->info->host,
+	// 		$this->info->userId,
+	// 		$this->info->password,
+	// 		$this->info->database,
+	// 		$this->info->port
+	// 	);
+
+	// 	if ($this->link->connect_error)
+	// 		return StiResult::error("[{$this->link->connect_errno}] {$this->link->connect_error}");
+
+	// 	if (!$this->link->set_charset($this->info->charset))
+	// 		return $this->getLastErrorResult();
+
+	// 	return StiResult::success();
+	// }
+
 	private function connect() {		 
 
-		  // 🔥 FIX: FORCE override with Laravel's database credentials
+		// 🔥 FIX: FORCE override with Laravel's database credentials
 		$this->info->database = getenv('DB_DATABASE') ?: 'laravel';
-		$this->info->host = getenv('DB_HOST') ?: 'localhost';
-		$this->info->userId = getenv('DB_USERNAME') ?: 'root';
+		$this->info->host     = getenv('DB_HOST')     ?: 'localhost';
+		$this->info->userId   = getenv('DB_USERNAME') ?: 'root';
 		$this->info->password = getenv('DB_PASSWORD') ?: 'mysql';
-		$this->info->port = (int)(getenv('DB_PORT') ?: 3306);
+		$this->info->port     = (int)(getenv('DB_PORT') ?: 3306);
 
 		if ($this->info->isPdo) {
 			try {
 				$this->link = new PDO(
 					$this->info->dsn,
 					$this->info->userId,
-					$this->info->password
+					$this->info->password,
+					[
+						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+						PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION sql_mode='', time_zone='+00:00'"  // ✅
+					]
 				);
 			} catch (PDOException $e) {
 				return StiResult::error("[".$e->getCode()."] ".$e->getMessage());
@@ -84,6 +137,10 @@ class StiMySqlAdapter {
 
 		if (!$this->link->set_charset($this->info->charset))
 			return $this->getLastErrorResult();
+
+		// ✅ Disable strict mode so '0000-00-00 00:00:00' DATETIME values are accepted
+		$this->link->query("SET SESSION sql_mode = ''");
+		$this->link->query("SET SESSION time_zone = '+00:00'");
 
 		return StiResult::success();
 	}

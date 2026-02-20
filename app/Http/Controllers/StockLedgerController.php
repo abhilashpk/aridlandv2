@@ -78,6 +78,7 @@ class StockLedgerController extends Controller
 	}
 	
 	private function locFilter($locs) {
+		$arrloc = []; 
 		foreach($locs as $loc) {
 			$arrloc[$loc->id] = (object)['code' => $loc->code, 'name' => $loc->name];
 		}
