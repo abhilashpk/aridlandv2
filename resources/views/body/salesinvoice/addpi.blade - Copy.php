@@ -2153,7 +2153,7 @@ $(function() {
 				var cur_quantity = parseFloat(data.cur_quantity);
 				var min_quantity = parseFloat(data.min_quantity);
 				<?php //if($settings->item_quantity==1) { ?>
-				@permission('-qty-sale')
+				@can('-qty-sale')
 				if(cur_quantity == 0 || cur_quantity < 0) {
 					alert('Item is out of stock!');
 					$('#itmqty_'+curNum).val('');
@@ -2166,7 +2166,7 @@ $(function() {
 					$('#itmqty_'+curNum).focus();
 					return false;
 				}
-				@endpermission
+				@endcan
 				<?php //} ?>
 			});
 		}
@@ -2181,7 +2181,7 @@ $(function() {
 		if(res) 
 			getNetTotal();
 
-		@permission('si-create')
+		@can('si-create')
 			//MAR18
 			var rate = 1;
 			if( $('#is_fc').is(":checked") ) { 
@@ -2193,7 +2193,7 @@ $(function() {
 				$('#itmcst_'+curNum).val('');
 				$('#itmcst_'+curNum).focus();
 			}
-		@endpermission
+		@endcan
 	});
 	
 	

@@ -78,13 +78,13 @@
                             </h3>
 			@endforeach		
 							<div class="pull-right">
-							@permission('gi-print')
+							@can('gi-print')
 							 <a href="{{ url('material_requisition/print/'.$orderrow->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endpermission
+							@endcan
 							</div>
                         </div>
                         <div class="panel-body">
@@ -587,33 +587,32 @@ $(document).ready(function () {
 	
 });
 
-	//calculation item net total, tax and discount...
+	function toNumber(value) {
+		var parsed = parseFloat(value);
+		return isNaN(parsed) ? 0 : parsed;
+	}
+
+	//calculation item net total and discount...
 	function getNetTotal() {
-		var n = 1; var lineTotal = 0;
-		$( '.itemdivChld' ).each(function() {
-		  lineTotal = lineTotal + getLineTotal(n);
-		  n++;
+		var lineTotal = 0;
+		$('.itemdivChld').each(function() {
+			lineTotal += getLineTotal($(this));
 		});
 		$('#total').val(lineTotal.toFixed(2));
-		
-		var discount = parseFloat( ($('#discount').val()=='') ? 0 : $('#discount').val() );
-		//var vat      = parseFloat( ($('#vat').val()=='') ? 0 : $('#vat').val() );
-		var total 	 = lineTotal - discount;
-		var netTotal = total;// + vat;
-		$('#net_amount').val(netTotal.toFixed(2));
 
+		var discount = toNumber($('#discount').val());
+		var netTotal = lineTotal - discount;
+		$('#net_amount').val(netTotal.toFixed(2));
 	}
 	
 	//calculation item line total and discount...
-	function getLineTotal(n) {
-		//console.log(n);
-		var lineQuantity = parseFloat( ($('#itmqty_'+n).val()=='') ? 0 : $('#itmqty_'+n).val() );
-		var lineCost 	 = parseFloat( ($('#itmcst_'+n).val()=='') ? 0 : $('#itmcst_'+n).val() );
-
-		var lineDiscount = parseFloat( ($('#itmdsnt_'+n).val()=='') ? 0 : $('#itmdsnt_'+n).val() );
-		var lineTotal 	 = ( lineQuantity * lineCost ) - lineDiscount;
-		$('#itmttl_'+n).val(lineTotal.toFixed(2));
-		
+	function getLineTotal(rowRef) {
+		var $row = (rowRef && rowRef.jquery) ? rowRef : $('.itemdivChld').eq(0);
+		var lineQuantity = toNumber($row.find('.line-quantity').first().val());
+		var lineCost = toNumber($row.find('.line-cost').first().val());
+		var lineDiscount = toNumber($row.find('.line-discount').first().val());
+		var lineTotal = (lineQuantity * lineCost) - lineDiscount;
+		$row.find('.line-total').first().val(lineTotal.toFixed(2));
 		return lineTotal;
 	} 
 	
@@ -689,19 +688,7 @@ $(function() {
 		$('#remitem').val(ids);
 		
 		$(this).parents('.itemdivChld:first').remove();
-		var btotal = 0;
-		$( '.line-total' ).each(function() {
-		  btotal = btotal + parseFloat(this.value);
-		});
-		
-		var vat = 0;
-		$('.vatline-amt').each(function() {
-			vat = vat + parseFloat(this.value);
-		});
-		
-		$('#total').val(btotal); $('#vat').val(vat);
-		var bdiscount = parseFloat( ($('#discount').val()=='')?0:$('#discount').val() );
-		$('#net_amount').val(btotal - bdiscount + vat);
+		getNetTotal();
 		
 		$('.itemdivPrnt').find('.itemdivChld:last').find('.btn-add-item').show();
 		if ( $('.itemdivPrnt').children().length == 1 ) {
@@ -853,24 +840,12 @@ $(function() {
 	
 	
 	$(document).on('blur', '.line-quantity', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1];
-		/* var isPrice = getAutoPrice(curNum);
-		if(isPrice){
-			var lntot = getLineTotal(curNum);
-			if(lntot)
-				getNetTotal();
-		} */
+		getNetTotal();
 	});
 	
 	
 	$(document).on('blur', '.line-cost', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		var res = getLineTotal(curNum);
-		if(res) {
-			getNetTotal();
-		}
+		getNetTotal();
 	});
 	
 	$(document).on('keyup', '.line-quantity', function(e) {
@@ -878,12 +853,7 @@ $(function() {
 	});
 	
 	$(document).on('blur', '.line-discount', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		var res = getLineTotal(curNum);
-		if(res) {
-			getNetTotal();
-		}
+		getNetTotal();
 	});
 
 	

@@ -145,7 +145,7 @@ class SalesOrderController extends Controller
 			foreach ($invoices as $row)
             {
                 $edit =  '"'.url('sales_order/edit/'.$row->id).'"';
-                $delete =  'funDelete("'.$row->id.'","'.$row->is_editable.'")';
+				$delete =  'funDelete("'.$row->id.'","'.$row->is_transfer.'")';
 				$print = url('sales_order/print/'.$row->id);
 				$revice =  url('sales_order/revice/'.$row->id);
 				$settlement =  url('sales_order/settlement/'.$row->id);
@@ -313,7 +313,7 @@ class SalesOrderController extends Controller
 			
 			$total = 0; $vat_amount = 0; $nettotal = 0;
 			foreach($quoteItems as $item) {
-				if($item->balance_quantity==0)
+				if((int)($item->is_transfer ?? 0) === 0)
 					$quantity = $item->quantity;
 				else
 					$quantity = $item->balance_quantity;
@@ -452,10 +452,10 @@ class SalesOrderController extends Controller
 	
 	public function destroy($id)
 	{
-		$this->sales_order->delete($id);
-		//check accountmaster name is already in use.........
-		// code here ********************************
-		Session::flash('message', 'Sales Order deleted successfully.');
+		if($this->sales_order->delete($id))
+			Session::flash('message', 'Sales Order deleted successfully.');
+		else
+			Session::flash('error', 'Unable to delete Sales Order.');
 		return redirect('sales_order');
 	}
 	
@@ -867,12 +867,13 @@ class SalesOrderController extends Controller
 		
 	}
 	
-	public function setSessionVal()
+	public function setSessionVal(Request $request)
 	{
-		Session::set('voucher_no', $request->get('vchr_no'));
-		Session::set('reference_no', $request->get('ref_no'));
-		Session::set('voucher_date', $request->get('vchr_dt'));
-		Session::set('lpo_date', $request->get('lpo_dt'));
+		Session::put('voucher_no', $request->get('vchr_no'));
+		Session::put('reference_no', $request->get('ref_no'));
+		Session::put('voucher_date', $request->get('vchr_dt'));
+		Session::put('lpo_date', $request->get('lpo_dt'));
+		return response()->json(['status' => true]);
 	}
 	
 	protected function makeTree($result)
@@ -1387,7 +1388,7 @@ class SalesOrderController extends Controller
 			foreach ($invoices as $row)
             {
                 $edit =  '"'.url('sales_order/edit/'.$row->id).'"';
-                $delete =  'funDelete("'.$row->id.'","'.$row->is_editable.'")';
+                $delete =  'funDelete("'.$row->id.'","'.$row->is_transfer.'")';
 				$print = url('sales_order/print/'.$row->id);
 			
                 $nestedData['id'] = $row->id;

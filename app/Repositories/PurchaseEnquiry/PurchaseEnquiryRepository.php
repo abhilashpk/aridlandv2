@@ -52,6 +52,7 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 		$this->purchase_enquiry->prefix = isset($attributes['prefix'])?$attributes['prefix']:'';
         $this->purchase_enquiry->is_intercompany = isset($attributes['is_intercompany'])?$attributes['is_intercompany']:'';
         $this->purchase_enquiry->is_draft = (isset($attributes['is_draft']))?$attributes['is_draft']:0;
+		$this->purchase_enquiry->deleted_at = null;
 		return true;
 	}
 	
@@ -70,6 +71,7 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 		$objPurchaseEnqItem->unit_price = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
 		$objPurchaseEnqItem->total_price = isset($attributes['line_total'][$key])?$attributes['line_total'][$key]:0;
 		$objPurchaseEnqItem->remarks = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
+		$objPurchaseEnqItem->deleted_at = null;
 		
 		return array('line_total' => $line_total);
 		
@@ -87,12 +89,21 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 				$dept = auth()->user()->department_id ?? 1;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_enquiry')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				$qry = DB::table('purchase_enquiry')
+					->where('status', 1)
+					->where('department_id', auth()->user()->department_id ?? 1)
+					->whereNull('deleted_at');
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PE', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc(
+					'PE',
+					$maxNumeric,
+					$dept,
+					$attributes['voucher_no'] ?? null,
+					$attributes['prefix'] ?? null
+				);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -117,12 +128,21 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 							$dept = auth()->user()->department_id ?? 1;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('purchase_enquiry')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+							$qry = DB::table('purchase_enquiry')
+								->where('status', 1)
+								->where('department_id', auth()->user()->department_id ?? 1)
+								->whereNull('deleted_at');
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PE', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc(
+								'PE',
+								$maxNumeric,
+								$dept,
+								$attributes['voucher_no'] ?? null,
+								$attributes['prefix'] ?? null
+							);
 
 							$retryCount++;
 						} else {
@@ -213,6 +233,8 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 					$items['unit_price'] = isset($attributes['cost'][$key])?$attributes['cost'][$key]:0;
 					$items['remarks'] = isset($attributes['remarks'][$key])?$attributes['remarks'][$key]:0;
 					$items['total_price'] = $lntotal;
+					$items['deleted_at'] = null;
+					$items['status'] = 1;
 					$objPurchaseEnqItem->update($items);
 						$zero = DB::table('purchase_enquiry_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
 						    if($zero && $zero->item_id != 0){
@@ -382,7 +404,7 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 						  $join->on('im.id','=','GI.item_id');
 					  })
 					  ->where('GI.status',1)
-					  ->where('GI.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('GI.deleted_at')
 					  ->select('GI.*','u.unit_name','im.item_code')->get();
 	}
 	
@@ -449,7 +471,7 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 					  })
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at','0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
 					  ->select('poi.*','u.unit_name','im.item_code','iu.is_baseqty')
 					  ->orderBY('poi.id')->groupBy('poi.id')
 					  ->get();
@@ -536,7 +558,7 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
                       
 					  ->where('poi.status',1)
 					  ->whereIn('poi.is_transfer',[0,2])
-					  ->where('poi.deleted_at', '0000-00-00 00:00:00')
+					  ->whereNull('poi.deleted_at')
                       ->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty') //AP16
 					  ->orderBY('poi.id')
@@ -722,26 +744,41 @@ class PurchaseEnquiryRepository extends AbstractValidator implements PurchaseEnq
 	
 	public function purchaseenqListCount()
 	{
-		$query = $this->purchase_enquiry->where('purchase_enquiry.status',1)->where('purchase_enquiry.department_id',auth()->user()->department_id ?? 1);
-		return $query->join('jobmaster AS J', function($join) {
-							$join->on('J.id','=','purchase_enquiry.job_id');
-						} )
-					->count();
+		$query = $this->purchase_enquiry
+			->where('purchase_enquiry.status',1)
+			->where('purchase_enquiry.department_id',auth()->user()->department_id ?? 1)
+			->whereNull('purchase_enquiry.deleted_at');
+
+		// Use left joins so records with optional job/from-location still appear.
+		return $query
+			->leftJoin('jobmaster AS J', function($join) {
+				$join->on('J.id','=','purchase_enquiry.job_id');
+			})
+			->leftJoin('location AS LF', function($join) {
+				$join->on('LF.id','=','purchase_enquiry.locfrom_id');
+			})
+			->leftJoin('location AS LT', function($join) {
+				$join->on('LT.id','=','purchase_enquiry.location_id');
+			})
+			->count();
 	}
 	
 	public function purchaseenqList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->purchase_enquiry->where('purchase_enquiry.status',1)->where('purchase_enquiry.department_id',auth()->user()->department_id ?? 1);
+		$query = $this->purchase_enquiry
+			->where('purchase_enquiry.status',1)
+			->where('purchase_enquiry.department_id',auth()->user()->department_id ?? 1)
+			->whereNull('purchase_enquiry.deleted_at');
 		$query->leftjoin('jobmaster AS J', function($join) {
 							$join->on('J.id','=','purchase_enquiry.job_id');
 						} )
 						->leftjoin('account_master AS am', function($join) {
 							$join->on('am.id','=','purchase_enquiry.supplier_id');
 						} )
-						->join('location AS LF', function($join) {
+						->leftjoin('location AS LF', function($join) {
 							$join->on('LF.id','=','purchase_enquiry.locfrom_id');
 						} )
-						->join('location AS LT', function($join) {
+						->leftjoin('location AS LT', function($join) {
 							$join->on('LT.id','=','purchase_enquiry.location_id');
 						} )
 						->leftjoin('users AS AU', function($join) {

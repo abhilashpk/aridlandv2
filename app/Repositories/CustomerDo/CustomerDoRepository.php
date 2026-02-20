@@ -286,78 +286,132 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			}
 
 		} else if ($doctype == 'SO') {
-
-			if ($mode == 'edit') {
-				if (isset($attributes['actual_quantity']) && 
-					($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-
-					if ($attributes['doc_row_id'][$key] > 0 && 
-						($attributes['actual_quantity'][$key] != $attributes['quantity'][$key])) {
-
-						$DOqtyarr = DB::table('customer_do_item')
-							->where('doc_row_id', $attributes['doc_row_id'][$key])
-							->where('id', '!=', $attributes['order_item_id'][$key])
-							->select('id', DB::raw('SUM(quantity) AS quantity'))
-							->groupBy('item_id')
-							->get();
-
-						$DOqty = ((isset($DOqtyarr[0])) ? $DOqtyarr[0]->quantity : 0) 
-								+ $attributes['quantity'][$key];
-
-						$DOrow = DB::table('sales_order_item')
-							->where('id', $attributes['doc_row_id'][$key])
-							->select('quantity')
-							->first();
-
-						if ($DOrow && $DOrow->quantity == $DOqty) {
-							DB::table('sales_order_item')
-								->where('id', $attributes['doc_row_id'][$key])
-								->update([
-									'balance_quantity' => DB::raw('quantity - ' . $DOqty),
-									'is_transfer'      => 1,
-								]);
-						} else {
-							DB::table('sales_order_item')
-								->where('id', $attributes['doc_row_id'][$key])
-								->update([
-									'balance_quantity' => DB::raw('quantity - ' . $DOqty),
-									'is_transfer'      => 2,
-								]);
-						}
-
-					} elseif ($attributes['doc_row_id'][$key] > 0 && 
-							($attributes['quantity_old'][$key] == $attributes['quantity'][$key])) {
-						DB::table('sales_order_item')
-							->where('id', $attributes['doc_row_id'][$key])
-							->update([
-								'balance_quantity' => 0,
-								'is_transfer'      => 1,
-							]);
-					}
-				}
-
-			} else {
-				if (isset($attributes['sales_order_item_id'][$key])) {
-					if (isset($attributes['actual_quantity'][$key]) && 
-						($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-
-						$quantity = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-						DB::table('sales_order_item')
-							->where('id', $attributes['sales_order_item_id'][$key])
-							->update([
-								'balance_quantity' => $quantity,
-								'is_transfer'      => 2,
-							]);
-					} else {
-						DB::table('sales_order_item')
-							->where('id', $attributes['sales_order_item_id'][$key])
-							->update([
-								'balance_quantity' => 0,
-								'is_transfer'      => 1,
-							]);
-					}
-				}
+			$sourceItemId = 0;
+			if(isset($attributes['sales_order_item_id'][$key]) && $attributes['sales_order_item_id'][$key] != '') {
+				$sourceItemId = (int)$attributes['sales_order_item_id'][$key];
+			} else if(isset($attributes['doc_row_id'][$key]) && $attributes['doc_row_id'][$key] != '') {
+				$sourceItemId = (int)$attributes['doc_row_id'][$key];
 			}
+
+			if($sourceItemId <= 0) {
+				return;
+			}
+
+			$excludeDoItemId = null;
+			$includeQty = null;
+			if($mode == 'edit' && isset($attributes['order_item_id'][$key]) && $attributes['order_item_id'][$key] != '') {
+				$excludeDoItemId = (int)$attributes['order_item_id'][$key];
+				$includeQty = isset($attributes['quantity'][$key]) ? (float)$attributes['quantity'][$key] : 0.0;
+			}
+
+			$this->refreshSalesOrderTransferByItemId($sourceItemId, $excludeDoItemId, $includeQty);
+		}
+	}
+
+	private function refreshSalesOrderTransferByItemId($sourceItemId, $excludeDoItemId=null, $includeQty=null)
+	{
+		$sourceItemId = (int)$sourceItemId;
+		if($sourceItemId <= 0) {
+			return;
+		}
+
+		$source = DB::table('sales_order_item')
+			->where('id', $sourceItemId)
+			->select('id', 'sales_order_id', 'quantity')
+			->first();
+
+		if(!$source) {
+			return;
+		}
+
+		$query = DB::table('customer_do_item AS CDI')
+			->join('customer_do AS CDO', function($join) {
+				$join->on('CDO.id', '=', 'CDI.customer_do_id');
+			})
+			->where('CDI.doc_row_id', $sourceItemId)
+			->where('CDI.status', 1)
+			->whereNull('CDI.deleted_at')
+			->where('CDO.status', 1)
+			->whereNull('CDO.deleted_at');
+
+		if($excludeDoItemId) {
+			$query->where('CDI.id', '!=', (int)$excludeDoItemId);
+		}
+
+		$usedQty = (float)$query->sum('CDI.quantity');
+		$totalQty = (float)($source->quantity ?? 0);
+		$effectiveUsedQty = $usedQty;
+		if($includeQty !== null) {
+			$effectiveUsedQty = $usedQty + (float)$includeQty;
+		}
+
+		// Hard guard: total transferred in all active DO rows cannot exceed SO row quantity.
+		if($effectiveUsedQty > ($totalQty + 0.000001)) {
+			throw new \Exception('Quantity should not exceed than SO.');
+		}
+
+		$newBalance = round($totalQty - $effectiveUsedQty, 6);
+		if($newBalance < 0) {
+			$newBalance = 0;
+		}
+		if($newBalance > $totalQty) {
+			$newBalance = $totalQty;
+		}
+
+		$newStatus = 2;
+		if($newBalance <= 0.000001) {
+			$newStatus = 1;
+		} else if($newBalance >= ($totalQty - 0.000001)) {
+			$newStatus = 0;
+		}
+
+		DB::table('sales_order_item')
+			->where('id', $sourceItemId)
+			->update([
+				'balance_quantity' => $newBalance,
+				'is_transfer' => $newStatus
+			]);
+
+		$this->refreshSalesOrderHeaderTransfer((int)$source->sales_order_id);
+	}
+
+	private function refreshSalesOrderHeaderTransfer($salesOrderId)
+	{
+		$salesOrderId = (int)$salesOrderId;
+		if($salesOrderId <= 0) {
+			return;
+		}
+
+		$row1 = DB::table('sales_order_item')
+			->where('sales_order_id', $salesOrderId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->count();
+		$row2 = DB::table('sales_order_item')
+			->where('sales_order_id', $salesOrderId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->where('is_transfer', 1)
+			->count();
+		$row3 = DB::table('sales_order_item')
+			->where('sales_order_id', $salesOrderId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->where('is_transfer', 2)
+			->count();
+
+		if($row1 > 0 && $row1 == $row2) {
+			DB::table('sales_order')
+				->where('id', $salesOrderId)
+				->update(['is_editable' => 1, 'is_transfer' => 1]);
+		} else if($row1 > 0 && $row2 == 0 && $row3 == 0) {
+			DB::table('sales_order')
+				->where('id', $salesOrderId)
+				->update(['is_editable' => 0, 'is_transfer' => 0]);
+		} else {
+			DB::table('sales_order')
+				->where('id', $salesOrderId)
+				->update(['is_editable' => 1, 'is_transfer' => 0]);
 		}
 	}
 
@@ -378,14 +432,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 								->update(['is_transfer' => 1]);
 					}
 				} else if($attributes['document_type']=='SO') {
-					DB::table('sales_order')->where('id', $id)->update(['is_editable' => 1]);
-					$row1 = DB::table('sales_order_item')->where('sales_order_id', $id)->count();
-					$row2 = DB::table('sales_order_item')->where('sales_order_id', $id)->where('is_transfer',1)->count();
-					if($row1==$row2) {
-						DB::table('sales_order')
-								->where('id', $id)
-								->update(['is_transfer' => 1]);
-					}
+					$this->refreshSalesOrderHeaderTransfer((int)$id);
 				}
 				/* if($attributes['document_type']==1) {
 					$row1 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->count();
@@ -1335,6 +1382,13 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					$arrids = explode(',', $attributes['remove_item']);
 					$remline_total = $remtax_total = 0;
 					foreach($arrids as $row) {
+						$removedItem = DB::table('customer_do_item')
+							->where('id', $row)
+							->where('status', 1)
+							->whereNull('deleted_at')
+							->select('id', 'doc_row_id')
+							->first();
+
 						DB::table('customer_do_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 						//$itm = DB::table('supplier_do_item')->where('id', $row)->first();
 						
@@ -1348,6 +1402,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 										
 							//REMOVE FROM CONSIGNMENT LOCATION
 							DB::table('con_location')->where('invoice_id',$row)->where('is_do',1)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+						}
+
+						if($attributes['document_type'] == 'SO' && $removedItem && (int)$removedItem->doc_row_id > 0) {
+							$this->refreshSalesOrderTransferByItemId((int)$removedItem->doc_row_id);
 						}
 					}
 				}
@@ -1410,6 +1468,10 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					DB::table('customer_do_info')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 				}
 			}						  
+
+			if(isset($attributes['document_id'])) {
+				$this->setTransferStatusQuote($attributes);
+			}
 
 			DB::commit();
 			return true;
@@ -1530,13 +1592,6 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 							->where('quotation_sales_id', $idr)
 							->update(['is_transfer' => 0]);
 
-					} else if ($this->customer_do->document_type == 'SO') {
-						DB::table('sales_order')
-							->where('id', $idr)
-							->update(['is_transfer' => 0, 'is_editable' => 0]);
-						DB::table('sales_order_item')
-							->where('sales_order_id', $idr)
-							->update(['is_transfer' => 0]);
 					}
 				}
 			}
@@ -1559,17 +1614,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			// STEP 4: Restore source document item balance_quantity
 			// =====================================================
 			foreach ($items as $item) {
-				if ($this->customer_do->document_type == 'SO') {
-					DB::table('sales_order_item')
-						->where('sales_order_id', $this->customer_do->document_id)
-						->where('item_id', $item->item_id)
-						->where('id', $item->doc_row_id)
-						->update([
-							'balance_quantity' => DB::raw('balance_quantity + ' . $item->quantity),
-							'is_transfer'      => 0,
-						]);
-
-				} else if ($this->customer_do->document_type == 'QS') {
+				if ($this->customer_do->document_type == 'QS') {
 					DB::table('quotation_sales_item')
 						->where('quotation_sales_id', $this->customer_do->document_id)
 						->where('item_id', $item->item_id)
@@ -1620,6 +1665,19 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			DB::table('customer_do_item')
 				->where('customer_do_id', $id)
 				->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+
+			// Recompute SO item/header transfer state from remaining active DO rows.
+			if($this->customer_do->document_type == 'SO') {
+				$sourceIds = [];
+				foreach($items as $item) {
+					if((int)$item->doc_row_id > 0) {
+						$sourceIds[(int)$item->doc_row_id] = true;
+					}
+				}
+				foreach(array_keys($sourceIds) as $sourceItemId) {
+					$this->refreshSalesOrderTransferByItemId((int)$sourceItemId);
+				}
+			}
 
 			// =====================================================
 			// STEP 7: Soft delete DO header
@@ -1722,6 +1780,9 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 		return $query->join('customer_do_item AS poi', function($join) {
 							$join->on('poi.customer_do_id','=','customer_do.id');
 						} )
+					  ->leftJoin('sales_order_item AS soi', function($join) {
+						  $join->on('soi.id','=','poi.doc_row_id');
+					  })
 					  ->join('units AS u', function($join){
 						  $join->on('u.id','=','poi.unit_id');
 					  }) 
@@ -1738,7 +1799,8 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 					   
 					  ->where('poi.status',1)->where('isd.department_id',auth()->user()->department_id ?? 1)
 					  ->whereNull('poi.deleted_at')
-					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.packing','isd.pkno')
+					  ->select('poi.*','u.unit_name','im.item_code','isd.is_baseqty','isd.packing','isd.pkno',
+							   'soi.balance_quantity AS so_balance_quantity')
 					  ->orderBY('poi.id')
 					  ->groupBy('poi.id')
 					  ->get();
@@ -2511,5 +2573,3 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 	
 	
 }
-
-

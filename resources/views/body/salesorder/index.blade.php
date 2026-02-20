@@ -229,7 +229,11 @@ $("#select23").select2({
 });
 
 function funDelete(id,no) {
-	if(no=='0') {
+	var transferStatus = parseInt(no, 10);
+	if (isNaN(transferStatus)) {
+		transferStatus = 0;
+	}
+	if(transferStatus===0) {
 		var con = confirm('Are you sure delete this sales order?');
 		if(con==true) {
 			var url = "{{ url('sales_order/delete/') }}";

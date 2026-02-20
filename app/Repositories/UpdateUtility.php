@@ -1111,9 +1111,9 @@ class UpdateUtility
         });
     }
 
-	function generateVoucherNoDoc($doc, $maxNumeric, $departmentId = null, $manualVoucherNo = null)
+	function generateVoucherNoDoc($doc, $maxNumeric, $departmentId = null, $manualVoucherNo = null, $customPrefix = null)
     {
-        return DB::transaction(function () use ($doc, $maxNumeric, $departmentId, $manualVoucherNo) {
+        return DB::transaction(function () use ($doc, $maxNumeric, $departmentId, $manualVoucherNo, $customPrefix) {
             $now = Carbon::now();
 
             // 1️⃣ Lock settings row
@@ -1126,8 +1126,14 @@ class UpdateUtility
 				throw new \RuntimeException("Voucher settings not found for {$doc}");
 			}
 
+			$effectivePrefix = (!is_null($customPrefix) && $customPrefix !== '') ? $customPrefix : $setting->prefix;
+
 			// ✅ If user entered manually
 			if (!empty($manualVoucherNo)) {
+				$manualVoucherNo = trim((string) $manualVoucherNo);
+				if (!empty($effectivePrefix) && strpos($manualVoucherNo, $effectivePrefix) !== 0) {
+					$manualVoucherNo = $effectivePrefix . $manualVoucherNo;
+				}
 				
 				// Update current counter if manual number is higher
 				$numPart = (int)preg_replace('/\D/', '', $manualVoucherNo);
@@ -1143,7 +1149,7 @@ class UpdateUtility
 			}
 
             $nextNo = (int)$setting->no + 1;
-			$prefix = $setting->prefix;
+			$prefix = $effectivePrefix;
 
             // 3️⃣ Format voucher number
 		    $voucherNo = ($prefix ? $prefix : '') . $setting->no;

@@ -79,13 +79,13 @@
 							@endif
 							
                         {{-- <div class="pull-right">
-							@permission('pi-create')
+							@can('pi-create')
                              <a href="{{ url('purchase_invoice/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
+							@endcan
                         </div> --}}
 						<div class="pull-right">
 							@can('pi-create')

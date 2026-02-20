@@ -105,12 +105,17 @@ class PermissionController extends Controller
 		$permissions = $this->makeTreeArr( DB::table('permissions')
 											->select('permissions.id','permissions.name','permissions.description','permissions.section')
 											->get() );
+		$openCostEditPermission = DB::table('permissions')
+			->where('name', 'item-qty-cost-edit')
+			->select('id', 'name')
+			->first();
 		$permission_role = $this->makeArr( DB::table('role_has_permissions')->where('role_id',$id)->select('permission_id')->get() ); 								
 		
 		//echo '<pre>'; print_r($permissions);exit;
 					
 		return view('body.permission.edit')
 					->withPermissions($permissions)
+					->withOpenCostEditPermission($openCostEditPermission)
 					->withPermissionrole($permission_role)
 					->withRole($role)
 					->withData($data);

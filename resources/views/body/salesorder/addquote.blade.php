@@ -234,27 +234,15 @@
                                     <label for="input-text" class="col-sm-2 control-label"> Foreign Currency</label>
 									<div class="col-xs-10">
 										<div class="col-xs-1">
-										@if($quoterow->is_fc==1)
-										{{--*/ $chk = "checked";
-										/*--}}
-										@else
-										{{--*/ $chk = "";
-										/*--}}
-										@endif
 											<label class="radio-inline iradio">
-											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $chk }}>
+											<input type="checkbox" class="custom_icheck" id="is_fc" name="is_fc" value="1" {{ $quoterow->is_fc==1 ? 'checked' : '' }}>
 										</label>
 										</div>
 										<div class="col-xs-5">
 											<select id="currency_id" class="form-control select2" style="width:100%" name="currency_id">
 												<option value="">Select Foreign Currency...</option>
 												@foreach($currency as $curr)
-												@if($quoterow->currency_id==$curr['id'])
-												{{--*/ $sel = "selected" /*--}}
-												@else
-												{{--*/ $sel = "" /*--}}	
-												@endif
-												<option value="{{$curr['id']}}" {{$sel}}>{{$curr['code']}}</option>
+												<option value="{{$curr['id']}}" {{ $quoterow->currency_id==$curr['id'] ? 'selected' : '' }}>{{$curr['code']}}</option>
 												@endforeach
 											</select>
 										</div>
@@ -317,7 +305,11 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php
+									$i = 0;
+									$num = count($quoteitems);
+									$total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0;
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -418,7 +410,7 @@
 									{{--*/ $i++; /*--}}
 										<div class="itemdivChld">	
 											<?php
-												if($item->balance_quantity==0) {
+												if(($item->is_transfer ?? 0)==0) {
 													
 													if($quoterow->is_fc==1) {
 														$quantity = $actual_quantity = $item->quantity;
@@ -643,10 +635,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
 											<input type="hidden" id="net_amount_hid" name="net_amount_hid" class="form-control spl" readonly>
-											<input type="number" step="any" id="net_amount" name="net_amount" value="{{(old('net_amount'))?old('net_amount'):(($quoterow->is_fc==1)?(isset($poso))?$quoterow->net_amount_fc:$quoterow->net_total_fc:(isset($poso))?$nettotal:$quoterow->net_total)}}" class="form-control spl" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount" name="net_amount" value="{{ (old('net_amount')) ? old('net_amount') : (($quoterow->is_fc==1) ? ((isset($poso)) ? $quoterow->net_amount_fc : $quoterow->net_total_fc) : ((isset($poso)) ? $nettotal : $quoterow->net_total)) }}" class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="<?php echo (old('net_amount_fc'))?old('net_amount_fc'):(isset($poso))?$quoterow->net_amount:$quoterow->net_total; ?>" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="<?php echo (old('net_amount_fc')) ? old('net_amount_fc') : ((isset($poso)) ? $quoterow->net_amount : $quoterow->net_total); ?>" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>

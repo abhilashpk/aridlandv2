@@ -145,12 +145,26 @@ class OtherAccountSettingRepository extends AbstractValidator implements OtherAc
 
 	public function getOtherAccountSetting()
 	{
-		return $this->other_account->where('other_account_setting.status', 1)
+		$deptId = auth()->user()->department_id ?? 1;
+		$query = $this->other_account->where('other_account_setting.status', 1)
 						->leftJoin('account_master AS am', function($join) {
 							$join->on('am.id','=','other_account_setting.account_id');
-						} )
-						->select('other_account_setting.*','am.master_name','am.account_id as code')
-						->orderBy('other_account_setting.id','ASC')->get();
+						})
+						->select('other_account_setting.*','am.master_name','am.account_id as code');
+
+		if((int)$deptId === 0) {
+			$rows = $query->where('other_account_setting.department_id', 0)
+						  ->orderBy('other_account_setting.id','ASC')
+						  ->get();
+		} else {
+			$rows = $query->whereIn('other_account_setting.department_id', [0, (int)$deptId])
+						  // Prefer department-specific rows, then fallback to global(0).
+						  ->orderByRaw("CASE WHEN other_account_setting.department_id = ".((int)$deptId)." THEN 0 ELSE 1 END")
+						  ->orderBy('other_account_setting.id','ASC')
+						  ->get();
+		}
+
+		return $rows->unique('account_setting_name')->values();
 	}
 	
 	public function getOtherAccountSettingCheck()
@@ -202,4 +216,3 @@ class OtherAccountSettingRepository extends AbstractValidator implements OtherAc
 										->update(['account_master_id' => $accountid]);
 	}
 }
-

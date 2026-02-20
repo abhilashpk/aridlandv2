@@ -49,7 +49,7 @@ class ItemmasterController extends Controller
 	}
 	
 	/* private function setItemlogs() {
-		$items = DB::table('itemmaster')->where('itemmaster.status',1)->where('itemmaster.deleted_at','0000-00-00 00:00:00')
+		$items = DB::table('itemmaster')->where('itemmaster.status',1)->whereNull('itemmaster.deleted_at')
 					->join('item_unit', 'item_unit.itemmaster_id', '=', 'itemmaster.id')
 					->where('item_unit.is_baseqty',1)
 					->select('itemmaster.id','item_unit.unit_id')->get();
@@ -704,41 +704,41 @@ class ItemmasterController extends Controller
 	// 							->join('itemmaster AS IM', function($join) {
 	// 								$join->on('IM.id','=','mfg_items.subitem_id');
 	// 							})
-	// 							->where('mfg_items.deleted_at','0000-00-00 00:00:00')
+	// 							->whereNull('mfg_items.deleted_at')
 	// 							->select('mfg_items.*','IM.item_code','IM.description')
 	// 							->get();
 								
 	// 	//CHECK ITEM ALREADY IN USE OTHER DOCS	...					
 	// 	$readonly = false;						
-	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',auth()->user()->department_id ?? 1)->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',auth()->user()->department_id ?? 1)->where('document_type','!=','OQ')->where('status',1)->whereNull('deleted_at')->count();
 	// 	if($logcount > 0)
 	// 	    $readonly = true;
 	// 	else {
-	// 	    $qp = DB::table('quotation_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 	    $qp = DB::table('quotation_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 	    if($qp > 0)
 	// 	        $readonly = true;
 	// 	    else {
-    //     		$mr = DB::table('material_requisition_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //     		$mr = DB::table('material_requisition_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
     //     		if($mr > 0)
 	// 	            $readonly = true;
 	// 	        else {
-    //         		$ce = DB::table('customer_enquiry_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //         		$ce = DB::table('customer_enquiry_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
     //         		if($ce > 0)
     // 		            $readonly = true;
     // 		        else {
-    //             		$sdo = DB::table('supplier_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //             		$sdo = DB::table('supplier_do_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
     //             		if($sdo > 0)
     //     		            $readonly = true;
     //     		        else {
-    //                 		$qs = DB::table('quotation_sales_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //                 		$qs = DB::table('quotation_sales_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
     //                 		if($qs > 0)
     //         		            $readonly = true;
     //         		        else {
-    //                 		    $so = DB::table('sales_order_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //                 		    $so = DB::table('sales_order_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
     //                 		    if($so > 0)
     //             		            $readonly = true;
     //             		        else 
-    //                 		        $cdo = DB::table('customer_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    //                 		        $cdo = DB::table('customer_do_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
     //                 		        if($cdo > 0)
     //             		                $readonly = true;
     //         		        }
@@ -853,42 +853,42 @@ class ItemmasterController extends Controller
 	// 						->join('itemmaster AS IM', function($join) {
 	// 							$join->on('IM.id','=','mfg_items.subitem_id');
 	// 						})
-	// 						->where('mfg_items.deleted_at','0000-00-00 00:00:00')
+	// 						->whereNull('mfg_items.deleted_at')
 	// 						->select('mfg_items.*','IM.item_code','IM.description')
 	// 						->get();
 	// 	 Log::info('Row materials', ['count' => $rowmaterials]);
 	// 	// CHECK ITEM ALREADY IN USE OTHER DOCS
 	// 	$readonly = false;
-	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',auth()->user()->department_id ?? 1)->where('document_type','!=','OQ')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 	$logcount = DB::table('item_log')->where('item_id', $id)->where('department_id',auth()->user()->department_id ?? 1)->where('document_type','!=','OQ')->where('status',1)->whereNull('deleted_at')->count();
 		
 	// 	if($logcount > 0) {
 	// 		$readonly = true;
 	// 	} else {
-	// 		$qp = DB::table('quotation_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 		$qp = DB::table('quotation_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 		if($qp > 0) {
 	// 			$readonly = true;
 	// 		} else {
-	// 			$mr = DB::table('material_requisition_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 			$mr = DB::table('material_requisition_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 			if($mr > 0) {
 	// 				$readonly = true;
 	// 			} else {
-	// 				$ce = DB::table('customer_enquiry_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 				$ce = DB::table('customer_enquiry_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 				if($ce > 0) {
 	// 					$readonly = true;
 	// 				} else {
-	// 					$sdo = DB::table('supplier_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 					$sdo = DB::table('supplier_do_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 					if($sdo > 0) {
 	// 						$readonly = true;
 	// 					} else {
-	// 						$qs = DB::table('quotation_sales_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 						$qs = DB::table('quotation_sales_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 						if($qs > 0) {
 	// 							$readonly = true;
 	// 						} else {
-	// 							$so = DB::table('sales_order_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 							$so = DB::table('sales_order_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 							if($so > 0) {
 	// 								$readonly = true;
 	// 							} else {
-	// 								$cdo = DB::table('customer_do_item')->where('item_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+	// 								$cdo = DB::table('customer_do_item')->where('item_id', $id)->where('status',1)->whereNull('deleted_at')->count();
 	// 								if($cdo > 0) {
 	// 									$readonly = true;
 	// 								}
@@ -1212,8 +1212,13 @@ private function getDefaultFormData()
 		}
 	//	echo '<pre>';print_r($request->all());
 	  // $status = $this->itemmaster->check_item($id);
-	//	if($status) {
+		//	if($status) {
 			$this->itemmaster->update($id, $request->all());//exit;
+			// Recalculate cost/qty after opening cost changes so list and ledger
+			// show updated Cost Avg immediately.
+			$appUtility = app('App\Http\Controllers\UtilityController');
+			$appUtility->reEvalItemCostQuantity($id);
+			$appUtility->updateItemCurrentQty($id);
 
 		//SUPERSEED UPDATE
 		$im = DB::table('itemmaster')->select('id','supersede_items')->get();	
@@ -1634,7 +1639,7 @@ private function getDefaultFormData()
 		foreach($itemLogs as $loc => $rows) {
 		   foreach($rows as $row) {
 			DB::table('item_location')->where('location_id',$loc)->where('item_id',$row['item_id'])->where('unit_id',$row['unit'])
-					->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->update(['quantity' => $row['quantity'] ]);
+					->where('status',1)->whereNull('deleted_at')->update(['quantity' => $row['quantity'] ]);
 		   }
 		} */
 		

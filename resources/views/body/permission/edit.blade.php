@@ -1687,6 +1687,16 @@
                                                         </label>
                                                     </div>
                                                 </div>
+                                                @if(isset($openCostEditPermission) && isset($openCostEditPermission->id))
+                                                <div class="col-lg-4 col-sm-6">
+                                                    <div class="checkbox checkbox-primary">
+                                                        <input id="checkboxItm7" class="styled" type="checkbox" name="permission_id[]" value="{{ $openCostEditPermission->id }}" {{ in_array($openCostEditPermission->id, $permissionrole) ? 'checked' : '' }}>
+                                                        <label for="checkboxItm7">
+                                                            &nbsp;Open Cost Edit
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                @endif
                                             </div>
                                         </div>
 									  </div>

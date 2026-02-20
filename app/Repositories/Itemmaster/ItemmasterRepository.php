@@ -2085,7 +2085,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			 $query->groupBy('iu.itemmaster_id')
 						//->orderBy('itemmaster.description','ASC')
 						->select('itemmaster.id','itemmaster.item_code','itemmaster.model_no','itemmaster.description','itemmaster.description_ar','ISD.vat','itemmaster.class_id',
-						'u.unit_name','ISD.cost_avg','ISD.sell_price','ISD.last_purchase_cost AS pur_cost','ISD.cur_quantity','itemmaster.itmLt','itemmaster.itmWd','itemmaster.batch_req')
+						'u.unit_name',DB::raw('CASE WHEN ISD.cost_avg IS NULL OR ISD.cost_avg = 0 THEN iu.cost_avg ELSE ISD.cost_avg END AS cost_avg'),'ISD.sell_price','ISD.last_purchase_cost AS pur_cost','ISD.cur_quantity','itemmaster.itmLt','itemmaster.itmWd','itemmaster.batch_req')
 						->offset($start)
                         ->limit($limit)
                         ->orderBy($order,$dir);
@@ -2142,7 +2142,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				'C.category_name AS category',
 				'S.category_name AS subcategory',
 				'ID.last_purchase_cost',
-				'ID.cost_avg',
+				DB::raw('CASE WHEN ID.cost_avg IS NULL OR ID.cost_avg = 0 THEN u.cost_avg ELSE ID.cost_avg END AS cost_avg'),
 				'ID.issued_qty',
 				'u.packing',
 				'GC.description AS group_name',
@@ -3812,12 +3812,19 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 							->select('itemmaster.id','itemmaster.item_code','itemmaster.description','u.cur_quantity','u.packing','u.cost_avg')
 							->get();
 		} else { */
-			$result = $this->itemmaster->where('itemmaster.status', 1)		
+			$result = $this->itemmaster->where('itemmaster.status', 1)
+							->join('itemstock_department AS isd', function($join) {
+								$join->on('isd.itemmaster_id','=','itemmaster.id');
+								$join->where('isd.department_id','=',auth()->user()->department_id);
+								$join->where('isd.is_baseqty','=',1);
+							} )
 							->join('item_unit AS u', function($join) {
 								$join->on('u.itemmaster_id','=','itemmaster.id');
+								$join->where('u.is_baseqty','=',1);
 							} )
-							->where('u.is_baseqty','=',1)->where('itemmaster.class_id',1)
-							->select('itemmaster.id','itemmaster.item_code','itemmaster.description','u.cur_quantity','u.packing','u.cost_avg')
+							->where('itemmaster.class_id',1)
+							->select('itemmaster.id','itemmaster.item_code','itemmaster.description','isd.cur_quantity','u.packing',DB::raw('CASE WHEN isd.cost_avg IS NULL OR isd.cost_avg = 0 THEN u.cost_avg ELSE isd.cost_avg END AS cost_avg'))
+							->groupBy('itemmaster.id')
 							->get();
 		//}
 		

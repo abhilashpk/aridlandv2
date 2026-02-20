@@ -75,13 +75,13 @@
                             </h3>
 				
 							<div class="pull-right">
-							@permission('gi-print')
+							@can('gi-print')
 							 <a href="{{ url('purchase_enquiry/print/'.$orderrow->id) }}" target="_blank" class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endpermission
+							@endcan
 							</div>
                         </div>
                         <div class="panel-body">
@@ -219,7 +219,10 @@
 									</thead>
 								</table>
 								
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php
+									$i = 0;
+									$num = count($orditems);
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -582,6 +585,8 @@ $(document).ready(function () {
 		$("#currency_rate").prop('disabled', true);
 		$("#fc_label").toggle(); $("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle();
 	});
+
+	getNetTotal();
 	
 });
 
@@ -594,15 +599,25 @@ function updateDraft() {
 
 
 	//calculation item net total, tax and discount...
+	function toNumber(val) {
+		var num = parseFloat(val);
+		return isNaN(num) ? 0 : num;
+	}
+
 	function getNetTotal() {
-		var n = 1; var lineTotal = 0;
-		$( '.itemdivChld' ).each(function() {
-		  lineTotal = lineTotal + getLineTotal(n);
-		  n++;
+		var lineTotal = 0;
+		$('.itemdivChld').each(function() {
+			var $row = $(this);
+			var qty = toNumber($row.find('.line-quantity').val());
+			var cost = toNumber($row.find('.line-cost').val());
+			var disc = toNumber($row.find('.line-discount').val());
+			var rowTotal = (qty * cost) - disc;
+			$row.find('.line-total').val(rowTotal.toFixed(2));
+			lineTotal += rowTotal;
 		});
 		$('#total').val(lineTotal.toFixed(2));
 		
-		var discount = parseFloat( ($('#discount').val()=='') ? 0 : $('#discount').val() );
+		var discount = toNumber($('#discount').val());
 		//var vat      = parseFloat( ($('#vat').val()=='') ? 0 : $('#vat').val() );
 		var total 	 = lineTotal - discount;
 		var netTotal = total;// + vat;
@@ -695,19 +710,7 @@ $(function() {
 		$('#remitem').val(ids);
 		
 		$(this).parents('.itemdivChld:first').remove();
-		var btotal = 0;
-		$( '.line-total' ).each(function() {
-		  btotal = btotal + parseFloat(this.value);
-		});
-		
-		var vat = 0;
-		$('.vatline-amt').each(function() {
-			vat = vat + parseFloat(this.value);
-		});
-		
-		$('#total').val(btotal); $('#vat').val(vat);
-		var bdiscount = parseFloat( ($('#discount').val()=='')?0:$('#discount').val() );
-		$('#net_amount').val(btotal - bdiscount + vat);
+		getNetTotal();
 		
 		$('.itemdivPrnt').find('.itemdivChld:last').find('.btn-add-item').show();
 		if ( $('.itemdivPrnt').children().length == 1 ) {
@@ -859,37 +862,24 @@ $(function() {
 	
 	
 	$(document).on('blur', '.line-quantity', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1];
-		/* var isPrice = getAutoPrice(curNum);
-		if(isPrice){
-			var lntot = getLineTotal(curNum);
-			if(lntot)
-				getNetTotal();
-		} */
+		getNetTotal();
 	});
 	
 	
 	$(document).on('blur', '.line-cost', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		var res = getLineTotal(curNum);
-		if(res) {
-			getNetTotal();
-		}
+		getNetTotal();
 	});
 	
 	$(document).on('keyup', '.line-quantity', function(e) {
 		getNetTotal();
 	});
+
+	$(document).on('keyup', '.line-cost', function(e) {
+		getNetTotal();
+	});
 	
 	$(document).on('blur', '.line-discount', function(e) {
-		var res = this.id.split('_');
-		var curNum = res[1]; 
-		var res = getLineTotal(curNum);
-		if(res) {
-			getNetTotal();
-		}
+		getNetTotal();
 	});
 
 	

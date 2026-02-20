@@ -52,7 +52,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	{
 		$this->purchase_invoice->voucher_id = $attributes['voucher_id']; //echo ($attributes['document_type']=='')?'PI':$attributes['document_type'];
 		$this->purchase_invoice->voucher_no = $attributes['voucher_no']; 
-		$this->purchase_invoice->reference_no = $attributes['reference_no'];
+		$this->purchase_invoice->reference_no = isset($attributes['reference_no']) ? (string)$attributes['reference_no'] : '';
 		$this->purchase_invoice->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->purchase_invoice->lpo_date = ($attributes['lpo_date']!='')?date('Y-m-d', strtotime($attributes['lpo_date'])):'';
 		$this->purchase_invoice->document_type = ($attributes['document_type']=='')?'PI':$attributes['document_type'];//Purchase Invoice type
@@ -2224,26 +2224,53 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                     		   if($pkgar[0] > 0)
                     		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
                     		}
-							if($qtys) {
-								DB::table('item_location')->where('id', $qtys->id)->where('department_id', auth()->user()->department_id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
-								DB::table('item_location_pi')->where('invoice_id', $attributes['order_item_id'][$key] )
-															 ->where('location_id', $qtys->location_id)
-															 ->where('department_id', auth()->user()->department_id)
-															 ->where('item_id', $qtys->item_id)
-															 ->where('unit_id', $qtys->unit_id)
-															 ->update(['quantity' => DB::raw('quantity + '.$lcqty),'qty_entry' =>  DB::raw('quantity + '.$attributes['quantity'][$key])]);
-							} 
+							$piLocRow = DB::table('item_location_pi')
+								->where('invoice_id', $attributes['order_item_id'][$key])
+								->where('location_id', $attributes['location_id'])
+								->where('department_id', auth()->user()->department_id)
+								->where('item_id', $value)
+								->where('unit_id', $attributes['unit_id'][$key])
+								->where('is_sdo',0)
+								->select('id','quantity')
+								->first();
 							
-							$itemLocationPI = new ItemLocationPI();
-							$itemLocationPI->location_id = $attributes['location_id'];
-							$itemLocationPI->department_id=auth()->user()->department_id;
-							$itemLocationPI->item_id = $value;
-							$itemLocationPI->unit_id = $attributes['unit_id'][$key];
-							$itemLocationPI->quantity = $lcqty;
-							$itemLocationPI->status = 1;
-							$itemLocationPI->invoice_id = $attributes['order_item_id'][$key];
-							$itemLocationPI->qty_entry = $attributes['quantity'][$key];
-							$itemLocationPI->save();
+							if($qtys) {
+								if($piLocRow) {
+									$diff = $lcqty - $piLocRow->quantity;
+									if($diff != 0) {
+										DB::table('item_location')
+											->where('id', $qtys->id)
+											->where('department_id', auth()->user()->department_id)
+											->update(['quantity' => DB::raw('quantity + '.$diff)]);
+									}
+									
+									DB::table('item_location_pi')
+										->where('id', $piLocRow->id)
+										->where('department_id', auth()->user()->department_id)
+										->update([
+											'quantity' => $lcqty,
+											'qty_entry' => $attributes['quantity'][$key],
+											'status' => 1,
+											'deleted_at' => null
+										]);
+								} else {
+									DB::table('item_location')
+										->where('id', $qtys->id)
+										->where('department_id', auth()->user()->department_id)
+										->update(['quantity' => DB::raw('quantity + '.$lcqty)]);
+									
+									$itemLocationPI = new ItemLocationPI();
+									$itemLocationPI->location_id = $attributes['location_id'];
+									$itemLocationPI->department_id=auth()->user()->department_id;
+									$itemLocationPI->item_id = $value;
+									$itemLocationPI->unit_id = $attributes['unit_id'][$key];
+									$itemLocationPI->quantity = $lcqty;
+									$itemLocationPI->status = 1;
+									$itemLocationPI->invoice_id = $attributes['order_item_id'][$key];
+									$itemLocationPI->qty_entry = $attributes['quantity'][$key];
+									$itemLocationPI->save();
+								}
+							}
 						}
 						
 					//################ Location Stock Entry End ####################
@@ -4313,4 +4340,3 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	
 }
  //SELECT account_master.master_name,account_master.address,account_master.phone,account_master.vat_no,receipt_voucher.voucher_no,receipt_voucher.voucher_date,receipt_voucher.voucher_type,receipt_voucher.tr_description,receipt_voucher.debit,receipt_voucher.credit,receipt_voucher_entry.amount,receipt_voucher_entry.entry_type,receipt_voucher_entry.description,receipt_voucher_entry.reference,receipt_voucher_entry.cheque_date,CASE WHEN receipt_voucher_entry.entry_type = 'Dr' THEN receipt_voucher_entry.cheque_no ELSE NULL END AS cheque_no,CASE WHEN receipt_voucher_entry.entry_type = 'Dr' THEN bank.code ELSE NULL END AS bank_code FROM receipt_voucher JOIN receipt_voucher_entry ON(receipt_voucher_entry.receipt_voucher_id=receipt_voucher.id) JOIN account_master  ON(account_master.id=receipt_voucher_entry.account_id) LEFT JOIN bank  ON(bank.id=receipt_voucher_entry.bank_id) WHERE receipt_voucher_entry.status=1 AND receipt_voucher_entry.deleted_at='0000-00-00 00:00:00'  AND receipt_voucher.id={id} ORDER BY  receipt_voucher_entry.entry_type DESC, receipt_voucher_entry.id DESC;
-

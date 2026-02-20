@@ -108,12 +108,13 @@ function setTransfer() {
 	}
 	var items = [];
 	$("input[name='supplierDO[]']:checked").each(function(){items.push($(this).val());});
-	var curl = $('#url').val();
-	var sdourl;
-	if(curl=='sdo')
+	var curl = ($('#url').val() || '').toString().toUpperCase();
+	var sdourl = '';
+	if(curl==='SDO' || curl==='') {
 		sdourl = "{{ url('purchase_invoice/add/') }}/"+items+"/SDO";
+	}
 		
-	 if (window.opener != null && !window.opener.closed) {
+	 if (sdourl !== '' && window.opener != null && !window.opener.closed) {
 		   window.opener.location.href = sdourl;
       }
 	  window.close();

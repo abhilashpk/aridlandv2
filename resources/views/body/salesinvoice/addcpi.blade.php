@@ -829,7 +829,7 @@
 											<div id="moredesc" style="float:left; padding-right:5px;">
 												<button type="button" id="descinfoItm_{{$i}}" class="btn btn-primary btn-xs desc-info">Add Description</button>
 											</div>
-											?php } else { ?>
+											<?php } else { ?>
 								                    <input type="hidden" name="add_desc" id="add_desc">
 								             <?php } ?>
 											
@@ -874,7 +874,7 @@
 											<div style="float:left;">
 												<button type="button" id="saleshisItm_{{$i}}" data-toggle="modal" data-target="#sales_modal" class="btn btn-primary btn-xs sales-his">Sales</button>
 											</div>
-											?php } else { ?>
+											<?php } else { ?>
 								              <input type="hidden" name="sales_item" id="sales_item">
 								          <?php } ?>
 										  <?php if($formdata['customer_sales']==1) { ?>
@@ -2653,7 +2653,7 @@ $(document).on('keyup', '.line-quantity', function(e) {
 		if(res) 
 			getNetTotal();
 
-		@permission('si-create')
+		@can('si-create')
 			//MAR18
 			var rate = 1;
 			if( $('#is_fc').is(":checked") ) { 
@@ -2665,7 +2665,7 @@ $(document).on('keyup', '.line-quantity', function(e) {
 				$('#itmcst_'+curNum).val('');
 				$('#itmcst_'+curNum).focus();
 			}
-		@endpermission
+		@endcan
 	});
 	
 	

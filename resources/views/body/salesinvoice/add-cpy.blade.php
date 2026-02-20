@@ -104,20 +104,20 @@
 							
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('si-print')
+								@can('si-print')
 								 <a href="{{ url('sales_invoice/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 									<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span>
 								 </a>
-								@endpermission
-								@permission('si-print')
+								@endcan
+								@can('si-print')
 								 <!--<a href="{{ url('sales_invoice/printdo/'.$printid->id) }}" target="_blank" class="btn btn-info btn-sm">
 									<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i> DO
 									</span>
 								 </a>-->
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
 							
@@ -177,14 +177,14 @@
                                      <font color="#16A085"> <label for="input-text" class="col-sm-2 control-label"><b>SI. No.</b></label></font>
 									<input type="hidden" name="curno" id="curno" value="{{(old('curno'))?old('curno'):$vouchers[0]['voucher_no']}}">
                                     <div class="col-sm-10">
-										@permission('si-invno')
+										@can('si-invno')
 										<div class="input-group">
                                         <input type="text" class="form-control" id="voucher_no" value="{{(old('voucher_no'))?old('voucher_no'):$vouchers[0]['voucher_no']}}" readonly name="voucher_no">
 										<span class="input-group-addon inputvn"><i class="fa fa-edit" style="font-size:22px;color:#ff9f2c"></i></span>
 										</div>
 										@else
 										<input type="text" class="form-control" id="voucher_no" value="{{(old('voucher_no'))?old('voucher_no'):$vouchers[0]['voucher_no']}}" readonly name="voucher_no">
-										@endpermission
+										@endcan
                                     </div>
                                 </div>
 								
@@ -322,9 +322,9 @@
 											</div>
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											<div class="col-xs-1"><br/>
-												@permission('si-history')
+												@can('si-history')
 												<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 										<div class="col-xs-10" id="newcustomerInfo">
@@ -349,12 +349,12 @@
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											
 											<div class="col-xs-1"><br/>
-												<!--@permission('si-history')
+												<!--@can('si-history')
 												<a href="" class="btn btn-info cust-history" data-toggle="modal" data-target="#custhistory_modal">History</a>
-												@endpermission-->
-												@permission('siph-history')
+												@endcan-->
+												@can('siph-history')
 												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 									</div>
@@ -1159,9 +1159,9 @@
                                         <button type="submit" class="btn btn-primary">Submit</button>
 										<a href="{{ url('sales_invoice') }}" class="btn btn-danger">Cancel</a>
 										<a href="{{ url('sales_invoice/add') }}" class="btn btn-warning">Clear</a>
-										@permission('si-history')
+										@can('si-history')
 										<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">View Order History</a>
-										@endpermission
+										@endcan
                                     </div>
                                 </div>
                             

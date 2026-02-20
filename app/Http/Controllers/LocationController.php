@@ -51,6 +51,7 @@ class LocationController extends Controller
 		$rules = [
 			'code' => 'required',
 			'name' => 'required',
+			'default' => 'required|in:0,1',
 			'is_conloc' => 'required|in:0,1',
 		];
 
@@ -96,6 +97,7 @@ class LocationController extends Controller
 		$rules = [
 			'code' => 'required|max:45',
 			'name' => 'required|max:55',
+			'default' => 'required|in:0,1',
 			'is_conloc' => 'required|in:0,1',
 		];
 
@@ -334,4 +336,3 @@ class LocationController extends Controller
 	}
 
 }
-

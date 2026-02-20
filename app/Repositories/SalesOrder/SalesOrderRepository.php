@@ -271,7 +271,8 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					$tax        = ((float)$attributes['cost'][$key] * (float)$attributes['line_vat'][$key]) / 100;
 					$tax_total  = round($tax * $attributes['quantity'][$key],2);
 				}
-				$item_total = (float)($attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - (isset($attributes['line_discount'][$key])?(float)$attributes['line_discount'][$key]:'');
+				$lineDiscount = isset($attributes['line_discount'][$key]) ? (float)$attributes['line_discount'][$key] : 0.0;
+				$item_total = ((float)$attributes['cost'][$key] * (float)$attributes['quantity'][$key]) - $lineDiscount;
 			}
 		}
 		
@@ -365,49 +366,158 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 			}
 		}
 	}
-	
-	private function setTransferStatusItem($attributes, $key, $mode=null)
+
+	private function getSourceTransferTable($attributes)
 	{
-		if(isset($attributes['po_to_so'])) { //CHECK PO TO SO OR NOT...
-			//if quantity partially deliverd, update pending quantity.
-			if(isset($attributes['quote_sales_item_id'])) {
-				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-					if( isset($attributes['quote_sales_item_id'][$key]) ) {
-						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-						//update as partially delivered.
-						DB::table('purchase_order_item')
-									->where('id', $attributes['quote_sales_item_id'][$key])
-									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
-					}
-				} else {
-						//update as completely delivered.
-						DB::table('purchase_order_item')
-									->where('id', $attributes['quote_sales_item_id'][$key])
-									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
-				}
-			}
+		return isset($attributes['po_to_so']) ? 'purchase_order_item' : 'quotation_sales_item';
+	}
+
+	private function getSourceTransferState($table, $sourceRowId)
+	{
+		return DB::table($table)
+			->where('id', $sourceRowId)
+			->select('id', 'quantity', 'balance_quantity', 'is_transfer')
+			->first();
+	}
+
+	private function getSourceAvailableQty($source)
+	{
+		if(!$source) {
+			return 0.0;
+		}
+
+		$totalQty = (float)($source->quantity ?? 0);
+		$balQty = (float)($source->balance_quantity ?? 0);
+		$isTransfer = (int)($source->is_transfer ?? 0);
+
+		if($isTransfer === 0) {
+			// Not transferred yet: full source quantity is available.
+			return $totalQty;
+		}
+		if($isTransfer === 1) {
+			return 0.0;
+		}
+		return $balQty;
+	}
+
+	private function getSourceTransferStatus($remainingQty, $totalQty)
+	{
+		if($remainingQty <= 0.000001) {
+			return 1; // fully transferred
+		}
+		if($remainingQty >= ($totalQty - 0.000001)) {
+			return 0; // not transferred
+		}
+		return 2; // partially transferred
+	}
+	
+	private function setTransferStatusItem($attributes, $key, $mode=null, $oldQty=0.0)
+	{
+		$sourceId = null;
+		if(isset($attributes['quote_sales_item_id'][$key]) && $attributes['quote_sales_item_id'][$key] != '') {
+			$sourceId = (int)$attributes['quote_sales_item_id'][$key];
+		} elseif(isset($attributes['doc_row_id'][$key]) && $attributes['doc_row_id'][$key] != '') {
+			$sourceId = (int)$attributes['doc_row_id'][$key];
+		}
+
+		if(!$sourceId) {
+			return;
+		}
+
+		$table = $this->getSourceTransferTable($attributes);
+		$requestQty = isset($attributes['quantity'][$key]) ? (float)$attributes['quantity'][$key] : 0.0;
+		$oldQty = (float)$oldQty;
+
+		$source = $this->getSourceTransferState($table, $sourceId);
+		if(!$source) {
+			return;
+		}
+
+		$availableQty = $this->getSourceAvailableQty($source);
+		$maxAllowedQty = $availableQty + $oldQty;
+		if($requestQty > ($maxAllowedQty + 0.000001)) {
+			$itemName = isset($attributes['item_name'][$key]) ? $attributes['item_name'][$key] : 'Item';
+			throw new \Exception($itemName.' quantity exceeds available remaining quantity.');
+		}
+
+		$newBalance = round($maxAllowedQty - $requestQty, 6);
+		if($newBalance < 0) {
+			$newBalance = 0;
+		}
+
+		$totalQty = (float)($source->quantity ?? 0);
+		$newTransferStatus = $this->getSourceTransferStatus($newBalance, $totalQty);
+
+		DB::table($table)
+			->where('id', $sourceId)
+			->update([
+				'balance_quantity' => $newBalance,
+				'is_transfer' => $newTransferStatus
+			]);
+
+		if($table === 'quotation_sales_item') {
+			$this->refreshQuotationHeaderTransferByItemId($sourceId);
+		}
+	}
+
+	private function refreshQuotationHeaderTransferByItemId($quotationItemId)
+	{
+		$quotationItemId = (int)$quotationItemId;
+		if($quotationItemId <= 0) {
+			return;
+		}
+
+		$quoteId = DB::table('quotation_sales_item')
+			->where('id', $quotationItemId)
+			->value('quotation_sales_id');
+
+		$quoteId = (int)$quoteId;
+		if($quoteId <= 0) {
+			return;
+		}
+
+		$this->refreshQuotationHeaderTransferByQuoteId($quoteId);
+	}
+
+	private function refreshQuotationHeaderTransferByQuoteId($quoteId)
+	{
+		$quoteId = (int)$quoteId;
+		if($quoteId <= 0) {
+			return;
+		}
+
+		$row1 = DB::table('quotation_sales_item')
+			->where('quotation_sales_id', $quoteId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->count();
+
+		$row2 = DB::table('quotation_sales_item')
+			->where('quotation_sales_id', $quoteId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->where('is_transfer', 1)
+			->count();
+
+		$row3 = DB::table('quotation_sales_item')
+			->where('quotation_sales_id', $quoteId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->where('is_transfer', 2)
+			->count();
+
+		if($row1 > 0 && $row1 == $row2) {
+			DB::table('quotation_sales')
+				->where('id', $quoteId)
+				->update(['is_editable' => 1, 'is_transfer' => 1]);
+		} else if($row1 > 0 && $row2 == 0 && $row3 == 0) {
+			DB::table('quotation_sales')
+				->where('id', $quoteId)
+				->update(['is_editable' => 0, 'is_transfer' => 0]);
 		} else {
-		    if($mode=='edit') {
-		        
-		    } else {  
-    			//if quantity partially deliverd, update pending quantity.
-    			if(isset($attributes['quote_sales_item_id'])) {
-    				if(isset($attributes['actual_quantity']) && ($attributes['quantity'][$key] != $attributes['actual_quantity'][$key])) {
-    					if( isset($attributes['quote_sales_item_id'][$key]) ) {
-    						$quantity 	 = $attributes['actual_quantity'][$key] - $attributes['quantity'][$key];
-    						//update as partially delivered.
-    						DB::table('quotation_sales_item')
-    									->where('id', $attributes['quote_sales_item_id'][$key])
-    									->update(['balance_quantity' => $quantity, 'is_transfer' => 2]);
-    					}
-    				} else {
-    						//update as completely delivered.
-    						DB::table('quotation_sales_item')
-    									->where('id', $attributes['quote_sales_item_id'][$key])
-    									->update(['balance_quantity' => 0, 'is_transfer' => 1]);
-    				}
-    			}
-		    }
+			DB::table('quotation_sales')
+				->where('id', $quoteId)
+				->update(['is_editable' => 1, 'is_transfer' => 0]);
 		}
 	}
 	
@@ -749,12 +859,12 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 				$dept = auth()->user()->department_id ?? 1;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				$qry = DB::table('sales_order')->where('department_id', auth()->user()->department_id ?? 1);
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, null, $attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				
 				//exit;
@@ -787,12 +897,12 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 							$dept = auth()->user()->department_id ?? 1;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('sales_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+							$qry = DB::table('sales_order')->where('department_id', auth()->user()->department_id ?? 1);
 							
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, null, $attributes['prefix']);
 
 							$retryCount++;
 						} else {
@@ -801,9 +911,15 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					}
 				}
 
+				// Never continue as success when header insert failed.
+				if(!$saved || !$this->sales_order->id) {
+					throw new \Exception('Failed to create sales order header.');
+				}
+
 				
 				
 				$line_total = 0; $tax_total = 0; $total = $item_total = 0; $taxtype = '';
+				$insertedItems = 0;
 				$discount = (isset($attributes['discount']))?$attributes['discount']:0;
 				//sales order items insert
 				if($this->sales_order->id && isset($attributes['item_id']) && !empty( array_filter($attributes['item_id']))) {
@@ -824,6 +940,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 							
 							$salesOrderItem->status = 1;
 							$itemObj = $this->sales_order->salesOrderItem()->save($salesOrderItem);
+							$insertedItems++;
 							
 							$zero = DB::table('sales_order_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
 							if($zero && $zero->item_id != 0){
@@ -994,6 +1111,10 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					}
 				}
 				
+				if(isset($attributes['quotation_id']) && $attributes['quotation_id']!='' && $insertedItems===0) {
+					throw new \Exception('No sales order items were saved for the selected quotation.');
+				}
+
 				$this->setTransferStatusQuote($attributes);
 				
 				
@@ -1110,6 +1231,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 							$vat = isset($attributes['line_vat'][$key])?$attributes['line_vat'][$key]:0;
 							// $is_rental = (isset($attributes['is_rental']))?$attributes['is_rental']:''; 
 							$salesOrderItem = SalesOrderItem::find($attributes['order_item_id'][$key]);
+							$oldQty = (float)($salesOrderItem->quantity ?? 0);
 							$items['item_name'] = $attributes['item_name'][$key];
 							
 							$items['item_id'] = $attributes['item_id'][$key];//$value;
@@ -1144,7 +1266,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 						     $uid=  DB::table('item_unit')->where('itemmaster_id', $zero->item_id)->first();
 						     DB::table('sales_order_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
 						    }
-							$this->setTransferStatusItem($attributes, $key, 'edit');
+							$this->setTransferStatusItem($attributes, $key, 'edit', $oldQty);
 						
 							//description update...
 							/*if(isset($attributes['desc_id'])) {
@@ -1202,6 +1324,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 								
 								$salesOrderItem->status = 1;
 								$itemObj = $this->sales_order->salesOrderItem()->save($salesOrderItem);
+								$this->setTransferStatusItem($attributes, $key, 'edit', 0);
 								
 					$zero = DB::table('sales_order_item')->where('id', $itemObj->id)->where('unit_id',0)->first();
 					    if($zero && $zero->item_id != 0){
@@ -1331,6 +1454,38 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					$arrids = explode(',', $attributes['remove_item']);
 					$remline_total = $remtax_total = 0;
 					foreach($arrids as $row) {
+						$removedItem = DB::table('sales_order_item')
+							->where('id', $row)
+							->where('status', 1)
+							->whereNull('deleted_at')
+							->select('doc_row_id', 'quantity')
+							->first();
+
+						// Return removed quantity to source document (quotation / PO) remaining balance.
+						if($removedItem && (int)$removedItem->doc_row_id > 0) {
+							$table = $this->getSourceTransferTable($attributes);
+							$source = $this->getSourceTransferState($table, (int)$removedItem->doc_row_id);
+							if($source) {
+								$availableQty = $this->getSourceAvailableQty($source);
+								$totalQty = (float)($source->quantity ?? 0);
+								$newBalance = round($availableQty + (float)$removedItem->quantity, 6);
+								if($newBalance > $totalQty) {
+									$newBalance = $totalQty;
+								}
+
+								DB::table($table)
+									->where('id', (int)$removedItem->doc_row_id)
+									->update([
+										'balance_quantity' => $newBalance,
+										'is_transfer' => $this->getSourceTransferStatus($newBalance, $totalQty)
+									]);
+
+								if($table === 'quotation_sales_item') {
+									$this->refreshQuotationHeaderTransferByItemId((int)$removedItem->doc_row_id);
+								}
+							}
+						}
+
 						DB::table('sales_order_item')->where('id', $row)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 					}
 				}
@@ -1439,28 +1594,86 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 	public function delete($id)
 	{
 		$this->sales_order = $this->sales_order->find($id);
-		
-		//Quotatio unlock....
-		DB::table('quotation_sales')->where('id',$this->sales_order->quotation_id)->update(['is_transfer' => 0, 'is_editable' => 0]);
-		DB::table('sales_order')->where('id', $id)
-									  ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);	
-									  
-		if($this->sales_order->quotation_id > 0) {
-			    $idarr = explode(',',$this->sales_order->quotation_id);
-			    foreach($idarr as $idr) {
-				
-					DB::table('quotation_sales')->where('id', $idr)
-										->update(['is_transfer' => 0]);
-					DB::table('quotation_sales_item')->where('quotation_sales_id', $idr)
-										->update(['is_transfer' => 0]);						
-				}
-				$items = DB::table('sales_order_item')->where('sales_order_id', $id)->select('id','item_id','item_name','quantity','unit_id','unit_price','doc_row_id')->get();
-			foreach($items as $item) {
-			    DB::table('quotation_sales_item')->where('quotation_sales_id',$this->sales_order->quotation_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
-								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 0 ]);
-					}
+		if(!$this->sales_order) {
+			return false;
 		}
-		$this->sales_order->delete();
+
+		DB::beginTransaction();
+		try {
+			$quoteIds = [];
+			if(!empty($this->sales_order->quotation_id)) {
+				$quoteIds = array_values(array_filter(array_map('intval', explode(',', (string)$this->sales_order->quotation_id))));
+			}
+
+			DB::table('sales_order')
+				->where('id', $id)
+				->update([
+					'status' => 0,
+					'deleted_at' => date('Y-m-d H:i:s'),
+					'deleted_by' => Auth::User()->id
+				]);
+
+			$items = DB::table('sales_order_item')
+				->where('sales_order_id', $id)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->select('id','quantity','doc_row_id')
+				->get();
+
+			foreach($items as $item) {
+				if((int)$item->doc_row_id <= 0) {
+					continue;
+				}
+
+				$source = DB::table('quotation_sales_item')
+					->where('id', (int)$item->doc_row_id)
+					->first();
+
+				if(!$source) {
+					$source = DB::table('purchase_order_item')
+						->where('id', (int)$item->doc_row_id)
+						->first();
+					$sourceTable = $source ? 'purchase_order_item' : null;
+				} else {
+					$sourceTable = 'quotation_sales_item';
+				}
+
+				if(!$sourceTable || !$source) {
+					continue;
+				}
+
+				$availableQty = $this->getSourceAvailableQty($source);
+				$totalQty = (float)($source->quantity ?? 0);
+				$newBalance = round($availableQty + (float)$item->quantity, 6);
+				if($newBalance > $totalQty) {
+					$newBalance = $totalQty;
+				}
+
+				DB::table($sourceTable)
+					->where('id', (int)$item->doc_row_id)
+					->update([
+						'balance_quantity' => $newBalance,
+						'is_transfer' => $this->getSourceTransferStatus($newBalance, $totalQty)
+					]);
+
+				if($sourceTable === 'quotation_sales_item') {
+					$this->refreshQuotationHeaderTransferByItemId((int)$item->doc_row_id);
+				}
+			}
+
+			if(!empty($quoteIds)) {
+				foreach($quoteIds as $quoteId) {
+					$this->refreshQuotationHeaderTransferByQuoteId((int)$quoteId);
+				}
+			}
+
+			$this->sales_order->delete();
+			DB::commit();
+			return true;
+		} catch(\Exception $e) {
+			DB::rollback();
+			throw $e;
+		}
 	}
 	
 	public function quotationSalesList()
@@ -1795,7 +2008,8 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 					  })
 					  ->leftjoin('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on(DB::raw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)'), DB::raw(''), DB::raw('')); //$join->on('iu.unit_id','=','poi.unit_id');
+						  // Keep class_id != 1 items regardless of unit, otherwise enforce matching unit.
+						  $join->whereRaw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)');
 					  })
 					  ->leftjoin('itemstock_department AS isd', function($join){
 						  $join->on('isd.itemmaster_id','=','im.id');
@@ -2785,7 +2999,11 @@ public function getPendingReportJob($attributes)
 	
 	public function salesOrderListCount()
 	{
-		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',auth()->user()->department_id ?? 1);
+		$query = $this->sales_order->where('sales_order.status',1)
+						->where('sales_order.department_id',auth()->user()->department_id ?? 1)
+						->where(function($q){
+							$q->where('sales_order.is_rental',0)->orWhereNull('sales_order.is_rental');
+						});
 		return $query->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_order.customer_id');
 						} )
@@ -2794,7 +3012,11 @@ public function getPendingReportJob($attributes)
 	
 	public function salesOrderList($type,$start,$limit,$order,$dir,$search)
 	{
-		$query = $this->sales_order->where('sales_order.status',1)->where('sales_order.is_rental',0)->where('sales_order.department_id',auth()->user()->department_id ?? 1)
+		$query = $this->sales_order->where('sales_order.status',1)
+						->where('sales_order.department_id',auth()->user()->department_id ?? 1)
+						->where(function($q){
+							$q->where('sales_order.is_rental',0)->orWhereNull('sales_order.is_rental');
+						})
 						->join('account_master AS am', function($join) {
 							$join->on('am.id','=','sales_order.customer_id');
 						} )

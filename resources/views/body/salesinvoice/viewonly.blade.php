@@ -233,9 +233,9 @@
 											</div>
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											<div class="col-xs-1"><br/>
-												@permission('si-history')
+												@can('si-history')
 												<a href="" class="btn btn-info order-history" data-toggle="modal" data-target="#history_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 										
@@ -262,12 +262,12 @@
 											<?php } else { ?><input type="hidden" name="kilometer" id="kilometer"><?php } ?>
 											
 											<div class="col-xs-1"><br/>
-												<!--@permission('si-history')
+												<!--@can('si-history')
 												<a href="" class="btn btn-info cust-history" data-toggle="modal" data-target="#custhistory_modal">History</a>
-												@endpermission-->
-												@permission('siph-history')
+												@endcan-->
+												@can('siph-history')
 												<a href="" class="btn btn-info cust-history-phone" data-toggle="modal" data-target="#custphonehistory_modal">History</a>
-												@endpermission
+												@endcan
 											</div>
 										</div>
 										
@@ -1629,7 +1629,7 @@
 								</div>
 								<br/>
 								
-								@permission('qs-aprv')
+								@can('qs-aprv')
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
@@ -1650,7 +1650,7 @@
                                     </div>
                                 </div>
 								<?php } ?>
-								@endpermission
+								@endcan
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">

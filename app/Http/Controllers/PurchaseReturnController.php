@@ -403,6 +403,15 @@ class PurchaseReturnController extends Controller
 		];
 
 		$validator = Validator::make($request->all(), $rules, $messages);
+		$validator->after(function($validator) use ($request) {
+			$qty = $request->input('quantity', []);
+			$actual = $request->input('actual_quantity', []);
+			foreach($qty as $i => $value) {
+				if(isset($actual[$i]) && is_numeric($value) && is_numeric($actual[$i]) && (float)$value > (float)$actual[$i]) {
+					$validator->errors()->add('quantity.'.$i, 'Item quantity cannot exceed available invoice quantity.');
+				}
+			}
+		});
 
 		if ($validator->fails()) {
 
@@ -577,6 +586,15 @@ class PurchaseReturnController extends Controller
 		];
 
 		$validator = Validator::make($request->all(), $rules, $messages);
+		$validator->after(function($validator) use ($request) {
+			$qty = $request->input('quantity', []);
+			$actual = $request->input('actual_quantity', []);
+			foreach($qty as $i => $value) {
+				if(isset($actual[$i]) && is_numeric($value) && is_numeric($actual[$i]) && (float)$value > (float)$actual[$i]) {
+					$validator->errors()->add('quantity.'.$i, 'Item quantity cannot exceed available invoice quantity.');
+				}
+			}
+		});
 
 		if ($validator->fails()) {
 

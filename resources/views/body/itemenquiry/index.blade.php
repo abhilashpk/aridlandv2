@@ -128,7 +128,7 @@
 										<!--<div class="col-xs-1">
 											<a href="" class="btn btn-primary getform">Barcode</a> -->
 											<!--<a href="" class="btn btn-primary barcode" data-toggle="modal" data-target="#barcode_modal">Barcode</a>-->
-											<!--@permission('item-location')<a href="" class="btn btn-primary location" data-toggle="modal" data-target="#location_modal">Location</a>@endpermission-->
+											<!--@can('item-location')<a href="" class="btn btn-primary location" data-toggle="modal" data-target="#location_modal">Location</a>@endcan-->
 									<!--	</div> -->
 									<!--	<div class="col-xs-1">
 											<a href="" class="btn btn-primary supersede" data-toggle="modal" data-target="#supersede_modal">Supersede</a>

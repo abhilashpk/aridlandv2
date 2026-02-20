@@ -54,6 +54,24 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
         $this->thumbHeight = $config['modules']['salesinvoice']['thumb_size']['height'];
         $this->imgDir = $config['modules']['salesinvoice']['image_dir'];
 	}
+
+	private function getOtherAccountSettingByName($name, $departmentId = null)
+	{
+		$deptId = $departmentId ?? (auth()->user()->department_id ?? 1);
+
+		$q = DB::table('other_account_setting')
+			->where('account_setting_name', $name)
+			->where('status', 1);
+
+		if((int)$deptId === 0) {
+			return $q->where('department_id', 0)->first();
+		}
+
+		return $q->whereIn('department_id', [0, (int)$deptId])
+			->orderByRaw("CASE WHEN department_id = ".((int)$deptId)." THEN 0 ELSE 1 END")
+			->orderBy('id', 'ASC')
+			->first();
+	}
 	
 	public function all()
 	{
@@ -996,12 +1014,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				if($vatrow)
 					$dr_acnt_id = $vatrow->saledis_acid;
 				else {
-					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+					$vatrow = $this->getOtherAccountSettingByName('Discount in Sales', $attributes['department_id'] ?? null);
 					$dr_acnt_id = $vatrow->account_id;
 				}
 				
 			} else {
-				$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+				$vatrow = $this->getOtherAccountSettingByName('Discount in Sales', $attributes['department_id'] ?? null);
 				$dr_acnt_id = $vatrow->account_id;
 			}
 		}
@@ -1245,12 +1263,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				if($vatrow)
 					$dr_acnt_id = $account_id = $account_id_old = $vatrow->saledis_acid;
 				else {
-					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+					$vatrow = $this->getOtherAccountSettingByName('Discount in Sales', $attributes['department_id'] ?? null);
 					$dr_acnt_id = $account_id = $account_id_old = $vatrow->account_id;
 				}
 				
 			} else {
-				$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+				$vatrow = $this->getOtherAccountSettingByName('Discount in Sales', $attributes['department_id'] ?? null);
 				$dr_acnt_id = $account_id = $account_id_old = $vatrow->account_id;
 			}
 		} else if($amount_type == 'OC') {
@@ -1334,12 +1352,12 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				if($vatrow)
 					$dr_acnt_id = $account_id = $vatrow->saledis_acid;
 				else {
-					$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+					$vatrow = $this->getOtherAccountSettingByName('Discount in Sales', $attributes['department_id'] ?? null);
 					$dr_acnt_id = $account_id = $vatrow->account_id;
 				}
 				
 			} else {
-				$vatrow = DB::table('other_account_setting')->where('account_setting_name', 'Discount in Sales')->where('status', 1)->first();
+				$vatrow = $this->getOtherAccountSettingByName('Discount in Sales', $attributes['department_id'] ?? null);
 				$dr_acnt_id = $account_id = $vatrow->account_id;
 			}
 		} else if($amount_type == 'OC') {
@@ -4566,7 +4584,10 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		$invoice_from =(isset($attributes['invoice_from']))?$attributes['invoice_from']:'';	
 		$invoice_to = (isset($attributes['invoice_to']))?$attributes['invoice_to']:'';	
 		$department_id =auth()->user()->department_id ?? 1; 
-		$cos = DB::table('other_account_setting')->where('account_setting_name', 'Cost of Sales')->select('account_id')->first();
+		$cos = $this->getOtherAccountSettingByName('Cost of Sales', $department_id);
+		if(!$cos) {
+			$cos = (object)['account_id' => 0];
+		}
 		$query = $this->sales_invoice->where('sales_invoice.status',1)
 								   ->join('account_master AS AM', function($join) {
 									   $join->on('AM.id','=','sales_invoice.customer_id');
@@ -7216,4 +7237,3 @@ if($attributes['vehicle_no']!='') {
 
 	}
 }
-

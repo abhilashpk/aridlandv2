@@ -909,6 +909,10 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 						//	$is_rental = (isset($attributes['is_rental']))?$attributes['is_rental']:''; 
 										
 							$quotationSalesItem = QuotationSalesItem::find($attributes['order_item_id'][$key]);
+							$oldQty = (float)($quotationSalesItem->quantity ?? 0);
+							$oldBalanceQty = (float)($quotationSalesItem->balance_quantity ?? 0);
+							$oldTransferStatus = (int)($quotationSalesItem->is_transfer ?? 0);
+							$newQty = (float)$attributes['quantity'][$key];
 							$items['item_name'] = $attributes['item_name'][$key];
 							$items['item_id'] = $value;
 							$items['unit_id'] = $attributes['unit_id'][$key];
@@ -922,6 +926,25 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 							$items['tax_code'] 	= $tax_code;
 							$items['tax_include'] = $attributes['tax_include'][$key];
 							$items['orderno'] = isset($attributes['orderno'][$key])?$attributes['orderno'][$key]:''; //JN23
+
+							// Keep transferable remaining quantity aligned after quotation qty edits.
+							if($oldTransferStatus === 0) {
+								$items['balance_quantity'] = 0;
+								$items['is_transfer'] = 0;
+							} else {
+								$deliveredQty = ($oldTransferStatus === 1) ? $oldQty : max($oldQty - $oldBalanceQty, 0);
+								$newBalanceQty = round($newQty - $deliveredQty, 6);
+								if($newBalanceQty <= 0) {
+									$items['balance_quantity'] = 0;
+									$items['is_transfer'] = 1;
+								} elseif($newBalanceQty >= ($newQty - 0.000001)) {
+									$items['balance_quantity'] = 0;
+									$items['is_transfer'] = 0;
+								} else {
+									$items['balance_quantity'] = $newBalanceQty;
+									$items['is_transfer'] = 2;
+								}
+							}
 							$quotationSalesItem->update($items);
 							
 							$zero = DB::table('quotation_sales_item')->where('id', $attributes['order_item_id'][$key])->where('unit_id',0)->first();
@@ -1564,7 +1587,8 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 					  })
 					  ->leftjoin('item_unit AS iu', function($join){
 						  $join->on('iu.itemmaster_id','=','im.id');
-						  $join->on(DB::raw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)'), DB::raw(''), DB::raw('')); //$join->on('iu.unit_id','=','poi.unit_id');
+						  // Keep class_id != 1 items regardless of unit, otherwise enforce matching unit.
+						  $join->whereRaw('(im.class_id != 1 OR iu.unit_id = poi.unit_id)');
 					  })
 					  ->leftjoin('itemstock_department AS isd', function($join){
 						  $join->on('isd.itemmaster_id','=','im.id');
@@ -2212,4 +2236,3 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	
 
 }
-

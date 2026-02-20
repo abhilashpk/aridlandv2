@@ -570,10 +570,13 @@ class PurchaseInvoiceController extends Controller
 	public function save(Request $request) {
 		
 		//echo '<pre>';print_r($request->input());exit;
+		$request->merge(['reference_no' => (string)($request->input('reference_no') ?? '')]);
+		$this->applyLocationPrefix($request);
+		$referenceRule = ($this->formData['reference_no']==1) ? 'required' : 'nullable';
 		
-		if( $this->validate(
+		$this->validate(
 			$request, 
-			[//'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
+			['reference_no' => $referenceRule,
 			'location_id' =>'required','location_id' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
@@ -583,6 +586,7 @@ class PurchaseInvoiceController extends Controller
 			 'dr_acnt' => 'sometimes|required'
 			],
 			[
+				'reference_no.required' => 'Reference no. is required.',
 				'location_id.required' => 'Location is required.',
 				'location_id.not_in' => 'Location is invalid.',
 				'supplier_name.required' => 'Supplier name is required.',
@@ -594,10 +598,11 @@ class PurchaseInvoiceController extends Controller
 				'cost.*.required' => 'Item cost is required.',
 				'dr_acnt.*.required' => 'Debit a/c. is required.',
 			]
-		)) {
-
-			return redirect('purchase_invoice/add')->withInput()->withErrors();
-		  }
+		);
+		  
+		if ($response = $this->validateTransferredQuantity($request, 'purchase_invoice/add')) {
+			return $response;
+		}
 		
 		if(Session::has('dpt_id')) 
 			Session::forget('dpt_id');
@@ -965,10 +970,13 @@ class PurchaseInvoiceController extends Controller
 		
 	public function update(Request $request)
 	{ 	//echo '<pre>';print_r($request->all());exit;
+		$request->merge(['reference_no' => (string)($request->input('reference_no') ?? '')]);
+		$this->applyLocationPrefix($request);
+		$referenceRule = ($this->formData['reference_no']==1) ? 'required' : 'nullable';
 		$id = $request->input('purchase_invoice_id');
 		$this->validate(
 			$request, 
-			[//'reference_no' => ($this->formData['reference_no']==1)?'required':'nullable',
+			['reference_no' => $referenceRule,
 			'location_id' =>'required','location_id' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
 			 'item_code.*'  => 'required', 'item_id.*' => 'required',
@@ -976,7 +984,7 @@ class PurchaseInvoiceController extends Controller
 			 'quantity.*' => 'required',
 			 'cost.*' => 'required'
 			],
-			[//'reference_no.required' => 'Reference no. is required.',
+			['reference_no.required' => 'Reference no. is required.',
 			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
 			 'supplier_name.required' => 'Supplier name is required.','supplier_id.required' => 'Supplier name is invalid.',
 			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
@@ -985,6 +993,10 @@ class PurchaseInvoiceController extends Controller
 			 'cost.*' => 'Item cost is required.'
 			]
 			);
+			
+		if ($response = $this->validateTransferredQuantity($request)) {
+			return $response;
+		}
 		
 		if( $this->purchase_invoice->update($id, $request->all()) ) {
 			//AUTO COST REFRESH CHECK ENABLE OR NOT
@@ -1061,6 +1073,53 @@ class PurchaseInvoiceController extends Controller
 			Session::flash('error', 'Something went wrong, Invoice failed to update!');
 		
 		return redirect('purchase_invoice');
+	}
+	
+	private function validateTransferredQuantity(Request $request, $redirectUrl = null)
+	{
+		$qty = $request->input('quantity', []);
+		$actualQty = $request->input('actual_quantity', []);
+		
+		if(!is_array($qty) || !is_array($actualQty) || count($actualQty)==0) {
+			return null;
+		}
+		
+		foreach($qty as $key => $value) {
+			if($value === '' || $value === null)
+				continue;
+			
+			if(!array_key_exists($key, $actualQty) || $actualQty[$key] === '' || $actualQty[$key] === null)
+				continue;
+			
+			$entered = (float)$value;
+			$allowed = (float)$actualQty[$key];
+			
+			if($entered > ($allowed + 0.000001)) {
+				$message = 'Quantity cannot exceed GRN quantity (' . rtrim(rtrim(number_format($allowed, 3, '.', ''), '0'), '.') . ').';
+				if($redirectUrl) {
+					return redirect($redirectUrl)->withInput()->withErrors(['quantity.'.$key => $message]);
+				}
+				return redirect()->back()->withInput()->withErrors(['quantity.'.$key => $message]);
+			}
+		}
+		
+		return null;
+	}
+	
+	private function applyLocationPrefix(Request $request)
+	{
+		$locationId = (int)$request->input('location_id', 0);
+		if($locationId <= 0) {
+			return;
+		}
+		
+		$loc = DB::table('location')->where('id', $locationId)->select('code')->first();
+		if(!$loc || !isset($loc->code) || trim($loc->code) === '') {
+			return;
+		}
+		
+		$isInter = ((int)$request->input('is_intercompany', 0) === 1);
+		$request->merge(['prefix' => ($isInter ? 'IPI' : 'PI') . trim($loc->code)]);
 	}
 	
 	/* public function ajax_getcode($group_id)
@@ -1252,6 +1311,13 @@ class PurchaseInvoiceController extends Controller
 	
 	public function getPI($did=null)
 	{
+		if($did === 'undefined' || $did === 'null' || $did === '') {
+			$did = null;
+		}
+		if($did !== null && !is_numeric($did)) {
+			$did = null;
+		}
+		
 		$data = array();
 		$pidata = $this->purchase_invoice->getPIdata($did);//echo '<pre>';print_r($pidata);exit;
 		return view('body.purchaseinvoice.pidata')

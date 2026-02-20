@@ -103,13 +103,13 @@
                             </h3>
 							<div class="pull-right">
 							<?php if($printid) { ?>
-								@permission('pr-print')
+								@can('pr-print')
 								 <a href="{{ url('purchase_return/print/'.$printid->id.'/'.$print->id) }}" target="_blank" class="btn btn-info btn-sm">
 										<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span> 
 								</a>
-								@endpermission
+								@endcan
 							<?php } ?>
 							</div>
                         </div>
@@ -2442,12 +2442,12 @@ function getPurchaseInvoice(e) {
 	if(e.value=='') { 
 		var ht = $(window).height();
 		var wt = $(window).width();
-		
+		var baseUrl = "{{ url('purchase_invoice/pi_data') }}";
+		var did = null;
 		if($('#department_id').length) {
-			var did = $('#department_id option:selected').val();
-			var pourl = "{{url('purchase_invoice/pi_data/')}}/"+did;
-		} else 
-			var pourl = "{{url('purchase_invoice/pi_data/')}}";
+			did = $('#department_id option:selected').val();
+		}
+		var pourl = (did !== null && did !== '' && did !== 'undefined') ? (baseUrl + '/' + did) : baseUrl;
 		
 		
 		popup = window.open(pourl, "Popup", "width=900,height=500,top=100,left=200");

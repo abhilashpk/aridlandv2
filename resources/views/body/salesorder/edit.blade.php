@@ -1926,6 +1926,26 @@ $(function() {
 	});
 	
 	//updated mar 18...
+	function validateQtyAgainstMax(curNum, showAlert) {
+		var $qty = $('#itmqty_' + curNum);
+		if(!$qty.length) return true;
+		var qtyVal = parseFloat($qty.val()==='' ? 0 : $qty.val());
+		var maxField = $('#itmaxqty_' + curNum);
+		var docRowField = $('#docrwid_' + curNum);
+		if(!maxField.length || !docRowField.length) return true;
+		var docRowId = parseInt(docRowField.val()==='' ? 0 : docRowField.val(), 10);
+		var maxQty = parseFloat(maxField.val()==='' ? 0 : maxField.val());
+		// Enforce only for rows linked to a source quotation line.
+		if(docRowId > 0 && qtyVal > (maxQty + 0.000001)) {
+			if(showAlert) {
+				alert('Quantity should not exceed quotation remaining qty (' + maxQty + ').');
+			}
+			$qty.focus();
+			return false;
+		}
+		return true;
+	}
+
 	$(document).on('keyup', '.line-quantity', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1];
@@ -1935,22 +1955,36 @@ $(function() {
 			$('#itmqty_'+curNum).focus();
 			return false;
 		}
+		validateQtyAgainstMax(curNum, false);
 	});
 	
 	$(document).on('blur', '.line-quantity', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1]; 
 		
-		//APR25
-	/*	if(parseFloat(this.value) > parseFloat( $('#itmaxqty_'+curNum).val() )) {
-			alert('Quantity should not exceed than QO.');
-			$('#itmqty_'+curNum).val( $('#itmaxqty_'+curNum).val() );
+		if(!validateQtyAgainstMax(curNum, true)) {
+			return false;
 		}
-		*/
 		//var isPrice = getAutoPrice(curNum);
 		var res = getLineTotal(curNum);
 		if(res) 
 			getNetTotal();
+	});
+
+	$('#frmSalesOrder').on('submit', function(e) {
+		var isValid = true;
+		$('.line-quantity').each(function() {
+			var res = this.id.split('_');
+			var curNum = res[1];
+			if(!validateQtyAgainstMax(curNum, true)) {
+				isValid = false;
+				return false;
+			}
+		});
+		if(!isValid) {
+			e.preventDefault();
+			return false;
+		}
 	});
 	
 	$(document).on('blur', '.line-cost', function(e) {

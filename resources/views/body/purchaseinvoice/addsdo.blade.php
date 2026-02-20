@@ -139,9 +139,12 @@
 								
 								<?php if($formdata['reference_no']==1) { ?>
 								<div class="form-group">
-                                    <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>">Reference No.</label>
+                                    <label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>">Reference No.<span style="color:#d9534f">*</span></label>
                                     <div class="col-sm-10">
                                         <input type="text" class="form-control <?php if($errors->has('reference_no')) echo 'form-error';?>" id="reference_no" name="reference_no" autocomplete="off" value="<?php echo (old('reference_no'))?old('reference_no'):$referenceno; ?>">
+										@if($errors->has('reference_no'))
+											<span class="help-block form-error">{{ $errors->first('reference_no') }}</span>
+										@endif
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -346,7 +349,16 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php
+									$i = 0;
+									$num = count($docitems);
+									$total = 0;
+									$vattotal = 0;
+									$nettotal = 0;
+									$nettotal_dh = 0;
+									$total_dh = 0;
+									$vattotal_dh = 0;
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -462,7 +474,7 @@
 									</div>
 								<?php $i++; } } else { ?>
 								@foreach($docitems as $poitem)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								
 									<div class="itemdivChld">
 										<?php 
@@ -537,7 +549,7 @@
 													<option value="{{$poitem->unit_id}}">{{$poitem->unit_name}}</option></select>
 												</td>
 												<td width="8%">
-													<input type="hidden" name="actual_quantity[]" id="itmactqty_1" value="{{$actual_quantity}}"> 
+													<input type="hidden" name="actual_quantity[]" id="itmactqty_{{$i}}" value="{{$actual_quantity}}"> 
 													<input type="number" id="itmqty_{{$i}}" step="any" autocomplete="off" name="quantity[]" class="form-control line-quantity" value="{{$quantity}}">
 												</td>
 												<td width="8%">
@@ -636,45 +648,7 @@
 											<div class="locPrntItm" id="locPrntItm_{{$i}}">
 												<div class="locChldItm">							
 													<div class="table-responsive loc-data" id="locData_{{$i}}">
-													<?php 
-														if(array_key_exists($poitem->id, $itemlocedit)) { 
-														
-															 ?>
-														<br/>
-														<div class="col-xs-4">
-															<table class="table table-bordered table-hover">
-																<thead>
-																<tr>
-																	<th>Location</th>
-																	<th>Stock</th>
-																	<th>Quantity</th>
-																</tr>
-																</thead>
-																<tbody>
-																<?php 
-																foreach($itemloc as $key => $row) {
-																
-																$quantity = $id = '';
-																$location_id = $row->id; $cqty = $row->cqty;
-																if(array_key_exists($key, $itemlocedit[$poitem->id])) { 
-																	$cqty = $itemlocedit[$poitem->id][$key]->cqty;
-																	$quantity = $itemlocedit[$poitem->id][$key]->quantity;
-																	$location_id = $itemlocedit[$poitem->id][$key]->location_id;
-																	$id = $itemlocedit[$poitem->id][$key]->id;
-																}
-																?>
-																<tr>
-																	<td>{{ $row->name }}</td>
-																	<td>{{ $cqty }}</td>
-																	<td class="num"><input type="number" name="locqty[<?php echo $i-1;?>][]" value="{{$quantity}}" class="loc-qty-{{$i}}" data-id="{{$i}}">
-																	<input type="hidden" name="locid[<?php echo $i-1;?>][]" value="{{$location_id}}"/>
-																	<input type="hidden" name="editid[<?php echo $i-1;?>][]" value="{{$id}}"/></td>
-																</tr>
-																<?php } ?>
-																</tbody>
-															</table>
-														</div>
-															<?php  } ?>
+														{{-- Location table is loaded via AJAX on click to avoid mixed table formats --}}
 													</div>
 												</div>
 											</div>
@@ -1314,9 +1288,9 @@ $('.dimnInfodivPrntItm').toggle();
 			//voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},
 			reference_no: {
                 validators: {
-                   /*  notEmpty: {
+                    notEmpty: {
                         message: 'The reference no id is required and cannot be empty!'
-                    }, */
+                    },
 					/*remote: {
                         url: urlcode,
                         data: function(validator) {
@@ -2059,7 +2033,7 @@ $(function() {
 		var res = this.id.split('_');
 		var curNum = res[1]; 
 		if(parseFloat(this.value) > parseFloat( $('#itmactqty_'+curNum).val() )) {
-			alert('Quantity should not exceed than PO.');
+			alert('Quantity should not exceed GRN quantity.');
 			$('#itmqty_'+curNum).val( $('#itmactqty_'+curNum).val() );
 		}
 		var res = getLineTotal(curNum);
@@ -2067,6 +2041,61 @@ $(function() {
 			var call = getOtherCost();
 			if(call)
 				getNetTotal();
+		}
+		renderQtyDebug(curNum);
+	});
+	
+	$(document).on('input', '.line-quantity', function(e) {
+		var res = this.id.split('_');
+		var curNum = res[1];
+		renderQtyDebug(curNum);
+	});
+	
+	function renderQtyDebug(curNum) {
+		var $qty = $('#itmqty_'+curNum);
+		if(!$qty.length) return;
+		
+		var entered = parseFloat(($qty.val()==='') ? 0 : $qty.val());
+		var allowed = parseFloat(($('#itmactqty_'+curNum).val()==='' || $('#itmactqty_'+curNum).val()==undefined) ? 0 : $('#itmactqty_'+curNum).val());
+		var remaining = allowed - entered;
+		if(remaining < 0) remaining = 0;
+		
+		var $dbg = $('#qtydbg_'+curNum);
+		if(!$dbg.length) {
+			$dbg = $('<small id="qtydbg_'+curNum+'" class="qty-debug text-muted" style="display:block;margin-top:4px;"></small>');
+			$qty.after($dbg);
+		}
+		
+		$dbg.text('GRN: '+allowed+' | Entered: '+entered+' | Remaining: '+remaining);
+		if(entered > allowed) {
+			$dbg.removeClass('text-muted').addClass('text-danger');
+		} else {
+			$dbg.removeClass('text-danger').addClass('text-muted');
+		}
+	}
+	
+	function validateGrnQtyBeforeSubmit() {
+		var invalid = false;
+		$('.line-quantity').each(function() {
+			var res = this.id.split('_');
+			var curNum = res[1];
+			var entered = parseFloat(($(this).val()==='') ? 0 : $(this).val());
+			var allowed = parseFloat(($('#itmactqty_'+curNum).val()==='') ? 0 : $('#itmactqty_'+curNum).val());
+			if(entered > allowed) {
+				alert('Row '+curNum+': Quantity should not exceed GRN quantity ('+allowed+').');
+				$('#itmqty_'+curNum).val(allowed);
+				$(this).focus();
+				invalid = true;
+				return false;
+			}
+		});
+		return !invalid;
+	}
+	
+	$(document).on('submit', '#frmPurchaseInvoice', function(e) {
+		if(!validateGrnQtyBeforeSubmit()) {
+			e.preventDefault();
+			return false;
 		}
 	});
 	
@@ -2182,10 +2211,22 @@ $(function() {
 	   var curNum = res[1];  
 	   var item_id = $('#itmid_'+curNum).val();
 	   if(item_id!='') {
-		   var locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+item_id+"/"+curNum
-		   $('#locData_'+curNum).load(locUrl, function(result) {
-			  $('#myModal').modal({show:true});
-		   });
+		   var locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+item_id+"/"+curNum;
+		   var sdoRowId = $('#sdo_itemid_'+curNum).val();
+		   // If SDO row-id exists, always use SDO-context endpoint to get qty/bin in first load.
+		   if(sdoRowId) {
+			   locUrl = "{{ url('itemmaster/get_locinfo/') }}/"+item_id+"/"+curNum+"/"+sdoRowId+"/SDO";
+		   }
+		   var $locBox = $('#locData_'+curNum);
+		   var cacheKey = locUrl;
+		   var loadedKey = $locBox.attr('data-loaded-key');
+		   var hasHtml = $.trim($locBox.html()) !== '';
+		   if(!(hasHtml && loadedKey === cacheKey)) {
+			   $locBox.load(locUrl, function() {
+					$locBox.attr('data-loaded-key', cacheKey);
+					$('#myModal').modal({show:true});
+			   });
+		   }
 			
 		   $('#locPrntItm_'+curNum).toggle();
 	   }
@@ -2399,7 +2440,21 @@ $(function() {
 		$('.loc-qty-'+curNum).each(function() { 
 			itQty += parseFloat( (this.value=='')?0:this.value );
 		});
+		var allowedQty = parseFloat( ($('#itmactqty_'+curNum).val()=='' || $('#itmactqty_'+curNum).val()==undefined)?0:$('#itmactqty_'+curNum).val() );
+		if(itQty > allowedQty) {
+			alert('Location quantity should not exceed GRN quantity ('+allowedQty+').');
+			var currentVal = parseFloat( ($(this).val()=='')?0:$(this).val() );
+			var excessQty = itQty - allowedQty;
+			var fixedVal = currentVal - excessQty;
+			$(this).val((fixedVal > 0)?fixedVal:0);
+			
+			itQty = 0;
+			$('.loc-qty-'+curNum).each(function() {
+				itQty += parseFloat( (this.value=='')?0:this.value );
+			});
+		}
 		$('#itmqty_'+curNum).val(itQty);
+		renderQtyDebug(curNum);
 		
 		var isPrice = getAutoPrice(curNum);
 		var res = getLineTotal(curNum);
@@ -2409,6 +2464,12 @@ $(function() {
 				getNetTotal();
 		}
 		$('#frmPurchaseInvoice').bootstrapValidator('revalidateField', 'quantity[]');
+	});
+	
+	$('.line-quantity').each(function() {
+		var res = this.id.split('_');
+		var curNum = res[1];
+		renderQtyDebug(curNum);
 	});
 	$(document).on('blur', '#voucher_no', function() {
 		

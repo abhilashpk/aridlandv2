@@ -476,7 +476,7 @@
 										 $vat_amount_net = $orderrow->vat_amount;
 										 $net_total = $orderrow->net_total;
 									  }
-									    $max_quantity = $item->so_balance_quantity + $item->quantity;
+									    $max_quantity = round(((float)($item->so_balance_quantity ?? 0) + (float)$item->quantity), 6);
 									?>
 									<div class="itemdivChld">							
 										<table border="0" class="table-dy-row">
@@ -1842,15 +1842,28 @@ $(function() {
 		}
 	});
 	
+	function validateDoQtyAgainstMax(curNum, showAlert) {
+		var qtyVal = parseFloat($('#itmqty_'+curNum).val()==='' ? 0 : $('#itmqty_'+curNum).val());
+		var maxVal = parseFloat($('#itmaxqty_'+curNum).val()==='' ? 0 : $('#itmaxqty_'+curNum).val());
+		if(isNaN(qtyVal) || isNaN(maxVal)) {
+			return true;
+		}
+		if(qtyVal > (maxVal + 0.000001)) {
+			if(showAlert) {
+				alert('Quantity should not exceed than SO.');
+			}
+			$('#itmqty_'+curNum).val(maxVal);
+			return false;
+		}
+		return true;
+	}
+
 	$(document).on('blur', '.line-quantity', function(e) {
 		var res = this.id.split('_');
 		var curNum = res[1]; //console.log(curNum);
 		
 		//APR25
-		if(parseFloat(this.value) > parseFloat( $('#itmaxqty_'+curNum).val() )) {
-			alert('Quantity should not exceed than SO.');
-			$('#itmqty_'+curNum).val( $('#itmaxqty_'+curNum).val() );
-		}
+		validateDoQtyAgainstMax(curNum, true);
 		
 		//var isPrice = getAutoPrice(curNum);
 		var res = getLineTotal(curNum);

@@ -309,7 +309,11 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($quoteitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php
+									$i = 0;
+									$num = count($quoteitems);
+									$total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0;
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -635,10 +639,10 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
 											<input type="hidden" id="net_amount_hid" name="net_amount_hid" class="form-control spl" readonly>
-											<input type="number" step="any" id="net_amount" name="net_amount" value="{{(old('net_amount'))?old('net_amount'):(($quoterow->is_fc==1)?(isset($poso))?$quoterow->net_amount_fc:$quoterow->net_total_fc:(isset($poso))?$nettotal:$quoterow->net_total)}}" class="form-control spl" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount" name="net_amount" value="{{ (old('net_amount')) ? old('net_amount') : (($quoterow->is_fc==1) ? ((isset($poso)) ? $quoterow->net_amount_fc : $quoterow->net_total_fc) : ((isset($poso)) ? $nettotal : $quoterow->net_total)) }}" class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="<?php echo (old('net_amount_fc'))?old('net_amount_fc'):(isset($poso))?$quoterow->net_amount:$quoterow->net_total; ?>" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="<?php echo (old('net_amount_fc')) ? old('net_amount_fc') : ((isset($poso)) ? $quoterow->net_amount : $quoterow->net_total); ?>" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>

@@ -300,7 +300,11 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($orditems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php
+									$i = 0;
+									$num = count($orditems);
+									$total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0;
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -629,7 +633,7 @@
 											<input type="number" step="any" id="net_amount" name="net_amount" value="{{(old('net_amount'))?old('net_amount'):(($orderrow->is_fc==1)?$orderrow->net_total_fc:$nettotal)}}" class="form-control spl" readonly placeholder="0">
 										</div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="<?php echo (old('net_amount_fc'))?old('net_amount_fc'):(isset($poso))?$orderrow->net_amount:$orderrow->net_total; ?>" readonly placeholder="0">
+											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" value="<?php echo (old('net_amount_fc')) ? old('net_amount_fc') : ((isset($poso)) ? $orderrow->net_amount : $orderrow->net_total); ?>" readonly placeholder="0">
 										</div>
 									</div>
                                 </div>

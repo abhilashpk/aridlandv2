@@ -88,7 +88,8 @@ class StockLedgerController extends Controller
 	{
 		$data = array(); // echo '<pre>';print_r($request->all());exit;
 		
-		$res = app('App\Http\Controllers\UtilityController')->reEvalItemCostQuantity($request->get('document_id'));
+		// Keep print action read-only. Re-evaluating item cost here mutates logs
+		// and can alter Cost Avg values while viewing/printing the report.
 		$re = app('App\Http\Controllers\UtilityController')->updateItemCurrentQty($request->get('document_id')); //OCT24
 		
 		if($request->get('search_type')=='quantity') {

@@ -64,13 +64,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Order
                         </h3>
                         <div class="pull-right">
-							@permission('po-create')
+							@can('po-create')
                              <a href="{{ url('purchase_order/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
+							@endcan
                         </div>
                     </div>
                     <div class="panel-body">
@@ -204,9 +204,9 @@ $(function() {
 			{ "data": "voucher_date" },
 			{ "data": "supplier" },
 			{ "data": "net_total" },
-			@permission('si-edit'){ "data": "edit","bSortable": false },@endpermission
-			@permission('si-print'){ "data": "print","bSortable": false },@endpermission
-			@permission('si-delete'){ "data": "delete","bSortable": false }@endpermission
+			@can('si-edit'){ "data": "edit","bSortable": false },@endcan
+			@can('si-print'){ "data": "print","bSortable": false },@endcan
+			@can('si-delete'){ "data": "delete","bSortable": false }@endcan
 		]	
 		  
 		});

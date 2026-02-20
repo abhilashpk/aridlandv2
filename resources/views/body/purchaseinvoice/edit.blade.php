@@ -75,13 +75,13 @@
                             </h3>
 							
 							<div class="pull-right">
-							@permission('pi-print')
+							@can('pi-print')
 							 <a href="{{ url('purchase_invoice/print/'.$orderrow->id.'/'.$print->id) }}" target="_blank"  class="btn btn-info btn-sm">
 								<span class="btn-label">
 									<i class="fa fa-fw fa-print"></i>
 								</span>
 							 </a>
-							@endpermission
+							@endcan
 							</div>
                         </div>
                         <div class="panel-body">
@@ -131,9 +131,12 @@
 								
 								<?php if($formdata['reference_no']==1) { ?>
 								<div class="form-group">
-                                    <font color="#16A085"><label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>"><b>Reference No.</b></label></font>
+                                    <font color="#16A085"><label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>"><b>Reference No.<span style="color:#d9534f">*</span></b></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" class="form-control <?php if($errors->has('reference_no')) echo 'form-error';?>" id="reference_no" name="reference_no" value="<?php echo (old('reference_no'))?old('reference_no'):$orderrow->reference_no; ?>" placeholder="Reference No.">
+										@if($errors->has('reference_no'))
+											<span class="help-block form-error">{{ $errors->first('reference_no') }}</span>
+										@endif
                                     </div>
                                 </div>
 								<?php } else { ?>

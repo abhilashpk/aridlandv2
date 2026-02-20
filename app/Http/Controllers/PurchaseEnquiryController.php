@@ -248,9 +248,9 @@ class PurchaseEnquiryController extends Controller
 					->withLocation($location)
                     ->withLocationfrom($locationfrom)
                     ->withLocationto($locationto)
-                    ->withInterid($defaultInter->id)
-                    ->withIntercode($defaultInter->code)
-					->withIntername($defaultInter->name)
+                    ->withInterid($defaultInter ? $defaultInter->id : null)
+                    ->withIntercode($defaultInter ? $defaultInter->code : '')
+					->withIntername($defaultInter ? $defaultInter->name : '')
 					->withJobs($jobs)
 					->withData($data);
 	}
@@ -259,6 +259,7 @@ class PurchaseEnquiryController extends Controller
 	    
 	    
 		//echo '<pre>';print_r($request->all());exit;
+		$this->normalizeLocationInput($request);
 		$attributes	= $request->all();
 		$is_inter=isset($attributes['is_intercompany'])?$attributes['is_intercompany']:0;
 	
@@ -267,8 +268,10 @@ class PurchaseEnquiryController extends Controller
 				[ 
 				// 'supplier_name' => 'required','supplier_id' => 'required',
 				// 'jobname' => 'required','job_id' => 'required',
-				'locfrom_id' =>($is_inter==1)?'required':'nullable',//'required','locfrom_id' => 'required',
-				 'location_id' =>'required','location_id' => 'required',
+				'locfrom_id' => ($is_inter==1)
+					? 'required|integer|not_in:0|exists:location,id'
+					: 'nullable|integer|not_in:0|exists:location,id',
+				'location_id' =>'required|integer|not_in:0|exists:location,id|different:locfrom_id',
 				  'item_code.*'  => 'required', 'item_id.*' => 'required',
 				// 'unit_id.*' => 'required',
 				 'quantity.*' => 'required',
@@ -278,9 +281,14 @@ class PurchaseEnquiryController extends Controller
 				
 				// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
 				// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
-				'locfrom_id' => 'From Location is required.',
+				'locfrom_id.required' => 'From Location is required.',
+				'locfrom_id.not_in' => 'From Location is invalid.',
+				'locfrom_id.exists' => 'From Location is invalid.',
 				//'locfrom_id.required' => 'From Location is required.','locfrom_id.required' => 'Location From is invalid.',
-				'location_id.required' => 'TO Location is required.','location_id.required' => 'Location To is invalid.',
+				'location_id.required' => 'TO Location is required.',
+				'location_id.not_in' => 'Location To is invalid.',
+				'location_id.exists' => 'Location To is invalid.',
+				'location_id.different' => 'From and To locations cannot be same.',
 				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 				 //'unit_id.*' => 'Item unit is required.',
 				 'quantity.*' => 'Item quantity is required.',
@@ -298,13 +306,15 @@ class PurchaseEnquiryController extends Controller
 	    
 		//echo '<pre>';print_r($request->all());exit;
 		
+		$this->normalizeLocationInput($request);
+
 		 $this->validate(
 				$request, 
 				[ 
 				// 'supplier_name' => 'required','supplier_id' => 'required',
 				// 'jobname' => 'required','job_id' => 'required',
-				'locfrom_id' =>'required','locfrom_id' => 'required',
-				 'location_id' =>'required','location_id' => 'required',
+				'locfrom_id' => 'required|integer|not_in:0|exists:location,id',
+				'location_id' => 'required|integer|not_in:0|exists:location,id|different:locfrom_id',
 				  'item_code.*'  => 'required', 'item_id.*' => 'required',
 				// 'unit_id.*' => 'required',
 				 'quantity.*' => 'required',
@@ -314,8 +324,13 @@ class PurchaseEnquiryController extends Controller
 				
 				// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
 				// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
-				'locfrom_id.required' => 'From Location is required.','locfrom_id.required' => 'Location From is invalid.',
-				'location_id.required' => 'TO Location is required.','location_id.required' => 'Location To is invalid.',
+				'locfrom_id.required' => 'From Location is required.',
+				'locfrom_id.not_in' => 'From Location is invalid.',
+				'locfrom_id.exists' => 'From Location is invalid.',
+				'location_id.required' => 'TO Location is required.',
+				'location_id.not_in' => 'Location To is invalid.',
+				'location_id.exists' => 'Location To is invalid.',
+				'location_id.different' => 'From and To locations cannot be same.',
 				 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
 				 //'unit_id.*' => 'Item unit is required.',
 				 'quantity.*' => 'Item quantity is required.',
@@ -325,6 +340,25 @@ class PurchaseEnquiryController extends Controller
 		$this->purchase_enquiry->create($request->all());
 		Session::flash('message', 'Purchase enquiry drafted successfully.');
 		return redirect('purchase_enquiry/add');
+	}
+
+	private function normalizeLocationInput(Request $request): void
+	{
+		$locFrom = $request->input('locfrom_id');
+		$locTo = $request->input('location_id');
+
+		// Backward compatibility for older templates.
+		if (($locFrom === null || $locFrom === '') && $request->filled('location_from')) {
+			$locFrom = $request->input('location_from');
+		}
+		if (($locTo === null || $locTo === '') && $request->filled('location_to')) {
+			$locTo = $request->input('location_to');
+		}
+
+		$request->merge([
+			'locfrom_id' => ($locFrom === '' ? null : $locFrom),
+			'location_id' => ($locTo === '' ? null : $locTo),
+		]);
 	}
 	
 	
@@ -462,15 +496,31 @@ class PurchaseEnquiryController extends Controller
 
 
 	}
-		public function getApproval($id)
+	public function getApproval($id)
 	{
-		DB::table('purchase_enquiry')->where('id',$id)->update(['approval_status' => 1,'approved_by'=>Auth::User()->id,'approved_at'=>date('Y-m-d H:i:s')]);
+		DB::table('purchase_enquiry')
+			->where('id',$id)
+			->where('department_id', auth()->user()->department_id ?? 1)
+			->whereNull('deleted_at')
+			->update([
+				'approval_status' => 1,
+				'approved_by'=>Auth::User()->id,
+				'approved_at'=>date('Y-m-d H:i:s')
+			]);
 		Session::flash('message', 'Purchase Enquiry approved successfully.');
 		return redirect('purchase_enquiry');
 	}
 		public function getReject($id)
 	{
-		DB::table('purchase_enquiry')->where('id',$id)->update(['approval_status' => 2,'approved_by'=>Auth::User()->id,'approved_at'=>date('Y-m-d H:i:s')]);
+		DB::table('purchase_enquiry')
+			->where('id',$id)
+			->where('department_id', auth()->user()->department_id ?? 1)
+			->whereNull('deleted_at')
+			->update([
+				'approval_status' => 2,
+				'approved_by'=>Auth::User()->id,
+				'approved_at'=>date('Y-m-d H:i:s')
+			]);
 		Session::flash('message', 'Purchase Enquiry rejected successfully.');
 		return redirect('purchase_enquiry');
 	}
@@ -486,7 +536,14 @@ class PurchaseEnquiryController extends Controller
 	}
 	public function destroy($id)
 	{
-		DB::table('purchase_enquiry')->where('id',$id)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+		DB::table('purchase_enquiry')
+			->where('id',$id)
+			->where('department_id', auth()->user()->department_id ?? 1)
+			->whereNull('deleted_at')
+			->update([
+				'status' => 0,
+				'deleted_at' => date('Y-m-d H:i:s')
+			]);
 		Session::flash('message', 'Purchase Enquiry deleted successfully.');
 		return redirect('purchase_enquiry');
 	}

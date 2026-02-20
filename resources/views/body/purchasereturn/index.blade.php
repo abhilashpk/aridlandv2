@@ -66,13 +66,13 @@
                             <i class="fa fa-fw fa-list-alt"></i> Purchase Return
                         </h3>
                         {{-- <div class="pull-right">
-							@permission('pr-create')
+							@can('pr-create')
                              <a href="{{ url('purchase_return/add') }}" class="btn btn-primary btn-sm">
 									<span class="btn-label">
 									<i class="glyphicon glyphicon-plus"></i>
 								</span> Add New
 							</a>
-							@endpermission
+							@endcan
                         </div> --}}
 
 						<div class="pull-right">

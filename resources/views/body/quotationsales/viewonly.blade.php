@@ -777,7 +777,7 @@
 								<?php } ?>
 								<br/>
 								
-								@permission('qs-aprv')
+								@can('qs-aprv')
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Document Status</label>
@@ -798,7 +798,7 @@
                                     </div>
                                 </div>
 								<?php } ?>
-								@endpermission
+								@endcan
 								<input type="hidden" value="<?php echo $orderrow->comment; ?>" name="comment_hd">
 								<?php if($settings->doc_approve==1) { ?>
 								<div class="form-group">

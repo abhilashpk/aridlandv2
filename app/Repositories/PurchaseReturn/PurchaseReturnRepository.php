@@ -660,13 +660,37 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 	private function setTransferStatusQuote($attributes)
 	{
 		if($attributes['purchase_invoice_id']) {
-			$row1 = DB::table('purchase_invoice_item')->where('purchase_invoice_id', $attributes['purchase_invoice_id'])->count();
-			$row2 = DB::table('purchase_invoice_item')->where('purchase_invoice_id', $attributes['purchase_invoice_id'])->where('is_transfer',1)->count();
-			if($row1==$row2) {
-				$is_transfer = (isset($attributes['pi_amount'])==$attributes['net_amount'])?1:2;
+			$row1 = DB::table('purchase_invoice_item')
+						->where('purchase_invoice_id', $attributes['purchase_invoice_id'])
+						->count();
+			$row2 = DB::table('purchase_invoice_item')
+						->where('purchase_invoice_id', $attributes['purchase_invoice_id'])
+						->where('is_transfer',1)
+						->count();
+			$row3 = DB::table('purchase_invoice_item')
+						->where('purchase_invoice_id', $attributes['purchase_invoice_id'])
+						->where('is_transfer',2)
+						->count();
+
+			$piAmount = (float)($attributes['pi_amount'] ?? 0);
+			$returnAmount = (float)($attributes['net_amount'] ?? 0);
+
+			if($row1 > 0 && $row1 == $row2) {
+				// Fully returned by quantity; amount_transfer=1 only when amount fully matched.
+				$is_transfer = (abs($piAmount - $returnAmount) < 0.0001) ? 1 : 2;
 				DB::table('purchase_invoice')
-						->where('id', $attributes['purchase_invoice_id'])
-						->update(['amount_transfer' => $is_transfer, 'is_return' => 1,'is_editable' => 1]);
+					->where('id', $attributes['purchase_invoice_id'])
+					->update(['amount_transfer' => $is_transfer, 'is_return' => 1, 'is_editable' => 1]);
+			} else if($row2 > 0 || $row3 > 0) {
+				// Partially returned.
+				DB::table('purchase_invoice')
+					->where('id', $attributes['purchase_invoice_id'])
+					->update(['amount_transfer' => 2, 'is_return' => 0, 'is_editable' => 1]);
+			} else {
+				// No return against this PI.
+				DB::table('purchase_invoice')
+					->where('id', $attributes['purchase_invoice_id'])
+					->update(['amount_transfer' => 0, 'is_return' => 0, 'is_editable' => 0]);
 			}
 		}
 	}
@@ -2065,11 +2089,57 @@ public function getReport($attributes)
 								 ->where('item_id',$item->item_id)->where('unit_id', $item->unit_id)
 								 ->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 			
-			DB::table('item_unit')->where('itemmaster_id', $item->item_id)->where('unit_id',$item->unit_id)
-								  ->update(['cur_quantity' => DB::raw('cur_quantity + '.$item->quantity)]);
-			DB::table('itemstock_department')->where('itemmaster_id', $item->item_id)->where('department_id', auth()->user()->department_id)
-			                                 ->where('unit_id',$item->unit_id)
-								  ->update(['cur_quantity' => DB::raw('cur_quantity + '.$item->quantity)]);
+			DB::table('purchase_return_item')
+				->where('purchase_return_id', $id)
+				->where('item_id', $item->item_id)
+				->where('unit_id', $item->unit_id)
+				->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
+			
+			$deptQtyIn = DB::table('item_log')
+				->where('item_id', $item->item_id)
+				->where('unit_id', $item->unit_id)
+				->where('department_id', auth()->user()->department_id)
+				->where('trtype', 1)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->sum('quantity');
+			
+			$deptQtyOut = DB::table('item_log')
+				->where('item_id', $item->item_id)
+				->where('unit_id', $item->unit_id)
+				->where('department_id', auth()->user()->department_id)
+				->where('trtype', 0)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->sum('quantity');
+			
+			DB::table('itemstock_department')
+				->where('itemmaster_id', $item->item_id)
+				->where('department_id', auth()->user()->department_id)
+				->where('unit_id', $item->unit_id)
+				->update(['cur_quantity' => ($deptQtyIn - $deptQtyOut)]);
+			
+			$allQtyIn = DB::table('item_log')
+				->where('item_id', $item->item_id)
+				->where('unit_id', $item->unit_id)
+				->where('trtype', 1)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->sum('quantity');
+			
+			$allQtyOut = DB::table('item_log')
+				->where('item_id', $item->item_id)
+				->where('unit_id', $item->unit_id)
+				->where('trtype', 0)
+				->where('status', 1)
+				->whereNull('deleted_at')
+				->sum('quantity');
+			
+			DB::table('item_unit')
+				->where('itemmaster_id', $item->item_id)
+				->where('unit_id',$item->unit_id)
+				->where('is_baseqty',1)
+				->update(['cur_quantity' => ($allQtyIn - $allQtyOut)]);
 									  
 			$this->objUtility->autoUpdateAVGCost($item->item_id);
 		}

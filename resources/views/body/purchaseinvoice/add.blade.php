@@ -203,9 +203,12 @@
 								<?php if($formdata['reference_no']==1) { ?>
 								<div class="form-group">
 
-                                 <font color="#16A085"><label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>"><b>Reference No.</b></label></font>
+                                 <font color="#16A085"><label for="input-text" class="col-sm-2 control-label <?php if($errors->has('reference_no')) echo 'form-error';?>"><b>Reference No.<span style="color:#d9534f">*</span></b></label></font>
                                     <div class="col-sm-10">
                                         <input type="text" class="form-control <?php if($errors->has('reference_no')) echo 'form-error';?>" id="reference_no" name="reference_no" autocomplete="off" value="{{ old('reference_no') }}" placeholder="Reference No.">
+										@if($errors->has('reference_no'))
+											<span class="help-block form-error">{{ $errors->first('reference_no') }}</span>
+										@endif
                                     </div>
                                 </div>
 								<?php } else { ?>
@@ -518,12 +521,12 @@
 														<select id="txincld_{{$j}}" class="form-control select2 taxinclude" style="width:100%" name="tax_include[]"><option value="0" {{($settings->pi_vat_inc==0) ? 'selected' : ''}}>No</option><option value="1" {{($settings->pi_vat_inc==1) ? 'selected' : ''}}>Yes</option></select>
 													</td>
 													<td width="9%">
-														<input type="hidden" id="hidunit_{{$j}}" name="hidunit[]" class="hidunt" value="{{old('hidunit')[$i]}}">
-														<input type="hidden" id="packing_{{$j}}" name="packing[]" value="{{ old('packing')[$i]}}">
-														<input type="text" id="vatdiv_{{$j}}" value="{{ old('vatdiv')[$i]}}" step="any" readonly name="vatdiv[]" class="form-control vatdiv" placeholder="VAT Amount">
-														<input type="hidden" id="vat_{{$j}}" name="line_vat[]" value="{{ old('line_vat')[$i]}}" class="form-control vat">
-														<input type="hidden" id="vatlineamt_{{$j}}" value="{{ old('vatline_amt')[$i]}}" name="vatline_amt[]" class="form-control vatline-amt" value="0">
-														<input type="hidden" id="itmdsnt_{{$j}}" name="line_discount[]" value="{{ old('line_discount')[$i]}}">
+														<input type="hidden" id="hidunit_{{$j}}" name="hidunit[]" class="hidunt" value="{{ old('hidunit.'.$i) }}">
+														<input type="hidden" id="packing_{{$j}}" name="packing[]" value="{{ old('packing.'.$i) }}">
+														<input type="text" id="vatdiv_{{$j}}" value="{{ old('vatdiv.'.$i) }}" step="any" readonly name="vatdiv[]" class="form-control vatdiv" placeholder="VAT Amount">
+														<input type="hidden" id="vat_{{$j}}" name="line_vat[]" value="{{ old('line_vat.'.$i) }}" class="form-control vat">
+														<input type="hidden" id="vatlineamt_{{$j}}" value="{{ old('vatline_amt.'.$i) }}" name="vatline_amt[]" class="form-control vatline-amt" value="0">
+														<input type="hidden" id="itmdsnt_{{$j}}" name="line_discount[]" value="{{ old('line_discount.'.$i) }}">
 													</td>
 													<td width="11%">
 														<input type="number" id="itmttl_{{$j}}" step="any" name="line_total[]" value="{{ old('line_total')[$i]}}" class="form-control line-total" readonly placeholder="Total">
@@ -599,10 +602,10 @@
 														<span class="small"></span> 
 													</div>
 													<div class="col-xs-2">
-														<span class="small">Other Cost/Unit</span> <input type="text" id="othrcst_{{$j}}" value="{{old('othr_cost')[$i]}}" step="any" name="othr_cost[]" class="form-control" readonly>
+														<span class="small">Other Cost/Unit</span> <input type="text" id="othrcst_{{$j}}" value="{{ old('othr_cost.'.$i) }}" step="any" name="othr_cost[]" class="form-control" readonly>
 													</div>
 													<div class="col-xs-2">
-														<span class="small">Net Cost/Unit</span> <input type="text" id="netcst_{{$j}}" step="any" value="{{old('net_cost')[$i]}}" name="net_cost[]" class="form-control" readonly>
+														<span class="small">Net Cost/Unit</span> <input type="text" id="netcst_{{$j}}" step="any" value="{{ old('net_cost.'.$i) }}" name="net_cost[]" class="form-control" readonly>
 													</div>
 													<div class="col-xs-1">
 														 <!--<button type="button" class="btn btn-success btn-add-item" >
@@ -3428,7 +3431,7 @@ function getDocument() {
 	var supplier_id = $("#supplier_id").val();
 	var doc = $('#document_type option:selected').val();
 	
-	if(doc=='PO' && $("#supplier_name").val()=='') {
+	if((doc=='PO' || doc=='SDO') && $("#supplier_name").val()=='') {
 		alert('Please select a supplier first!');
 		return false
 	} else if(doc=='') {
@@ -3443,8 +3446,12 @@ function getDocument() {
 		var pourl = "{{ url('purchase_order/po_data/') }}/"+supplier_id+"/PO";
 	else if(doc=='MR')
 		var pourl = "{{ url('purchase_order/mr_data/') }}/MRI";
-	else if(doc=='SDO')
-		var pourl = "{{ url('suppliers_do/sdo_data/') }}/"+supplier_id+"/sdo";
+	else if(doc=='SDO') {
+		if(supplier_id!='')
+			var pourl = "{{ url('suppliers_do/sdo_data') }}/"+supplier_id+"/SDO";
+		else
+			var pourl = "{{ url('suppliers_do/sdo_data') }}";
+	}
 	
 	popup = window.open(pourl, "Popup", "width=900,height=500,top=100,left=200");
 	popup.focus();

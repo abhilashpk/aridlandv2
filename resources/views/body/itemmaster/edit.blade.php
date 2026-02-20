@@ -303,8 +303,19 @@
                                     </div>
                                 </div>
                                 <?php
-									$readonly = 'readonly'; 
-									if(auth()->user()->can('item-qty-cost-edit')) {
+									$readonly = 'readonly';
+									$canOpenCostEdit = auth()->user()->can('item-qty-cost-edit');
+									if(!$canOpenCostEdit) {
+										$roleIds = auth()->user()->roles->pluck('id')->toArray();
+										if(!empty($roleIds)) {
+											$canOpenCostEdit = DB::table('role_has_permissions as rp')
+												->join('permissions as p','p.id','=','rp.permission_id')
+												->whereIn('rp.role_id', $roleIds)
+												->where('p.name', 'item-qty-cost-edit')
+												->exists();
+										}
+									}
+									if($canOpenCostEdit) {
 										$readonly = '';
 									}
 								?>
@@ -1153,9 +1164,11 @@ $(document).ready(function () {
     
      $('#opn_qty_1').attr('readonly', true);
 
-    if($('#opn_cost_1').val()>0 ){ 
-     $('#opn_cost_1').attr('readonly', true);
+    @if(!$canOpenCostEdit)
+    if($('#opn_cost_1').val()>0 ){
+        $('#opn_cost_1').attr('readonly', true);
 	}
+    @endif
 	@if($itemrow->dimension==1)
 		$('#norEntry').hide()
 		$('#dimEntry').show();

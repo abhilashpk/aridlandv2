@@ -108,6 +108,10 @@
        
                         <div class="panel-body">
 							<div class="controls"> 
+                            @php
+                                $departmentId = (int) (auth()->user()->department_id ?? 0);
+                                $isAridlandDepartment = ($departmentId === 1);
+                            @endphp
                             <form class="form-horizontal" role="form" method="POST" name="frmPurchaseEnquiry" id="frmPurchaseEnquiry" action="{{ url('purchase_enquiry/save') }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="is_draft" id="is_draft" value="0">    
@@ -115,12 +119,14 @@
 						<div class="form-group">
 						    <label for="input-text" class="col-sm-2 control-label"></label>
 							<div class="col-sm-10">
+                                @if($isAridlandDepartment)
 							    <label class="radio-inline">
 								<font color="#16A085"><input type="radio" class="loccom-radio" name="is_company" value="" ><b>Comapny</b></font>
 							    </label>
+                                @endif
 							
                                  <label class="radio-inline">
-								<font color="#16A085"><input type="radio" class="locinter-radio" name="is_intercompany"  value=""><b>Inter Company</b></font>
+								<font color="#16A085"><input type="radio" class="locinter-radio" name="is_intercompany"  value="{{ $isAridlandDepartment ? '' : 1 }}"><b>Inter Company</b></font>
                                 </label>
 							 </div>
 						</div>
@@ -128,6 +134,7 @@
 								 <div class="form-group">
                                 <font color="#16A085"> <label class="col-sm-2 control-label"><b>Location From</b><span class="text-danger">*</span></label></font>
                                <div class="col-sm-10">
+                                 @if($isAridlandDepartment)
                                  <div id="locationRadioGroup">
                                    @foreach($locationfrom as $loc)
                                 <label class="radio-inline">
@@ -138,12 +145,13 @@
                                              Select one location — once chosen, it becomes fixed.
                                     </small>
                                  </div>
+                                 @endif
 								 <div id="locationRadio">
 								 <label class="radio-inline">
-                                    <input type="radio" class="locin-radio"  data-id="{{$interid}}" value="{{$interid}}">{{$intername}}
+                                    <input type="radio" class="locin-radio"  data-id="{{$interid}}" value="{{$interid}}" {{ $isAridlandDepartment ? '' : 'checked' }}>{{$intername}}
                                  </label>
                                  </div>
-                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{(old('locfrom_id'))?old('locfrom_id'):''}}">
+                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{ (old('locfrom_id')) ? old('locfrom_id') : ($isAridlandDepartment ? '' : $interid) }}">
                                   
 									<small class="text-muted" id="locfrom-mand">
                                              '*' is mandatory fields
@@ -239,7 +247,9 @@
                                     <label for="input-text" class="col-sm-2 control-label"><b>Location To </b><span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
                                         <select id="location_id" class="form-control select2" style="width:100%" name="location_id">
+                                        @if($isAridlandDepartment)
 										<option value="" selected>Select Location..</option>
+                                        @endif
 											<?php 
 											foreach($locationto as $loc) { 
 											?>
@@ -312,7 +322,7 @@
 
 												</td>
 												<td width="10%">
-													<input type="number" id="itmttl_{{$j}}" step="any" name="line_total[]" value="{{ old('item_total')[$i]}}" class="form-control line-total" readonly placeholder="Total">
+													<input type="number" id="itmttl_{{$j}}" step="any" name="line_total[]" value="{{ data_get(old('line_total', old('item_total', [])), $i, '') }}" class="form-control line-total" readonly placeholder="Total">
 													
 												</td>
 												<td width="14%">
@@ -682,85 +692,76 @@ $(document).ready(function () {
 	$("#c_label").toggle();$("#fc_label").toggle(); $("#total_fc").toggle(); $("#discount_fc").toggle(); $("#net_amount_fc").toggle(); $("#vat_fc").toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle(); $('#other_cost_fc').toggle(); $('.OCdivPrnt').toggle(); 
 
+    @if($isAridlandDepartment)
 	$('.loccom-radio').iCheck('check');
-	 $('#locationRadio').hide();
+	$('#locationRadio').hide();
 
 	$(document).on('ifChecked', '.locinter-radio', function (e) {
       $('.loccom-radio').iCheck('uncheck');
       $('.locfrom-radio').iCheck('uncheck');
-	   $('.locfrom-radio').iCheck('disable');
+	  $('.locfrom-radio').iCheck('disable');
       $('#locationRadioGroup').hide();
-		$('#locationRadio').show();
-    
+	  $('#locationRadio').show();
 
-	   let locID   = {{$interid}};
-        let locCode = "{{$intercode}}";
-		let prefix ='IPE';
-		let newPrefix = prefix + locCode; 
-		 $('#prefixBox').text(newPrefix);
-        $('input[name="prefix"]').val(newPrefix);
+	  let locID   = @json($interid);
+      let locCode = @json($intercode);
+	  let prefix ='IPE';
+	  let newPrefix = prefix + locCode; 
+	  $('#prefixBox').text(newPrefix);
+      $('input[name="prefix"]').val(newPrefix);
+      if (locID) {
         $('input[name="is_intercompany"]').val(1);
-		// Check only the default location radio
-    $('.locin-radio[data-id="' + locID + '"]').iCheck('check');
-    
-    // Disable all location radios so user cannot change
-   
-
-		$('#selected_locfrom_id').val(locID);
-        
-		
+	    $('.locin-radio[data-id="' + locID + '"]').iCheck('check');
+	    $('#selected_locfrom_id').val(locID);
+      }
 	});
 
 	$(document).on('ifChecked', '.loccom-radio', function (e) {
-
-        $('.locinter-radio').iCheck('uncheck');
-
-         $('.locfrom-radio').iCheck('enable');
-         $('#locationRadioGroup').show();
-		$('#locationRadio').hide();
-        $('.locfrom-radio').iCheck('uncheck');
-		 $('#prefixBox').text('PE');
-        $('input[name="prefix"]').val('PE');
-       $('#selected_locfrom_id').val('');
-	   $('input[name="is_intercompany"]').val('');
+      $('.locinter-radio').iCheck('uncheck');
+      $('.locfrom-radio').iCheck('enable');
+      $('#locationRadioGroup').show();
+	  $('#locationRadio').hide();
+      $('.locfrom-radio').iCheck('uncheck');
+	  $('#prefixBox').text('PE');
+      $('input[name="prefix"]').val('PE');
+      $('#selected_locfrom_id').val('');
+	  $('input[name="is_intercompany"]').val('');
     });
-    
 
+    $(document).on('ifChecked', '.locfrom-radio', function (e) {
+      var val = $(this).val();
+	  $('.locinter-radio').iCheck('uncheck');
+	  $('.loccom-radio').iCheck('check');
+      $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
+	    let prefix = $('input[name="prefix"]').val();
+        let newPrefix = prefix + locCode;
+        $('#prefixBox').text(newPrefix);
+        $('input[name="prefix"]').val(newPrefix);
+        $('.locfrom-radio').prop('disabled', true);
+        $('#selected_locfrom_id').val(val);
+        $('#locfrom-hint').text('Default location selected and locked.');
+      });
 
-        $(document).on('ifChecked', '.locfrom-radio', function (e) {
-                    var val = $(this).val();
-					$('.locinter-radio').iCheck('uncheck');
-		  $('.loccom-radio').iCheck('check');
-           $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
-             
-			  let prefix =$('input[name="prefix"]').val();   // Example: MR
-             let newPrefix = prefix + locCode;               // MRWH1
-
-               // show new prefix on screen
-                $('#prefixBox').text(newPrefix);
-                $('input[name="prefix"]').val(newPrefix);
-              $('.locfrom-radio').prop('disabled', true);
-
-                // store the value in the hidden field
-              $('#selected_locfrom_id').val(val);
-        // update message
-           $('#locfrom-hint').text('Default location selected and locked.');
-         });
-
-		 // enable all options first
-             $('#location_id option').show();
-
-    // reset dropdown if same was selected before
-    if ($('#location_id').val() == val) {
-        $('#location_id').val(''); 
+	  $('#location_id option').show();
+      if ($('#location_id').val() == val) {
+        $('#location_id').val('');
+      }
+      $('#location_id option[value="' + val + '"]').hide();
+      $('#location_id').trigger('change.select2');
+    });
+    @else
+    $('.locinter-radio').iCheck('check');
+    let locID = @json($interid);
+    let locCode = @json($intercode);
+    let newPrefix = 'IPE' + locCode;
+    $('#prefixBox').text(newPrefix);
+    $('input[name="prefix"]').val(newPrefix);
+    if (locID) {
+      $('input[name="is_intercompany"]').val(1);
+      $('#selected_locfrom_id').val(locID);
+      $('.locin-radio[data-id="' + locID + '"]').iCheck('check');
     }
-
-    // hide the selected "Location From" from the "Location To"
-    $('#location_id option[value="' + val + '"]').hide();
-
-    // If using Select2, you must refresh it
-    $('#location_id').trigger('change.select2');
-        });
+    @endif
     $('#frmPurchaseEnquiry').bootstrapValidator({
         fields: {
 			//voucher_no: { validators: { notEmpty: { message: 'The voucher no is required and cannot be empty!' } }},

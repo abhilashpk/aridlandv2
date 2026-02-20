@@ -158,7 +158,11 @@ $("#select23").select2({
 });
 
 function funDelete(id,no) {
-	if(no=='0') {
+	var transferStatus = parseInt(no, 10);
+	if (isNaN(transferStatus)) {
+		transferStatus = 0;
+	}
+	if(transferStatus===0) {
 		var con = confirm('Are you sure delete this work order?');
 		if(con==true) {
 			var url = "{{ url('sales_order/delete/') }}";
@@ -186,9 +190,9 @@ $(function() {
 			{ "data": "voucher_date" },
 			{ "data": "net_total" },
 			<?php if($settings->doc_approve==1) { ?>{ "data": "status" },<?php } else { ?>{ "data": "reference_no" }, <?php } ?>
-			@permission('so-edit'){ "data": "edit","bSortable": false },@endpermission
-			@permission('so-print'){ "data": "print","bSortable": false },@endpermission
-			@permission('so-delete'){ "data": "delete","bSortable": false },@endpermission
+			@can('so-edit'){ "data": "edit","bSortable": false },@endcan
+			@can('so-print'){ "data": "print","bSortable": false },@endcan
+			@can('so-delete'){ "data": "delete","bSortable": false },@endcan
 		]	
 		  
 		});
