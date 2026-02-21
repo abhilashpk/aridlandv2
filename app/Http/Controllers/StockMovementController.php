@@ -8,7 +8,9 @@ use App\Http\Requests;
 use Notification;
 use Input;
 use Session;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
+
 use App;
 use DB;
 
@@ -24,18 +26,18 @@ class StockMovementController extends Controller
 	}
 	
 	
-	public function index() 
+	public function index(Request $request) 
 	{
 		$data = array();
-		$category = DB::table('category')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
-		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		$category = DB::table('category')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subcategory = DB::table('category')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
+		$group = DB::table('groupcat')->where('parent_id',0)->where('status',1)->whereNull('deleted_at')->get();
+		$subgroup = DB::table('groupcat')->where('parent_id',1)->where('status',1)->whereNull('deleted_at')->get();
 		
 		return view('body.stockmovement.index')
-					->withType(Input::get('search_type'))
-					->withFromdate(Input::get('date_from'))
-					->withTodate(Input::get('date_to'))
+					->withType($request->get('search_type'))
+					->withFromdate($request->get('date_from'))
+					->withTodate($request->get('date_to'))
 					->withCategory($category)
 					->withSubcategory($subcategory)
 					->withGroup($group)
@@ -53,24 +55,24 @@ class StockMovementController extends Controller
 			return $childs;
 	}
 	
-	public function getSearch()
+	public function getSearch(Request $request)
 	{
 		$data = array();
 		
-		if(Input::get('search_type')=='Movement_Summary') {
+		if($request->get('search_type')=='Movement_Summary') {
 			$voucher_head = 'Stock Movement Report';
-		$res=	$this->itemmaster->getStockMovementSummaryReport(Input::all());
-			$results = $this->doSummary( $this->itemmaster->getStockMovementSummaryReport(Input::all()) ); 
+		$res=	$this->itemmaster->getStockMovementSummaryReport($request->all());
+			$results = $this->doSummary( $this->itemmaster->getStockMovementSummaryReport($request->all()) ); 
 			$titles = ['main_head' => 'Stock Movement Report','subhead' => 'Stock Movement Report'];
 			
-		} else if(Input::get('search_type')=='Movement') {
+		} else if($request->get('search_type')=='Movement') {
 			$voucher_head = 'Stock Movement Report';
-			$results = $this->itemmaster->getStockMovementReport(Input::all()); 
+			$results = $this->itemmaster->getStockMovementReport($request->all()); 
 			$titles = ['main_head' => 'Stock Movement Report','subhead' => 'Stock Movement Report'];
 			
-		} else if(Input::get('search_type')=='nonMovement') {
+		} else if($request->get('search_type')=='nonMovement') {
 			$voucher_head = 'Stock Movement Report';
-			$results = $this->itemmaster->getStocknonMovementReport(Input::all()); 
+			$results = $this->itemmaster->getStocknonMovementReport($request->all()); 
 			$titles = ['main_head' => 'Stock Non Movement Report','subhead' => 'Stock Non Movement Report'];
 		}
 		
@@ -78,90 +80,185 @@ class StockMovementController extends Controller
 		
 		return view('body.stockmovement.print')
 					->withResults($results)
-					->withType(Input::get('search_type'))
+					->withType($request->get('search_type'))
 					->withVoucherhead($voucher_head)
 					->withTitles($titles)
 					->withUrl('stock_ledger')
-					->withFromdate(Input::get('date_from'))
-					->withTodate(Input::get('date_to'))
-					->withDocid(Input::get('document_id'))
+					->withFromdate($request->get('date_from'))
+					->withTodate($request->get('date_to'))
+					->withDocid($request->get('document_id'))
 					->withData($data);
 	}
-	public function dataExport()
-	{
-		$data = array();
-		$datareport[] = [strtoupper(Session::get('company')),'','',''];
-		$datareport[] = ['','','','','','',''];
-		$voucher_head = 'Stock Movement  Report';
-		Input::merge(['type' => 'export']);
-	//	$reports = $this->purchase_invoice->getReportExcel(Input::all());
-		
-	if(Input::get('search_type')=='Movement_Summary') 
-		{
-			$voucher_head = 'Stock Movement Summary Report';
-			$reports = $this->doSummary( $this->itemmaster->getStockMovementSummaryReport(Input::all()) ); 
-			//echo '<pre>';print_r($results);exit;
-				$datareport[] = ['','','','',strtoupper($voucher_head), '','',''];
-		     $datareport[] = ['','','','','','',''];
-		
-			$datareport[] = [ 'Item Code','Description','Quantity In','Quantity Out','Quantity Balance','Cost Avg.','Net Total'];
-			$i=0;
-			foreach ($reports as $row) {
-					$i++;
-					$datareport[] = [ 
-									 //'item code' => $row['item_code'],
-									 'item code' =>$row->item_code,
-									 'descripton' =>$row->description,
-									
-									
-									  'qty in' => $row->qty_in,  
 
-									  'qty out' => $row->qty_out,  
-									  'qty bal' => $row->qty_bal,  
-									  'cost' =>$row->cost_avg,   
-									  'total' =>$row->net_value,  
-									];
-			}
-		}
-		elseif(Input::get('search_type')=="detail") {
+	// public function dataExport(Request $request)
+	// {
+	// 	$data = array();
+	// 	$datareport[] = [strtoupper(Session::get('company')),'','',''];
+	// 	$datareport[] = ['','','','','','',''];
+	// 	$voucher_head = 'Stock Movement  Report';
+	// 	$request->merge(['type' => 'export']);
+	// //	$reports = $this->purchase_invoice->getReportExcel(Input::all());
 		
-			$reports = $this->purchase_invoice->getReportExcel(Input::all());
-				$datareport[] = ['','','','',strtoupper($voucher_head), '','',''];
-		     $datareport[] = ['','','','','','',''];
+	// if($request->get('search_type')=='Movement_Summary') 
+	// 	{
+	// 		$voucher_head = 'Stock Movement Summary Report';
+	// 		$reports = $this->doSummary( $this->itemmaster->getStockMovementSummaryReport($request->all()) ); 
+	// 		//echo '<pre>';print_r($results);exit;
+	// 			$datareport[] = ['','','','',strtoupper($voucher_head), '','',''];
+	// 	     $datareport[] = ['','','','','','',''];
 		
-			$datareport[] = ['SI.No.','PI#','Vchr.Date','PI.Ref#', 'Supplier','Gross Amt.','VAT Amt.','Net Total'];
-			$i=0;
-			foreach ($reports as $row) {
-					$i++;
-					$datareport[] = [ 'si' => $i,
-									  'po' => $row['voucher_no'],
-									  'vdate' => date('d-m-Y',strtotime($row['voucher_date'])),
-									  'ref' => $row['reference_no'],
-									  'supplier' => $row['master_name'],
+	// 		$datareport[] = [ 'Item Code','Description','Quantity In','Quantity Out','Quantity Balance','Cost Avg.','Net Total'];
+	// 		$i=0;
+	// 		foreach ($reports as $row) {
+	// 				$i++;
+	// 				$datareport[] = [ 
+	// 								 //'item code' => $row['item_code'],
+	// 								 'item code' =>$row->item_code,
+	// 								 'descripton' =>$row->description,
+									
+									
+	// 								  'qty in' => $row->qty_in,  
+
+	// 								  'qty out' => $row->qty_out,  
+	// 								  'qty bal' => $row->qty_bal,  
+	// 								  'cost' =>$row->cost_avg,   
+	// 								  'total' =>$row->net_value,  
+	// 								];
+	// 		}
+	// 	}
+	// 	elseif($request->get('search_type')=="detail") {
+		
+	// 		$reports = $this->purchase_invoice->getReportExcel($request->all());
+	// 			$datareport[] = ['','','','',strtoupper($voucher_head), '','',''];
+	// 	     $datareport[] = ['','','','','','',''];
+		
+	// 		$datareport[] = ['SI.No.','PI#','Vchr.Date','PI.Ref#', 'Supplier','Gross Amt.','VAT Amt.','Net Total'];
+	// 		$i=0;
+	// 		foreach ($reports as $row) {
+	// 				$i++;
+	// 				$datareport[] = [ 'si' => $i,
+	// 								  'po' => $row['voucher_no'],
+	// 								  'vdate' => date('d-m-Y',strtotime($row['voucher_date'])),
+	// 								  'ref' => $row['reference_no'],
+	// 								  'supplier' => $row['master_name'],
 									 
-									  'gross' => $row['unit_price'],
-									 'vat' => $row['vat_amount'],
-									  'total' => $row['total_price']
-									];
+	// 								  'gross' => $row['unit_price'],
+	// 								 'vat' => $row['vat_amount'],
+	// 								  'total' => $row['total_price']
+	// 								];
+	// 		}
+	// 		//$reports = $this->makeTree($reports);
+	// 	}
+		
+	// 	 //echo $voucher_head.'<pre>';print_r($datareport);exit;
+	// 	// Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+
+    //     // // Set the spreadsheet title, creator, and description
+    //     // $excel->setTitle($voucher_head);
+    //     // $excel->setCreator('NumakPro ERP')->setCompany(Session::get('company'));
+    //     // $excel->setDescription($voucher_head);
+
+    //     // // Build the spreadsheet, passing in the payments array
+	// 	// $excel->sheet('sheet1', function($sheet) use ($datareport) {
+	// 	// 	$sheet->fromArray($datareport, null, 'A1', false, false);
+	// 	// });
+
+	// 	// })->download('xlsx');
+
+	// 	$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+	// 	return Excel::download(
+	// 		new SimpleArrayExport(
+	// 			$datareport,
+	// 			$voucher_head,
+	// 			Session::get('company')
+	// 		),
+	// 		$filename
+	// 	);
+		
+	// }
+
+
+	public function dataExport(Request $request)
+	{
+		$datareport = [];
+
+		$company = Session::get('company');
+		$voucher_head = 'Stock Movement Report';
+
+		$datareport[] = [strtoupper($company), '', '', '', '', '', ''];
+		$datareport[] = ['', '', '', '', '', '', ''];
+
+		$request->merge(['type' => 'export']);
+
+		if ($request->get('search_type') == 'Movement_Summary') {
+
+			$voucher_head = 'Stock Movement Summary Report';
+
+			$reports = $this->doSummary(
+				$this->itemmaster->getStockMovementSummaryReport($request->all())
+			);
+
+			$datareport[] = ['', '', '', strtoupper($voucher_head), '', '', ''];
+			$datareport[] = ['', '', '', '', '', '', ''];
+
+			$datareport[] = [
+				'Item Code',
+				'Description',
+				'Quantity In',
+				'Quantity Out',
+				'Quantity Balance',
+				'Cost Avg.',
+				'Net Total'
+			];
+
+			// 🔹 Initialize Totals
+			$total_qty_in  = 0;
+			$total_qty_out = 0;
+			$total_qty_bal = 0;
+			$total_net     = 0;
+
+			foreach ($reports as $row) {
+
+				$datareport[] = [
+					$row->item_code,
+					$row->description,
+					$row->qty_in,
+					$row->qty_out,
+					$row->qty_bal,
+					$row->cost_avg,
+					$row->net_value,
+				];
+
+				// 🔹 Accumulate totals
+				$total_qty_in  += $row->qty_in;
+				$total_qty_out += $row->qty_out;
+				$total_qty_bal += $row->qty_bal;
+				$total_net     += $row->net_value;
 			}
-			//$reports = $this->makeTree($reports);
+
+			// 🔥 ADD TOTAL ROW (THIS WAS MISSING)
+			$datareport[] = [
+				'Total:',
+				'',
+				$total_qty_in,
+				$total_qty_out,
+				$total_qty_bal,
+				'',
+				$total_net
+			];
 		}
-		
-		 //echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('NumakPro ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
+		$filename = $voucher_head . ' on ' . date('d-m-Y') . '.xlsx';
 
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
-
-		})->download('xlsx');
-		
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				$company
+			),
+			$filename
+		);
 	}
 	
 	public function dataExportold()

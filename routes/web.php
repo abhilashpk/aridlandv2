@@ -2938,7 +2938,7 @@ Route::get('balancesheet2/search', [BalanceSheetController2::class, 'report'])->
 
 Route::get('/profit_loss2', [ProfitLossController2::class, 'index']);
 Route::get('/profit_loss2/search', [ProfitLossController2::class, 'profitLoss']);
-		
+Route::post('/profit_loss2/export', [ProfitLossController2::class, 'exportSearchReport']);		
 	});
 	
 Route::get('/manage', [ManageController::class, 'index']);

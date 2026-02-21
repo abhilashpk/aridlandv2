@@ -40,33 +40,66 @@ class BatchReportController extends Controller
 	}
 	
 	
-	public function getSearch() //getPrint
-	{ 
-	//echo '<pre>';print_r(Input::all());exit;
-		$data = array();
-		if(Input::get('search_type')=='batch_expiry') {
-			$voucher_head = 'Item Batch Expiry';
-			$results = $this->itemmaster->getBatchReport(Input::all()); 
-			//echo '<pre>';print_r($result);exit;
-			$titles = ['main_head' => 'Item Batch Expiry Report','subhead' => 'Item Batch Expiry Report'];
+	// public function getSearch() //getPrint
+	// { 
+	// //echo '<pre>';print_r(Input::all());exit;
+	// 	$data = array();
+	// 	if(Input::get('search_type')=='batch_expiry') {
+	// 		$voucher_head = 'Item Batch Expiry';
+	// 		$results = $this->itemmaster->getBatchReport(Input::all()); 
+	// 		//echo '<pre>';print_r($result);exit;
+	// 		$titles = ['main_head' => 'Item Batch Expiry Report','subhead' => 'Item Batch Expiry Report'];
 			
-		} 
+	// 	} 
 		
-	//	echo '<pre>';print_r($results);exit;
-		return view('body.batchreport.print')
-					->withResults($results)
-					->withVoucherhead($voucher_head)
-					->withTitles($titles)
-					->withType(Input::get('search_type'))
-					->withFromdate(Input::get('date_from'))
-					->withTodate(Input::get('date_to'))
-					->withCatid(Input::get('category_id'))
-					->withSubcatid(Input::get('subcategory_id'))
-					->withSettings($this->acsettings)
-					->withSearchval(json_encode(Input::all()))
-					->withData($data);
-	}		
+	// //	echo '<pre>';print_r($results);exit;
+	// 	return view('body.batchreport.print')
+	// 				->withResults($results)
+	// 				->withVoucherhead($voucher_head)
+	// 				->withTitles($titles)
+	// 				->withType(Input::get('search_type'))
+	// 				->withFromdate(Input::get('date_from'))
+	// 				->withTodate(Input::get('date_to'))
+	// 				->withCatid(Input::get('category_id'))
+	// 				->withSubcatid(Input::get('subcategory_id'))
+	// 				->withSettings($this->acsettings)
+	// 				->withSearchval(json_encode(Input::all()))
+	// 				->withData($data);
+	// }
 	
+	
+	public function getSearch(Request $request)
+	{
+		$data = [];
+		$results = [];
+		$voucher_head = '';
+		$titles = [];
+
+		if ($request->get('search_type') === 'batch_expiry') {
+
+			$voucher_head = 'Item Batch Expiry';
+
+			$results = $this->itemmaster->getBatchReport($request->all());
+
+			$titles = [
+				'main_head' => 'Item Batch Expiry Report',
+				'subhead'   => 'Item Batch Expiry Report'
+			];
+		}
+
+		return view('body.batchreport.print')
+			->withResults($results)
+			->withVoucherhead($voucher_head)
+			->withTitles($titles)
+			->withType($request->get('search_type'))
+			->withFromdate($request->get('date_from'))
+			->withTodate($request->get('date_to'))
+			->withCatid($request->get('category_id'))
+			->withSubcatid($request->get('subcategory_id'))
+			->withSettings($this->acsettings)
+			->withSearchval(json_encode($request->all()))
+			->withData($data);
+	}	
 	
 	public function dataExport()
 	{

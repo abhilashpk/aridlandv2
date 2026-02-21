@@ -11,7 +11,8 @@ use Input;
 use Session;
 use App;
 use DB;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 use Auth;
 
 class ProfitLossController2 extends Controller
@@ -65,28 +66,18 @@ class ProfitLossController2 extends Controller
 	}
 
 
-	public function profitLoss(Request $request)
+	private function buildProfitLossData($startDate, $endDate)
 	{
-		$startDate = ($request->input('date_from')!='')?date('Y-m-d', strtotime($request->input('date_from'))):''; 
-		$endDate = ($request->input('date_to')!='')?date('Y-m-d', strtotime($request->input('date_to'))):'';
-		$reportType = $request->input('search_type');
-		
-	if (!$startDate || !$endDate) {
-			$startDate   = $this->acsettings->from_date;
-            $endDate     = $this->acsettings->to_date;
-		}
-//echo $startDate;exit;
 		$reportData = [
 			'expense' => [],
 			'income' => [],
 		];
 
 		$categories = DB::table('account_category')
-			//->where('actype', 2)
 			->where('status', 1)
 			->whereNull('deleted_at')
 			->get();
-//echo '<pre>';print_r($categories);exit;
+
 		foreach ($categories as $category) {
 			$side = null;
 
@@ -98,14 +89,12 @@ class ProfitLossController2 extends Controller
 				continue;
 			}
 
-			 $parentName = $this->getParentName($category->id);
+			$parentName = $this->getParentName($category->id);
 
-			// Group data under this parent name
 			if (!isset($reportData[$side][$parentName])) {
 				$reportData[$side][$parentName] = [];
 			}
 
-			// Get groups under this category
 			$groups = DB::table('account_group')
 				->where('category_id', $category->id)
 				->whereNull('deleted_at')
@@ -116,14 +105,12 @@ class ProfitLossController2 extends Controller
 					$reportData[$side][$parentName][$group->name] = [];
 				}
 
-				// Get accounts under this group
 				$accounts = DB::table('account_master')
 					->where('account_group_id', $group->id)
 					->whereNull('deleted_at')
 					->get();
 
 				foreach ($accounts as $account) {
-					// Sum transaction amount
 					$transactions = DB::table('account_transaction')
 						->where('account_master_id', $account->id)
 						->whereBetween('invoice_date', [$startDate, $endDate])
@@ -148,15 +135,125 @@ class ProfitLossController2 extends Controller
 				}
 			}
 		}
-			$voucherhead = ($reportType=='summary')?'Profit & Loss Summary':'Profit & Loss Detail';
 
-			// For export
-            if ($request->has('export')) { 
-                return $this->exportSearchReport($reportData, $startDate, $endDate, $reportType, $voucherhead);
-            }
+		return $reportData;
+	}
+
+
+// 	public function profitLoss(Request $request)
+// 	{
+// 		$startDate = ($request->input('date_from')!='')?date('Y-m-d', strtotime($request->input('date_from'))):''; 
+// 		$endDate = ($request->input('date_to')!='')?date('Y-m-d', strtotime($request->input('date_to'))):'';
+// 		$reportType = $request->input('search_type');
+		
+// 	if (!$startDate || !$endDate) {
+// 			$startDate   = $this->acsettings->from_date;
+//             $endDate     = $this->acsettings->to_date;
+// 		}
+// //echo $startDate;exit;
+// 		$reportData = [
+// 			'expense' => [],
+// 			'income' => [],
+// 		];
+
+// 		$categories = DB::table('account_category')
+// 			//->where('actype', 2)
+// 			->where('status', 1)
+// 			->whereNull('deleted_at')
+// 			->get();
+// //echo '<pre>';print_r($categories);exit;
+// 		foreach ($categories as $category) {
+// 			$side = null;
+
+// 			if (in_array($category->parent_id, [6, 7])) {
+// 				$side = 'expense';
+// 			} elseif (in_array($category->parent_id, [4, 5])) {
+// 				$side = 'income';
+// 			} else {
+// 				continue;
+// 			}
+
+// 			 $parentName = $this->getParentName($category->id);
+
+// 			// Group data under this parent name
+// 			if (!isset($reportData[$side][$parentName])) {
+// 				$reportData[$side][$parentName] = [];
+// 			}
+
+// 			// Get groups under this category
+// 			$groups = DB::table('account_group')
+// 				->where('category_id', $category->id)
+// 				->whereNull('deleted_at')
+// 				->get();
+
+// 			foreach ($groups as $group) {
+// 				if (!isset($reportData[$side][$parentName][$group->name])) {
+// 					$reportData[$side][$parentName][$group->name] = [];
+// 				}
+
+// 				// Get accounts under this group
+// 				$accounts = DB::table('account_master')
+// 					->where('account_group_id', $group->id)
+// 					->whereNull('deleted_at')
+// 					->get();
+
+// 				foreach ($accounts as $account) {
+// 					// Sum transaction amount
+// 					$transactions = DB::table('account_transaction')
+// 						->where('account_master_id', $account->id)
+// 						->whereBetween('invoice_date', [$startDate, $endDate])
+// 						->whereNull('deleted_at')
+// 						->select('transaction_type', DB::raw('SUM(amount) as total'))
+// 						->groupBy('transaction_type')
+// 						->get();
+
+// 					$amount = 0;
+
+// 					foreach ($transactions as $txn) {
+// 						if ($side === 'income') {
+// 							$amount += ($txn->transaction_type === 'Cr' ? $txn->total : -$txn->total);
+// 						} else {
+// 							$amount += ($txn->transaction_type === 'Dr' ? $txn->total : -$txn->total);
+// 						}
+// 					}
+
+// 					if ($amount != 0) {
+// 						$reportData[$side][$parentName][$group->name][$account->master_name] = $amount;
+// 					}
+// 				}
+// 			}
+// 		}
+// 			$voucherhead = ($reportType=='summary')?'Profit & Loss Summary':'Profit & Loss Detail';
+
+// 			// For export
+//             if ($request->has('export')) { 
+//                 return $this->exportSearchReport($reportData, $startDate, $endDate, $reportType, $voucherhead);
+//             }
 
 		
-		return view('body.profitloss2.'.$reportType, compact('reportData', 'startDate', 'endDate', 'reportType','voucherhead'));
+// 		return view('body.profitloss2.'.$reportType, compact('reportData', 'startDate', 'endDate', 'reportType','voucherhead'));
+// 	}
+
+
+	public function profitLoss(Request $request)
+	{
+		$startDate = ($request->input('date_from') != '') ? date('Y-m-d', strtotime($request->input('date_from'))) : '';
+		$endDate   = ($request->input('date_to') != '')   ? date('Y-m-d', strtotime($request->input('date_to')))   : '';
+		$reportType = $request->input('search_type');
+
+		if (!$startDate || !$endDate) {
+			$startDate = $this->acsettings->from_date;
+			$endDate   = $this->acsettings->to_date;
+		}
+
+		$reportData  = $this->buildProfitLossData($startDate, $endDate);
+		$voucherhead = ($reportType == 'summary') ? 'Profit & Loss Summary' : 'Profit & Loss Detail';
+
+		if ($request->has('export')) {
+			return $this->exportSearchReport($request);
+		}
+
+		return view('body.profitloss2.' . $reportType, compact('reportData', 'startDate', 'endDate', 'reportType', 'voucherhead'));
 	}
 
 	private function getParentName($parentId)
@@ -165,129 +262,250 @@ class ProfitLossController2 extends Controller
 		return $parent ? $parent->name : 'Unknown';
 	}
 
+	// public function exportSearchReport(Request $request)
+	// // public function exportSearchReport($reportData, $startDate, $endDate, $reportType, $voucherhead)
+	// {
 
-	public function exportSearchReport($reportData, $startDate, $endDate, $reportType, $voucherhead)
+	// 	$startDate   = $request->startDate;
+	// 	$endDate     = $request->endDate;
+	// 	$reportType  = $request->reportType;
+	// 	$voucherhead = $request->voucherhead;
+	// 	$reportData = $request->reportData;
+
+	// 	Excel::create('Profit_Loss_Report_' . date('Ymd_His'), function ($excel) use ($reportData, $startDate, $endDate, $reportType, $voucherhead) {
+	// 		$excel->sheet('Profit & Loss', function ($sheet) use ($reportData, $startDate, $endDate, $reportType, $voucherhead) {
+	// 			$row = 1;
+
+	// 			// Report Header
+	// 			$sheet->row($row++, ['Profit & Loss Report']);
+	// 			$sheet->row($row++, ['From: ' . date('d-m-Y', strtotime($startDate)), '', 'To: ' . date('d-m-Y', strtotime($endDate))]);
+	// 			$sheet->row($row++, [$voucherhead]);
+
+	// 			$row++;
+
+	// 			// Table Headers
+	// 			$sheet->row($row++, ['Expenses', 'Amount', 'Income', 'Amount']);
+
+	// 			if ($reportType === 'summary') {
+	// 				// Summary Mode
+	// 				$buildSummaryRows = function ($data) {
+	// 					$rows = [];
+	// 					$total = 0;
+
+	// 					foreach ($data as $parent => $groups) {
+	// 						foreach ($groups as $group => $accounts) {
+	// 							$groupTotal = 0;
+
+	// 							foreach ($accounts as $acc => $amt) {
+	// 								if (floatval($amt) != 0) {
+	// 									$groupTotal += $amt;
+	// 								}
+	// 							}
+
+	// 							if ($groupTotal != 0) {
+	// 								$rows[] = ['label' => $group, 'amount' => number_format($groupTotal, 2)];
+	// 								$total += $groupTotal;
+	// 							}
+	// 						}
+	// 					}
+
+	// 					return ['rows' => $rows, 'total' => $total];
+	// 				};
+
+	// 				$exp = $buildSummaryRows($reportData['expense']);
+	// 				$inc = $buildSummaryRows($reportData['income']);
+
+	// 				$max = max(count($exp['rows']), count($inc['rows']));
+
+	// 				for ($i = 0; $i < $max; $i++) {
+	// 					$e = isset($exp['rows'][$i]) ? $exp['rows'][$i] : ['label' => '', 'amount' => ''];
+	// 					$in = isset($inc['rows'][$i]) ? $inc['rows'][$i] : ['label' => '', 'amount' => ''];
+	// 					$sheet->row($row++, [$e['label'], $e['amount'], $in['label'], $in['amount']]);
+	// 				}
+
+	// 				// Totals
+	// 				$sheet->row($row++, ['Total Expense', number_format($exp['total'], 2), 'Total Income', number_format($inc['total'], 2)]);
+
+	// 				$net = $inc['total'] - $exp['total'];
+	// 				$sheet->row($row++, ['Net ' . ($net >= 0 ? 'Profit' : 'Loss'), '', '', number_format(abs($net), 2)]);
+
+	// 			} else {
+	// 				// Detail Mode
+	// 				$buildDetailRows = function ($data) {
+	// 					$rows = [];
+	// 					$total = 0;
+
+	// 					foreach ($data as $parent => $groups) {
+	// 						$rows[] = ['label' => $parent, 'amount' => '', 'type' => 'header'];
+
+	// 						foreach ($groups as $group => $accounts) {
+	// 							$groupTotal = 0;
+	// 							$accountRows = [];
+
+	// 							foreach ($accounts as $account => $amount) {
+	// 								if (floatval($amount) != 0) {
+	// 									$accountRows[] = [
+	// 										'label' => '    ' . $account,
+	// 										'amount' => number_format($amount, 2),
+	// 										'type' => 'account'
+	// 									];
+	// 									$groupTotal += $amount;
+	// 								}
+	// 							}
+
+	// 							if ($groupTotal != 0) {
+	// 								$rows[] = [
+	// 									'label' => '  ' . $group,
+	// 									'amount' => number_format($groupTotal, 2),
+	// 									'type' => 'group'
+	// 								];
+	// 								foreach ($accountRows as $accRow) {
+	// 									$rows[] = $accRow;
+	// 								}
+
+	// 								$total += $groupTotal;
+	// 							}
+	// 						}
+	// 					}
+
+	// 					return ['rows' => $rows, 'total' => $total];
+	// 				};
+
+	// 				$exp = $buildDetailRows($reportData['expense']);
+	// 				$inc = $buildDetailRows($reportData['income']);
+
+	// 				$max = max(count($exp['rows']), count($inc['rows']));
+
+	// 				for ($i = 0; $i < $max; $i++) {
+	// 					$e = isset($exp['rows'][$i]) ? $exp['rows'][$i] : ['label' => '', 'amount' => ''];
+	// 					$in = isset($inc['rows'][$i]) ? $inc['rows'][$i] : ['label' => '', 'amount' => ''];
+	// 					$sheet->row($row++, [$e['label'], $e['amount'], $in['label'], $in['amount']]);
+	// 				}
+
+	// 				$sheet->row($row++, ['Total Expense', number_format($exp['total'], 2), 'Total Income', number_format($inc['total'], 2)]);
+
+	// 				$net = $inc['total'] - $exp['total'];
+	// 				$sheet->row($row++, ['Net ' . ($net >= 0 ? 'Profit' : 'Loss'), '', '', number_format(abs($net), 2)]);
+	// 			}
+
+	// 			// Optional: auto size columns
+	// 			$sheet->setAutoSize(true);
+	// 		});
+	// 	})->export('xlsx');
+	// }
+
+	
+
+	public function exportSearchReport(Request $request)
 	{
-		Excel::create('Profit_Loss_Report_' . date('Ymd_His'), function ($excel) use ($reportData, $startDate, $endDate, $reportType, $voucherhead) {
-			$excel->sheet('Profit & Loss', function ($sheet) use ($reportData, $startDate, $endDate, $reportType, $voucherhead) {
-				$row = 1;
+		$startDate  = ($request->input('date_from') != '') ? date('Y-m-d', strtotime($request->input('date_from'))) : '';
+		$endDate    = ($request->input('date_to') != '')   ? date('Y-m-d', strtotime($request->input('date_to')))   : '';
+		$reportType = $request->input('search_type');
 
-				// Report Header
-				$sheet->row($row++, ['Profit & Loss Report']);
-				$sheet->row($row++, ['From: ' . date('d-m-Y', strtotime($startDate)), '', 'To: ' . date('d-m-Y', strtotime($endDate))]);
-				$sheet->row($row++, [$voucherhead]);
+		if (!$startDate || !$endDate) {
+			$startDate = $this->acsettings->from_date;
+			$endDate   = $this->acsettings->to_date;
+		}
 
-				$row++;
+		// Now uses the same logic as the view page
+		$reportData  = $this->buildProfitLossData($startDate, $endDate);
+		$voucherhead = ($reportType == 'summary') ? 'Profit & Loss Summary' : 'Profit & Loss Detail';
+		// Remove all the $request->input() lines at the top
+		// $reportData is now passed in directly — no need to rebuild it
 
-				// Table Headers
-				$sheet->row($row++, ['Expenses', 'Amount', 'Income', 'Amount']);
+		$rows = [];
+		$boldRows = [];
+		$rowIndex = 1;
 
-				if ($reportType === 'summary') {
-					// Summary Mode
-					$buildSummaryRows = function ($data) {
-						$rows = [];
-						$total = 0;
+		// ===== Report Header =====
+		$rows[] = ['Profit & Loss Report'];
+		$boldRows[] = $rowIndex++;
 
-						foreach ($data as $parent => $groups) {
-							foreach ($groups as $group => $accounts) {
-								$groupTotal = 0;
+		$rows[] = [
+			'From: ' . date('d-m-Y', strtotime($startDate)),
+			'',
+			'To: ' . date('d-m-Y', strtotime($endDate))
+		];
+		$rowIndex++;
 
-								foreach ($accounts as $acc => $amt) {
-									if (floatval($amt) != 0) {
-										$groupTotal += $amt;
-									}
-								}
+		$rows[] = [$voucherhead];
+		$boldRows[] = $rowIndex++;
 
-								if ($groupTotal != 0) {
-									$rows[] = ['label' => $group, 'amount' => number_format($groupTotal, 2)];
-									$total += $groupTotal;
-								}
-							}
+		$rows[] = [];
+		$rowIndex++;
+
+		// ===== Table Header =====
+		$rows[] = ['Expenses', 'Amount', 'Income', 'Amount'];
+		$boldRows[] = $rowIndex++;
+
+		// ===== Build Summary/Detail Rows =====
+		$buildSummaryRows = function ($data) use ($reportType) {
+			$rows = [];
+			$total = 0;
+
+			foreach ($data as $parent => $groups) {
+				foreach ($groups as $group => $accounts) {
+					$groupTotal = 0;
+
+					foreach ($accounts as $acc => $amt) {
+						if (floatval($amt) != 0) {
+							$groupTotal += $amt;
 						}
-
-						return ['rows' => $rows, 'total' => $total];
-					};
-
-					$exp = $buildSummaryRows($reportData['expense']);
-					$inc = $buildSummaryRows($reportData['income']);
-
-					$max = max(count($exp['rows']), count($inc['rows']));
-
-					for ($i = 0; $i < $max; $i++) {
-						$e = isset($exp['rows'][$i]) ? $exp['rows'][$i] : ['label' => '', 'amount' => ''];
-						$in = isset($inc['rows'][$i]) ? $inc['rows'][$i] : ['label' => '', 'amount' => ''];
-						$sheet->row($row++, [$e['label'], $e['amount'], $in['label'], $in['amount']]);
 					}
 
-					// Totals
-					$sheet->row($row++, ['Total Expense', number_format($exp['total'], 2), 'Total Income', number_format($inc['total'], 2)]);
-
-					$net = $inc['total'] - $exp['total'];
-					$sheet->row($row++, ['Net ' . ($net >= 0 ? 'Profit' : 'Loss'), '', '', number_format(abs($net), 2)]);
-
-				} else {
-					// Detail Mode
-					$buildDetailRows = function ($data) {
-						$rows = [];
-						$total = 0;
-
-						foreach ($data as $parent => $groups) {
-							$rows[] = ['label' => $parent, 'amount' => '', 'type' => 'header'];
-
-							foreach ($groups as $group => $accounts) {
-								$groupTotal = 0;
-								$accountRows = [];
-
-								foreach ($accounts as $account => $amount) {
-									if (floatval($amount) != 0) {
-										$accountRows[] = [
-											'label' => '    ' . $account,
-											'amount' => number_format($amount, 2),
-											'type' => 'account'
-										];
-										$groupTotal += $amount;
-									}
-								}
-
-								if ($groupTotal != 0) {
-									$rows[] = [
-										'label' => '  ' . $group,
-										'amount' => number_format($groupTotal, 2),
-										'type' => 'group'
-									];
-									foreach ($accountRows as $accRow) {
-										$rows[] = $accRow;
-									}
-
-									$total += $groupTotal;
-								}
-							}
-						}
-
-						return ['rows' => $rows, 'total' => $total];
-					};
-
-					$exp = $buildDetailRows($reportData['expense']);
-					$inc = $buildDetailRows($reportData['income']);
-
-					$max = max(count($exp['rows']), count($inc['rows']));
-
-					for ($i = 0; $i < $max; $i++) {
-						$e = isset($exp['rows'][$i]) ? $exp['rows'][$i] : ['label' => '', 'amount' => ''];
-						$in = isset($inc['rows'][$i]) ? $inc['rows'][$i] : ['label' => '', 'amount' => ''];
-						$sheet->row($row++, [$e['label'], $e['amount'], $in['label'], $in['amount']]);
+					if ($groupTotal != 0) {
+						$rows[] = ['label' => $group, 'amount' => number_format($groupTotal, 2)];
+						$total += $groupTotal;
 					}
-
-					$sheet->row($row++, ['Total Expense', number_format($exp['total'], 2), 'Total Income', number_format($inc['total'], 2)]);
-
-					$net = $inc['total'] - $exp['total'];
-					$sheet->row($row++, ['Net ' . ($net >= 0 ? 'Profit' : 'Loss'), '', '', number_format(abs($net), 2)]);
 				}
+			}
 
-				// Optional: auto size columns
-				$sheet->setAutoSize(true);
-			});
-		})->export('xlsx');
+			return ['rows' => $rows, 'total' => $total];
+		};
+
+		$exp = $buildSummaryRows($reportData['expense'] ?? []);
+		$inc = $buildSummaryRows($reportData['income'] ?? []);
+
+		$max = max(count($exp['rows']), count($inc['rows']));
+
+		for ($i = 0; $i < $max; $i++) {
+			$e  = $exp['rows'][$i] ?? ['label' => '', 'amount' => ''];
+			$in = $inc['rows'][$i] ?? ['label' => '', 'amount' => ''];
+
+			$rows[] = [$e['label'], $e['amount'], $in['label'], $in['amount']];
+			$rowIndex++;
+		}
+
+		// ===== Totals =====
+		$rows[] = [
+			'Total Expense',
+			number_format($exp['total'], 2),
+			'Total Income',
+			number_format($inc['total'], 2)
+		];
+		$boldRows[] = $rowIndex++;
+
+		$net = $inc['total'] - $exp['total'];
+
+		$rows[] = [
+			'Net ' . ($net >= 0 ? 'Profit' : 'Loss'),
+			'',
+			'',
+			number_format(abs($net), 2)
+		];
+		$boldRows[] = $rowIndex++;
+
+		$filename = 'Profit_Loss_Report_' . date('Ymd_His') . '.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$rows,
+				'Profit & Loss Report',
+				session('company'),
+				$boldRows
+			),
+			$filename
+		);
 	}
 
 

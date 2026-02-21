@@ -210,13 +210,26 @@ thead
 {{-- page level scripts --}}
 
     <!-- begining of page level js -->
-<script type="text/javascript" src="{{asset('assets/js/custom_js/invoice.js')}}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{asset('assets/js/custom_js/invoice.js')}}"></script>
     <!-- end of page level js -->
  @yield('footer_scripts')   
 </body>    
-<script>
+{{-- <script>
 function getExport() {
 	document.frmExport.submit();
+}
+</script> --}}
+<script>
+function getExport() {
+    var form = document.getElementById('frmExport');
+
+    if (form) {
+        form.submit();
+    } else {
+        console.warn('Export form not found.');
+        alert('No data available to export.');
+    }
 }
 </script>
 </html>

@@ -10,7 +10,8 @@ use App\Http\Requests;
 use Notification;
 use Input;
 use Session;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 use App;
 
 class AccountsReportController extends Controller
@@ -113,20 +114,20 @@ class AccountsReportController extends Controller
 		return $childs;
 	}
 		
-	public function getSearch()
+	public function getSearch(Request $request)
 	{ 	
-		$arr = explode('-',Input::get('account'));
+		$arr = explode('-',$request->get('account'));
 		$id = $arr[0]; $type = $arr[1];
 		
 		$data = array();
 		
 		if($type=='CUSTOMER') {
 			$voucher_head = 'Customer Itemwise Report';
-			$reports = $this->makeTreeVchr( $this->sales_invoice->getCustomerIitems($id,Input::all()) );
+			$reports = $this->makeTreeVchr( $this->sales_invoice->getCustomerIitems($id,$request->all()) );
 			//echo '<pre>';print_r($reports);exit;
 		} else {
 			$voucher_head = 'Supplier Itemwise Report';
-			$reports = $this->makeTreeVchr( $this->purchase_invoice->getPurchaseIitems($id,Input::all()) );
+			$reports = $this->makeTreeVchr( $this->purchase_invoice->getPurchaseIitems($id,$request->all()) );
 			//echo '<pre>';print_r($reports);exit;
 		}
 		
@@ -135,26 +136,26 @@ class AccountsReportController extends Controller
 					->withVoucherhead($voucher_head)
 					->withType($type)
 					->withId($id)
-					->withFromdate(Input::get('date_from'))
-					->withTodate(Input::get('date_to'))
+					->withFromdate($request->get('date_from'))
+					->withTodate($request->get('date_to'))
 					->withData($data);
 	}
 	
-	public function dataExport()
+	public function dataExport(Request $request)
 	{
 		$data = array();
 		$datareport[] = [strtoupper(Session::get('company')),'','',''];
 		$datareport[] = ['','','','','','',''];
 		
-		$id = Input::get('id');
-		$type = Input::get('type');
+		$id = $request->get('id');
+		$type = $request->get('type');
 		
 		if($type=='CUSTOMER') {
 			$voucher_head = 'Customer Itemwise Report';
-			$reports = $this->makeTreeVchr( $this->sales_invoice->getCustomerIitems($id,Input::all()) );
+			$reports = $this->makeTreeVchr( $this->sales_invoice->getCustomerIitems($id,$request->all()) );
 		} else {
 			$voucher_head = 'Supplier Itemwise Report';
-			$reports = $this->makeTreeVchr( $this->purchase_invoice->getPurchaseIitems($id,Input::all()) );
+			$reports = $this->makeTreeVchr( $this->purchase_invoice->getPurchaseIitems($id,$request->all()) );
 			//echo '<pre>';print_r($reports);exit;
 		}
 		
@@ -190,20 +191,30 @@ class AccountsReportController extends Controller
 		$datareport[] = ['','Total:', $qty_total,'',number_format($gross_total,2),number_format($vat_total,2),number_format($net_total,2)];
 			
 		 //echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+		// Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
+        // // Set the spreadsheet title, creator, and description
+        // $excel->setTitle($voucher_head);
+        // $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
+        // $excel->setDescription($voucher_head);
 
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
+        // // Build the spreadsheet, passing in the payments array
+		// $excel->sheet('sheet1', function($sheet) use ($datareport) {
+		// 	$sheet->fromArray($datareport, null, 'A1', false, false);
+		// });
 
-		})->download('xlsx');
-		
+		// })->download('xlsx');
+
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);		
 	} 
 	
 }
