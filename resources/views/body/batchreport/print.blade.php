@@ -162,7 +162,7 @@ thead
                         </div>
 						
                     </div>
-                    <div class="btn-section">
+                    {{-- <div class="btn-section">
                         <div class="col-md-12 col-sm-12 col-xs-12">
                                 <span class="pull-right">
                                            
@@ -194,7 +194,7 @@ thead
                                 </button>
                                 </span>
                         </div>
-					<?php if(count($results) > 0) { ?>	
+					<?//php if(count($results) > 0) { ?>	
 					<form class="form-horizontal" role="form" method="POST" name="frmExport" id="frmExport" action="{{ url('batch_report/export') }}">
 					<input type="hidden" name="_token" value="{{ csrf_token() }}">
 					<input type="hidden" name="date_to" value="{{$todate}}" >
@@ -207,8 +207,49 @@ thead
 					<input type="hidden" name="subcategory_id" value="" >
 					<input type="hidden" name="location_id" value="" >-->
 					</form>
-					<?php } ?>
-                    </div>
+					<?//php } ?>
+                    </div> --}}
+
+					<div class="btn-section">
+						<div class="col-md-12 col-sm-12 col-xs-12">
+							<span class="pull-right">
+
+								<button type="button"
+										onclick="javascript:window.print();"
+										class="btn btn-primary">
+									Print
+								</button>
+
+								<?php if(count($results) > 0) { ?>
+
+									<form method="POST"
+										id="frmExport"
+										action="{{ url('batch_report/export') }}"
+										style="display:inline;">
+
+										@csrf
+										<input type="hidden" name="date_to" value="{{$todate}}">
+										<input type="hidden" name="date_from" value="{{$fromdate}}">
+										<input type="hidden" name="search_type" value="{{$type}}">
+										<input type="hidden" name="search_val" value="{{$searchval}}">
+
+										<button type="submit"
+												class="btn btn-primary">
+											Export Excel
+										</button>
+									</form>
+
+								<?php } ?>
+
+								<button type="button"
+										onclick="javascript:window.close();"
+										class="btn btn-primary">
+									Close
+								</button>
+
+							</span>
+						</div>
+					</div>
                 </div>
             </div>
             <!-- row -->
@@ -220,11 +261,27 @@ thead
 {{-- page level scripts --}}
 @section('footer_scripts')
     <!-- begining of page level js -->
-<script type="text/javascript" src="{{asset('assets/js/custom_js/invoice.js')}}"></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="{{asset('assets/js/custom_js/invoice.js')}}"></script>
+	<script>
+function getExport() {
+    var form = document.getElementById('frmExport');
+
+    if (form) {
+        form.submit();
+    } else {
+        console.warn('Export form not found.');
+        alert('No data available to export.');
+    }
+}
+</script>
+
     <!-- end of page level js -->
-<script>
+{{-- <script>
 function getExport() {
 	document.frmExport.submit();
 }
-</script>
+</script> --}}
+
+
 

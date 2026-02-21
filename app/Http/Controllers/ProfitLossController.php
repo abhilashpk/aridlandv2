@@ -10,7 +10,8 @@ use Notification;
 use Session;
 use App;
 use DB;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 use Auth;
 
 class ProfitLossController extends Controller
@@ -208,279 +209,581 @@ class ProfitLossController extends Controller
 
 	}
 	
+	// public function dataExport(Request $request)
+	// {
+	// 	$data = array();
+	// 	$datareport[] = [strtoupper(Session::get('company')),'','',''];
+	// 	$datareport[] = ['','','','','','',''];
+		
+	// 	$request->merge(['curr_from_date' => $this->acsettings->from_date]);
+	// 	$result = $this->accountmaster->getProfitLoss($request->all()); //echo '<pre>';print_r($request->all());exit;
+	// 	$crow = DB::table('currency')->where('is_default',1)->select('code')->first();
+	// 	$currency=$crow->code;
+	// 	if($request->get('search_type')=='summary')
+	// 		$voucher_head = 'Profit & Loss - Summary';
+	// 	else if($request->get('search_type')=='detail')
+	// 		$voucher_head = 'Profit & Loss - Detail';
+	// 	else {
+	// 		$voucher_head = 'Profit & Loss - Summary as on Date';
+	// 	}
+		
+	// 	$datareport[] = ['','','',strtoupper($voucher_head), '','',''];
+	// 	$datareport[] = ['','','','','','',''];
+		
+	// 	$datareport[] = ['EXPENSE','','','','INCOME','',''];
+	// 	$datareport[] = ['','','','','','',''];
+		
+	// 	$datareport[] = ['Description','','Amount','','Description','','Amount'];
+		
+	// 	$subtotal = 0;
+	// 	if(count($result['income'][0]) > 0 && count($result['expense'][0]) > 0) {
+	// 		$subtotal = ($result['income'][0]['total'] > $result['expense'][0]['total'])?$result['income'][0]['total']:$result['expense'][0]['total'];
+			
+	// 		$grossprofit = $result['income'][0]['total'] - $result['expense'][0]['total'];
+	// 		$directexp = $result['expense'][0];
+	// 		$directinc = $result['income'][0];
+			
+	// 	} else if(count($result['income'][0]) > 0 && count($result['expense'][0]) == 0) {
+			
+	// 		$subtotal = $result['income'][0]['total'];
+			
+	// 		$grossprofit = $result['income'][0]['total'];
+	// 		$directexp = $result['expense'][0];
+	// 		$directinc = $result['income'][0];
+			
+	// 	} else if(count($result['income'][0]) == 0 && count($result['expense'][0]) > 0) {
+			
+	// 		$subtotal = $result['expense'][0]['total'];
+			
+	// 		$grossprofit = 0 - $result['expense'][0]['total'];
+	// 		$directexp = $result['expense'][0];
+	// 		$directinc = $result['income'][0];
+			
+	// 	} else {
+	// 		$directexp = $directinc = $grossprofit = null;
+	// 	}	
+		
+	// 	//if indirect expense is there...
+	// 	if(sizeof($result['expense'][1]) > 0) {
+	// 		if($grossprofit > 0) {
+	// 			$netprofit = $grossprofit - $result['expense'][1]['total'];
+	// 			$total = $netprofit;
+	// 		} else {
+	// 			$netprofit = $grossprofit - $result['expense'][1]['total'];
+				
+	// 			if($grossprofit < $result['expense'][1]) {
+	// 				$total = $netprofit;
+	// 			} else {
+	// 				$total = $grossprofit + $netprofit;
+	// 			}
+	// 		}
+			
+	// 		$indirectexp = $result['expense'][1];
+	// 	} else {
+	// 		$netprofit = $grossprofit;
+	// 		$indirectexp = null;
+	// 		$total = $grossprofit;
+	// 	}
+		
+	// 	if(sizeof($result['income'][1]) > 0) {
+	// 		$indirectinc = $result['income'][1];
+	// 	} else {
+	// 		$indirectinc = null;
+	// 	}
+		
+	// 	if($directexp['total'] < 0) {
+	// 		$arr = explode('-', $directexp['total']);
+	// 		$balance_exp = '('.number_format($arr[1],2).')';
+	// 	} else 
+	// 		$balance_exp = number_format($directexp['total'],2);
+	// 		$balance_inc='';
+	// 	if($directinc){
+	// 	if($directinc['total'] < 0) {
+	// 		$arr = explode('-', $directinc['total']);
+	// 		$balance_inc = '('.number_format($arr[1],2).')';
+	// 	} else 
+	// 		$balance_inc = number_format($directinc['total'],2);
+	// 	}
+		
+	// 	//$datareport[] = ['Description','','Amount','','Description','','Amount'];
+	// 	$datareport[] = [$directexp['name'],'',$balance_exp,'',isset($directinc['name'])?$directinc['name']:'INCOME','',$balance_inc];
+	// //	echo '<pre>';print_r($directinc['items']);exit;
+	// 	foreach($directexp['items'] as $key => $row) {
+			
+	// 		if($row->cl_balance < 0) {
+	// 			$arr = explode('-', $row->cl_balance);
+	// 			$clbalanceL1 = '('.number_format($arr[1],2).')';
+	// 		} else 
+	// 			$clbalanceL1 = number_format($row->cl_balance,2);
+			
+	// 		$cl_balanceR1 = '';
+	// 		if($request->get('search_type')=='summary')
+	// 			$datareport[] = [$row->group_name,'',$clbalanceL1,'','','',''];
+	// 		else {
+	// 			if($row->cl_balance!=0) {
+	// 				$datareport[] = [$row->master_name,'',$clbalanceL1,'','','',''];
+	// 			}
+	// 		}
+	// 	}
+	// 		if(isset($directinc['items'][$key])) {
+	// 		 foreach($directinc['items'] as $key => $row) {   
+	// 			if($row->cl_balance < 0) {
+	// 				$arr = explode('-', $row->cl_balance);
+	// 				$cl_balanceR1 = '('.number_format($arr[1],2).')';
+	// 			} else 
+	// 				$cl_balanceR1 = number_format($row->cl_balance,2);
+			
+	// 		if($request->get('search_type')=='summary'){
+				
+	// 			$datareport[] = ['','','','',$row->group_name,'',$cl_balanceR1];
+	// 		}else {
+	// 			if($row->cl_balance!=0) {
+	// 				$datareport[] = ['','','','',$row->master_name,'',$cl_balanceR1];
+	// 			}
+	// 		}
+	// 		 }
+	// 	}
+	// 	$datareport[] = ['','','','','','',''];
+		
+	// 	$gpTitle = $glTitle = $gpAmt = $glAmt = '';
+	// 	if($grossprofit > 0) { 
+	// 		$gpTitle = 'Gross Profit C/F';
+	// 		$gpAmt = number_format($grossprofit,2);
+			
+	// 	}
+		
+	// 	if($grossprofit < 0) { 
+	// 		$glTitle = 'Gross Loss C/F';
+	// 		$arr = explode('-', $grossprofit);
+	// 		$gross_loss_cf = '('.number_format($arr[1],2).')';
+	// 		$glAmt = $gross_loss_cf;
+	// 	}
+		
+	// 	$datareport[] = [$gpTitle,'',$gpAmt,'',$glTitle,'',$glAmt];
+	// 	$datareport[] = ['','','','','','',''];
+		
+	// 	if($subtotal < 0) {
+	// 		$arr = explode('-', $subtotal);
+	// 		$subtotal = '('.number_format($arr[1],2).')';
+	// 	} else 
+	// 		$subtotal = number_format($subtotal,2);
+															
+	// 	$datareport[] = ['Sub Total','',$subtotal,'','Sub Total','',$subtotal];
+		
+	// 	$grlTitle = $gross_loss_bf = $grpTitle = $grpAmt = '';
+	// 	if($grossprofit < 0) { 
+	// 		$grlTitle = 'Gross Loss B/F';
+	// 		$arr = explode('-', $grossprofit);
+	// 		$gross_loss_bf = '('.number_format($arr[1],2).')';
+	// 	}
+		
+	// 	if($grossprofit > 0) {
+	// 		$grpTitle = 'Gross Profit B/F';
+	// 		$grpAmt = number_format($grossprofit,2);
+	// 	} elseif($grossprofit < 0) {
+	// 		$arr = explode('-', $netprofit);
+	// 		$grpAmt = '('.number_format($arr[1],2).')';
+	// 		$grpTitle = 'Net Loss';
+	// 	}
+		
+	// 	$datareport[] = [$grlTitle,'',$gross_loss_bf,'',$grpTitle,'',$grpAmt];
+		
+	// 	$datareport[] = ['','','','','','',''];
+		
+	// 	if($indirectexp) {
+	// 		if($indirectexp['total'] < 0) {
+	// 			$arr = explode('-', $indirectexp['total']);
+	// 			$balance_indexp = '('.number_format($arr[1],2).')';
+	// 		} else 
+	// 			$balance_indexp = number_format($indirectexp['total'],2);
+			
+	// 		if($indirectinc['total'] < 0) {
+	// 			$arr = explode('-', $indirectinc['total']);
+	// 			$balance_indinc = '('.number_format($arr[1],2).')';
+	// 		} else 
+	// 			$balance_indinc = number_format($indirectinc['total'],2);
+															
+	// 		$datareport[] = [$indirectexp['name'],'',$balance_indexp,'',$indirectinc['name'],'',$balance_indinc];
+			
+			
+	// 		foreach($indirectexp['items'] as $key => $row) {
+			
+	// 			if($row->cl_balance < 0) {
+	// 				$arr = explode('-', $row->cl_balance);
+	// 				$clbalanceL1 = '('.number_format($arr[1],2).')';
+	// 			} else 
+	// 				$clbalanceL1 = number_format($row->cl_balance,2);
+	// 		if($request->get('search_type')=='summary')
+	// 				$datareport[] = [$row->group_name,'',$clbalanceL1,'','','',''];
+	// 			else {
+	// 				if($row->cl_balance!=0) {
+	// 					$datareport[] = [$row->master_name,'',$clbalanceL1,'','','',''];
+	// 				}
+	// 			}
+	// 		}
+	// 			$cl_balanceR1 = '';
+	// 			if(isset($indirectinc['items'][$key])) {
+	// 			    foreach($indirectinc['items'] as $key => $row) {
+	// 				if($row->cl_balance < 0) {
+	// 					$arr = explode('-', $row->cl_balance);
+	// 					$cl_balanceR1 = '('.number_format($arr[1],2).')';
+	// 				} else 
+	// 					$cl_balanceR1 = number_format($row->cl_balance,2);
+				
+	// 			if($request->get('search_type')=='summary')
+	// 				$datareport[] = ['','','','',$row->group_name,'',$cl_balanceR1];
+	// 			else {
+	// 				if($row->cl_balance!=0) {
+	// 					$datareport[] = ['','','','',$row->master_name,'',$cl_balanceR1];
+	// 				}
+	// 			    }
+	// 		      }
+	// 		    }
+	// 		$datareport[] = ['','','','','','',''];
+	// 		//.............
+	// 	}
+		
+	// 	$npTitle= $npAmt = '';
+	// 	if($netprofit > 0) {
+	// 		$npTitle = 'Net Profit';
+	// 		if($netprofit < 0) {
+	// 			$arr = explode('-', $netprofit);
+	// 			$netprofit = '('.number_format($arr[1],2).')';
+	// 		} else 
+	// 			$netprofit = number_format($netprofit,2);
+			
+	// 		$datareport[] = [$npTitle,'',$netprofit,'',''];
+	// 	}
+		
+		
+				
+		
+	// 	if($total < 0) {
+	// 		$arr = explode('-', $total);
+	// 		$total = '('.number_format($arr[1],2).')';
+	// 	} else 
+	// 		$total = number_format($total,2);
+			
+	// 	$datareport[] = ['Total:'.$currency,'',$total,'','Total:'.$currency,'',$total];
+		
+		
+	// 	//echo '<pre>';print_r($result);exit;//echo $grossprofit;exit;
+	// 	//echo $voucher_head.'<pre>';print_r($datareport);exit;
+	// 	Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+
+    //     // Set the spreadsheet title, creator, and description
+    //     $excel->setTitle($voucher_head);
+    //     $excel->setCreator('NumakPro ERP')->setCompany(Session::get('company'));
+    //     $excel->setDescription($voucher_head);
+
+    //     // Build the spreadsheet, passing in the payments array
+	// 	$excel->sheet('sheet1', function($sheet) use ($datareport) {
+	// 		$sheet->fromArray($datareport, null, 'A1', false, false);
+	// 	});
+
+	// 	})->download('xlsx');
+	// }
+
+
 	public function dataExport(Request $request)
 	{
-		$data = array();
-		$datareport[] = [strtoupper(Session::get('company')),'','',''];
-		$datareport[] = ['','','','','','',''];
-		
-		$request->merge(['curr_from_date' => $this->acsettings->from_date]);
-		$result = $this->accountmaster->getProfitLoss($request->all()); //echo '<pre>';print_r($request->all());exit;
-		$crow = DB::table('currency')->where('is_default',1)->select('code')->first();
-		$currency=$crow->code;
-		if($request->get('search_type')=='summary')
+		 dd([
+			'request_all'    => $request->all(),
+			'acsettings_from'=> $this->acsettings->from_date,
+		]);
+
+		$datareport = [];
+
+		// ✅ Ensure all required parameters are present, same as getSearch
+		$request->merge([
+			'curr_from_date' => $this->acsettings->from_date,
+			// Normalize date keys in case they come in differently
+			'date_from'      => $request->get('date_from'),
+			'date_to'        => $request->get('date_to'),
+			'search_type'    => $request->get('search_type'),
+		]);
+
+		$result = $this->accountmaster->getProfitLoss($request->all());
+
+		$crow = DB::table('parameter1')
+			->join('currency','currency.id','=','parameter1.bcurrency_id')
+			->select('currency.code')
+			->first();
+
+		$currency = $crow ? $crow->code : '';
+
+		// Title
+		if ($request->get('search_type') == 'summary') {
 			$voucher_head = 'Profit & Loss - Summary';
-		else if($request->get('search_type')=='detail')
+		} elseif ($request->get('search_type') == 'detail') {
 			$voucher_head = 'Profit & Loss - Detail';
-		else {
+		} else {
 			$voucher_head = 'Profit & Loss - Summary as on Date';
 		}
-		
-		$datareport[] = ['','','',strtoupper($voucher_head), '','',''];
-		$datareport[] = ['','','','','','',''];
-		
-		$datareport[] = ['EXPENSE','','','','INCOME','',''];
-		$datareport[] = ['','','','','','',''];
-		
-		$datareport[] = ['Description','','Amount','','Description','','Amount'];
-		
+
+		$datareport[] = ['', '', '', strtoupper($voucher_head), '', '', ''];
+		$datareport[] = ['', '', '', '', '', '', ''];
+
+		$datareport[] = ['EXPENSE', '', '', '', 'INCOME', '', ''];
+		$datareport[] = ['', '', '', '', '', '', ''];
+		$datareport[] = ['Description', '', 'Amount', '', 'Description', '', 'Amount'];
+
+		/*
+		|--------------------------------------------------------------------------
+		| EXACT SAME CALCULATION AS VIEW
+		|--------------------------------------------------------------------------
+		*/
+
 		$subtotal = 0;
+
 		if(count($result['income'][0]) > 0 && count($result['expense'][0]) > 0) {
-			$subtotal = ($result['income'][0]['total'] > $result['expense'][0]['total'])?$result['income'][0]['total']:$result['expense'][0]['total'];
-			
+
+			$subtotal = ($result['income'][0]['total'] > $result['expense'][0]['total'])
+				? $result['income'][0]['total']
+				: $result['expense'][0]['total'];
+
 			$grossprofit = $result['income'][0]['total'] - $result['expense'][0]['total'];
+
 			$directexp = $result['expense'][0];
 			$directinc = $result['income'][0];
-			
-		} else if(count($result['income'][0]) > 0 && count($result['expense'][0]) == 0) {
-			
+
+		} elseif(count($result['income'][0]) > 0 && count($result['expense'][0]) == 0) {
+
 			$subtotal = $result['income'][0]['total'];
-			
 			$grossprofit = $result['income'][0]['total'];
+
 			$directexp = $result['expense'][0];
 			$directinc = $result['income'][0];
-			
-		} else if(count($result['income'][0]) == 0 && count($result['expense'][0]) > 0) {
-			
+
+		} elseif(count($result['income'][0]) == 0 && count($result['expense'][0]) > 0) {
+
 			$subtotal = $result['expense'][0]['total'];
-			
 			$grossprofit = 0 - $result['expense'][0]['total'];
+
 			$directexp = $result['expense'][0];
 			$directinc = $result['income'][0];
-			
+
 		} else {
-			$directexp = $directinc = $grossprofit = null;
-		}	
-		
-		//if indirect expense is there...
-		if(sizeof($result['expense'][1]) > 0) {
+
+			$directexp = $directinc = [];
+			$grossprofit = 0;
+		}
+
+		// Indirect Expense
+		if(count($result['expense'][1]) > 0) {
+
 			if($grossprofit > 0) {
 				$netprofit = $grossprofit - $result['expense'][1]['total'];
 				$total = $netprofit;
 			} else {
 				$netprofit = $grossprofit - $result['expense'][1]['total'];
-				
-				if($grossprofit < $result['expense'][1]) {
-					$total = $netprofit;
-				} else {
-					$total = $grossprofit + $netprofit;
-				}
+				$total = $netprofit;
 			}
-			
+
 			$indirectexp = $result['expense'][1];
+
 		} else {
 			$netprofit = $grossprofit;
 			$indirectexp = null;
 			$total = $grossprofit;
 		}
-		
-		if(sizeof($result['income'][1]) > 0) {
+
+		// Indirect Income
+		if(count($result['income'][1]) > 0) {
+
 			$indirectinc = $result['income'][1];
+			$subtotal = $subtotal + $result['income'][1]['total'];
+			$netprofit = $total = $netprofit + $result['income'][1]['total'];
+
 		} else {
 			$indirectinc = null;
 		}
-		
-		if($directexp['total'] < 0) {
-			$arr = explode('-', $directexp['total']);
-			$balance_exp = '('.number_format($arr[1],2).')';
-		} else 
-			$balance_exp = number_format($directexp['total'],2);
-			$balance_inc='';
-		if($directinc){
-		if($directinc['total'] < 0) {
-			$arr = explode('-', $directinc['total']);
-			$balance_inc = '('.number_format($arr[1],2).')';
-		} else 
-			$balance_inc = number_format($directinc['total'],2);
-		}
-		
-		//$datareport[] = ['Description','','Amount','','Description','','Amount'];
-		$datareport[] = [$directexp['name'],'',$balance_exp,'',isset($directinc['name'])?$directinc['name']:'INCOME','',$balance_inc];
-	//	echo '<pre>';print_r($directinc['items']);exit;
-		foreach($directexp['items'] as $key => $row) {
-			
-			if($row->cl_balance < 0) {
-				$arr = explode('-', $row->cl_balance);
-				$clbalanceL1 = '('.number_format($arr[1],2).')';
-			} else 
-				$clbalanceL1 = number_format($row->cl_balance,2);
-			
-			$cl_balanceR1 = '';
-			if($request->get('search_type')=='summary')
-				$datareport[] = [$row->group_name,'',$clbalanceL1,'','','',''];
-			else {
-				if($row->cl_balance!=0) {
-					$datareport[] = [$row->master_name,'',$clbalanceL1,'','','',''];
-				}
+
+		// Formatter
+		$format = function($amt){
+			if ($amt < 0) {
+				return '(' . number_format(abs($amt),2) . ')';
+			}
+			return number_format($amt,2);
+		};
+
+		/*
+		|--------------------------------------------------------------------------
+		| DIRECT SECTION
+		|--------------------------------------------------------------------------
+		*/
+
+		$datareport[] = [
+			$directexp['name'] ?? 'EXPENSE',
+			'',
+			$format($directexp['total'] ?? 0),
+			'',
+			$directinc['name'] ?? 'INCOME',
+			'',
+			$format($directinc['total'] ?? 0)
+		];
+
+		// Direct Expense Items
+		if(!empty($directexp['items'])) {
+			foreach($directexp['items'] as $row) {
+
+				if($row->cl_balance == 0 && $request->get('search_type')=='detail')
+					continue;
+
+				$datareport[] = [
+					$request->get('search_type')=='summary'
+						? $row->group_name
+						: $row->master_name,
+					'',
+					$format($row->cl_balance),
+					'',
+					'',
+					'',
+					''
+				];
 			}
 		}
-			if(isset($directinc['items'][$key])) {
-			 foreach($directinc['items'] as $key => $row) {   
-				if($row->cl_balance < 0) {
-					$arr = explode('-', $row->cl_balance);
-					$cl_balanceR1 = '('.number_format($arr[1],2).')';
-				} else 
-					$cl_balanceR1 = number_format($row->cl_balance,2);
-			
-			if($request->get('search_type')=='summary'){
-				
-				$datareport[] = ['','','','',$row->group_name,'',$cl_balanceR1];
-			}else {
-				if($row->cl_balance!=0) {
-					$datareport[] = ['','','','',$row->master_name,'',$cl_balanceR1];
+
+		// Direct Income Items
+		if(!empty($directinc['items'])) {
+			foreach($directinc['items'] as $row) {
+
+				if($row->cl_balance == 0 && $request->get('search_type')=='detail')
+					continue;
+
+				$datareport[] = [
+					'',
+					'',
+					'',
+					'',
+					$request->get('search_type')=='summary'
+						? $row->group_name
+						: $row->master_name,
+					'',
+					$format($row->cl_balance)
+				];
+			}
+		}
+
+		$datareport[] = ['', '', '', '', '', '', ''];
+
+		/*
+		|--------------------------------------------------------------------------
+		| SUBTOTAL
+		|--------------------------------------------------------------------------
+		*/
+
+		$datareport[] = [
+			'Sub Total',
+			'',
+			$format($subtotal),
+			'',
+			'Sub Total',
+			'',
+			$format($subtotal)
+		];
+
+		$datareport[] = ['', '', '', '', '', '', ''];
+
+		/*
+		|--------------------------------------------------------------------------
+		| INDIRECT SECTION
+		|--------------------------------------------------------------------------
+		*/
+
+		if($indirectexp || $indirectinc) {
+
+			$datareport[] = [
+				$indirectexp['name'] ?? '',
+				'',
+				$format($indirectexp['total'] ?? 0),
+				'',
+				$indirectinc['name'] ?? '',
+				'',
+				$format($indirectinc['total'] ?? 0)
+			];
+
+			// Indirect Expense Items
+			if(!empty($indirectexp['items'])) {
+				foreach($indirectexp['items'] as $row) {
+
+					if($row->cl_balance == 0 && $request->get('search_type')=='detail')
+						continue;
+
+					$datareport[] = [
+						$request->get('search_type')=='summary'
+							? $row->group_name
+							: $row->master_name,
+						'',
+						$format($row->cl_balance),
+						'',
+						'',
+						'',
+						''
+					];
 				}
 			}
-			 }
-		}
-		$datareport[] = ['','','','','','',''];
-		
-		$gpTitle = $glTitle = $gpAmt = $glAmt = '';
-		if($grossprofit > 0) { 
-			$gpTitle = 'Gross Profit C/F';
-			$gpAmt = number_format($grossprofit,2);
-			
-		}
-		
-		if($grossprofit < 0) { 
-			$glTitle = 'Gross Loss C/F';
-			$arr = explode('-', $grossprofit);
-			$gross_loss_cf = '('.number_format($arr[1],2).')';
-			$glAmt = $gross_loss_cf;
-		}
-		
-		$datareport[] = [$gpTitle,'',$gpAmt,'',$glTitle,'',$glAmt];
-		$datareport[] = ['','','','','','',''];
-		
-		if($subtotal < 0) {
-			$arr = explode('-', $subtotal);
-			$subtotal = '('.number_format($arr[1],2).')';
-		} else 
-			$subtotal = number_format($subtotal,2);
-															
-		$datareport[] = ['Sub Total','',$subtotal,'','Sub Total','',$subtotal];
-		
-		$grlTitle = $gross_loss_bf = $grpTitle = $grpAmt = '';
-		if($grossprofit < 0) { 
-			$grlTitle = 'Gross Loss B/F';
-			$arr = explode('-', $grossprofit);
-			$gross_loss_bf = '('.number_format($arr[1],2).')';
-		}
-		
-		if($grossprofit > 0) {
-			$grpTitle = 'Gross Profit B/F';
-			$grpAmt = number_format($grossprofit,2);
-		} elseif($grossprofit < 0) {
-			$arr = explode('-', $netprofit);
-			$grpAmt = '('.number_format($arr[1],2).')';
-			$grpTitle = 'Net Loss';
-		}
-		
-		$datareport[] = [$grlTitle,'',$gross_loss_bf,'',$grpTitle,'',$grpAmt];
-		
-		$datareport[] = ['','','','','','',''];
-		
-		if($indirectexp) {
-			if($indirectexp['total'] < 0) {
-				$arr = explode('-', $indirectexp['total']);
-				$balance_indexp = '('.number_format($arr[1],2).')';
-			} else 
-				$balance_indexp = number_format($indirectexp['total'],2);
-			
-			if($indirectinc['total'] < 0) {
-				$arr = explode('-', $indirectinc['total']);
-				$balance_indinc = '('.number_format($arr[1],2).')';
-			} else 
-				$balance_indinc = number_format($indirectinc['total'],2);
-															
-			$datareport[] = [$indirectexp['name'],'',$balance_indexp,'',$indirectinc['name'],'',$balance_indinc];
-			
-			
-			foreach($indirectexp['items'] as $key => $row) {
-			
-				if($row->cl_balance < 0) {
-					$arr = explode('-', $row->cl_balance);
-					$clbalanceL1 = '('.number_format($arr[1],2).')';
-				} else 
-					$clbalanceL1 = number_format($row->cl_balance,2);
-			if($request->get('search_type')=='summary')
-					$datareport[] = [$row->group_name,'',$clbalanceL1,'','','',''];
-				else {
-					if($row->cl_balance!=0) {
-						$datareport[] = [$row->master_name,'',$clbalanceL1,'','','',''];
-					}
+
+			// Indirect Income Items
+			if(!empty($indirectinc['items'])) {
+				foreach($indirectinc['items'] as $row) {
+
+					if($row->cl_balance == 0 && $request->get('search_type')=='detail')
+						continue;
+
+					$datareport[] = [
+						'',
+						'',
+						'',
+						'',
+						$request->get('search_type')=='summary'
+							? $row->group_name
+							: $row->master_name,
+						'',
+						$format($row->cl_balance)
+					];
 				}
 			}
-				$cl_balanceR1 = '';
-				if(isset($indirectinc['items'][$key])) {
-				    foreach($indirectinc['items'] as $key => $row) {
-					if($row->cl_balance < 0) {
-						$arr = explode('-', $row->cl_balance);
-						$cl_balanceR1 = '('.number_format($arr[1],2).')';
-					} else 
-						$cl_balanceR1 = number_format($row->cl_balance,2);
-				
-				if($request->get('search_type')=='summary')
-					$datareport[] = ['','','','',$row->group_name,'',$cl_balanceR1];
-				else {
-					if($row->cl_balance!=0) {
-						$datareport[] = ['','','','',$row->master_name,'',$cl_balanceR1];
-					}
-				    }
-			      }
-			    }
-			$datareport[] = ['','','','','','',''];
-			//.............
+
+			$datareport[] = ['', '', '', '', '', '', ''];
 		}
-		
-		$npTitle= $npAmt = '';
-		if($netprofit > 0) {
-			$npTitle = 'Net Profit';
-			if($netprofit < 0) {
-				$arr = explode('-', $netprofit);
-				$netprofit = '('.number_format($arr[1],2).')';
-			} else 
-				$netprofit = number_format($netprofit,2);
-			
-			$datareport[] = [$npTitle,'',$netprofit,'',''];
+
+		/*
+		|--------------------------------------------------------------------------
+		| NET PROFIT
+		|--------------------------------------------------------------------------
+		*/
+
+		if($netprofit != 0) {
+			$datareport[] = ['Net Profit','',$format($netprofit),'','','',''];
 		}
-		
-		
-				
-		
-		if($total < 0) {
-			$arr = explode('-', $total);
-			$total = '('.number_format($arr[1],2).')';
-		} else 
-			$total = number_format($total,2);
-			
-		$datareport[] = ['Total:'.$currency,'',$total,'','Total:'.$currency,'',$total];
-		
-		
-		//echo '<pre>';print_r($result);exit;//echo $grossprofit;exit;
-		//echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('NumakPro ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
+		$datareport[] = [
+			'Total:'.$currency,
+			'',
+			$format($total),
+			'',
+			'Total:'.$currency,
+			'',
+			$format($total)
+		];
 
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
+		/*
+		|--------------------------------------------------------------------------
+		| EXPORT
+		|--------------------------------------------------------------------------
+		*/
 
-		})->download('xlsx');
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);
 	}
 			
 }

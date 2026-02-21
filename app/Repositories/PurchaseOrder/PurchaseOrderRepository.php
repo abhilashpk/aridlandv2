@@ -1486,46 +1486,56 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 
 	public function purchaseOrderListCount()
 	{
-		return $this->purchase_order
+		$departmentId = auth()->user()->department_id ?? 0;
+		$query = $this->purchase_order
 					->join('account_master AS am', 'am.id', '=', 'purchase_order.supplier_id')
 					->where('purchase_order.status', 1)
-					->where('purchase_order.department_id', auth()->user()->department_id)
-					->where(function($query) {
-						$query->whereNull('purchase_order.deleted_at')
-							->orWhere('purchase_order.deleted_at', '0000-00-00 00:00:00');
-					})
-					->count();
+					->where(function($q) {
+						$q->whereNull('purchase_order.deleted_at')
+						  ->orWhere('purchase_order.deleted_at', '0000-00-00 00:00:00');
+					});
+
+		if($departmentId != 0) {
+			$query->where('purchase_order.department_id', $departmentId);
+		}
+
+		return $query->count();
 	}
 
 	public function purchaseOrderList($type, $start, $limit, $order, $dir, $search)
-{
-    // Remove all filters temporarily to test
-    $query = $this->purchase_order
-                ->join('account_master AS am', 'am.id', '=', 'purchase_order.supplier_id');
-    
-    \Log::info('Purchase Order Query (no filters) count: ' . $query->count());
-    
-    if($search) {
-        $query->where(function($q) use ($search) {
-            $q->where('purchase_order.voucher_no', 'LIKE', "%{$search}%")
-              ->orWhere('purchase_order.reference_no', 'LIKE', "%{$search}%")
-              ->orWhere('am.master_name', 'LIKE', "%{$search}%");
-        });
-    }
-    
-    $query->select('purchase_order.*', 'am.master_name AS supplier')
-          ->offset($start)
-          ->limit($limit)
-          ->orderBy($order, $dir);
-    
-    if($type == 'get') {
-        $results = $query->get();
-        \Log::info('Purchase Orders retrieved: ' . count($results));
-        return $results;
-    } else {
-        return $query->count();
-    }
-}
+	{
+		$departmentId = auth()->user()->department_id ?? 0;
+		$query = $this->purchase_order
+					->join('account_master AS am', 'am.id', '=', 'purchase_order.supplier_id')
+					->where('purchase_order.status', 1)
+					->where(function($q) {
+						$q->whereNull('purchase_order.deleted_at')
+						  ->orWhere('purchase_order.deleted_at', '0000-00-00 00:00:00');
+					});
+
+		if($departmentId != 0) {
+			$query->where('purchase_order.department_id', $departmentId);
+		}
+
+		if($search) {
+			$query->where(function($q) use ($search) {
+				$q->where('purchase_order.voucher_no', 'LIKE', "%{$search}%")
+				  ->orWhere('purchase_order.reference_no', 'LIKE', "%{$search}%")
+				  ->orWhere('am.master_name', 'LIKE', "%{$search}%");
+			});
+		}
+
+		$query->select('purchase_order.*', 'am.master_name AS supplier')
+			  ->offset($start)
+			  ->limit($limit)
+			  ->orderBy($order, $dir);
+
+		if($type == 'get') {
+			return $query->get();
+		}
+
+		return $query->count();
+	}
 	
 	public function getJobPurOrd($job_id)
 	{

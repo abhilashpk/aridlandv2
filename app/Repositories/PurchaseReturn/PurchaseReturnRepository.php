@@ -1048,7 +1048,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 							$attributes['item_row_id'][$key] = $inv_item->id; //OCT24
 							
 							$sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);
-								$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
+								$CostAvg_log = $this->getDeptCostAvgForReturn($attributes['item_id'][$key], $attributes['unit_id'][$key]);
 									$logid = $this->setSaleLog($attributes, $key, $this->purchase_return->id, $CostAvg_log, $sale_cost, 'add' );
 							
 						}
@@ -1335,7 +1335,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 						     DB::table('purchase_return_item')->where('id', $attributes['order_item_id'][$key])->update(['unit_id' => $uid->unit_id]);
 						}						
 						 $sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);//exit;
-							$CostAvg_log = $this->updateLastPurchaseCostAndCostAvgonEdit($attributes, $key, 0); //JUL10
+							$CostAvg_log = $this->getDeptCostAvgForReturn($attributes['item_id'][$key], $attributes['unit_id'][$key]);
 								$this->setSaleLog($attributes, $key, $this->purchase_return->id, $CostAvg_log, $sale_cost, 'update' );
 										
 						//################ Location Stock Entry ####################
@@ -1383,7 +1383,7 @@ class PurchaseReturnRepository extends AbstractValidator implements PurchaseRetu
 							$attributes['item_row_id'][$key] = $itemObj->id; //OCT24
 							
 							$sale_cost = $this->objUtility->updateItemQuantitySales($attributes, $key);
-								$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
+								$CostAvg_log = $this->getDeptCostAvgForReturn($attributes['item_id'][$key], $attributes['unit_id'][$key]);
 									$this->setSaleLog($attributes, $key, $this->purchase_return->id, $CostAvg_log, $sale_cost, 'add' );
 						}
 						
@@ -2001,7 +2001,44 @@ public function getReport($attributes)
 					->where('id', $account_id)
 					->update(['cl_balance' => $amount]);
 	}
-	
+
+	private function getDeptCostAvgForReturn($itemId, $unitId)
+	{
+		$departmentId = auth()->user()->department_id;
+
+		$isd = DB::table('itemstock_department')
+			->where('itemmaster_id', $itemId)
+			->where('department_id', $departmentId)
+			->where('unit_id', $unitId)
+			->select('cost_avg')
+			->first();
+		if($isd && (float)$isd->cost_avg > 0) {
+			return (float)$isd->cost_avg;
+		}
+
+		$log = DB::table('item_log')
+			->where('item_id', $itemId)
+			->where('department_id', $departmentId)
+			->where('unit_id', $unitId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->where('cost_avg', '>', 0)
+			->orderBy('id', 'DESC')
+			->select('cost_avg')
+			->first();
+		if($log) {
+			return (float)$log->cost_avg;
+		}
+
+		$iu = DB::table('item_unit')
+			->where('itemmaster_id', $itemId)
+			->where('unit_id', $unitId)
+			->select('cost_avg')
+			->first();
+
+		return ($iu) ? (float)$iu->cost_avg : 0;
+	}
+
 	private function setSaleLog($attributes, $key, $document_id, $cost_avg, $sale_cost, $action)
 	{
 	    

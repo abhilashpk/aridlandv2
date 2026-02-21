@@ -2056,8 +2056,9 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	}
 	
 	//paging..
-    public function getActiveItemList($mod=null,$type,$start,$limit,$order,$dir,$search)
+	public function getActiveItemList($mod=null,$type,$start,$limit,$order,$dir,$search)
 	{
+		$departmentId = auth()->user()->department_id ?? 0;
 		$query = $this->itemmaster->where('itemmaster.status',1);
 		
 		$query->join('item_unit AS iu', function($join) {
@@ -2086,7 +2087,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 			 $query->groupBy('iu.itemmaster_id')
 						//->orderBy('itemmaster.description','ASC')
 						->select('itemmaster.id','itemmaster.item_code','itemmaster.model_no','itemmaster.description','itemmaster.description_ar','ISD.vat','itemmaster.class_id',
-						'u.unit_name',DB::raw('CASE WHEN ISD.cost_avg IS NULL OR ISD.cost_avg = 0 THEN iu.cost_avg ELSE ISD.cost_avg END AS cost_avg'),'ISD.sell_price','ISD.last_purchase_cost AS pur_cost','ISD.cur_quantity','itemmaster.itmLt','itemmaster.itmWd','itemmaster.batch_req')
+						'u.unit_name',DB::raw("CASE WHEN ISD.cost_avg IS NULL OR ISD.cost_avg = 0 THEN COALESCE((SELECT il.cost_avg FROM item_log il WHERE il.item_id = itemmaster.id AND il.department_id = {$departmentId} AND il.status = 1 AND il.deleted_at IS NULL ORDER BY il.id DESC LIMIT 1), 0) ELSE ISD.cost_avg END AS cost_avg"),'ISD.sell_price','ISD.last_purchase_cost AS pur_cost','ISD.cur_quantity','itemmaster.itmLt','itemmaster.itmWd','itemmaster.batch_req')
 						->offset($start)
                         ->limit($limit)
                         ->orderBy($order,$dir);
@@ -2099,6 +2100,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	
 	public function itemmasterList($type, $start, $limit, $order, $dir, $search)
 	{	
+		$departmentId = auth()->user()->department_id ?? 0;
 		$query = $this->itemmaster->where('itemmaster.status', 1);
 		
 		// Add the conditions INSIDE the join (like you did in itemmasterListCount)
@@ -2143,7 +2145,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				'C.category_name AS category',
 				'S.category_name AS subcategory',
 				'ID.last_purchase_cost',
-				DB::raw('COALESCE(ID.cost_avg, 0) AS cost_avg'),
+				DB::raw("CASE WHEN ID.cost_avg IS NULL OR ID.cost_avg = 0 THEN COALESCE((SELECT il.cost_avg FROM item_log il WHERE il.item_id = itemmaster.id AND il.department_id = {$departmentId} AND il.status = 1 AND il.deleted_at IS NULL ORDER BY il.id DESC LIMIT 1), 0) ELSE ID.cost_avg END AS cost_avg"),
 				'ID.issued_qty',
 				'u.packing',
 				'GC.description AS group_name',
@@ -3802,6 +3804,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 	
 	public function getStockLedger()//$attributes
 	{
+		$departmentId = auth()->user()->department_id ?? 0;
 		$result = array();
 		/* if($attributes['search_type']=='quantity') {
 		
@@ -3824,7 +3827,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 								$join->where('u.is_baseqty','=',1);
 							} )
 							->where('itemmaster.class_id',1)
-							->select('itemmaster.id','itemmaster.item_code','itemmaster.description','isd.cur_quantity','u.packing',DB::raw('CASE WHEN isd.cost_avg IS NULL OR isd.cost_avg = 0 THEN u.cost_avg ELSE isd.cost_avg END AS cost_avg'))
+							->select('itemmaster.id','itemmaster.item_code','itemmaster.description','isd.cur_quantity','u.packing',DB::raw("CASE WHEN isd.cost_avg IS NULL OR isd.cost_avg = 0 THEN COALESCE((SELECT il.cost_avg FROM item_log il WHERE il.item_id = itemmaster.id AND il.department_id = {$departmentId} AND il.status = 1 AND il.deleted_at IS NULL ORDER BY il.id DESC LIMIT 1), 0) ELSE isd.cost_avg END AS cost_avg"))
 							->groupBy('itemmaster.id')
 							->get();
 		//}
@@ -4039,6 +4042,11 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 		$result = array();
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
 		$date_to = ($attributes['date_to']!='')?date('Y-m-d', strtotime($attributes['date_to'])):''; 
+		$start_date = $attributes['start_date'] ?? DB::table('item_log')
+                    ->where('item_id', $attributes['document_id'])
+                    ->where('status', 1)
+                    ->whereNull('deleted_at')
+                    ->min('voucher_date');
 		
 			//OPENING DETAILS...
 			$result['opn_details'] = DB::table('item_log')->where('item_log.status',1)->where('item_log.item_id', $attributes['document_id'])
@@ -4054,19 +4062,46 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 									 ->get();
 			
 			//NOV24
-			if($date_from!='' && ($date_from!=$attributes['start_date'])) {
-				$enddate = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+			// if($date_from!='' && ($date_from!=$attributes['start_date'])) {
+			// 	$enddate = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
 				
-				$qtyin = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('trtype',1)
-							->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
-							->where('status',1)->where('item_log.department_id',auth()->user()->department_id)->whereNull('deleted_at')->sum('quantity');
+			// 	$qtyin = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('trtype',1)
+			// 				->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
+			// 				->where('status',1)->where('item_log.department_id',auth()->user()->department_id)->whereNull('deleted_at')->sum('quantity');
 		
-				$qtyout = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('item_log.department_id',auth()->user()->department_id)
-							->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
-							->where('trtype',0)->where('status',1)->whereNull('deleted_at')->sum('quantity');
+			// 	$qtyout = DB::table('item_log')->where('item_id', $attributes['document_id'])->where('item_log.department_id',auth()->user()->department_id)
+			// 				->whereBetween('voucher_date', array($attributes['start_date'], $enddate))
+			// 				->where('trtype',0)->where('status',1)->whereNull('deleted_at')->sum('quantity');
 				
-				$result['opn_details'][0]->opn_quantity = $qtyin - $qtyout;
-				//echo '1<pre>';print_r($qtyin);print_r($qtyout);exit;
+			// 	$result['opn_details'][0]->opn_quantity = $qtyin - $qtyout;
+			// 	//echo '1<pre>';print_r($qtyin);print_r($qtyout);exit;
+			// }
+
+			if ($date_from != '' && $date_from != $start_date) {
+
+				$enddate = date('Y-m-d', strtotime('-1 day', strtotime($date_from)));
+
+				$qtyin = DB::table('item_log')
+					->where('item_id', $attributes['document_id'])
+					->where('trtype', 1)
+					->whereBetween('voucher_date', [$start_date, $enddate])
+					->where('status', 1)
+					->where('department_id', auth()->user()->department_id)
+					->whereNull('deleted_at')
+					->sum('quantity');
+
+				$qtyout = DB::table('item_log')
+					->where('item_id', $attributes['document_id'])
+					->where('trtype', 0)
+					->whereBetween('voucher_date', [$start_date, $enddate])
+					->where('status', 1)
+					->where('department_id', auth()->user()->department_id)
+					->whereNull('deleted_at')
+					->sum('quantity');
+
+				if (!empty($result['opn_details']) && isset($result['opn_details'][0])) {
+					$result['opn_details'][0]->opn_quantity = $qtyin - $qtyout;
+				}
 			}
 			
 			//PURCHASE INVOICE..	

@@ -293,7 +293,16 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php
+									$i = 0;
+									$num = count($docitems);
+									$total = 0;
+									$vattotal = 0;
+									$nettotal = 0;
+									$nettotal_dh = 0;
+									$total_dh = 0;
+									$vattotal_dh = 0;
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -397,7 +406,7 @@
 									</div>
 								<?php $i++; } } else { ?>
 								@foreach($docitems as $poitem)
-								{{--*/ $i++; /*--}}
+									@php $i++; @endphp
 								
 									<div class="itemdivChld">
 										<?php 

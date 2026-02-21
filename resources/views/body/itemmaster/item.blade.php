@@ -118,9 +118,17 @@ $(function() {
 		$('#sucessmsgItm').toggle();
 	});
 	
-	$('.listItm').on('click', function() {
-		$('#newItemFrm').toggle();
-		$('#newItemList').toggle();
+	$('.listItm').on('click', function(e) {
+		e.preventDefault();
+		var curNum = $('#num').val() || {{$num}};
+		var listUrl = "{{ url('itemmaster/item_data') }}/" + curNum;
+		var itemMod = @json($mod);
+		if (itemMod) {
+			listUrl += "/" + itemMod;
+		}
+		$('#item_data').load(listUrl, function() {
+			$('#myModal').modal({show:true});
+		});
 	});
 	
 	$('#createI').on('click', function(e){

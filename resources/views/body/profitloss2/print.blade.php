@@ -412,7 +412,7 @@ thead
 											<i class="fa fa-fw fa-upload"></i>
 										Export Excel
 									</span>
-									</button>
+								</button>
 									
 								<button type="button" onclick="javascript:window.close();"
                                                      class="btn btn-responsive button-alignment btn-primary"
@@ -427,14 +427,34 @@ thead
                         </div>
                     </div>
 					
-					<form class="form-horizontal" role="form" method="POST" name="frmExport" id="frmExport" action="{{ url('profit_loss/export') }}">
+					{{-- <form class="form-horizontal" role="form" method="POST" name="frmExport" id="frmExport" action="{{ url('profit_loss/export') }}">
 						<input type="hidden" name="_token" value="{{ csrf_token() }}">
 						<input type="hidden" name="date_from" value="{{$fromdate}}" >
 						<input type="hidden" name="date_to" value="{{$todate}}" >
 						<input type="hidden" name="search_type" value="{{$type}}" >
-						<?php if($clstock) { ?><input type="text" name="cl_stock" value="{{$clstock}}"><?php } ?>
-						<?php if($opstock) { ?><input type="text" name="op_stock" value="{{$opstock}}"><?php } ?>
-					</form>
+						<?//php if($clstock) { ?><input type="text" name="cl_stock" value="{{$clstock}}"><?//php } ?>
+						<?//php if($opstock) { ?><input type="text" name="op_stock" value="{{$opstock}}"><?//php } ?>
+					</form> --}}
+
+					<form class="form-horizontal" role="form" method="POST" 
+                        name="frmExport" id="frmExport" 
+                        action="{{ url('profit_loss2/export') }}">
+
+                        @csrf
+
+                        <input type="hidden" name="date_from" value="{{ $startDate ?? '' }}">
+                        <input type="hidden" name="date_to" value="{{ $endDate ?? '' }}">
+                        <input type="hidden" name="search_type" value="{{ $type ?? '' }}">
+
+                        @if(isset($clstock))
+                            <input type="hidden" name="cl_stock" value="{{ $clstock }}">
+                        @endif
+
+                        @if(isset($opstock))
+                            <input type="hidden" name="op_stock" value="{{ $opstock }}">
+                        @endif
+
+                    </form>
 					
                 </div>
             </div>
@@ -453,6 +473,13 @@ thead
 @yield('footer_scripts')
 <!-- end page level js -->
 </body>
+
+<script>
+function getExport() { 
+    document.getElementById('frmExport').submit(); 
+}
+</script>
+{{-- 
 <script>
 function getExport() { document.frmExport.submit(); }
 
@@ -461,5 +488,6 @@ $(document).ready(function () {
 	$('body').attr({style: 'min-height: inherit'});
 	
 });
-</script>
+
+</script> --}}
 </html>

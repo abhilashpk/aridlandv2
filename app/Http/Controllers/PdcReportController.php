@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Repositories\Journal\JournalInterface;
 
-
 use App\Http\Requests;
 use Notification;
 use Session;
 use App;
 use DB;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
+
 class PdcReportController extends Controller
 {
 	protected $journal;
@@ -118,19 +119,30 @@ class PdcReportController extends Controller
 			$datareport[] = ['','','','','','',''];
 			$datareport[] = ['','','','','Net Total:',number_format($gtotal,2)];
 	//	echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+		// Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-			// Set the spreadsheet title, creator, and description
-			$excel->setTitle($voucher_head);
-			$excel->setCreator('NumakPro ERP')->setCompany(Session::get('company'));
-			$excel->setDescription($voucher_head);
+		// 	// Set the spreadsheet title, creator, and description
+		// 	$excel->setTitle($voucher_head);
+		// 	$excel->setCreator('NumakPro ERP')->setCompany(Session::get('company'));
+		// 	$excel->setDescription($voucher_head);
 
-			// Build the spreadsheet, passing in the payments array
-			$excel->sheet('sheet1', function($sheet) use ($datareport) {
-				$sheet->fromArray($datareport, null, 'A1', false, false);
-			});
+		// 	// Build the spreadsheet, passing in the payments array
+		// 	$excel->sheet('sheet1', function($sheet) use ($datareport) {
+		// 		$sheet->fromArray($datareport, null, 'A1', false, false);
+		// 	});
 
-		})->download('xlsx');
+		// })->download('xlsx');
+
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);
 	}
 	public function getPrint()
 	{

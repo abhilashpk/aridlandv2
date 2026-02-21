@@ -9,7 +9,9 @@ use App\Models\AccountTransaction;
 use App\Models\AccountMaster;
 use DB;
 use Carbon\Carbon;
-use Excel; // Assuming Laravel Excel is installed
+
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 
 use Notification;
 use Session;
@@ -469,157 +471,299 @@ class BalanceSheetController2 extends Controller
     }
 
 
+    // public function exportSearchReport($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate, $searchtype)
+    // {
+         
+    //     if($searchtype=='summary') {
+    //         $fileName = 'BalanceSheet_' . $fromDate . '_to_' . $toDate;
+
+    //         Excel::create($fileName, function($excel) use ($assets, $liabilitiesAndEquity, $fromDate, $toDate, $voucherhead) {
+    //             $excel->sheet('Balance Sheet', function($sheet) use ($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate) {
+    //                 $row = 1;
+
+    //                 // Title
+    //                 $sheet->mergeCells('A1:D1');
+    //                 $sheet->row($row++, [$voucherhead . " (From $fromDate to $toDate)"]);
+
+    //                 // Headers
+    //                 $sheet->row($row++, [
+    //                     'Liabilities', 'Amount', 'Assets', 'Amount'
+    //                 ]);
+
+    //                 $maxCategories = max(count($liabilitiesAndEquity), count($assets));
+
+    //                 for ($i = 0; $i < $maxCategories; $i++) {
+    //                     $liab = $liabilitiesAndEquity[$i] ?? null;
+    //                     $asset = $assets[$i] ?? null;
+
+    //                     $sheet->row($row++, [
+    //                         $liab ? $liab['name'] : '',
+    //                         $liab ? number_format($liab['total'], 2) : '',
+    //                         $asset ? $asset['name'] : '',
+    //                         $asset ? number_format($asset['total'], 2) : '',
+    //                     ]);
+
+    //                     $liabGroups = $liab['groups'] ?? [];
+    //                     $assetGroups = $asset['groups'] ?? [];
+    //                     $maxGroups = max(count($liabGroups), count($assetGroups));
+
+    //                     for ($g = 0; $g < $maxGroups; $g++) {
+    //                         $liabGroup = $liabGroups[$g] ?? null;
+    //                         $assetGroup = $assetGroups[$g] ?? null;
+
+    //                         $sheet->row($row++, [
+    //                             $liabGroup ? '  - ' . $liabGroup['group_name'] : '',
+    //                             $liabGroup ? number_format($liabGroup['group_total'], 2) : '',
+    //                             $assetGroup ? '  - ' . $assetGroup['group_name'] : '',
+    //                             $assetGroup ? number_format($assetGroup['group_total'], 2) : '',
+    //                         ]);
+    //                     }
+    //                 }
+
+    //                 // Totals
+    //                 $totalLiab = collect($liabilitiesAndEquity)->sum('total');
+    //                 $totalAsset = collect($assets)->sum('total');
+
+    //                 $sheet->row($row++, [
+    //                     'Total Liabilities', number_format($totalLiab, 2),
+    //                     'Total Assets', number_format($totalAsset, 2)
+    //                 ]);
+
+    //                 $sheet->setAutoSize(true);
+    //             });
+    //         })->download('xls');
+
+    //     } elseif($searchtype=="detail") {
+
+    //         $fileName = 'BalanceSheetDetail_' . $fromDate . '_to_' . $toDate;
+
+    //         Excel::create($fileName, function($excel) use ($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate) {
+    //             $excel->sheet('Balance Sheet Detail', function($sheet) use ($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate) {
+    //                 $row = 1;
+
+    //                 // Header
+    //                 $sheet->mergeCells('A1:D1');
+    //                 $sheet->row($row++, [$voucherhead . " (From $fromDate to $toDate)"]);
+
+    //                 $sheet->row($row++, ['Liabilities', 'Amount', 'Assets', 'Amount']);
+
+    //                 $maxCategories = max(count($liabilitiesAndEquity), count($assets));
+
+    //                 for ($i = 0; $i < $maxCategories; $i++) {
+    //                     $liab = $liabilitiesAndEquity[$i] ?? null;
+    //                     $asset = $assets[$i] ?? null;
+
+    //                     // Category row
+    //                     $sheet->row($row++, [
+    //                         $liab['name'] ?? '',
+    //                         isset($liab['total']) ? number_format($liab['total'], 2) : '',
+    //                         $asset['name'] ?? '',
+    //                         isset($asset['total']) ? number_format($asset['total'], 2) : '',
+    //                     ]);
+
+    //                     // Get groups
+    //                     $liabGroups = array_values(array_filter($liab['groups'] ?? [], function ($group) {
+    //                         return collect($group['accounts'] ?? [])->pluck('balance')->filter()->count() > 0;
+    //                     }));
+
+    //                     $assetGroups = array_values(array_filter($asset['groups'] ?? [], function ($group) {
+    //                         return collect($group['accounts'] ?? [])->pluck('balance')->filter()->count() > 0;
+    //                     }));
+
+    //                     $maxGroups = max(count($liabGroups), count($assetGroups));
+
+    //                     for ($g = 0; $g < $maxGroups; $g++) {
+    //                         $liabGroup = $liabGroups[$g] ?? null;
+    //                         $assetGroup = $assetGroups[$g] ?? null;
+
+    //                         // Group row
+    //                         $sheet->row($row++, [
+    //                             $liabGroup ? '  - ' . $liabGroup['group_name'] : '',
+    //                             $liabGroup ? number_format($liabGroup['group_total'], 2) : '',
+    //                             $assetGroup ? '  - ' . $assetGroup['group_name'] : '',
+    //                             $assetGroup ? number_format($assetGroup['group_total'], 2) : '',
+    //                         ]);
+
+    //                         // Accounts under group
+    //                         $liabAccounts = collect($liabGroup['accounts'] ?? [])->filter(function ($acc) {
+    //                             return $acc['balance'] != 0;
+    //                         })->values();
+
+    //                         $assetAccounts = collect($assetGroup['accounts'] ?? [])->filter(function ($acc) {
+    //                             return $acc['balance'] != 0;
+    //                         })->values();
+
+    //                         $maxAccounts = max($liabAccounts->count(), $assetAccounts->count());
+
+    //                         for ($a = 0; $a < $maxAccounts; $a++) {
+    //                             $liabAcc = $liabAccounts[$a] ?? null;
+    //                             $assetAcc = $assetAccounts[$a] ?? null;
+
+    //                             $sheet->row($row++, [
+    //                                 $liabAcc ? '     * ' . $liabAcc['name'] : '',
+    //                                 $liabAcc ? number_format($liabAcc['balance'], 2) : '',
+    //                                 $assetAcc ? '     * ' . $assetAcc['name'] : '',
+    //                                 $assetAcc ? number_format($assetAcc['balance'], 2) : '',
+    //                             ]);
+    //                         }
+    //                     }
+    //                 }
+
+    //                 // Totals
+    //                 $sheet->row($row++, [
+    //                     'Total Liabilities',
+    //                     number_format(collect($liabilitiesAndEquity)->sum('total'), 2),
+    //                     'Total Assets',
+    //                     number_format(collect($assets)->sum('total'), 2),
+    //                 ]);
+
+    //                 $sheet->setAutoSize(true);
+    //             });
+    //         })->download('xls');
+    //     }
+    // }
+
+  
+
     public function exportSearchReport($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate, $searchtype)
     {
-         
-        if($searchtype=='summary') {
-            $fileName = 'BalanceSheet_' . $fromDate . '_to_' . $toDate;
+        $rows = [];
 
-            Excel::create($fileName, function($excel) use ($assets, $liabilitiesAndEquity, $fromDate, $toDate, $voucherhead) {
-                $excel->sheet('Balance Sheet', function($sheet) use ($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate) {
-                    $row = 1;
+        // Title
+        $rows[] = [$voucherhead . " (From $fromDate to $toDate)"];
+        $rows[] = [];
 
-                    // Title
-                    $sheet->mergeCells('A1:D1');
-                    $sheet->row($row++, [$voucherhead . " (From $fromDate to $toDate)"]);
+        // Header
+        $rows[] = ['Liabilities', 'Amount', 'Assets', 'Amount'];
 
-                    // Headers
-                    $sheet->row($row++, [
-                        'Liabilities', 'Amount', 'Assets', 'Amount'
-                    ]);
+        $maxCategories = max(count($liabilitiesAndEquity), count($assets));
 
-                    $maxCategories = max(count($liabilitiesAndEquity), count($assets));
+        for ($i = 0; $i < $maxCategories; $i++) {
 
-                    for ($i = 0; $i < $maxCategories; $i++) {
-                        $liab = $liabilitiesAndEquity[$i] ?? null;
-                        $asset = $assets[$i] ?? null;
+            $liab  = $liabilitiesAndEquity[$i] ?? null;
+            $asset = $assets[$i] ?? null;
 
-                        $sheet->row($row++, [
-                            $liab ? $liab['name'] : '',
-                            $liab ? number_format($liab['total'], 2) : '',
-                            $asset ? $asset['name'] : '',
-                            $asset ? number_format($asset['total'], 2) : '',
-                        ]);
+            // ======================
+            // CATEGORY ROW (BOTH TYPES)
+            // ======================
+            $rows[] = [
+                $liab['name'] ?? '',
+                isset($liab['total']) ? number_format($liab['total'], 2) : '',
+                $asset['name'] ?? '',
+                isset($asset['total']) ? number_format($asset['total'], 2) : '',
+            ];
 
-                        $liabGroups = $liab['groups'] ?? [];
-                        $assetGroups = $asset['groups'] ?? [];
-                        $maxGroups = max(count($liabGroups), count($assetGroups));
+            // ======================
+            // SUMMARY TYPE
+            // ======================
+            if ($searchtype == 'summary') {
 
-                        for ($g = 0; $g < $maxGroups; $g++) {
-                            $liabGroup = $liabGroups[$g] ?? null;
-                            $assetGroup = $assetGroups[$g] ?? null;
+                $liabGroups  = $liab['groups'] ?? [];
+                $assetGroups = $asset['groups'] ?? [];
 
-                            $sheet->row($row++, [
-                                $liabGroup ? '  - ' . $liabGroup['group_name'] : '',
-                                $liabGroup ? number_format($liabGroup['group_total'], 2) : '',
-                                $assetGroup ? '  - ' . $assetGroup['group_name'] : '',
-                                $assetGroup ? number_format($assetGroup['group_total'], 2) : '',
-                            ]);
-                        }
+                $maxGroups = max(count($liabGroups), count($assetGroups));
+
+                for ($g = 0; $g < $maxGroups; $g++) {
+
+                    $liabGroup  = $liabGroups[$g] ?? null;
+                    $assetGroup = $assetGroups[$g] ?? null;
+
+                    $rows[] = [
+                        $liabGroup ? '  - ' . $liabGroup['group_name'] : '',
+                        $liabGroup ? number_format($liabGroup['group_total'], 2) : '',
+                        $assetGroup ? '  - ' . $assetGroup['group_name'] : '',
+                        $assetGroup ? number_format($assetGroup['group_total'], 2) : '',
+                    ];
+                }
+            }
+
+            // ======================
+            // DETAIL TYPE
+            // ======================
+            elseif ($searchtype == 'detail') {
+
+                $liabGroups = array_values(array_filter($liab['groups'] ?? [], function ($group) {
+                    return collect($group['accounts'] ?? [])->pluck('balance')->filter()->count() > 0;
+                }));
+
+                $assetGroups = array_values(array_filter($asset['groups'] ?? [], function ($group) {
+                    return collect($group['accounts'] ?? [])->pluck('balance')->filter()->count() > 0;
+                }));
+
+                $maxGroups = max(count($liabGroups), count($assetGroups));
+
+                for ($g = 0; $g < $maxGroups; $g++) {
+
+                    $liabGroup  = $liabGroups[$g] ?? null;
+                    $assetGroup = $assetGroups[$g] ?? null;
+
+                    // Group Row
+                    $rows[] = [
+                        $liabGroup ? '  - ' . $liabGroup['group_name'] : '',
+                        $liabGroup ? number_format($liabGroup['group_total'], 2) : '',
+                        $assetGroup ? '  - ' . $assetGroup['group_name'] : '',
+                        $assetGroup ? number_format($assetGroup['group_total'], 2) : '',
+                    ];
+
+                    // Accounts under group
+                    $liabAccounts = collect($liabGroup['accounts'] ?? [])
+                        ->filter(fn($acc) => $acc['balance'] != 0)
+                        ->values();
+
+                    $assetAccounts = collect($assetGroup['accounts'] ?? [])
+                        ->filter(fn($acc) => $acc['balance'] != 0)
+                        ->values();
+
+                    $maxAccounts = max($liabAccounts->count(), $assetAccounts->count());
+
+                    for ($a = 0; $a < $maxAccounts; $a++) {
+
+                        $liabAcc  = $liabAccounts[$a] ?? null;
+                        $assetAcc = $assetAccounts[$a] ?? null;
+
+                        $rows[] = [
+                            $liabAcc ? '     * ' . $liabAcc['name'] : '',
+                            $liabAcc ? number_format($liabAcc['balance'], 2) : '',
+                            $assetAcc ? '     * ' . $assetAcc['name'] : '',
+                            $assetAcc ? number_format($assetAcc['balance'], 2) : '',
+                        ];
                     }
-
-                    // Totals
-                    $totalLiab = collect($liabilitiesAndEquity)->sum('total');
-                    $totalAsset = collect($assets)->sum('total');
-
-                    $sheet->row($row++, [
-                        'Total Liabilities', number_format($totalLiab, 2),
-                        'Total Assets', number_format($totalAsset, 2)
-                    ]);
-
-                    $sheet->setAutoSize(true);
-                });
-            })->download('xls');
-
-        } elseif($searchtype=="detail") {
-
-            $fileName = 'BalanceSheetDetail_' . $fromDate . '_to_' . $toDate;
-
-            Excel::create($fileName, function($excel) use ($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate) {
-                $excel->sheet('Balance Sheet Detail', function($sheet) use ($assets, $liabilitiesAndEquity, $voucherhead, $fromDate, $toDate) {
-                    $row = 1;
-
-                    // Header
-                    $sheet->mergeCells('A1:D1');
-                    $sheet->row($row++, [$voucherhead . " (From $fromDate to $toDate)"]);
-
-                    $sheet->row($row++, ['Liabilities', 'Amount', 'Assets', 'Amount']);
-
-                    $maxCategories = max(count($liabilitiesAndEquity), count($assets));
-
-                    for ($i = 0; $i < $maxCategories; $i++) {
-                        $liab = $liabilitiesAndEquity[$i] ?? null;
-                        $asset = $assets[$i] ?? null;
-
-                        // Category row
-                        $sheet->row($row++, [
-                            $liab['name'] ?? '',
-                            isset($liab['total']) ? number_format($liab['total'], 2) : '',
-                            $asset['name'] ?? '',
-                            isset($asset['total']) ? number_format($asset['total'], 2) : '',
-                        ]);
-
-                        // Get groups
-                        $liabGroups = array_values(array_filter($liab['groups'] ?? [], function ($group) {
-                            return collect($group['accounts'] ?? [])->pluck('balance')->filter()->count() > 0;
-                        }));
-
-                        $assetGroups = array_values(array_filter($asset['groups'] ?? [], function ($group) {
-                            return collect($group['accounts'] ?? [])->pluck('balance')->filter()->count() > 0;
-                        }));
-
-                        $maxGroups = max(count($liabGroups), count($assetGroups));
-
-                        for ($g = 0; $g < $maxGroups; $g++) {
-                            $liabGroup = $liabGroups[$g] ?? null;
-                            $assetGroup = $assetGroups[$g] ?? null;
-
-                            // Group row
-                            $sheet->row($row++, [
-                                $liabGroup ? '  - ' . $liabGroup['group_name'] : '',
-                                $liabGroup ? number_format($liabGroup['group_total'], 2) : '',
-                                $assetGroup ? '  - ' . $assetGroup['group_name'] : '',
-                                $assetGroup ? number_format($assetGroup['group_total'], 2) : '',
-                            ]);
-
-                            // Accounts under group
-                            $liabAccounts = collect($liabGroup['accounts'] ?? [])->filter(function ($acc) {
-                                return $acc['balance'] != 0;
-                            })->values();
-
-                            $assetAccounts = collect($assetGroup['accounts'] ?? [])->filter(function ($acc) {
-                                return $acc['balance'] != 0;
-                            })->values();
-
-                            $maxAccounts = max($liabAccounts->count(), $assetAccounts->count());
-
-                            for ($a = 0; $a < $maxAccounts; $a++) {
-                                $liabAcc = $liabAccounts[$a] ?? null;
-                                $assetAcc = $assetAccounts[$a] ?? null;
-
-                                $sheet->row($row++, [
-                                    $liabAcc ? '     * ' . $liabAcc['name'] : '',
-                                    $liabAcc ? number_format($liabAcc['balance'], 2) : '',
-                                    $assetAcc ? '     * ' . $assetAcc['name'] : '',
-                                    $assetAcc ? number_format($assetAcc['balance'], 2) : '',
-                                ]);
-                            }
-                        }
-                    }
-
-                    // Totals
-                    $sheet->row($row++, [
-                        'Total Liabilities',
-                        number_format(collect($liabilitiesAndEquity)->sum('total'), 2),
-                        'Total Assets',
-                        number_format(collect($assets)->sum('total'), 2),
-                    ]);
-
-                    $sheet->setAutoSize(true);
-                });
-            })->download('xls');
+                }
+            }
         }
+
+        // ======================
+        // GRAND TOTALS (BOTH TYPES)
+        // ======================
+        $totalLiab  = collect($liabilitiesAndEquity)->sum('total');
+        $totalAsset = collect($assets)->sum('total');
+
+        $rows[] = [];
+        $rows[] = [
+            'Total Liabilities',
+            number_format($totalLiab, 2),
+            'Total Assets',
+            number_format($totalAsset, 2),
+        ];
+
+        // ======================
+        // FILE NAME
+        // ======================
+        if ($searchtype == 'summary') {
+            $fileName = 'BalanceSheet_' . $fromDate . '_to_' . $toDate . '.xlsx';
+        } else {
+            $fileName = 'BalanceSheetDetail_' . $fromDate . '_to_' . $toDate . '.xlsx';
+        }
+
+        // Company name (change if needed)
+        $company = config('app.name');
+
+        return Excel::download(
+            new SimpleArrayExport($rows, $voucherhead, $company),
+            $fileName
+        );
     }
+
 
 
     

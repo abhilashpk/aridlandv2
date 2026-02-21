@@ -9,7 +9,8 @@ use App\Http\Requests;
 use Notification;
 use Session;
 use App;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 use DB;
 
 class VatReportController extends Controller
@@ -33,9 +34,9 @@ class VatReportController extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				//$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -630,19 +631,30 @@ class VatReportController extends Controller
 		// echo '<pre>';print_r($results);exit;
 							
 	//	echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+		// Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
+        // // Set the spreadsheet title, creator, and description
+        // $excel->setTitle($voucher_head);
+        // $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
+        // $excel->setDescription($voucher_head);
 
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
+        // // Build the spreadsheet, passing in the payments array
+		// $excel->sheet('sheet1', function($sheet) use ($datareport) {
+		// 	$sheet->fromArray($datareport, null, 'A1', false, false);
+		// });
 
-		})->download('xlsx');
+		// })->download('xlsx');
+
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);
 		
 	}
 	

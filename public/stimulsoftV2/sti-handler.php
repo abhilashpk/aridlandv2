@@ -11,6 +11,21 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/stimulsoft/helper.php';
 require_once __DIR__ . '/stimulsoft/adapters/mysql.php';
 
+// ── Load Laravel .env ──
+$envPath = __DIR__ . '/../../.env'; // adjust if needed to reach project root
+if (file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos($line, '=') !== false) {
+            [$key, $value] = explode('=', $line, 2);
+            $key   = trim($key);
+            $value = trim($value, " \t\n\r\0\x0B\"'"); // strip quotes too
+            putenv("$key=$value");
+        }
+    }
+}
+
 // Basic headers (CORS + content)
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Engaged-Auth-Token');
@@ -73,14 +88,27 @@ $handler->onPrepareVariables = function ($args) {
     return StiResult::success();
 };*/
 
+// $handler->onBeginProcessData = function ($args) {
+//     if (isset($args->connection) && $args->connection === 'MySQL') {
+//         // 🔥 Use getenv() or hardcode values since we're outside Laravel
+//         $args->connectionString =
+//             'Server=' . (getenv('DB_HOST') ?: 'localhost') .
+//             ';Database=' . (getenv('DB_DATABASE') ?: 'laravel') .
+//             ';uid=' . (getenv('DB_USERNAME') ?: 'root') .
+//             ';password=' . (getenv('DB_PASSWORD') ?: '') . ';';
+//     }
+//     return StiResult::success();
+// };
+
+
 $handler->onBeginProcessData = function ($args) {
     if (isset($args->connection) && $args->connection === 'MySQL') {
-        // 🔥 Use getenv() or hardcode values since we're outside Laravel
         $args->connectionString =
-            'Server=' . (getenv('DB_HOST') ?: 'localhost') .
-            ';Database=' . (getenv('DB_DATABASE') ?: 'laravel') .
-            ';uid=' . (getenv('DB_USERNAME') ?: 'root') .
-            ';password=' . (getenv('DB_PASSWORD') ?: '') . ';';
+            'Server='    . (getenv('DB_HOST')     ?: 'localhost') .
+            ';Port='     . (getenv('DB_PORT')      ?: '3306') .
+            ';Database=' . (getenv('DB_DATABASE')  ?: 'aridland') .
+            ';uid='      . (getenv('DB_USERNAME')  ?: 'root') .
+            ';password=' . (getenv('DB_PASSWORD')  ?: '') . ';';
     }
     return StiResult::success();
 };

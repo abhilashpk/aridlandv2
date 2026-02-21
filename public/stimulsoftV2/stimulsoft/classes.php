@@ -160,6 +160,15 @@ class StiResponse {
 
 class StiResult {
     public $success = true;
+
+    public $message = '';
+
+    // ✅ ADD THESE
+    public $types = [];
+    public $columns = [];
+    public $rows = [];
+    public $count = 0;
+    
     public $notice = null;
     public $object = null;
 

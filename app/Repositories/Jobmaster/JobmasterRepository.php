@@ -1732,7 +1732,11 @@ if(!empty( array_filter($attributes['account_id']))) {
 								
 					$results2 = $qry1->union($qry2)->union($qry3)->union($qry4)->union($qry5)->union($qry1_1)->union($qry2_1)->union($qry3_1)->union($qry4_1)->union($qry5_1)->union($qry6)->union($qry6_1)->get();
 					
-					return array_merge($results1,$results2);
+					// return array_merge($results1,$results2);
+					return array_merge(
+						is_array($results1) ? $results1 : $results1->toArray(),
+						is_array($results2) ? $results2 : $results2->toArray()
+					);
 					
 				break;
 				

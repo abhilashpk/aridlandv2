@@ -808,6 +808,15 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	
 	private function updateItemQuantity($attributes, $key)
 	{
+		// If SDO already posted stock (parameter enabled), PI should not add stock again.
+		if(
+			(isset($attributes['document_type']) && $attributes['document_type'] == 'SDO') &&
+			isset($this->mod_sdo_qty->is_active) &&
+			(int)$this->mod_sdo_qty->is_active === 1
+		) {
+			return true;
+		}
+
 		$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 									  ->where('is_baseqty', 1)->first();
 									  
@@ -840,6 +849,15 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	//UPDATED MAR 1
 	private function updateItemQuantityonEdit($attributes, $key)
 	{
+		// If SDO already posted stock (parameter enabled), PI edit should not alter stock qty.
+		if(
+			(isset($attributes['document_type']) && $attributes['document_type'] == 'SDO') &&
+			isset($this->mod_sdo_qty->is_active) &&
+			(int)$this->mod_sdo_qty->is_active === 1
+		) {
+			return true;
+		}
+
 		if($attributes['actual_quantity'][$key] != $attributes['quantity'][$key]) {
 			
 			$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
@@ -4129,6 +4147,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						->whereIn('document_id', $ids)
 						->where('department_id',auth()->user()->department_id)
 						->where('item_id',$attributes['item_id'][$key])
+						->where('unit_id',$attributes['unit_id'][$key])
 						->where('status',1)->whereNull('deleted_at')
 						->select('id', DB::raw('SUM(quantity) AS quantity'))
 						->groupBY('item_id')
@@ -4146,6 +4165,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						->whereIn('document_id', $ids)
 						->where('department_id',auth()->user()->department_id)
 						->where('item_id',$attributes['item_id'][$key])
+						->where('unit_id',$attributes['unit_id'][$key])
 						->select('id', DB::raw('SUM(quantity) AS quantity'))
 						->groupBY('item_id')
 						->first();
@@ -4173,44 +4193,27 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		
 		if($SDOlogs->quantity==$quantity) {
 		    //DISABLE SDO TRANSACTION LOG.... 50,25,25   90
-	    	DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->whereIn('document_id',$pids)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+	    	DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->whereIn('document_id',$pids)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		} else {
 		    //PARTIAL TRANSFER OF DO TO SI HANDLING LOG PARIAL QUANTITY.....
 		    $siquantity = $quantity;
 		    foreach($pids as $pid) {
-		       $drow = DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->select('quantity')->first();//25 < 15
+		       $drow = DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->select('quantity')->first();//25 < 15
 		       if($drow && $drow->quantity <= $siquantity) {
-		           DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+		           DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->update(['status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		           $siquantity = $siquantity - $drow->quantity;//15
 		       } else {
-		           $finalqty = $drow->quantity - $siquantity;
-		           DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->update(['quantity'=> $finalqty]);
+		           if($drow) {
+		               $finalqty = $drow->quantity - $siquantity;
+		               DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->update(['quantity'=> $finalqty]);
+		           }
 		       }
 		    }
 		        
 		}
 		
-		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
-										->where('department_id',auth()->user()->department_id)
-										->where('status', 1)
-										->where('trtype', 1)
-										->where('cur_quantity', '>', 0)
-										->whereNull('deleted_at')
-										->where(function ($query) use($pids) {
-											$query->whereNotIn('document_id',$pids)
-												  ->orWhere('document_type','!=','SDO');
-										})
-										->select('cur_quantity','pur_cost','unit_cost')
-										->get();
-		
-		$itmcost = (isset($attributes['is_fc']))? ($quantity * $attributes['cost'][$key] * $attributes['currency_rate']) : $quantity * $attributes['cost'][$key];
-		$itmqty = $quantity;
-		foreach($itmlogs as $log) {
-			$itmcost += ($log->cur_quantity * ($log->pur_cost==0)?$log->unit_cost:$log->pur_cost);//FEB25
-			$itmqty += $log->cur_quantity;
-		}
-		
-		$cost_avg = round( (($itmcost / $itmqty) + $other_cost), 3);
+		// SDO -> PI transfer should not recalculate weighted average.
+		$cost_avg = $this->getDeptCostAvgForTransfer($attributes['item_id'][$key], $attributes['unit_id'][$key]);
 		$cost = (isset($attributes['is_fc']))?$attributes['cost'][$key]*$attributes['currency_rate']:$attributes['cost'][$key];
 		
 		DB::table('item_unit')
@@ -4241,50 +4244,34 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		
 		if($SDOlogs->quantity==$attributes['quantity'][$key]) {
 		    //DISABLE SDO TRANSACTION LOG.... 50,25,25   90
-	    	DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->whereIn('document_id',$pids)->update(['quantity' => 0, 'status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+	    	DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->whereIn('document_id',$pids)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->update(['quantity' => 0, 'status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		} else {
 		    //PARTIAL TRANSFER OF DO TO SI HANDLING LOG PARIAL QUANTITY.....
 		    $siquantity = $attributes['quantity'][$key];
 		    $siquantity_act = $attributes['actual_quantity'][$key]+$SDOlogs->quantity;
 		    foreach($pids as $pid) {
-		       $drow = DB::table('item_log')->where('document_type','SDO')->where('document_id',$pid)->select('quantity')->first();//25 < 15
+		       $drow = DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->select('quantity')->first();//25 < 15
 		       if($drow && $drow->quantity < $siquantity) {
 		           $finalqty = $siquantity_act - $attributes['quantity'][$key]; 
 		           if($finalqty==0)
-		                DB::table('item_log')->where('document_type','SDO')->where('document_id',$pid)->update(['quantity' => 0, 'status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
+		                DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->update(['quantity' => 0, 'status'=> 0,'deleted_at'=>date('Y-m-d H:i:s')]);
 		           else
-		                DB::table('item_log')->where('document_type','SDO')->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=> null]);
+		                DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=> null]);
 		                
 		           $siquantity = $siquantity - $drow->quantity;//15
 		       } else {
-		           $finalqty = $siquantity_act - $siquantity;  //echo $finalqty.' b';
-		           DB::table('item_log')->where('document_type','SDO')->where('document_id',$pid)->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>null]);
+		           if($drow) {
+		               $finalqty = $siquantity_act - $siquantity;  //echo $finalqty.' b';
+		               DB::table('item_log')->where('document_type','SDO')->where('department_id',auth()->user()->department_id)->where('document_id',$pid)->where('item_id',$attributes['item_id'][$key])->where('unit_id',$attributes['unit_id'][$key])->update(['quantity'=> $finalqty, 'status'=> 1, 'deleted_at'=>null]);
+		           }
 		       }
 		       
 		    }
 		        
 		}
 		
-		$itmlogs = DB::table('item_log')->where('item_id', $attributes['item_id'][$key])
-										->where('status', 1)
-										->where('trtype', 1)
-										->where('cur_quantity', '>', 0)
-										->whereNull('deleted_at')
-										->where(function ($query) use($pids) {
-											$query->whereNotIn('document_id',$pids)
-												  ->orWhere('document_type','!=','SDO');
-										})
-										->select('cur_quantity','pur_cost','unit_cost')
-										->get();
-		
-		$itmcost = (isset($attributes['is_fc']))? ($attributes['quantity'][$key] * $attributes['item_price'][$key] * $attributes['currency_rate']) : $attributes['quantity'][$key] * $attributes['item_price'][$key];
-		$itmqty = $attributes['quantity'][$key];
-		foreach($itmlogs as $log) {
-			$itmcost += ($log->cur_quantity * ($log->pur_cost==0)?$log->unit_cost:$log->pur_cost);//FEB25
-			$itmqty += $log->cur_quantity;
-		}
-		
-		$cost_avg = round( (($itmcost / $itmqty) + $other_cost), 3);
+		// SDO -> PI transfer should not recalculate weighted average.
+		$cost_avg = $this->getDeptCostAvgForTransfer($attributes['item_id'][$key], $attributes['unit_id'][$key]);
 		$cost = (isset($attributes['is_fc']))?$attributes['item_price'][$key]*$attributes['currency_rate']:$attributes['item_price'][$key];
 		
 		DB::table('item_unit')
@@ -4302,6 +4289,41 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						]);	
 							
 		return $cost_avg;
+	}
+
+	private function getDeptCostAvgForTransfer($itemId, $unitId)
+	{
+		$departmentId = auth()->user()->department_id;
+		$isd = DB::table('itemstock_department')
+			->where('itemmaster_id', $itemId)
+			->where('department_id', $departmentId)
+			->where('unit_id', $unitId)
+			->select('cost_avg')
+			->first();
+		if($isd && (float)$isd->cost_avg > 0) {
+			return (float)$isd->cost_avg;
+		}
+
+		$log = DB::table('item_log')
+			->where('item_id', $itemId)
+			->where('department_id', $departmentId)
+			->where('unit_id', $unitId)
+			->where('status', 1)
+			->whereNull('deleted_at')
+			->where('cost_avg', '>', 0)
+			->orderBy('id', 'DESC')
+			->select('cost_avg')
+			->first();
+		if($log) {
+			return (float)$log->cost_avg;
+		}
+
+		$iu = DB::table('item_unit')
+			->where('itemmaster_id', $itemId)
+			->where('unit_id', $unitId)
+			->select('cost_avg')
+			->first();
+		return ($iu) ? (float)$iu->cost_avg : 0;
 	}
 	
 	private function setSaleLogUpdate($attributes, $key, $document_id, $cost_avg, $other_cost)

@@ -391,7 +391,16 @@
 									</tr>
 									</thead>
 								</table>
-								{{--*/ $i = 0; $num = count($docitems); $total = $vattotal = $nettotal = $nettotal_dh = $total_dh = $vattotal_dh = 0; /*--}}
+								@php
+									$i = 0;
+									$num = count($docitems);
+									$total = 0;
+									$vattotal = 0;
+									$nettotal = 0;
+									$nettotal_dh = 0;
+									$total_dh = 0;
+									$vattotal_dh = 0;
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -497,7 +506,7 @@
 									</div>
 								<?php $i++; } } else { ?>
 								@foreach($docitems as $poitem)
-								{{--*/ $i++; /*--}}
+									@php $i++; @endphp
 								
 									<div class="itemdivChld">
 										<?php 
@@ -820,7 +829,7 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-										<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" class="form-control spl" readonly value="{{(old('total'))?old('total'):($orderrow->is_fc==1)?$orderrow->total_fc:$orderrow->total}}">
+									<span class="small" id="fc_label">Currency</span>	<input type="number" id="total" step="any" name="total" class="form-control spl" readonly value="{{ (old('total')) ? old('total') : (($orderrow->is_fc==1) ? $orderrow->total_fc : $orderrow->total) }}">
 										</div>
 										<div class="col-xs-2">
 										<span class="small" id="c_label">Currency {{$bcurrency}}</span>	<input type="number" id="total_fc" step="any" name="total_fc" class="form-control spl" value="{{(old('total_fc'))?old('total_fc'):$orderrow->total}}" readonly placeholder="0">
@@ -852,7 +861,7 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly value="{{(old('subtotal'))?old('subtotal'):($orderrow->is_fc==1)?$orderrow->subtotal_fc:$orderrow->subtotal}}">
+											<input type="number" step="any" id="subtotal" name="subtotal" class="form-control spl" readonly value="{{ (old('subtotal')) ? old('subtotal') : (($orderrow->is_fc==1) ? $orderrow->subtotal_fc : $orderrow->subtotal) }}">
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="subtotal_fc" name="subtotal_fc" class="form-control spl" value="{{(old('subtotal_fc'))?old('subtotal_fc'):$orderrow->subtotal}}" readonly placeholder="0">
@@ -886,7 +895,7 @@
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2"></div>
 										<div class="col-xs-2">
-											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly value="{{(old('net_amount'))?old('net_amount'):($orderrow->is_fc==1)?$orderrow->net_amount_fc:$orderrow->net_amount}}">
+											<input type="number" step="any" id="net_amount" name="net_amount" class="form-control spl" readonly value="{{ (old('net_amount')) ? old('net_amount') : (($orderrow->is_fc==1) ? $orderrow->net_amount_fc : $orderrow->net_amount) }}">
 										</div>
 										<div class="col-xs-2">
 											<input type="number" step="any" id="net_amount_fc" name="net_amount_fc" class="form-control spl" readonly value="{{(old('net_amount_fc'))?old('net_amount_fc'):$orderrow->net_amount}}">
@@ -1188,7 +1197,7 @@ $(document).ready(function () {
 	$('#othrcstItm_1').toggle();$('.locPrntItm').toggle();
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle();
 	
-	<?php if(!old('dr_acnt')[0]) { ?>
+	<?php if(!old('dr_acnt.0')) { ?>
 		$('.OCdivPrnt').toggle();//$('.oc-amount-fc').toggle();
 	<?php } ?>
 

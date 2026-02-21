@@ -11,7 +11,8 @@ use Input;
 use Session;
 use App;
 use DB;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 use Auth;
 
 class CashInhandController extends Controller
@@ -38,132 +39,132 @@ class CashInhandController extends Controller
 	}
 	
 
-	public function getSearch()
+	public function getSearch(Request $request)
 	{	//echo '<pre>';print_r(Input::all());exit;
 		$data = array(); 
-		$from=Input::get('from_date');
+		$from=$request->get('from_date');
 		$date_from =$this->acsettings->from_date; //date('Y-m-d', strtotime(Input::get('from_date')));
-		$date_to = (Input::get('to_date')!='')?date('Y-m-d', strtotime(Input::get('to_date'))):date('Y-m-d');
+		$date_to = ($request->get('to_date')!='')?date('Y-m-d', strtotime($request->get('to_date'))):date('Y-m-d');
 		//Input::merge(['curr_from_date' => $this->acsettings->from_date]);
 
-  //echo '<pre>';print_r($date_from);exit;
-  
-  $selectedCategories = [];
-$balances=[];
-if (Input::get('bank') == 1)$selectedCategories[] = 'BANK';
-if (Input::get('cash') == 1)   $selectedCategories[] = 'CASH';
-if (Input::get('PDCR') == 1)$selectedCategories[] = 'PDCR';
-if (Input::get('PDCI') == 1)   $selectedCategories[] = 'PDCI';
+		//echo '<pre>';print_r($date_from);exit;
+		
+		$selectedCategories = [];
+		$balances=[];
+		if ($request->get('bank') == 1)$selectedCategories[] = 'BANK';
+		if ($request->get('cash') == 1)   $selectedCategories[] = 'CASH';
+		if ($request->get('PDCR') == 1)$selectedCategories[] = 'PDCR';
+		if ($request->get('PDCI') == 1)   $selectedCategories[] = 'PDCI';
 
-// If nothing is selected, include all categories
+		// If nothing is selected, include all categories
 
-if (empty($selectedCategories)) {
-    $selectedCategories = ['BANK', 'CASH', 'PDCR', 'PDCI'];
-}
-$selectedCategory=implode(',',$selectedCategories);
-//echo '<pre>';print_r($selectedCategories);exit;
-if(Input::get('search_type')=='Summary'){
-foreach($selectedCategories as $category){
-    $cashAccountIds = DB::table('account_master')
-    ->where('deleted_at', '0000-00-00 00:00:00')
-    ->where('category', $category)
-    ->pluck('id');
-    $transactions = DB::table('account_transaction')
-    ->whereIn('account_master_id', $cashAccountIds)
-    ->where('deleted_at', '0000-00-00 00:00:00')
-    ->where('voucher_type', '!=', 'OBD')
-    //->whereBetween('invoice_date', array($date_from, $date_to))
-    ->where('invoice_date','<=',$date_to)
-    ->where('amount', '!=', 0)
-    ->select(
-        DB::raw("SUM(CASE WHEN transaction_type = 'Dr' THEN amount ELSE 0 END) AS total_debit"),
-        DB::raw("SUM(CASE WHEN transaction_type = 'Cr' THEN amount ELSE 0 END) AS total_credit"))
-       ->first();
+		if (empty($selectedCategories)) {
+			$selectedCategories = ['BANK', 'CASH', 'PDCR', 'PDCI'];
+		}
+		$selectedCategory=implode(',',$selectedCategories);
+		//echo '<pre>';print_r($selectedCategories);exit;
+		if($request->get('search_type')=='Summary'){
+		foreach($selectedCategories as $category){
+			$cashAccountIds = DB::table('account_master')
+			->whereNull('deleted_at')
+			->where('category', $category)
+			->pluck('id');
+			$transactions = DB::table('account_transaction')
+			->whereIn('account_master_id', $cashAccountIds)
+			->whereNull('deleted_at')
+			->where('voucher_type', '!=', 'OBD')
+			//->whereBetween('invoice_date', array($date_from, $date_to))
+			->where('invoice_date','<=',$date_to)
+			->where('amount', '!=', 0)
+			->select(
+				DB::raw("SUM(CASE WHEN transaction_type = 'Dr' THEN amount ELSE 0 END) AS total_debit"),
+				DB::raw("SUM(CASE WHEN transaction_type = 'Cr' THEN amount ELSE 0 END) AS total_credit"))
+			->first();
 
-  //echo '<pre>';print_r($transactions);exit;
-    $net = ($transactions->total_debit ?? 0) - ($transactions->total_credit ?? 0);
-    
-    $res[] = (object)(array('categories'=>$category,
-                             'debit' => $transactions->total_debit,
-							'credit'=>$transactions->total_credit,
-							'balance'=>$net
-									));
-    $balances[$category]=$net;
-}
-$voucher_head = 'Cash Balance Summary of '.$from;
-}
-else if(Input::get('search_type')=='Details'){
-    
-    foreach ($selectedCategories as $category) {
-    $accounts = DB::table('account_master')
-        ->where('category',$category)
-        ->where('deleted_at', '0000-00-00 00:00:00')
-        ->get(['id', 'master_name']);
+		//echo '<pre>';print_r($transactions);exit;
+			$net = ($transactions->total_debit ?? 0) - ($transactions->total_credit ?? 0);
+			
+			$res[] = (object)(array('categories'=>$category,
+									'debit' => $transactions->total_debit,
+									'credit'=>$transactions->total_credit,
+									'balance'=>$net
+											));
+			$balances[$category]=$net;
+		}
+		$voucher_head = 'Cash Balance Summary of '.$from;
+		}
+		else if($request->get('search_type')=='Details'){
+			
+			foreach ($selectedCategories as $category) {
+				$accounts = DB::table('account_master')
+					->where('category',$category)
+					->whereNull('deleted_at')
+					->get(['id', 'master_name']);
 
-    foreach ($accounts as $account) {
-        $transactions = DB::table('account_transaction')
-            ->where('account_master_id',$account->id)
-            ->where('deleted_at', '0000-00-00 00:00:00')
-            ->where('voucher_type', '!=', 'OBD')
-            //->whereBetween('invoice_date', [$date_from,$date_to])
-            ->where('invoice_date','<=',$date_to)
-            ->where('amount', '!=', 0)
-            ->selectRaw("
-                SUM(CASE WHEN transaction_type = 'Dr' THEN amount ELSE 0 END) AS debit,
-                SUM(CASE WHEN transaction_type = 'Cr' THEN amount ELSE 0 END) AS credit
-            ")
-            ->first();
-            
-            if ($transactions->debit != 0 ||$transactions->credit != 0) {
-            $res[$category][] = [
-                'account_name' => $account->master_name,
-                'debit' => (float)$transactions->debit,
-                'credit' => (float) $transactions->credit,
-                'balance' => (float)$transactions->debit - (float) $transactions->credit,
-            ];
-}
-}
-}
-$voucher_head = 'Cash Balance Details of'.$from;
-}
+				foreach ($accounts as $account) {
+					$transactions = DB::table('account_transaction')
+						->where('account_master_id',$account->id)
+						->whereNull('deleted_at')
+						->where('voucher_type', '!=', 'OBD')
+						//->whereBetween('invoice_date', [$date_from,$date_to])
+						->where('invoice_date','<=',$date_to)
+						->where('amount', '!=', 0)
+						->selectRaw("
+							SUM(CASE WHEN transaction_type = 'Dr' THEN amount ELSE 0 END) AS debit,
+							SUM(CASE WHEN transaction_type = 'Cr' THEN amount ELSE 0 END) AS credit
+						")
+						->first();
+					
+					if ($transactions->debit != 0 ||$transactions->credit != 0) {
+						$res[$category][] = [
+							'account_name' => $account->master_name,
+							'debit' => (float)$transactions->debit,
+							'credit' => (float) $transactions->credit,
+							'balance' => (float)$transactions->debit - (float) $transactions->credit,
+						];
+					}
+				}
+			}
+		$voucher_head = 'Cash Balance Details of'.$from;
+		}
 		//echo '<pre>';print_r($res);exit;
 	
 		//echo '<pre>';print_r($voucher_head);exit;
 		return view('body.cashinhand.print')
 					->withResults($res)
 					->withFromdate($from)
-					->withTodate(Input::get('to_date'))
+					->withTodate($request->get('to_date'))
 					->withVoucherhead($voucher_head)
 					->withSettings($this->acsettings)
-					->withType(Input::get('search_type'))
+					->withType($request->get('search_type'))
 					->withSelectedcategories($selectedCategory)
 					->withData($data);
 	}
 	
 	
-	public function dataExport() {
+	public function dataExport(Request $request) {
 		
 		$data = array(); 
 		//echo '<pre>';print_r(Input::all());exit;
-		$selectedCategories=explode(',',Input::get('selectedcategory'));
-		$from=Input::get('date_from');
-		$date_to = (Input::get('date_to')!='')?date('Y-m-d', strtotime(Input::get('date_to'))):date('Y-m-d');
+		$selectedCategories=explode(',',$request->get('selectedcategory'));
+		$from=$request->get('date_from');
+		$date_to = ($request->get('date_to')!='')?date('Y-m-d', strtotime($request->get('date_to'))):date('Y-m-d');
 		
 	
 		//echo '<pre>';print_r($selectedCategories);exit;
 		$datareport[] = ['','',Session::get('company'),'',''];
 		
 		
-	if(Input::get('search_type')=='Summary') {
+	if($request->get('search_type')=='Summary') {
 			
             foreach($selectedCategories as $category){
                     $cashAccountIds = DB::table('account_master')
-                                      ->where('deleted_at', '0000-00-00 00:00:00')
+                                      ->whereNull('deleted_at')
                                        ->where('category', $category)
                                        ->pluck('id');
                     $transactions = DB::table('account_transaction')
                                     ->whereIn('account_master_id', $cashAccountIds)
-                                    ->where('deleted_at', '0000-00-00 00:00:00')
+                                    ->whereNull('deleted_at')
                                     ->where('voucher_type', '!=', 'OBD')
                                   //->whereBetween('invoice_date', array($date_from, $date_to))
                                    ->where('invoice_date','<=',$date_to)
@@ -226,18 +227,18 @@ $voucher_head = 'Cash Balance Details of'.$from;
 			$datareport[] =['','','','',''];
 			$datareport[] = ['Net Cash In Hand  :','',number_format($bl_total,2)];
 			
-		} else if(Input::get('search_type')=='Details') {
+		} else if($request->get('search_type')=='Details') {
 			 
                         foreach ($selectedCategories as $category) {
                                $accounts = DB::table('account_master')
                                        ->where('category',$category)
-                                        ->where('deleted_at', '0000-00-00 00:00:00')
+                                        ->whereNull('deleted_at')
                                          ->get(['id', 'master_name']);
 
                              foreach ($accounts as $account) {
                                            $transactions = DB::table('account_transaction')
                                                            ->where('account_master_id',$account->id)
-                                                         ->where('deleted_at', '0000-00-00 00:00:00')
+                                                         ->whereNull('deleted_at')
                                                          ->where('voucher_type', '!=', 'OBD')
                                                            //->whereBetween('invoice_date', [$date_from,$date_to])
                                                            ->where('invoice_date','<=',$date_to)
@@ -289,24 +290,30 @@ $voucher_head = 'Cash Balance Details of'.$from;
 		$titles = ['main_head' => 'Trial Balance','subhead' => $voucher_head ];
 		
 		//echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head.' on '.date('d-m-Y'), function($excel) use ($datareport,$voucher_head) {
+		// Excel::create($voucher_head.' on '.date('d-m-Y'), function($excel) use ($datareport,$voucher_head) {
 
-			// Set the spreadsheet title, creator, and description
-			$excel->setTitle($voucher_head);
-			$excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
-			$excel->setDescription($voucher_head);
+		// 	// Set the spreadsheet title, creator, and description
+		// 	$excel->setTitle($voucher_head);
+		// 	$excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
+		// 	$excel->setDescription($voucher_head);
 
-			// Build the spreadsheet, passing in the payments array
-			$excel->sheet('sheet1', function($sheet) use ($datareport) {
-				$sheet->fromArray($datareport, null, 'A1', false, false);
-			});
+		// 	// Build the spreadsheet, passing in the payments array
+		// 	$excel->sheet('sheet1', function($sheet) use ($datareport) {
+		// 		$sheet->fromArray($datareport, null, 'A1', false, false);
+		// 	});
 
-		})->download('xlsx');
+		// })->download('xlsx');
+
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);
 	}
-    
-   
-	
-	
-
 			
 }

@@ -275,7 +275,10 @@
 									</thead>
 								</table>
 								
-								{{--*/ $i = 0; $num = count($orditems); /*--}}
+								@php
+									$i = 0;
+									$num = count($orditems);
+								@endphp
 								<input type="hidden" id="rowNum" value="{{$num}}">
 								<input type="hidden" id="remitem" name="remove_item">
 								<div class="itemdivPrnt">
@@ -419,7 +422,7 @@
 									</div>
 								<?php $i++; } } else { ?>
 								@foreach($orditems as $item)
-								{{--*/ $i++; /*--}}
+								@php $i++; @endphp
 								<?php if($orderrow->is_fc==1) {
 										 $unit_price = $item->unit_price_fc;// / $orderrow->currency_rate;
 										 $total_price = number_format($item->total_price / $orderrow->currency_rate,2, '.', '');
@@ -2388,4 +2391,3 @@ function getItems(e) {
 
 </script>
 @stop
-

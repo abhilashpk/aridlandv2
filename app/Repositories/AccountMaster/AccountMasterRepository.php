@@ -1680,6 +1680,9 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function getSupplierList($txt=null)
 	{
 		$query = $this->accountmaster->where('account_master.status',1);
+		if(Auth::check() && (int)Auth::user()->department_id !== 0) {
+			$query->where('account_master.department_id', Auth::user()->department_id);
+		}
 		if($txt) {
 			return $query->join('account_group AS ag', function($join) {
 								$join->on('ag.id','=','account_master.account_group_id');
@@ -1702,14 +1705,12 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	public function getSupplierListDept($did=null)
 	{
 		$query = $this->accountmaster->where('account_master.status',1);
-		//CHECK DEPARTMENT.......
-		if(Session::get('department')==1) { //if active...
-			if(Auth::user()->department_id!=0)
-				$query->where('department_id', Auth::user()->department_id);
+		if(Auth::check() && (int)Auth::user()->department_id !== 0) {
+			$query->where('account_master.department_id', Auth::user()->department_id);
 		}
 		
 		if($did)
-			$query->where('department_id', $did);
+			$query->where('account_master.department_id', $did);
 		
 		return $query->join('account_group AS ag', function($join) {
 							$join->on('ag.id','=','account_master.account_group_id');
@@ -10460,4 +10461,3 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 	}
 	
 }
-

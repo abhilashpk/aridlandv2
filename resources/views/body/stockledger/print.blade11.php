@@ -107,8 +107,8 @@ thead
 								</tr>
 								<tr>
 									<td align="left" valign="top" style="padding-left:0px;">
-										<h6><b>Item Code: <b>{{ data_get($results, 'opn_details.0.item_code', '') }}<br/>
-											   Item Name: <b>{{ data_get($results, 'opn_details.0.description', '') }}</b></h6>
+										<h6><b>Item Code: <b>{{$results['opn_details'][0]->item_code}}<br/>
+											   Item Name: <b>{{$results['opn_details'][0]->description}}</b></h6>
 									</td>
 									<td align="right" style="padding-left:0px;"><br/>
 									</td>
@@ -364,8 +364,8 @@ thead
 										</tr>
 										<tr>
 											<td align="left" valign="top" style="padding-left:0px;">
-												<h6><b>Item Code: <b>{{ data_get($results, 'opn_details.0.item_code', '') }}<br/>
-													   Item Name: <b>{{ data_get($results, 'opn_details.0.description', '') }}</b></h6>
+												<h6><b>Item Code: <b>{{$results['opn_details'][0]->item_code}}<br/>
+													   Item Name: <b>{{$results['opn_details'][0]->description}}</b></h6>
 											</td>
 											<td align="right" style="padding-left:0px;"><br/>
 											</td>

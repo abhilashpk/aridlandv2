@@ -10,7 +10,8 @@ use Notification;
 use Input;
 use Session;
 use App;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 
 class LedgerMomentsController extends Controller
 {
@@ -88,31 +89,31 @@ class LedgerMomentsController extends Controller
 		return $newArr;
 	}
 	
-	public function getSearch()
+	public function getSearch(Request $request)
 	{
 		$data = array();
 		$voucher_head = 'Account Balance with PDC';
 		//$reports = $this->calculateAmount($this->accountmaster->getLedgerMoments(Input::all()));
-		$reports = $this->accountmaster->getLedgerMoments(Input::all());
+		$reports = $this->accountmaster->getLedgerMoments($request->all());
 				
 		//echo '<pre>';print_r($reports);exit;
 		return view('body.ledgermoments.preprint')
 					->withReports($reports)
 					->withVoucherhead($voucher_head)
-					->withType(Input::get('search_type'))
-					->withFromdate(Input::get('date_from'))
-					->withTodate(Input::get('date_to'))
+					->withType($request->get('search_type'))
+					->withFromdate($request->get('date_from'))
+					->withTodate($request->get('date_to'))
 					->withSettings($this->acsettings)
 					->withData($data);
 	}
 	
-	public function dataExport()
+	public function dataExport(Request $request)
 	{
 		$data = array(); //echo '<pre>';print_r(Input::all());exit;
 		$datareport[] = [strtoupper(Session::get('company')),'','',''];
 		$datareport[] = ['','','','','','',''];
 		$voucher_head = 'Account Balance with PDC';
-		$reports = $this->accountmaster->getLedgerMoments(Input::all());
+		$reports = $this->accountmaster->getLedgerMoments($request->all());
 		$datareport[] = ['','',strtoupper($voucher_head),'','','',''];
 		$datareport[] = ['Account Code','Account Name','Balance','PDC Received','PDC Issued','Net Balance'];
 		$total_bal = $total_pdcr = $total_pdci = $net_bal = $total_cash = 0;
@@ -122,7 +123,7 @@ class LedgerMomentsController extends Controller
 			$total_pdcr += $report->pdcr_amount; 
 			$total_pdci += $report->pdci_amount; 
 			
-			if(Input::get('search_type')=='CUSTOMER') {
+			if($request->get('search_type')=='CUSTOMER') {
 				$net_balance = $report->cl_balance + $report->pdcr_amount;
 				$pdi = 0;
 				if($report->pdcr_amount < 0) {
@@ -173,19 +174,30 @@ class LedgerMomentsController extends Controller
 	  
 		$datareport[] = ['','Grand Total:',$bal1,$bal2,$bal3,$bal4];
 		
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+		// Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
+        // // Set the spreadsheet title, creator, and description
+        // $excel->setTitle($voucher_head);
+        // $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
+        // $excel->setDescription($voucher_head);
 
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
+        // // Build the spreadsheet, passing in the payments array
+		// $excel->sheet('sheet1', function($sheet) use ($datareport) {
+		// 	$sheet->fromArray($datareport, null, 'A1', false, false);
+		// });
 
-		})->download('xlsx');
+		// })->download('xlsx');
+
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);
 		
 	}
 	

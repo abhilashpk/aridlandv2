@@ -81,6 +81,7 @@ class UpdateUtility
 		
 	public function updateItemQuantitySales($attributes, $key, $bquantity=null)
 	{
+		$deptId = $attributes['department_id'] ?? (auth()->user()->department_id ?? 1);
 		$item = DB::table('item_unit')->where('itemmaster_id', $attributes['item_id'][$key])
 										->where('is_baseqty', 1)->first();
 		if($item) {
@@ -105,7 +106,6 @@ class UpdateUtility
 				->update([ 'cur_quantity' => DB::raw('cur_quantity - '.$baseqty),
 							'issued_qty' => DB::raw('issued_qty + '.$baseqty) ]);
 
-			$deptId = $attributes['department_id'] ?? (auth()->user()->department_id ?? 1);
 			DB::table('itemstock_department')
 				->where('department_id', $deptId)
 				->where('itemmaster_id', $attributes['item_id'][$key])
@@ -117,6 +117,7 @@ class UpdateUtility
 							
 			//UPDATE into ITEM STOCK LOG 
 			$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])
+								   ->where('department_id', $deptId)
 								   ->where('trtype', 1)
 								   ->where('status',1)->whereNull('deleted_at')
 								   ->where('cur_quantity', '>', 0)
@@ -165,6 +166,7 @@ class UpdateUtility
 			} else {
 				
 				$stocks = DB::table('item_log')->where('item_id',$attributes['item_id'][$key])
+								   ->where('department_id', $deptId)
 								   ->where('trtype', 1)
 								   ->where('status',1)->whereNull('deleted_at')
 								   ->select('pur_cost')

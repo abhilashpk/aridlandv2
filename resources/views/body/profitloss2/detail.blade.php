@@ -276,7 +276,25 @@ thead
                         </div>
                     </div>
 					
-					
+					<form class="form-horizontal" role="form" method="POST" 
+                        name="frmExport" id="frmExport" 
+                        action="{{ url('profit_loss2/export') }}">
+
+                        @csrf
+
+                        <input type="hidden" name="date_from" value="{{ $startDate ?? '' }}">
+                        <input type="hidden" name="date_to" value="{{ $endDate ?? '' }}">
+                        <input type="hidden" name="search_type" value="{{ $type ?? '' }}">
+
+                        @if(isset($clstock))
+                            <input type="hidden" name="cl_stock" value="{{ $clstock }}">
+                        @endif
+
+                        @if(isset($opstock))
+                            <input type="hidden" name="op_stock" value="{{ $opstock }}">
+                        @endif
+
+                    </form>
 					
                 </div>
             </div>

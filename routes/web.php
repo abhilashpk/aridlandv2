@@ -895,11 +895,12 @@ Route::get('/quotation/item_data/{id}', [QuotationController::class, 'getItem'])
 Route::get('/quotation/item_details/{id}', [QuotationController::class, 'getItemDetails']);
 Route::get('/quotation/checkrefno', [QuotationController::class, 'checkRefNo']);
 Route::get('/quotation/delete/{id}', [QuotationController::class, 'destroy']);
-Route::get('/quotation/print/{id}', [QuotationController::class, 'print']);
+// Route::get('/quotation/print/{id}', [QuotationController::class, 'print']);
 Route::post('/quotation/paging', [QuotationController::class, 'ajaxPaging']);
 Route::get('/quotation/print/{id}', [QuotationController::class, 'getPrint']);
-Route::post('/quotation/search', [QuotationController::class, 'getSearch']);
+Route::get('/quotation/print/{id}/{rid}', [QuotationController::class, 'getPrint']);
 Route::get('/quotation/print/{id}/{fc}', [QuotationController::class, 'getPrint']);
+Route::post('/quotation/search', [QuotationController::class, 'getSearch']);
 Route::post('/quotation/export', [QuotationController::class, 'dataExport']);
 Route::get('/quotation/get_quotations', [QuotationController::class, 'getQuotations']);
 Route::get('/quotation/checkvchrno', [QuotationController::class, 'checkVchrNo']);
@@ -2937,7 +2938,7 @@ Route::get('balancesheet2/search', [BalanceSheetController2::class, 'report'])->
 
 Route::get('/profit_loss2', [ProfitLossController2::class, 'index']);
 Route::get('/profit_loss2/search', [ProfitLossController2::class, 'profitLoss']);
-		
+Route::post('/profit_loss2/export', [ProfitLossController2::class, 'exportSearchReport']);		
 	});
 	
 Route::get('/manage', [ManageController::class, 'index']);

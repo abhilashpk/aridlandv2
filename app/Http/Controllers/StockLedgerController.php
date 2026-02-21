@@ -8,7 +8,8 @@ use App\Repositories\Location\LocationInterface;
 use App\Http\Requests;
 use Notification;
 use Session;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 use App;
 use DB;
 
@@ -53,7 +54,7 @@ class StockLedgerController extends Controller
 			
 		//} 
 		$location = $this->location->locationListAll();
-		$customers = DB::table('account_master')->where('category','CUSTOMER')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+		$customers = DB::table('account_master')->where('category','CUSTOMER')->where('status',1)->whereNull('deleted_at')
 					->select('id','master_name')->orderBy('master_name','ASC')->get();
 		//echo '<pre>';print_r($reports);exit;
 		return view('body.stockledger.index')
@@ -78,6 +79,7 @@ class StockLedgerController extends Controller
 	}
 	
 	private function locFilter($locs) {
+		$arrloc = []; 
 		foreach($locs as $loc) {
 			$arrloc[$loc->id] = (object)['code' => $loc->code, 'name' => $loc->name];
 		}
@@ -109,7 +111,7 @@ class StockLedgerController extends Controller
 			
 			$voucher_head = 'Stock Ledger with Location';
 			$results = $this->itemmaster->getStockLedgerLocReport($request->all()); 
-			$locdata = $this->locFilter(DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','code','name')->get());
+			$locdata = $this->locFilter(DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','code','name')->get());
 			$itemdata = DB::table('itemmaster')->where('id',$request->get('document_id'))->select('item_code','description')->first();
 			$results['pursales'] = $this->groupLoc($results['pursales']);
 			$titles = ['main_head' => 'Stock Ledger with Location','subhead' => 'Stock Ledger with Location'];
@@ -120,7 +122,7 @@ class StockLedgerController extends Controller
 			$results = $this->itemmaster->getStockLedgerLocReport($request->all()); 
 			$itemdata = DB::table('itemmaster')->where('id',$request->get('document_id'))->select('item_code','description')->first();
 			$results['pursales'] = $this->groupLoc($results['pursales']);
-			$locdata = $this->locFilter(DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','code','name')->get());
+			$locdata = $this->locFilter(DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','code','name')->get());
 			$titles = ['main_head' => 'Stock Ledger Quantity with Cost & Value Location','subhead' => 'Stock Ledger Quantity with Cost & Value Location'];
 			
 		} else if($request->get('search_type')=='quantity_conloc') { 
@@ -129,7 +131,7 @@ class StockLedgerController extends Controller
 			$results = $this->itemmaster->getStockLedgerLocReport($request->all()); 
 			$itemdata = DB::table('itemmaster')->where('id',$request->get('document_id'))->select('item_code','description')->first();
 			$results['pursales'] = $this->groupLoc($results['pursales']);
-			$locdata = $this->locFilter(DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','code','name')->get());
+			$locdata = $this->locFilter(DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','code','name')->get());
 			$titles = ['main_head' => 'Stock Ledger with Consignment Location','subhead' => 'Stock Ledger with Consignment Location'];	
 		
 		} else if($request->get('search_type')=='quantity_conloc_cost') {
@@ -138,7 +140,7 @@ class StockLedgerController extends Controller
 			$results = $this->itemmaster->getStockLedgerLocReport($request->all()); 
 			$itemdata = DB::table('itemmaster')->where('id',$request->get('document_id'))->select('item_code','description')->first();
 			$results['pursales'] = $this->groupLoc($results['pursales']);
-			$locdata = $this->locFilter(DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','code','name')->get());
+			$locdata = $this->locFilter(DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','code','name')->get());
 			$titles = ['main_head' => 'Stock Ledger Quantity with Cost & Value Consignment Location','subhead' => 'Stock Ledger Quantity with Cost & Value Consignment Location'];	
 			
 		}
@@ -263,7 +265,7 @@ class StockLedgerController extends Controller
 		     $voucher_head = 'Stock Ledger with Consignment Location';   
 		    }
 			$results = $this->itemmaster->getStockLedgerLocReport($request->all()); 
-			$locdata = $this->locFilter(DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','code','name')->get());
+			$locdata = $this->locFilter(DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','code','name')->get());
 			$itemdata = DB::table('itemmaster')->where('id',$request->get('document_id'))->select('item_code','description')->first();
 			$results['pursales'] = $this->groupLoc($results['pursales']);
 			
@@ -307,7 +309,7 @@ class StockLedgerController extends Controller
 		     $voucher_head = 'Stock Ledger with Cost and Value Consignment Location';   
 		    }
 			$results = $this->itemmaster->getStockLedgerLocReport($request->all()); 
-			$locdata = $this->locFilter(DB::table('location')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','code','name')->get());
+			$locdata = $this->locFilter(DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','code','name')->get());
 			$itemdata = DB::table('itemmaster')->where('id',$request->get('document_id'))->select('item_code','description')->first();
 			$results['pursales'] = $this->groupLoc($results['pursales']);
 			
@@ -361,19 +363,30 @@ class StockLedgerController extends Controller
 		// echo '<pre>';print_r($results);exit;
 							
 	//	echo $voucher_head.'<pre>';print_r($datareport);exit;
-		Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
+		// Excel::create($voucher_head, function($excel) use ($datareport,$voucher_head) {
 
-        // Set the spreadsheet title, creator, and description
-        $excel->setTitle($voucher_head);
-        $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
-        $excel->setDescription($voucher_head);
+        // // Set the spreadsheet title, creator, and description
+        // $excel->setTitle($voucher_head);
+        // $excel->setCreator('Profit ACC 365 - ERP')->setCompany(Session::get('company'));
+        // $excel->setDescription($voucher_head);
 
-        // Build the spreadsheet, passing in the payments array
-		$excel->sheet('sheet1', function($sheet) use ($datareport) {
-			$sheet->fromArray($datareport, null, 'A1', false, false);
-		});
+        // // Build the spreadsheet, passing in the payments array
+		// $excel->sheet('sheet1', function($sheet) use ($datareport) {
+		// 	$sheet->fromArray($datareport, null, 'A1', false, false);
+		// });
 
-		})->download('xlsx');
+		// })->download('xlsx');
+
+		$filename = $voucher_head.' on '.date('d-m-Y').'.xlsx';
+
+		return Excel::download(
+			new SimpleArrayExport(
+				$datareport,
+				$voucher_head,
+				Session::get('company')
+			),
+			$filename
+		);
 		
 	}
 }

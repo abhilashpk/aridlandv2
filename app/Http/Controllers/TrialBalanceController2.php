@@ -16,7 +16,8 @@ use App\Http\Requests;
 use Notification;
 use Session;
 use App;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SimpleArrayExport;
 use Auth;
 use Carbon\Carbon;
 
@@ -45,9 +46,9 @@ class TrialBalanceController2 extends Controller
 		if(Session::get('department')==1) { //if active...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
-				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 			else {
-				$departments = DB::table('department')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
+				$departments = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 				//$deptid = $departments[0]->id;
 			}
 			$is_dept = true;
@@ -118,7 +119,7 @@ class TrialBalanceController2 extends Controller
         $trimzero = $request->get('trim_zero');
         $this->memoryLimit();
         
-        $mindate = DB::table('account_transaction')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->min('invoice_date'); 
+        $mindate = DB::table('account_transaction')->where('status',1)->whereNull('deleted_at')->min('invoice_date'); 
 
         if ($request->get('search_type') == 'opening_summary') {
                 $parafrom = $mindate;//$settings->from_date;
@@ -986,296 +987,577 @@ class TrialBalanceController2 extends Controller
     }
 
 
+    // public function exportSearchReport($results, $from, $to, $search_type, $voucherhead, $settings, $trimzero)
+    // {   
+    //     if($search_type=='opening_summary') { 
+
+    //         $fileName = 'Opening_TrialBalance_Summary_' . date('Ymd_His');
+
+    //         return \Excel::create($fileName, function ($excel) use ($results, $from, $voucherhead, $trimzero) {
+    //             $excel->sheet('Opening Summary', function ($sheet) use ($results, $from, $voucherhead, $trimzero) {
+    //                 $row = 1;
+
+    //                 $sheet->row($row++, [$voucherhead]);
+    //                 $sheet->row($row++, ['As on', Carbon::parse($from)->format('d-m-Y')]);
+    //                 $sheet->row($row++, []);
+
+    //                 $sheet->row($row++, ['Group Name', 'Debit', 'Credit']);
+                    
+    //                 if($trimzero===1) {
+    //                     $filteredResults = collect($results)->filter(function ($amounts) {
+    //                         return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
+    //                     });
+    //                 } else
+    //                     $filteredResults = $results;
+
+    //                 $grandDr = $grandCr = 0;
+
+    //                 foreach ($filteredResults as $group => $amounts) {
+    //                     $sheet->row($row++, [
+    //                         $group,
+    //                         number_format($amounts['debit'], 2),
+    //                         number_format($amounts['credit'], 2),
+    //                     ]);
+
+    //                     $grandDr += $amounts['debit'];
+    //                     $grandCr += $amounts['credit'];
+    //                 }
+
+    //                 $sheet->row($row++, []);
+    //                 $sheet->row($row++, ['Grand Total', number_format($grandDr, 2), number_format($grandCr, 2)]);
+    //             });
+    //         })->download('xls');
+
+        
+    //     } else if($search_type=='opening_groupwise') {
+
+    //         $fileName = 'Opening_TrialBalance_Groupwise_' . date('Ymd_His');
+
+    //             return Excel::create($fileName, function($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
+    //                 $excel->sheet('Opening Groupwise', function($sheet) use ($results, $from, $to, $voucherhead, $trimzero) {
+    //                     $row = 1;
+
+    //                     $sheet->row($row++, [$voucherhead]);
+    //                     $sheet->row($row++, ['As on:', Carbon::parse($from)->format('d-m-Y')]);
+    //                     $sheet->row($row++, []);
+
+    //                     $sheet->row($row++, ['Account Name', 'Debit', 'Credit']);
+
+    //                     if($trimzero===1) {
+    //                         $filteredResults = collect($results)->filter(function ($amounts) {
+    //                             return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
+    //                         });
+    //                     } else
+    //                         $filteredResults = $results;
+
+    //                     $grandDebit = $grandCredit = 0;
+
+    //                     foreach ($filteredResults as $group => $accounts) {
+    //                         $sheet->row($row++, [$group]);
+
+    //                         $groupDebit = $groupCredit = 0;
+
+    //                         foreach ($accounts as $acct) {
+    //                             $sheet->row($row++, [
+    //                                 $acct['account_name'],
+    //                                 number_format($acct['debit'], 2),
+    //                                 number_format($acct['credit'], 2),
+    //                             ]);
+    //                             $groupDebit += $acct['debit'];
+    //                             $groupCredit += $acct['credit'];
+    //                         }
+
+    //                         $sheet->row($row++, [
+    //                             'Group Total',
+    //                             number_format($groupDebit, 2),
+    //                             number_format($groupCredit, 2),
+    //                         ]);
+    //                         $sheet->row($row++, []);
+
+    //                         $grandDebit += $groupDebit;
+    //                         $grandCredit += $groupCredit;
+    //                     }
+
+    //                     $sheet->row($row++, [
+    //                         'Grand Total',
+    //                         number_format($grandDebit, 2),
+    //                         number_format($grandCredit, 2),
+    //                     ]);
+    //                 });
+    //             })->download('xls');
+
+
+    //     } else if($search_type=='closing_summary') {
+
+    //             $fileName = 'TrialBalance_Groupwise_Summary_' . date('Ymd_His');
+    //             return Excel::create($fileName, function ($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
+    //                     $excel->sheet('Groupwise Summary', function ($sheet) use ($results, $from, $to, $voucherhead, $trimzero) {
+    //                         $row = 1;
+
+    //                         // Title & Date Info
+    //                         $sheet->row($row++, [$voucherhead]);
+    //                         $sheet->row($row++, ['From Date:', Carbon::parse($from)->format('d-m-Y'), 'To Date:', Carbon::parse($to)->format('d-m-Y')]);
+    //                         $sheet->row($row++, []);
+
+    //                         // Header
+    //                         $sheet->row($row++, ['Group Name', 'Net Debit', 'Net Credit']);
+                            
+    //                         if($trimzero===1) {
+    //                             $filteredResults = collect($results)->filter(function ($amounts) {
+    //                                 return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
+    //                             });
+    //                         } else
+    //                             $filteredResults = $results;
+
+    //                         $grandDebit = 0;
+    //                         $grandCredit = 0;
+
+    //                         foreach ($filteredResults as $groupName => $summary) {
+    //                             $sheet->row($row++, [
+    //                                 $groupName,
+    //                                 number_format($summary['debit'], 2),
+    //                                 number_format($summary['credit'], 2),
+    //                             ]);
+
+    //                             $grandDebit += $summary['debit'];
+    //                             $grandCredit += $summary['credit'];
+    //                         }
+
+    //                         // Grand Total
+    //                         $sheet->row($row++, []);
+    //                         $sheet->row($row++, [
+    //                             'Grand Total',
+    //                             number_format($grandDebit, 2),
+    //                             number_format($grandCredit, 2),
+    //                         ]);
+    //                     });
+    //                 })->download('xls');
+
+    
+    //     } else if($search_type=='closing_groupwise') {
+
+    //             $fileName = 'TrialBalance_Groupwise_' . date('Ymd_His');
+
+    //             return Excel::create($fileName, function($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
+    //                 $excel->sheet('Trial Balance', function($sheet) use ($results, $from, $to, $voucherhead, $trimzero) {
+    //                     $row = 1;
+
+    //                     // Report title
+    //                     $sheet->row($row++, [$voucherhead]);
+    //                     $sheet->row($row++, ['Date From:', Carbon::parse($from)->format('d-m-Y'), 'Date To:', Carbon::parse($to)->format('d-m-Y')]);
+    //                     $sheet->row($row++, []); // Empty row
+
+    //                     // Table header
+    //                     $sheet->row($row++, [
+    //                         'Account Name', 
+    //                         ' Debit', 
+    //                         ' Credit'
+    //                     ]);
+
+    //                     if($trimzero===1) {
+    //                         $filteredResults = collect($results)->filter(function ($amounts) {
+    //                             return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
+    //                         });
+    //                     } else
+    //                         $filteredResults = $results;
+
+    //                     $grandDebit = 0;
+    //                     $grandCredit = 0;
+
+    //                     foreach ($filteredResults as $groupName => $accounts) {
+    //                         // Group heading
+    //                         $sheet->row($row++, [$groupName]);
+
+    //                         $groupDebit = 0;
+    //                         $groupCredit = 0;
+
+    //                         foreach ($accounts as $account) {
+    //                             $sheet->row($row++, [
+    //                                 $account['account_id'].' - '.$account['account_name'],
+    //                                 number_format($account['debit'], 2),
+    //                                 number_format($account['credit'], 2),
+    //                             ]);
+
+    //                             $groupDebit += $account['debit'];
+    //                             $groupCredit += $account['credit'];
+    //                         }
+
+    //                         // Group subtotal row
+    //                         $sheet->row($row++, [
+    //                             'Group Total', 
+    //                             number_format($groupDebit, 2),
+    //                             number_format($groupCredit, 2),
+    //                         ]);
+
+    //                         $sheet->row($row++, []); // Empty line between groups
+
+    //                         $grandDebit += $groupDebit;
+    //                         $grandCredit += $groupCredit;
+    //                     }
+
+    //                     // Grand Total row
+    //                     $sheet->row($row++, [
+    //                         'Grand Total', 
+    //                         number_format($grandDebit, 2),
+    //                         number_format($grandCredit, 2),
+    //                     ]);
+    //                 });
+    //             })->download('xls');
+
+    //     } else if($search_type=='YTD') {
+            
+    //         $exportFileName = 'TrialBalance_YTD_' . date('Ymd_His') . '.xls';
+        
+    //         return Excel::create($exportFileName, function($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
+    //             $excel->sheet('Trial Balance YTD', function($sheet) use ($results, $voucherhead, $trimzero) {
+    //                 $rowIndex = 1;
+        
+    //                 // Report title
+    //                 $sheet->row($rowIndex++, [$voucherhead]);
+    //                 $sheet->row($rowIndex++, ['']);
+        
+    //                 // Header
+    //                 $sheet->row($rowIndex++, [
+    //                     'Account ID', 
+    //                     'Account Name', 
+    //                     'Opening Debit', 
+    //                     'Opening Credit', 
+    //                     'Debit', 
+    //                     'Credit', 
+    //                     'Closing Balance'
+    //                 ]);
+        
+    //                 $grouped = collect($results)->groupBy('group');
+        
+    //                 foreach ($grouped as $groupName => $accounts) {
+    //                     // Group Header
+    //                     $sheet->row($rowIndex++, [$groupName ?: 'No Group']);
+        
+    //                     // Group rows
+    //                     foreach ($accounts as $account) {
+    //                         $sheet->row($rowIndex++, [
+    //                             $account['account_id'],
+    //                             $account['account_name'],
+    //                             number_format($account['opening_debit'], 2),
+    //                             number_format($account['opening_credit'], 2),
+    //                             number_format($account['ytd_debit'], 2),
+    //                             number_format($account['ytd_credit'], 2),
+    //                             number_format($account['closing_balance'], 2),
+    //                         ]);
+    //                     }
+        
+    //                     // Subtotals per group
+    //                     $sheet->row($rowIndex++, [
+    //                         '', 'Group Total',
+    //                         number_format($accounts->sum('opening_debit'), 2),
+    //                         number_format($accounts->sum('opening_credit'), 2),
+    //                         number_format($accounts->sum('ytd_debit'), 2),
+    //                         number_format($accounts->sum('ytd_credit'), 2),
+    //                         number_format($accounts->sum('closing_balance'), 2),
+    //                     ]);
+        
+    //                     // Blank line between groups
+    //                     $sheet->row($rowIndex++, ['']);
+    //                 }
+        
+    //                 // Grand totals
+    //                 $resultsCollection = collect($results);
+    //                 $sheet->row($rowIndex++, [
+    //                     '', 'Grand Total',
+    //                     number_format($resultsCollection->sum('opening_debit'), 2),
+    //                     number_format($resultsCollection->sum('opening_credit'), 2),
+    //                     number_format($resultsCollection->sum('ytd_debit'), 2),
+    //                     number_format($resultsCollection->sum('ytd_credit'), 2),
+    //                     number_format($resultsCollection->sum('closing_balance'), 2),
+    //                 ]);
+    //             });
+    //         })->download('xls');
+            
+    //     }
+
     public function exportSearchReport($results, $from, $to, $search_type, $voucherhead, $settings, $trimzero)
-    {   
-        if($search_type=='opening_summary') { 
+    {
+        $data     = [];
+        $boldRows = []; // track 1-based row numbers to make bold
+        $company  = session('company') ?? 'Company';
+
+        /*
+        |--------------------------------------------------------------------------
+        | OPENING SUMMARY
+        |--------------------------------------------------------------------------
+        */
+        if ($search_type == 'opening_summary') {
 
             $fileName = 'Opening_TrialBalance_Summary_' . date('Ymd_His');
 
-            return \Excel::create($fileName, function ($excel) use ($results, $from, $voucherhead, $trimzero) {
-                $excel->sheet('Opening Summary', function ($sheet) use ($results, $from, $voucherhead, $trimzero) {
-                    $row = 1;
+            $data[] = [$voucherhead];                                           // row 1
+            $data[] = ['As on', Carbon::parse($from)->format('d-m-Y')];        // row 2
+            $data[] = [];                                                       // row 3
+            $data[] = ['Group Name', 'Debit', 'Credit'];                       // row 4
+            $boldRows[] = 1;
+            $boldRows[] = 4;
 
-                    $sheet->row($row++, [$voucherhead]);
-                    $sheet->row($row++, ['As on', Carbon::parse($from)->format('d-m-Y')]);
-                    $sheet->row($row++, []);
+            $filteredResults = ($trimzero == 1)
+                ? collect($results)->filter(fn($r) => $r['debit'] != 0 || $r['credit'] != 0)
+                : collect($results);
 
-                    $sheet->row($row++, ['Group Name', 'Debit', 'Credit']);
-                    
-                    if($trimzero===1) {
-                        $filteredResults = collect($results)->filter(function ($amounts) {
-                            return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
-                        });
-                    } else
-                        $filteredResults = $results;
+            $grandDr = $grandCr = 0;
 
-                    $grandDr = $grandCr = 0;
+            foreach ($filteredResults as $group => $amounts) {
+                $data[] = [
+                    $group,
+                    number_format($amounts['debit'], 2),
+                    number_format($amounts['credit'], 2),
+                ];
+                $grandDr += $amounts['debit'];
+                $grandCr += $amounts['credit'];
+            }
 
-                    foreach ($filteredResults as $group => $amounts) {
-                        $sheet->row($row++, [
-                            $group,
-                            number_format($amounts['debit'], 2),
-                            number_format($amounts['credit'], 2),
-                        ]);
+            $data[]     = [];
+            $grandRow   = count($data) + 1;
+            $data[]     = ['Grand Total', number_format($grandDr, 2), number_format($grandCr, 2)];
+            $boldRows[] = $grandRow;
+        }
 
-                        $grandDr += $amounts['debit'];
-                        $grandCr += $amounts['credit'];
-                    }
-
-                    $sheet->row($row++, []);
-                    $sheet->row($row++, ['Grand Total', number_format($grandDr, 2), number_format($grandCr, 2)]);
-                });
-            })->download('xls');
-
-        
-        } else if($search_type=='opening_groupwise') {
+        /*
+        |--------------------------------------------------------------------------
+        | OPENING GROUPWISE
+        |--------------------------------------------------------------------------
+        */
+        elseif ($search_type == 'opening_groupwise') {
 
             $fileName = 'Opening_TrialBalance_Groupwise_' . date('Ymd_His');
 
-                return Excel::create($fileName, function($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
-                    $excel->sheet('Opening Groupwise', function($sheet) use ($results, $from, $to, $voucherhead, $trimzero) {
-                        $row = 1;
+            $data[]     = [$voucherhead];                                       // row 1
+            $data[]     = ['As on:', Carbon::parse($from)->format('d-m-Y')];   // row 2
+            $data[]     = [];                                                   // row 3
+            $data[]     = ['Account Name', 'Debit', 'Credit'];                 // row 4
+            $boldRows[] = 1;
+            $boldRows[] = 4;
 
-                        $sheet->row($row++, [$voucherhead]);
-                        $sheet->row($row++, ['As on:', Carbon::parse($from)->format('d-m-Y')]);
-                        $sheet->row($row++, []);
+            $filteredResults = ($trimzero == 1)
+                ? collect($results)->filter(fn($r) => collect($r)->sum('debit') != 0 || collect($r)->sum('credit') != 0)
+                : collect($results);
 
-                        $sheet->row($row++, ['Account Name', 'Debit', 'Credit']);
+            $grandDebit = $grandCredit = 0;
 
-                        if($trimzero===1) {
-                            $filteredResults = collect($results)->filter(function ($amounts) {
-                                return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
-                            });
-                        } else
-                            $filteredResults = $results;
+            foreach ($filteredResults as $group => $accounts) {
 
-                        $grandDebit = $grandCredit = 0;
+                // Group header row
+                $groupHeaderRow = count($data) + 1;
+                $data[]         = [$group, '', ''];
+                $boldRows[]     = $groupHeaderRow;
 
-                        foreach ($filteredResults as $group => $accounts) {
-                            $sheet->row($row++, [$group]);
+                $groupDebit = $groupCredit = 0;
 
-                            $groupDebit = $groupCredit = 0;
+                foreach ($accounts as $acct) {
+                    $data[] = [
+                        $acct['account_name'],
+                        number_format($acct['debit'], 2),
+                        number_format($acct['credit'], 2),
+                    ];
+                    $groupDebit  += $acct['debit'];
+                    $groupCredit += $acct['credit'];
+                }
 
-                            foreach ($accounts as $acct) {
-                                $sheet->row($row++, [
-                                    $acct['account_name'],
-                                    number_format($acct['debit'], 2),
-                                    number_format($acct['credit'], 2),
-                                ]);
-                                $groupDebit += $acct['debit'];
-                                $groupCredit += $acct['credit'];
-                            }
+                // Group Total row
+                $groupTotalRow = count($data) + 1;
+                $data[]        = ['Group Total', number_format($groupDebit, 2), number_format($groupCredit, 2)];
+                $boldRows[]    = $groupTotalRow;
+                $data[]        = [];
 
-                            $sheet->row($row++, [
-                                'Group Total',
-                                number_format($groupDebit, 2),
-                                number_format($groupCredit, 2),
-                            ]);
-                            $sheet->row($row++, []);
+                $grandDebit  += $groupDebit;
+                $grandCredit += $groupCredit;
+            }
 
-                            $grandDebit += $groupDebit;
-                            $grandCredit += $groupCredit;
-                        }
-
-                        $sheet->row($row++, [
-                            'Grand Total',
-                            number_format($grandDebit, 2),
-                            number_format($grandCredit, 2),
-                        ]);
-                    });
-                })->download('xls');
-
-
-        } else if($search_type=='closing_summary') {
-
-                $fileName = 'TrialBalance_Groupwise_Summary_' . date('Ymd_His');
-                return Excel::create($fileName, function ($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
-                        $excel->sheet('Groupwise Summary', function ($sheet) use ($results, $from, $to, $voucherhead, $trimzero) {
-                            $row = 1;
-
-                            // Title & Date Info
-                            $sheet->row($row++, [$voucherhead]);
-                            $sheet->row($row++, ['From Date:', Carbon::parse($from)->format('d-m-Y'), 'To Date:', Carbon::parse($to)->format('d-m-Y')]);
-                            $sheet->row($row++, []);
-
-                            // Header
-                            $sheet->row($row++, ['Group Name', 'Net Debit', 'Net Credit']);
-                            
-                            if($trimzero===1) {
-                                $filteredResults = collect($results)->filter(function ($amounts) {
-                                    return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
-                                });
-                            } else
-                                $filteredResults = $results;
-
-                            $grandDebit = 0;
-                            $grandCredit = 0;
-
-                            foreach ($filteredResults as $groupName => $summary) {
-                                $sheet->row($row++, [
-                                    $groupName,
-                                    number_format($summary['debit'], 2),
-                                    number_format($summary['credit'], 2),
-                                ]);
-
-                                $grandDebit += $summary['debit'];
-                                $grandCredit += $summary['credit'];
-                            }
-
-                            // Grand Total
-                            $sheet->row($row++, []);
-                            $sheet->row($row++, [
-                                'Grand Total',
-                                number_format($grandDebit, 2),
-                                number_format($grandCredit, 2),
-                            ]);
-                        });
-                    })->download('xls');
-
-    
-        } else if($search_type=='closing_groupwise') {
-
-                $fileName = 'TrialBalance_Groupwise_' . date('Ymd_His');
-
-                return Excel::create($fileName, function($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
-                    $excel->sheet('Trial Balance', function($sheet) use ($results, $from, $to, $voucherhead, $trimzero) {
-                        $row = 1;
-
-                        // Report title
-                        $sheet->row($row++, [$voucherhead]);
-                        $sheet->row($row++, ['Date From:', Carbon::parse($from)->format('d-m-Y'), 'Date To:', Carbon::parse($to)->format('d-m-Y')]);
-                        $sheet->row($row++, []); // Empty row
-
-                        // Table header
-                        $sheet->row($row++, [
-                            'Account Name', 
-                            ' Debit', 
-                            ' Credit'
-                        ]);
-
-                        if($trimzero===1) {
-                            $filteredResults = collect($results)->filter(function ($amounts) {
-                                return ($amounts['debit'] != 0 || $amounts['credit'] != 0);
-                            });
-                        } else
-                            $filteredResults = $results;
-
-                        $grandDebit = 0;
-                        $grandCredit = 0;
-
-                        foreach ($filteredResults as $groupName => $accounts) {
-                            // Group heading
-                            $sheet->row($row++, [$groupName]);
-
-                            $groupDebit = 0;
-                            $groupCredit = 0;
-
-                            foreach ($accounts as $account) {
-                                $sheet->row($row++, [
-                                    $account['account_id'].' - '.$account['account_name'],
-                                    number_format($account['debit'], 2),
-                                    number_format($account['credit'], 2),
-                                ]);
-
-                                $groupDebit += $account['debit'];
-                                $groupCredit += $account['credit'];
-                            }
-
-                            // Group subtotal row
-                            $sheet->row($row++, [
-                                'Group Total', 
-                                number_format($groupDebit, 2),
-                                number_format($groupCredit, 2),
-                            ]);
-
-                            $sheet->row($row++, []); // Empty line between groups
-
-                            $grandDebit += $groupDebit;
-                            $grandCredit += $groupCredit;
-                        }
-
-                        // Grand Total row
-                        $sheet->row($row++, [
-                            'Grand Total', 
-                            number_format($grandDebit, 2),
-                            number_format($grandCredit, 2),
-                        ]);
-                    });
-                })->download('xls');
-
-        } else if($search_type=='YTD') {
-            
-            $exportFileName = 'TrialBalance_YTD_' . date('Ymd_His') . '.xls';
-        
-            return Excel::create($exportFileName, function($excel) use ($results, $from, $to, $voucherhead, $trimzero) {
-                $excel->sheet('Trial Balance YTD', function($sheet) use ($results, $voucherhead, $trimzero) {
-                    $rowIndex = 1;
-        
-                    // Report title
-                    $sheet->row($rowIndex++, [$voucherhead]);
-                    $sheet->row($rowIndex++, ['']);
-        
-                    // Header
-                    $sheet->row($rowIndex++, [
-                        'Account ID', 
-                        'Account Name', 
-                        'Opening Debit', 
-                        'Opening Credit', 
-                        'Debit', 
-                        'Credit', 
-                        'Closing Balance'
-                    ]);
-        
-                    $grouped = collect($results)->groupBy('group');
-        
-                    foreach ($grouped as $groupName => $accounts) {
-                        // Group Header
-                        $sheet->row($rowIndex++, [$groupName ?: 'No Group']);
-        
-                        // Group rows
-                        foreach ($accounts as $account) {
-                            $sheet->row($rowIndex++, [
-                                $account['account_id'],
-                                $account['account_name'],
-                                number_format($account['opening_debit'], 2),
-                                number_format($account['opening_credit'], 2),
-                                number_format($account['ytd_debit'], 2),
-                                number_format($account['ytd_credit'], 2),
-                                number_format($account['closing_balance'], 2),
-                            ]);
-                        }
-        
-                        // Subtotals per group
-                        $sheet->row($rowIndex++, [
-                            '', 'Group Total',
-                            number_format($accounts->sum('opening_debit'), 2),
-                            number_format($accounts->sum('opening_credit'), 2),
-                            number_format($accounts->sum('ytd_debit'), 2),
-                            number_format($accounts->sum('ytd_credit'), 2),
-                            number_format($accounts->sum('closing_balance'), 2),
-                        ]);
-        
-                        // Blank line between groups
-                        $sheet->row($rowIndex++, ['']);
-                    }
-        
-                    // Grand totals
-                    $resultsCollection = collect($results);
-                    $sheet->row($rowIndex++, [
-                        '', 'Grand Total',
-                        number_format($resultsCollection->sum('opening_debit'), 2),
-                        number_format($resultsCollection->sum('opening_credit'), 2),
-                        number_format($resultsCollection->sum('ytd_debit'), 2),
-                        number_format($resultsCollection->sum('ytd_credit'), 2),
-                        number_format($resultsCollection->sum('closing_balance'), 2),
-                    ]);
-                });
-            })->download('xls');
-            
+            // Grand Total row
+            $grandRow   = count($data) + 1;
+            $data[]     = ['Grand Total', number_format($grandDebit, 2), number_format($grandCredit, 2)];
+            $boldRows[] = $grandRow;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLOSING SUMMARY
+        |--------------------------------------------------------------------------
+        */
+        elseif ($search_type == 'closing_summary') {
+
+            $fileName = 'TrialBalance_Summary_' . date('Ymd_His');
+
+            $data[]     = [$voucherhead];
+            $data[]     = ['From Date:', Carbon::parse($from)->format('d-m-Y'), 'To Date:', Carbon::parse($to)->format('d-m-Y')];
+            $data[]     = [];
+            $data[]     = ['Group Name', 'Net Debit', 'Net Credit'];
+            $boldRows[] = 1;
+            $boldRows[] = 4;
+
+            $filteredResults = ($trimzero == 1)
+                ? collect($results)->filter(fn($r) => $r['debit'] != 0 || $r['credit'] != 0)
+                : collect($results);
+
+            $grandDebit = $grandCredit = 0;
+
+            foreach ($filteredResults as $group => $summary) {
+                $data[] = [
+                    $group,
+                    number_format($summary['debit'], 2),
+                    number_format($summary['credit'], 2),
+                ];
+                $grandDebit  += $summary['debit'];
+                $grandCredit += $summary['credit'];
+            }
+
+            $data[]     = [];
+            $grandRow   = count($data) + 1;
+            $data[]     = ['Grand Total', number_format($grandDebit, 2), number_format($grandCredit, 2)];
+            $boldRows[] = $grandRow;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLOSING GROUPWISE
+        |--------------------------------------------------------------------------
+        */
+        elseif ($search_type == 'closing_groupwise') {
+
+            $fileName = 'TrialBalance_Groupwise_' . date('Ymd_His');
+
+            $data[]     = [$voucherhead];
+            $data[]     = ['From Date:', Carbon::parse($from)->format('d-m-Y'), 'To Date:', Carbon::parse($to)->format('d-m-Y')];
+            $data[]     = [];
+            $data[]     = ['Account Name', 'Debit', 'Credit'];
+            $boldRows[] = 1;
+            $boldRows[] = 4;
+
+            $grandDebit = $grandCredit = 0;
+
+            foreach ($results as $group => $accounts) {
+
+                // Group header row
+                $groupHeaderRow = count($data) + 1;
+                $data[]         = [$group, '', ''];
+                $boldRows[]     = $groupHeaderRow;
+
+                $groupDebit = $groupCredit = 0;
+
+                foreach ($accounts as $account) {
+                    $data[] = [
+                        $account['account_id'] . ' - ' . $account['account_name'],
+                        number_format($account['debit'], 2),
+                        number_format($account['credit'], 2),
+                    ];
+                    $groupDebit  += $account['debit'];
+                    $groupCredit += $account['credit'];
+                }
+
+                // Group Total row
+                $groupTotalRow = count($data) + 1;
+                $data[]        = ['Group Total', number_format($groupDebit, 2), number_format($groupCredit, 2)];
+                $boldRows[]    = $groupTotalRow;
+                $data[]        = [];
+
+                $grandDebit  += $groupDebit;
+                $grandCredit += $groupCredit;
+            }
+
+            // Grand Total row
+            $grandRow   = count($data) + 1;
+            $data[]     = ['Grand Total', number_format($grandDebit, 2), number_format($grandCredit, 2)];
+            $boldRows[] = $grandRow;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | YTD
+        |--------------------------------------------------------------------------
+        */
+        elseif ($search_type == 'YTD') {
+
+            $fileName = 'TrialBalance_YTD_' . date('Ymd_His');
+
+            $data[]     = [$voucherhead];
+            $data[]     = [];
+            $data[]     = ['Account ID', 'Account Name', 'Opening Debit', 'Opening Credit', 'Debit', 'Credit', 'Closing Balance'];
+            $boldRows[] = 1;
+            $boldRows[] = 3;
+
+            $grouped = collect($results)->groupBy('group');
+
+            $grandOpenDr = $grandOpenCr = 0;
+            $grandYtdDr  = $grandYtdCr  = 0;
+            $grandClosing = 0;
+
+            foreach ($grouped as $groupName => $accounts) {
+
+                // Group header row
+                $groupHeaderRow = count($data) + 1;
+                $data[]         = [$groupName ?: 'No Group', '', '', '', '', '', ''];
+                $boldRows[]     = $groupHeaderRow;
+
+                $grpOpenDr = $grpOpenCr = 0;
+                $grpYtdDr  = $grpYtdCr  = 0;
+                $grpClosing = 0;
+
+                foreach ($accounts as $account) {
+                    $data[] = [
+                        $account['account_id'],
+                        $account['account_name'],
+                        number_format($account['opening_debit'], 2),
+                        number_format($account['opening_credit'], 2),
+                        number_format($account['ytd_debit'], 2),
+                        number_format($account['ytd_credit'], 2),
+                        number_format($account['closing_balance'], 2),
+                    ];
+                    $grpOpenDr  += $account['opening_debit'];
+                    $grpOpenCr  += $account['opening_credit'];
+                    $grpYtdDr   += $account['ytd_debit'];
+                    $grpYtdCr   += $account['ytd_credit'];
+                    $grpClosing += $account['closing_balance'];
+                }
+
+                // Group Total row
+                $groupTotalRow = count($data) + 1;
+                $data[]        = [
+                    '', 'Group Total',
+                    number_format($grpOpenDr, 2),
+                    number_format($grpOpenCr, 2),
+                    number_format($grpYtdDr, 2),
+                    number_format($grpYtdCr, 2),
+                    number_format($grpClosing, 2),
+                ];
+                $boldRows[] = $groupTotalRow;
+                $data[]     = [];
+
+                $grandOpenDr  += $grpOpenDr;
+                $grandOpenCr  += $grpOpenCr;
+                $grandYtdDr   += $grpYtdDr;
+                $grandYtdCr   += $grpYtdCr;
+                $grandClosing += $grpClosing;
+            }
+
+            // Grand Total row
+            $grandRow   = count($data) + 1;
+            $data[]     = [
+                '', 'Grand Total',
+                number_format($grandOpenDr, 2),
+                number_format($grandOpenCr, 2),
+                number_format($grandYtdDr, 2),
+                number_format($grandYtdCr, 2),
+                number_format($grandClosing, 2),
+            ];
+            $boldRows[] = $grandRow;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINAL EXPORT
+        |--------------------------------------------------------------------------
+        */
+        return Excel::download(
+            new SimpleArrayExport($data, $voucherhead, $company, $boldRows),
+            $fileName . '.xlsx'
+        );
     }
-
-
-
     
 }

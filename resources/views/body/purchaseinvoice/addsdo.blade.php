@@ -27,8 +27,25 @@
     <link rel="stylesheet" type="text/css" href="{{asset('assets/vendors/datatables/css/scroller.bootstrap.css')}}">
 	<link rel="stylesheet" type="text/css" href="{{asset('assets/vendors/datatablesmark.js/css/datatables.mark.min.css')}}"/>
     <link rel="stylesheet" type="text/css" href="{{asset('assets/css/custom.css')}}">
-	<link rel="stylesheet" type="text/css" href="{{asset('assets/css/custom_css/responsive_datatables.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('assets/css/custom_css/responsive_datatables.css')}}">
     <link rel="stylesheet" type="text/css" href="{{asset('assets/css/datepicker.css')}}">
+	<style>
+		.table-dy-row td {
+			vertical-align: top;
+		}
+		.qty-debug {
+			display: block;
+			margin-top: 4px;
+			padding: 2px 4px;
+			font-size: 11px;
+			line-height: 1.2;
+			background: #f5f8fc;
+			border-radius: 3px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	</style>
 @stop
 
 {{-- Page content --}}
@@ -1681,11 +1698,15 @@ $(function() {
         var controlForm = $('.controls .itemdivPrnt'),
             currentEntry = $(this).parents('.itemdivChld:first'),
             newEntry = $(currentEntry.clone()).appendTo(controlForm);
+			newEntry.find('.qty-debug').remove();
 			newEntry.find($('.line-unit')).attr('id', 'itmunt_' + rowNum); //input[type='select']
+			newEntry.find($('input[name="purchase_order_item_id[]"]')).attr('id', 'p_orditmid_' + rowNum);
+			newEntry.find($('input[name="supplier_do_item_id[]"]')).attr('id', 'sdo_itemid_' + rowNum);
 			newEntry.find($('input[name="item_id[]"]')).attr('id', 'itmid_' + rowNum);
 			newEntry.find($('input[name="item_code[]"]')).attr('id', 'itmcod_' + rowNum);
 			newEntry.find($('input[name="item_name[]"]')).attr('id', 'itmdes_' + rowNum);
 			newEntry.find($('input[name="unit[]"]')).attr('id', 'itmunt_' + rowNum);
+			newEntry.find($('input[name="actual_quantity[]"]')).attr('id', 'itmactqty_' + rowNum);
 			newEntry.find($('input[name="quantity[]"]')).attr('id', 'itmqty_' + rowNum);
 			newEntry.find($('input[name="cost[]"]')).attr('id', 'itmcst_' + rowNum);
 			newEntry.find($('input[name="line_vat[]"]')).attr('id', 'vat_' + rowNum);
@@ -1723,6 +1744,7 @@ $(function() {
 			
 			newEntry.find($('input[name="packing[]"]')).attr('id', 'packing_' + rowNum);
 			$('#packing_'+rowNum).val(1);
+			newEntry.find('.btn-remove-item').attr('data-id', 'rem_' + rowNum);
 			
 			if($('.taxinclude option:selected').val()==0 )
 				$('.taxinclude').val(0);
@@ -2054,19 +2076,24 @@ $(function() {
 	function renderQtyDebug(curNum) {
 		var $qty = $('#itmqty_'+curNum);
 		if(!$qty.length) return;
+		var itemId = $('#itmid_'+curNum).val();
 		
 		var entered = parseFloat(($qty.val()==='') ? 0 : $qty.val());
 		var allowed = parseFloat(($('#itmactqty_'+curNum).val()==='' || $('#itmactqty_'+curNum).val()==undefined) ? 0 : $('#itmactqty_'+curNum).val());
+		if((!itemId || itemId === '') && entered === 0 && allowed === 0) {
+			$('#qtydbg_'+curNum).remove();
+			return;
+		}
 		var remaining = allowed - entered;
 		if(remaining < 0) remaining = 0;
 		
 		var $dbg = $('#qtydbg_'+curNum);
 		if(!$dbg.length) {
-			$dbg = $('<small id="qtydbg_'+curNum+'" class="qty-debug text-muted" style="display:block;margin-top:4px;"></small>');
+			$dbg = $('<small id="qtydbg_'+curNum+'" class="qty-debug text-muted"></small>');
 			$qty.after($dbg);
 		}
 		
-		$dbg.text('GRN: '+allowed+' | Entered: '+entered+' | Remaining: '+remaining);
+		$dbg.html('GRN: <b>'+allowed+'</b> | Entered: <b>'+entered+'</b> | Bal: <b>'+remaining+'</b>');
 		if(entered > allowed) {
 			$dbg.removeClass('text-muted').addClass('text-danger');
 		} else {

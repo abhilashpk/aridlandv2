@@ -184,9 +184,16 @@ $(function() {
 		$('#supDpt').val(dptTxt);
 	});
 	
-	$('.listCust').on('click', function() {
-		$('#newSupplierFrm').toggle();
-		$('#newSuplierList').toggle();
+	$('.listCust').on('click', function(e) {
+		e.preventDefault();
+		var deptId = $('#frmSupplier #department_id').val();
+		var listUrl = "{{ url('purchase_order/supplier_data') }}";
+		if (deptId && deptId !== '0') {
+			listUrl = "{{ url('purchase_order/supplier_datadept') }}/" + deptId;
+		}
+		$('#supplierData').load(listUrl, function() {
+			$('#myModal').modal({show:true});
+		});
 	});
 	
 	$('#create').on('click', function(e){
