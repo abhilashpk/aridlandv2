@@ -977,12 +977,14 @@
 							
 							
                             @can('mr-list')
+                            @if((int) (auth()->user()->department_id ?? 0) === 1)
                             <li {!! (Request::is('material_requisition') || Request::is('material_requisition/*') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('material_requisition') }}">
                                     <i class="fa fa-fw fa-file-text-o"></i> 
 									Material Requisition
                                 </a>
                             </li>
+                            @endif
                             @endcan
 
                             @can('mr-list')

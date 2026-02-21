@@ -121,7 +121,7 @@ class QuantityReportController extends Controller
 		return $childs;
 	}
 	
-	protected function makeSummary($results)
+	protected function makeSummary($results, Request $request)
 	{
 		$arrSummarry = array();
 		foreach($results as $rows)
@@ -392,21 +392,21 @@ class QuantityReportController extends Controller
 			$voucher_head = 'Opening Quantity';
 			$result = $this->itemmaster->getQuantityReport($request->all()); 
 		//	echo '<pre>';print_r($result);exit;
-			$results = $this->makeSummary( $this->groupItem($result) );
+			$results = $this->makeSummary( $this->groupItem($result), $request );
 			$titles = ['main_head' => 'Quantity Report','subhead' => 'Opening Quantity'];
 			
 		} else if($request->get('search_type')=='qtyhand_ason_date'|| $request->get('search_type')=='price_list_qty') {
 			$voucher_head = 'Quantity in Hand';
 			$result = $this->itemmaster->getQuantityReport($request->all()); 
 			
-			$results = $this->makeSummary( $this->groupItem($result) ); //echo '<pre>';print_r($result);exit;
+			$results = $this->makeSummary( $this->groupItem($result), $request ); //echo '<pre>';print_r($result);exit;
 			$titles = ['main_head' => 'Quantity Report','subhead' => 'Quantity in Hand'];
 			
 		} else if($request->get('search_type')=='qtyhand_ason_priordate') {
 			$dt = ($request->get('date_to')=='')?date('d-m-Y'):date('d-m-Y', strtotime($request->get('date_to')));
 			$voucher_head = 'Quantity in Hand as on '.$dt;
 			$result = $this->itemmaster->getQuantityReport($request->all());
-			$results = $this->makeSummary( $this->groupItem($result) );
+			$results = $this->makeSummary( $this->groupItem($result), $request );
 			$titles = ['main_head' => 'Quantity Report','subhead' => $voucher_head];
 			
 		} else if($request->get('search_type')=='opening_quantity_loc') {
@@ -551,7 +551,7 @@ class QuantityReportController extends Controller
 			$datareport[] = ['SI.No.','Item Code','Description','Unit','Quantity','Cost Avg','Total','Selling Price'];
 			
 			$result = $this->itemmaster->getQuantityReport($request->all()); 
-			$results = $this->makeSummary( $this->groupItem($result) );
+			$results = $this->makeSummary( $this->groupItem($result), $request );
 			//echo '<pre>';print_r($result);exit;
 			$i = $total = $qtytotal = 0;
 			foreach($results as $result) {
@@ -594,7 +594,7 @@ class QuantityReportController extends Controller
 			$datareport[] = ['SI.No.','Item Code','Description','Unit','Quantity',$cst,'Total',$mqty,$p1qty,$p2qty];
 			
 			$result = $this->itemmaster->getQuantityReport($request->all()); 
-			$results = $this->makeSummary( $this->groupItem($result) );
+			$results = $this->makeSummary( $this->groupItem($result), $request );
 			//echo '<pre>';print_r($result);exit;
 			$i = $total = $qtytotal =$m=$p1=$p2=$mtotal=$p1total=$p2total= 0;
 			foreach($results as $result) {

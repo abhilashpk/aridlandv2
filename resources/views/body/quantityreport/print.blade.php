@@ -387,24 +387,27 @@ thead
 										<?php $i = $total = $qtytotal = $mtotal=$p1total=$p2total=0;?>
 										@foreach($results as $item)
 										<?php $i++; 
+											$mpVal = (isset($item['mpqty']) && is_numeric($item['mpqty'])) ? (float)$item['mpqty'] : 0;
+											$p1Val = (isset($item['p1qty']) && is_numeric($item['p1qty'])) ? (float)$item['p1qty'] : 0;
+											$p2Val = (isset($item['p2qty']) && is_numeric($item['p2qty'])) ? (float)$item['p2qty'] : 0;
 											if($type=='opening_quantity') {
 												$quantity = $item['opn_quantity'];
 												$cost = $item['opn_cost'];
 												$subtotal = $quantity * $item['opn_cost'];
 												$total += $subtotal;
 												$qtytotal += $item['quantity'];
-												$mtotal += $item['mpqty'];
-												$p1total += $item['p1qty'];
-												$p2total += $item['p2qty'];
+												$mtotal += $mpVal;
+												$p1total += $p1Val;
+												$p2total += $p2Val;
 											} else {
 												$quantity = $item['quantity'];
 												$cost = $item['cost_avg'];
 												$subtotal = $item['quantity'] * $item['cost_avg'];
 												$total += $subtotal;
 												$qtytotal += $quantity;
-												$mtotal += $item['mpqty'];
-												$p1total += $item['p1qty'];
-												$p2total += $item['p2qty'];
+												$mtotal += $mpVal;
+												$p1total += $p1Val;
+												$p2total += $p2Val;
 											}
 										?>
 										<tr>
@@ -508,4 +511,3 @@ function getExport() {
 	document.frmExport.submit();
 }
 </script>
-

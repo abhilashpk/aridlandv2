@@ -1677,6 +1677,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 					'vat' => $vat,
 					'pkno' => $pkno,
 					'last_purchase_cost' => $newOpnCost,
+					'cost_avg' => $newOpnCost,
 				]);
 		} else {
 			DB::table('itemstock_department')->insert([
@@ -2142,7 +2143,7 @@ class ItemmasterRepository extends AbstractValidator implements ItemmasterInterf
 				'C.category_name AS category',
 				'S.category_name AS subcategory',
 				'ID.last_purchase_cost',
-				DB::raw('CASE WHEN ID.cost_avg IS NULL OR ID.cost_avg = 0 THEN u.cost_avg ELSE ID.cost_avg END AS cost_avg'),
+				DB::raw('COALESCE(ID.cost_avg, 0) AS cost_avg'),
 				'ID.issued_qty',
 				'u.packing',
 				'GC.description AS group_name',
