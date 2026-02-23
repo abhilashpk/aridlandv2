@@ -56,7 +56,7 @@ class SupplierPaymentController extends Controller
 		$this->forms = $forms;
 		$this->formData = $this->forms->getFormData('PV');  
 	}
-	
+
 	public function index() {
 		$data = array();
 		
@@ -180,7 +180,7 @@ class SupplierPaymentController extends Controller
 				}
 				$opts .= "<li role='presentation'><a href='{$printgrp}' target='_blank' role='menuitem'>Print Group</a></li>";
 				
-				$printfc = url('supplier_payment/printfc/'.$row->id.'/'.$prints[0]->id); //MAR18
+				$printfc = isset($prints[0]) ? url('supplier_payment/printfc/'.$row->id.'/'.$prints[0]->id) : '#'; //MAR18
                 if(in_array($row->doc_status, $apr))	 {							
 					if($row->is_fc==1) {
 						$nestedData['print'] = "<div class='btn-group drop_btn' role='group'>
@@ -284,7 +284,7 @@ class SupplierPaymentController extends Controller
 	
 	public function save(Request $request) { //echo '<pre>';print_r($request->all());exit;
 		
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			['amount' => 'required',
 			 'supplier_account' => 'required','supplier_id' => 'required',
@@ -304,10 +304,7 @@ class SupplierPaymentController extends Controller
 			 //'line_amount.*' => 'Invoice assign amount is required.',
 			 'debit' => 'Debit and Credit amount should be equal.'
 			]
-		)) {
-
-			return redirect('supplier_payment/add')->withInput()->withErrors();
-		}
+		);
 		 //echo '<pre>';print_r($request->all());exit;
 		/* $validator = Validator::make($request->all(), [
 			'debit' => 'required|same:credit'
@@ -646,7 +643,7 @@ class SupplierPaymentController extends Controller
 				}
 				$opts .= "<li role='presentation'><a href='{$printgrp}' target='_blank' role='menuitem'>Print Group</a></li>";
 				
-				$printfc = url('supplier_payment/printfc/'.$row->id.'/'.$prints[0]->id); //MAR18
+				$printfc = isset($prints[0]) ? url('supplier_payment/printfc/'.$row->id.'/'.$prints[0]->id) : '#'; //MAR18
                 if(in_array($row->doc_status, $apr))	 {							
 					if($row->is_fc==1) {
 						$nestedData['print'] = "<div class='btn-group drop_btn' role='group'>
@@ -1592,4 +1589,3 @@ public function dataExport(Request $request)
 	}
 
 }
-

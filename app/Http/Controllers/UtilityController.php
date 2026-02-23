@@ -3236,6 +3236,9 @@ class UtilityController extends Controller
 	
 	//OCT24
 	public function updateItemCurrentQty($id) {
+		if(is_array($id)) {
+			return $this->updateItemCurrentQtyByItems($id);
+		}
 
 		$items = DB::table('item_unit')->where('itemmaster_id',$id)->where('is_baseqty',1)->where('status',1)
 			->where(function($q){ $q->whereNull('deleted_at'); })
@@ -3288,68 +3291,68 @@ class UtilityController extends Controller
 										  ]);
 				}
 			}
-							  
+			$this->updateItemDeptCurrentQty($item->itemmaster_id);
 		}
 	}
 	
 	public function updateItemCurrentQtyByItems($itemarr) { //echo '<pre>';print_r($itemarr);exit;
-        
-        foreach($itemarr as $id) {
-            
-    		$items = DB::table('item_unit')->where('itemmaster_id',$id)->where('is_baseqty',1)->where('status',1)
+		if(!is_array($itemarr)) {
+			$itemarr = [$itemarr];
+		}
+
+		foreach(array_unique(array_filter($itemarr)) as $id) {
+			$this->updateItemCurrentQty($id);
+		}
+	}
+
+	private function updateItemDeptCurrentQty($itemId)
+	{
+		$deptStocks = DB::table('itemstock_department')
+			->where('itemmaster_id', $itemId)
+			->where('is_baseqty', 1)
+			->where('status', 1)
+			->get();
+
+		foreach($deptStocks as $deptStock) {
+			$itemlog = DB::table('item_log')
+				->where('item_id', $itemId)
+				->where('department_id', $deptStock->department_id)
+				->where('status', 1)
 				->where(function($q){ $q->whereNull('deleted_at'); })
-				->get();
-    				
-    		foreach($items as $item) {
-    			
-    			$itemlog = DB::table('item_log')
-    							  ->where('item_id', $item->itemmaster_id)
-    							  ->where('status',1)
-    							  ->where(function($q){ $q->whereNull('deleted_at'); })
-    							  ->select('item_log.*')
-    							  ->orderBy('id','DESC')
-    							  ->first(); 
-    			if($itemlog) {
-    				
-    				$qty_rec = $qty_isd = $curr_qnty = 0;
-    				$qntys = $this->getItemQtyFromLog($item->itemmaster_id, $itemlog->department_id ?? null);
-    				if($qntys) {
-    					$qty_rec = $qntys['in'];
-    					$qty_isd = $qntys['out'];
-    					$curr_qnty = $qty_rec - $qty_isd;
-    				}
-    				//echo '<pre>';print_r($qntys); exit;
-    				if($itemlog->document_type=='SI'||$itemlog->document_type=='PR'||$itemlog->document_type=='GR'||$itemlog->document_type=='TO'||$itemlog->document_type=='CDO') {
-    					
-    					DB::table('item_unit')->where('itemmaster_id', $item->itemmaster_id)
-    										  ->update([
-    											'cur_quantity' => $curr_qnty,
-    											'issued_qty' => $qty_isd, 'received_qty' => $qty_rec,
-    											'last_purchase_cost' => $itemlog->pur_cost,
-    											'cost_avg' => $itemlog->cost_avg
-    										  ]);
-    				} else if($itemlog->document_type=='PI'||$itemlog->document_type=='SR'||$itemlog->document_type=='GI'||$itemlog->document_type=='TI'||$itemlog->document_type=='SDO') { 
-    					DB::table('item_unit')->where('itemmaster_id', $item->itemmaster_id)
-    										  ->update([
-    											'cur_quantity' => $curr_qnty,
-    											'last_purchase_cost' => $itemlog->pur_cost,
-    											'cost_avg' => $itemlog->cost_avg,
-    											'received_qty' => $qty_rec, 'issued_qty' => $qty_isd
-    										  ]);
-    				} else if($itemlog->document_type=='OQ') { 
-    					DB::table('item_unit')->where('itemmaster_id', $item->itemmaster_id)
-    										  ->update([
-    											'cur_quantity' => $curr_qnty,
-    											'last_purchase_cost' => $itemlog->pur_cost,
-    											'cost_avg' => $itemlog->cost_avg,
-    											'received_qty' => $qty_rec,
-    											'issued_qty' => 0
-    										  ]);
-    				}
-    			}
-    							  
-    		}
-        }
+				->select('item_log.*')
+				->orderBy('id', 'DESC')
+				->first();
+
+			if(!$itemlog) {
+				continue;
+			}
+
+			$qty_rec = $qty_isd = $curr_qnty = 0;
+			$qntys = $this->getItemQtyFromLog($itemId, $deptStock->department_id);
+			if($qntys) {
+				$qty_rec = $qntys['in'];
+				$qty_isd = $qntys['out'];
+				$curr_qnty = $qty_rec - $qty_isd;
+			}
+
+			$payload = [
+				'cur_quantity' => $curr_qnty,
+				'last_purchase_cost' => $itemlog->pur_cost,
+				'cost_avg' => $itemlog->cost_avg
+			];
+
+			if($itemlog->document_type=='OQ') {
+				$payload['received_qty'] = $qty_rec;
+				$payload['issued_qty'] = 0;
+			} else {
+				$payload['received_qty'] = $qty_rec;
+				$payload['issued_qty'] = $qty_isd;
+			}
+
+			DB::table('itemstock_department')
+				->where('id', $deptStock->id)
+				->update($payload);
+		}
 	}
 	
 	public function itemLocUtility($items) {

@@ -1,10 +1,10 @@
 {
-  "ReportGuid": "dda2828f3643589c10b926b3b968ac6f",
+  "ReportGuid": "93e2268ced4537df53efde2ca5234ec3",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "GoodsIssueNote.mrt",
-  "ReportCreated": "/Date(1572900166000+0530)/",
-  "ReportChanged": "/Date(1759979379000+0530)/",
+  "ReportCreated": "/Date(1572900166000+0400)/",
+  "ReportChanged": "/Date(1771792947000+0400)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "HundredthsOfInch",
@@ -1645,20 +1645,6 @@
       },
       "PageWidth": 833,
       "PageHeight": 1168.9,
-      "Watermark": {
-        "TextBrush": "solid:50,0,0,0"
-      }
-    },
-    "1": {
-      "Ident": "StiPage",
-      "Name": "subReport_1",
-      "Guid": "e4d5b65bcaf5633f4b19fdf3cff81b6f",
-      "Interaction": {
-        "Ident": "StiInteraction"
-      },
-      "Border": ";;2;;;;;solid:Black",
-      "Brush": "solid:",
-      "PageWidth": 288,
       "Watermark": {
         "TextBrush": "solid:50,0,0,0"
       }

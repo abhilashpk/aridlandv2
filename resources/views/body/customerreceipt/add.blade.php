@@ -111,16 +111,7 @@
 								@endif
 								
 								@if($isdept)
-								<div class="form-group">
-                                    <label for="input-text" class="col-sm-3 control-label">Department</label>
-                                    <div class="col-sm-9">
-                                       <select id="department_id" class="form-control select2" style="width:100%" name="department_id">
-											@foreach($departments as $drow)
-												<option value="{{ $drow->id }}" >{{ $drow->name }}</option>
-											@endforeach
-                                        </select>
-                                    </div>
-                                </div>
+								<input type="hidden" id="department_id" name="department_id" value="{{ $deptid }}">
 								@endif
 								
 								<div class="form-group">
@@ -676,8 +667,9 @@ $(document).ready(function () {
 		
 		var vchr_id = $('#voucher option:selected').val();
 		if($('#department_id').length) {
+			var deptId = $('#department_id').is('select') ? $('#department_id option:selected').val() : $('#department_id').val();
 			
-			$.get("{{ url('customer_receipt/getvoucher/') }}/" + vchr_id+'/'+vchr+'/'+$('#department_id option:selected').val(), function(data) {
+			$.get("{{ url('customer_receipt/getvoucher/') }}/" + vchr_id+'/'+vchr+'/'+deptId, function(data) {
 				$('#voucher_no').attr("placeholder", data.voucher_no); //$('#voucher_no').val(data.voucher_no);
 				if(data.id!=null && data.account_name!=null) {
 					$('#dr_account').val(data.account_name);
@@ -871,9 +863,13 @@ $(function(){
     
 	
   $(':input[type=number]').on('mousewheel',function(e){ $(this).blur(); });
+  function getDepartmentId() {
+		if(!$('#department_id').length) return '';
+		return $('#department_id').is('select') ? $('#department_id option:selected').val() : $('#department_id').val();
+  }
   
    $('#department_id').on('change', function(e){ 
-		var dept_id = e.target.value; 
+		var dept_id = getDepartmentId(); 
 		
 		$.get("{{ url('customer_receipt/getdeptvoucher/') }}/" + dept_id, function(data) { 
 			$('#voucher_no').attr("placeholder", data[0].voucher_no); //$('#voucher_no').val(data[0].voucher_no);
@@ -892,7 +888,7 @@ $(function(){
 	var custurl;
 	$('#customer_account').click(function() {
 		if($('#department_id').length)
-			custurl = "{{ url('sales_invoice/customer_datadpt/') }}"+'/'+$('#department_id option:selected').val();
+			custurl = "{{ url('sales_invoice/customer_datadpt/') }}"+'/'+getDepartmentId();
 		else
 			custurl = "{{ url('sales_order/customer_data/') }}";
 		$('#customerData').load(custurl, function(result) {
@@ -980,7 +976,7 @@ $(function(){
 		
 		if($('#department_id').length) {
 			
-			$.get("{{ url('customer_receipt/getvoucher/') }}/" + vchr_id+'/'+vchr_type+'/'+$('#department_id option:selected').val(), function(data) {
+			$.get("{{ url('customer_receipt/getvoucher/') }}/" + vchr_id+'/'+vchr_type+'/'+getDepartmentId(), function(data) {
 				$('#voucher_no').attr("placeholder", data.voucher_no); //$('#voucher_no').val(data.voucher_no);
 				$('#curno').val(data.voucher_no); //CHNG
 				if(data.id!=null && data.account_name!=null) {

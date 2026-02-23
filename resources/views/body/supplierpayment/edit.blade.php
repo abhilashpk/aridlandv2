@@ -64,11 +64,13 @@
                            
 						   <div class="pull-right">
 								@can('pv-print')
+								@if(isset($prints[0]))
 								 <a href="{{ url('supplier_payment/print/'.$crrow->id.'/'.$prints[0]->id) }}" target="_blank" class="btn btn-info btn-sm">
 									<span class="btn-label">
 										<i class="fa fa-fw fa-print"></i>
 									</span>
 								 </a>
+								@endif
 								@endcan
 							</div>
                         </div>

@@ -43,20 +43,20 @@
                 <div class="panel panel-info">
                     <div class="panel-heading clearfix">
                         <h3 class="panel-title pull-left m-t-6">
-                            <i class="fa fa-fw fa-list-alt"></i> Report - {{$reports[0]->report_name}}
+                            <i class="fa fa-fw fa-list-alt"></i> Report - {{ isset($report) ? $report->name : (isset($reports[0]) ? $reports[0]->report_name : '') }}
                         </h3>
                         
                     </div>
                     <div class="panel-body">
                         <div class="table-responsive">
 							<div class="pull-right">
-								<a href="{{ url('set_report/'.$reports[0]->id) }}" class="btn btn-warning"><i class="fa fa-fw fa-refresh"></i> Refresh</a>
+								<a href="{{ url('set_report/'.(isset($report) ? $report->id : (isset($reports[0]) ? $reports[0]->id : ''))) }}" class="btn btn-warning"><i class="fa fa-fw fa-refresh"></i> Refresh</a>
 								
 								<button type="button" class="btn btn-primary btn-add-row" >
 									<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span> Add more
 								 </button>
 							 </div>
-								<input type="hidden" id="rid" name="rid" value="{{$reports[0]->id}}"/>
+								<input type="hidden" id="rid" name="rid" value="{{ isset($report) ? $report->id : (isset($reports[0]) ? $reports[0]->id : '') }}"/>
                                 <table class="table table-striped" id="formTable">
                                     <thead>
                                     <tr>
@@ -89,16 +89,9 @@
 										<td class="del"><?php if($row->is_default==0) { ?> <button class="btn btn-danger btn-xs delete">
 											<span class="glyphicon glyphicon-trash"></span></button><?php } ?>
 										</td>
-                                        @php $stimulsoft_v = config('app.stimulsoft_ver'); @endphp
-                                        @if($stimulsoft_v==2)
-										<td><a href="{{ URL::to('designer/'.$row->rid) }}" target="_blank" class="btn btn-warning btn-xs design">
+                                        <td><a href="{{ URL::to('designer/'.$row->rid) }}" target="_blank" class="btn btn-warning btn-xs design">
 											<span class="glyphicon glyphicon-wrench"></span></a>
 										</td>
-                                        @else
-                                        <td><a href="{{ url('design/'.$row->rid) }}" target="_blank" class="btn btn-warning btn-xs design">
-											<span class="glyphicon glyphicon-wrench"></span></a>
-										</td>
-                                        @endif
                                     </tr>
 									@endforeach
                                    
@@ -126,24 +119,37 @@
 <!-- end of page level js -->
 <script>
 
+function buildReportRow() {
+    var options = '<option value="">Select Template...</option>'
+@foreach ($files as $file)
+        + '<option value="{{ addslashes($file) }}">{{ addslashes($file) }}</option>'
+@endforeach
+        ;
+
+    return '<tr>'
+        + '<td><input type="text" class="form-control txname" name="name" value=""/>'
+        + '<input type="hidden" class="txid" name="id" value=""/></td>'
+        + '<td><select class="form-control select2 selview" style="width:100%" name="file_name">' + options + '</select></td>'
+        + '<td class="opt"><input type="radio" class="opdft" name="is_default"/></td>'
+        + '<td><button class="btn btn-primary btn-xs save"><i class="fa fa-fw fa-floppy-o"></i></button></td>'
+        + '<td class="del"><button class="btn btn-danger btn-xs delete"><span class="glyphicon glyphicon-trash"></span></button></td>'
+        + '<td><button type="button" class="btn btn-warning btn-xs design-disabled" disabled title="Save first"><span class="glyphicon glyphicon-wrench"></span></button></td>'
+        + '</tr>';
+}
+
 $(document).on('click', '.btn-add-row', function(e) 
 { 
    e.preventDefault();
-   var table = $('#formTable');
-   var clonedRow = $('tbody tr:first').clone();
-   clonedRow.find('input').val('');
-   clonedRow.find('.del').html('<button class="btn btn-danger btn-xs delete"><span class="glyphicon glyphicon-trash"></span></button>');
-   clonedRow.find('.opt').html('<input type="radio" id="dflt_" name="is_default"/>');
-   //newEntry.find($('input[name="item_code[]"]')).attr('id', 'itmcod_' + rowNum);
-   table.append(clonedRow);
-       
+   $('#formTable tbody').append(buildReportRow());
 });
 
 $(document).on('click', '.save', function(e)  {
-    var name = $(this).closest("tr").find(".txname").val();
-    var id = $(this).closest("tr").find(".txid").val();
-    var file = $(this).closest("tr").find(".selview option:selected").val(); //console.log('nm '+file); 
-    var opt = ($(this).closest("tr").find(".opdft").is(":checked"))?1:0; //console.log('opt '+opt); 
+    e.preventDefault();
+    var $row = $(this).closest("tr");
+    var name = $row.find(".txname").val();
+    var id = $row.find(".txid").val();
+    var file = $row.find(".selview option:selected").val(); //console.log('nm '+file); 
+    var opt = ($row.find(".opdft").is(":checked"))?1:0; //console.log('opt '+opt); 
 	var rid = $('#rid').val();
 	
 	$.ajax({
@@ -151,6 +157,14 @@ $(document).on('click', '.save', function(e)  {
 		type: 'get',
 		data: 'file='+file+'&id='+id+'&name='+name+'&opt='+opt+'&rid='+rid,
 		success: function(data) {
+			if(data && data.id) {
+				$row.find('.txid').val(data.id);
+				if($row.find('.design').length === 0) {
+					$row.find('td:last').html(
+						'<a href="{{ url('designer') }}/'+data.id+'" target="_blank" class="btn btn-warning btn-xs design"><span class="glyphicon glyphicon-wrench"></span></a>'
+					);
+				}
+			}
 			alert('Print format has been updated successfully.')
 			
 			return true;
@@ -180,6 +194,10 @@ $(document).on('click', '.delete', function(e)  {
 $(document).on('click', '.design', function(e)  { 
   e.preventDefault();
 	var id = $(this).closest("tr").find(".txid").val();
+	if(!id) {
+		alert('Save this row first.');
+		return false;
+	}
 	$.ajax({
 		url: "{{ url('set_report/save/') }}/"+id,
 		type: 'get',
@@ -187,11 +205,12 @@ $(document).on('click', '.design', function(e)  {
 			return true;
 		}
 	})
-    @if($stimulsoft_v==2)
-        window.open("{{ url('designer') }}", "_blank")
-    @else
-	    window.open("{{ url('design') }}", "_blank")
-    @endif
+    window.open("{{ url('designer') }}", "_blank")
+});
+
+$(document).on('click', '.design-disabled', function(e) {
+	e.preventDefault();
+	alert('Save this row first.');
 });
 
 </script>

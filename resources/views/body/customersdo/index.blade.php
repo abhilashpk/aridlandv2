@@ -242,7 +242,8 @@ $("#select23").select2({
 });
 
 function funDelete(id,no) {
-    if(no=='0') {
+    // `1` means transferred to invoice (block delete). `0` and `2` can delete.
+    if(no!='1') {
     	var con = confirm('Are you sure delete this order?');
     	if(con==true) {
     		var url = "{{ url('customers_do/delete/') }}";

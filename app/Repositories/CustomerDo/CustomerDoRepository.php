@@ -1602,7 +1602,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			$items = DB::table('customer_do_item')
 				->where('customer_do_id', $id)
 				->where('status', 1)
-				->select('id','item_id','quantity','unit_id','unit_price','doc_row_id','packing','balance_quantity')
+				->select('id','item_id','quantity','unit_id','unit_price','doc_row_id','balance_quantity')
 				->get();
 
 			// =====================================================
@@ -2361,15 +2361,25 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 
 			if (!$baseUnit) continue;
 
-			// Calculate base quantity using packing
-			$packing = $item->packing ?? 1;
-			if ($packing == "1" || $packing == 1) {
-				$baseqty = $item->quantity;
+			// Calculate base quantity using item-unit conversion (customer_do_item has no `packing` column)
+			$unitConv = DB::table('item_unit')
+				->where('itemmaster_id', $item->item_id)
+				->where('unit_id', $item->unit_id)
+				->select('packing')
+				->first();
+			$packing = ($unitConv && $unitConv->packing !== null && $unitConv->packing !== '') ? trim((string)$unitConv->packing) : '1';
+			$itemQty = (float)$item->quantity;
+			if ($packing === "1" || $packing === "1.0" || $packing === "1.00") {
+				$baseqty = $itemQty;
 			} else {
 				$pkgar = explode('-', $packing);
-				$baseqty = (isset($pkgar[1]) && $pkgar[0] > 0)
-					? ($item->quantity * $pkgar[1]) / $pkgar[0]
-					: $item->quantity * $packing;
+				if (count($pkgar) >= 2 && is_numeric($pkgar[0]) && is_numeric($pkgar[1]) && (float)$pkgar[0] != 0.0) {
+					$baseqty = ($itemQty * (float)$pkgar[1]) / (float)$pkgar[0];
+				} else if (is_numeric($packing)) {
+					$baseqty = $itemQty * (float)$packing;
+				} else {
+					$baseqty = $itemQty;
+				}
 			}
 
 			// =====================================================
@@ -2426,7 +2436,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			// =====================================================
 			// STEP 6: Recalculate cost average
 			// =====================================================
-			$this->autoUpdateAVGCost($item->item_id);
+			$this->objUtility->autoUpdateAVGCost($item->item_id);
 		}
 	}
 

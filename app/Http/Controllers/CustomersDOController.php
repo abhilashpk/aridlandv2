@@ -348,6 +348,7 @@ class CustomersDOController extends Controller
 		
 		$id = $this->customerdo->create($request->all());
 		if($id) {
+			app('App\Http\Controllers\UtilityController')->updateItemCurrentQtyByItems($request->get('item_id')); // sync stock ledger qty-in-hand
 			Session::flash('message', $this->title.' added successfully.');
 			return redirect('customers_do/add');
 		} else {
@@ -359,8 +360,17 @@ class CustomersDOController extends Controller
 	public function destroy($id)
 	{
 		$row = DB::table('customer_do')->where('id',$id)->select('is_editable')->first();
-		if($row->is_editable==0) {
+		// `is_editable = 1` is used when DO is already transferred to Sales Invoice.
+		// `is_editable = 2` is a source-linked DO (SO/QS) and should still be deletable.
+		if($row && (int)$row->is_editable !== 1) {
+		    $itemIds = DB::table('customer_do_item')
+		    	->where('customer_do_id', $id)
+		    	->where('status', 1)
+		    	->pluck('item_id')
+		    	->unique()
+		    	->toArray();
 		    $this->customerdo->delete($id);
+		    app('App\Http\Controllers\UtilityController')->updateItemCurrentQtyByItems($itemIds); // sync stock ledger qty-in-hand
 		    Session::flash('message', $this->title.' deleted successfully.');
 		    return redirect('customers_do');
 		} else {
@@ -552,6 +562,7 @@ class CustomersDOController extends Controller
 		);
 		
 		$this->customerdo->update($id, $request->all());
+		app('App\Http\Controllers\UtilityController')->updateItemCurrentQtyByItems($request->get('item_id')); // sync stock ledger qty-in-hand
 		
 		########## email script #############
 		if($this->acsettings->doc_approve==1 && $request->get('doc_status')==1 && $request->get('chkmail')==1) {
@@ -1194,4 +1205,3 @@ class CustomersDOController extends Controller
 	
 	
 }
-

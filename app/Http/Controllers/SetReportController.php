@@ -3,12 +3,14 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 
 use App\Http\Requests;
 use Notification;
 use Session;
 use DB;
 use App;
+use Auth;
 
 class SetReportController extends Controller
 {
@@ -18,6 +20,13 @@ class SetReportController extends Controller
 		parent::__construct( App::make('App\Repositories\Parameter1\Parameter1Interface'), App::make('App\Repositories\VatMaster\VatMasterInterface') );
 		$this->middleware('auth');
 
+	}
+
+	private function getCurrentDepartmentId() {
+		if(Auth::check() && (int) Auth::user()->department_id !== 0) {
+			return (int) Auth::user()->department_id;
+		}
+		return null;
 	}
 
 	public function index()
@@ -31,40 +40,79 @@ class SetReportController extends Controller
 	}
 	
 	public function update(Request $request) {
-		
+		$deptid = $this->getCurrentDepartmentId();
+		$hasDeptColumn = Schema::hasColumn('report_view_detail', 'department_id');
+		$savedId = null;
+
 		if($request->get('id')!='') {
-			if($request->get('opt')==1)
-				DB::table('report_view_detail')->where('id', $request->get('id'))->update(['is_default' => 0]);
+			$existing = DB::table('report_view_detail')->where('id', $request->get('id'))->first();
+			if($request->get('opt')==1 && $existing) {
+				$reset = DB::table('report_view_detail')->where('report_view_id', $existing->report_view_id);
+				if($hasDeptColumn) {
+					if($deptid) $reset->where('department_id', $deptid);
+					else $reset->whereNull('department_id');
+				}
+				$reset->update(['is_default' => 0]);
+			}
 			
-			DB::table('report_view_detail')->where('id', $request->get('id'))
-						->update([ 'name' => $request->get('name'),
-								   'print_name' => $request->get('file'),
-								   'is_default' => $request->get('opt')
-								 ]);
+			$upd = DB::table('report_view_detail')->where('id', $request->get('id'));
+			if($hasDeptColumn && $deptid) {
+				$upd->where('department_id', $deptid);
+			}
+			$data = [ 'name' => $request->get('name'),
+					  'print_name' => $request->get('file'),
+					  'is_default' => $request->get('opt')
+					];
+			if($hasDeptColumn) {
+				$data['department_id'] = $deptid;
+			}
+			$upd->update($data);
+			$savedId = (int) $request->get('id');
 		} else { 
-			DB::table('report_view_detail')
-						->insert([ 'report_view_id' => $request->get('rid'),
-								   'name' => $request->get('name'),
-								   'print_name' => $request->get('file'),
-								   'is_default' => $request->get('opt')
-								 ]);
+			if($request->get('opt')==1) {
+				$reset = DB::table('report_view_detail')->where('report_view_id', $request->get('rid'));
+				if($hasDeptColumn) {
+					if($deptid) $reset->where('department_id', $deptid);
+					else $reset->whereNull('department_id');
+				}
+				$reset->update(['is_default' => 0]);
+			}
+			$insert = [ 'report_view_id' => $request->get('rid'),
+						'name' => $request->get('name'),
+						'print_name' => $request->get('file'),
+						'is_default' => $request->get('opt')
+					  ];
+			if($hasDeptColumn) {
+				$insert['department_id'] = $deptid;
+			}
+			$savedId = DB::table('report_view_detail')
+						->insertGetId($insert);
 		}
+		return response()->json(['status' => true, 'id' => $savedId]);
 	}
 	
 	public function assignPrint($id)
 	{  
-		$reports = DB::table('report_view_detail')
-							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
-							->where('report_view_detail.report_view_id',$id)
-							->select('report_view.name AS report_name','report_view_detail.name','report_view_detail.print_name',
-									 'report_view.id','report_view_detail.is_default','report_view_detail.id AS rid')
-							->get(); //
+		$deptid = $this->getCurrentDepartmentId();
+		$hasDeptColumn = Schema::hasColumn('report_view_detail', 'department_id');
+		$report = DB::table('report_view')->where('id',$id)->first();
+
+		$query = DB::table('report_view_detail')
+					->join('report_view','report_view.id','=','report_view_detail.report_view_id')
+					->where('report_view_detail.report_view_id',$id);
+		if($hasDeptColumn && $deptid) {
+			$query->where('report_view_detail.department_id', $deptid);
+		}
+		$reports = $query->select('report_view.name AS report_name','report_view_detail.name','report_view_detail.print_name',
+								  'report_view.id','report_view_detail.is_default','report_view_detail.id AS rid')
+						 ->get(); //
 							//echo '<pre>';print_r($reports);exit;
 							
 		$files = Storage::disk('reports')->files();
 		
 		return view('body.setreport.detail')
 					->withReports($reports)
+					->withReport($report)
 					->withFiles($files);
 	}
 	

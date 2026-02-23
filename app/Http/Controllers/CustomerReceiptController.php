@@ -219,11 +219,10 @@ class CustomerReceiptController extends Controller
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$vno = $res->no;
 		
-		$vchrdata = $this->getVoucher($id=9,$type='CASH'); //echo '<pre>';print_r($vchrdata);exit;
 		$lastid = $this->receipt_voucher->getLastId();	
 		
 		//CHECK DEPARTMENT.......
-		if(Session::get('department')==1) { //if active...
+		if(Session::get('department')==1 || (Auth::check() && (int)Auth::user()->department_id != 0)) { //if active or user-bound...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
 				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
@@ -237,6 +236,7 @@ class CustomerReceiptController extends Controller
 			$departments = [];
 			$deptid = '';
 		}
+		$vchrdata = $this->getVoucher($id=9,$type='CASH',$deptid ?: null); //echo '<pre>';print_r($vchrdata);exit;
 		$vouchers = $this->accountsetting->getAccountSettingsById($vid=9,$is_dept,$deptid);
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=9,$is_dept,$deptid);
 		
@@ -317,11 +317,10 @@ class CustomerReceiptController extends Controller
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$vno = $res->no+1;
 		
-		$vchrdata = $this->getVoucher($id=9,$type='CASH'); //echo '<pre>';print_r($vchrdata);exit;
 		$lastid = $this->receipt_voucher->getLastId();	
 		
 		//CHECK DEPARTMENT.......
-		if(Session::get('department')==1) { //if active...
+		if(Session::get('department')==1 || (Auth::check() && (int)Auth::user()->department_id != 0)) { //if active or user-bound...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
 				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
@@ -335,6 +334,7 @@ class CustomerReceiptController extends Controller
 			$departments = [];
 			$deptid = '';
 		}
+		$vchrdata = $this->getVoucher($id=9,$type='CASH',$deptid ?: null); //echo '<pre>';print_r($vchrdata);exit;
 		$vouchers = $this->accountsetting->getAccountSettingsById($vid=9,$is_dept,$deptid);
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=9,$is_dept,$deptid);
 		
@@ -565,6 +565,9 @@ class CustomerReceiptController extends Controller
 	}
 	
 	public function getVoucher($id,$type,$dpt=null) {
+		if(($dpt===null || $dpt==='') && Auth::check() && (int)Auth::user()->department_id != 0) {
+			$dpt = Auth::user()->department_id;
+		}
 		
 		 $row = $this->accountsetting->getDrVoucherByID2($id,$dpt);//echo '<pre>';print_r($row);exit;
 		 if($row) { 
@@ -1512,6 +1515,9 @@ public function dataExport(Request $request)
 	
 	
 	public function getDeptVoucher($id) {
+		if(Auth::check() && (int)Auth::user()->department_id != 0) {
+			$id = Auth::user()->department_id;
+		}
 		
 		$type='CASH';
 		 $rows = $this->accountsetting->getVoucherByDeptRV($vid=9, $id); //return $row;//print_r($row);
@@ -1563,11 +1569,10 @@ public function dataExport(Request $request)
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$vno = $res->no;
 		
-		$vchrdata = $this->getVoucher($id=9,$type='CASH'); //echo '<pre>';print_r($vno);exit;
 		$lastid = $this->receipt_voucher->getLastId();	
 		
 		//CHECK DEPARTMENT.......
-		if(Session::get('department')==1) { //if active...
+		if(Session::get('department')==1 || (Auth::check() && (int)Auth::user()->department_id != 0)) { //if active or user-bound...
 			$deptid = Auth::user()->department_id;
 			if($deptid!=0)
 				$departments = DB::table('department')->where('id',$deptid)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id','name')->get();
@@ -1581,6 +1586,7 @@ public function dataExport(Request $request)
 			$departments = [];
 			$deptid = '';
 		}
+		$vchrdata = $this->getVoucher($id=9,$type='CASH',$deptid ?: null); //echo '<pre>';print_r($vno);exit;
 		$vouchers = $this->accountsetting->getAccountSettingsById($vid=9,$is_dept,$deptid);
 		//$vouchers = $this->accountsetting->getAccountSettingsDefault2($vid=9,$is_dept,$deptid);
 		

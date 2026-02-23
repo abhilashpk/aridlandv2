@@ -58,7 +58,10 @@ class StiRequest {
 	public $connectionString = null;
 	public $queryString = null;
 	public $database = null;
+	public $dataSource = null;
+	public $connection = null;
 	public $report = null;
+	public $reportJson = null;
 	public $data = null;
 	public $fileName = null;
 	public $format = null;
