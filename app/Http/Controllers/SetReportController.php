@@ -56,9 +56,9 @@ class SetReportController extends Controller
 			}
 			
 			$upd = DB::table('report_view_detail')->where('id', $request->get('id'));
-			if($hasDeptColumn && $deptid) {
-				$upd->where('department_id', $deptid);
-			}
+			// if($hasDeptColumn && $deptid) {
+			// 	$upd->where('department_id', $deptid);
+			// }
 			$data = [ 'name' => $request->get('name'),
 					  'print_name' => $request->get('file'),
 					  'is_default' => $request->get('opt')

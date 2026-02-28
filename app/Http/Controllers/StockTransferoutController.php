@@ -260,17 +260,102 @@ class StockTransferoutController extends Controller
 		
 	}
 	
-	public function getPrint($id)
-	{
-		$attributes['document_id'] = $id;
-		$result = $this->stock_transferout->getDoc($attributes); //echo '<pre>';print_r($result);exit;
-		$titles = ['main_head' => 'Stock Transferout','subhead' => 'Stock Transferout'];
-		return view('body.stocktransferout.print')
-					->withDetails($result['details'])
-					->withTitles($titles)
-					->withItems($result['items']);
+	// public function getPrint($id)
+	// {
+	// 	$attributes['document_id'] = $id;
+	// 	$result = $this->stock_transferout->getDoc($attributes); //echo '<pre>';print_r($result);exit;
+	// 	$titles = ['main_head' => 'Stock Transferout','subhead' => 'Stock Transferout'];
+	// 	return view('body.stocktransferout.print')
+	// 				->withDetails($result['details'])
+	// 				->withTitles($titles)
+	// 				->withItems($result['items']);
 		
+	// }
+
+	public function getPrint($id, $rid = null)
+	{
+		\Log::info('Stock Transfer OUT getPrint START', ['id' => $id, 'rid' => $rid]);
+
+		// =====================================
+		// 1️⃣ STRICT Document Department Check
+		// =====================================
+		$docDept = DB::table('stock_transferout')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// =====================================
+		// 2️⃣ STRICT Department MRT Match
+		// =====================================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			$base = DB::table('report_view_detail')
+						->where('id', $rid)
+						->first();
+
+			if (!$base) {
+				return back()->with('error', 'Print format not found.');
+			}
+
+			$record = DB::table('report_view_detail')
+						->where('report_view_id', $base->report_view_id)
+						->where('department_id', $userDept)
+						->first();
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		// =====================================
+		// 3️⃣ Normal Blade Print
+		// =====================================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$attributes['document_id'] = $id;
+			$result = $this->stock_transferout->getDoc($attributes);
+
+			$titles = [
+				'main_head' => 'Stock Transfer Out',
+				'subhead'   => 'Stock Transfer Out'
+			];
+
+			return view('body.stocktransferout.print')
+						->withDetails($result['details'])
+						->withTitles($titles)
+						->withItems($result['items']);
+		}
+
+		// =====================================
+		// 4️⃣ Stimulsoft Print
+		// =====================================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		} else {
+			return view('body.stocktransferout.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		}
 	}
+
 	protected function makeTreeVoucher($result)
 	{
 		$childs = array();

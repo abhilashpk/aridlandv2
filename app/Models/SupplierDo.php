@@ -10,7 +10,7 @@ class SupplierDo extends Model {
 	
 	protected $table = 'supplier_do';
 	protected $primaryKey = 'id';
-	protected $fillable = ['voucher_no','reference_no','purchase_order_id','description','job_id','location_id','supplier_id'];
+	protected $fillable = ['voucher_no','reference_no','purchase_order_id','description','job_id','location_id','supplier_id','department_id'];
 	public $timestamps = false;
 	protected $dates = ['deleted_at'];
 	

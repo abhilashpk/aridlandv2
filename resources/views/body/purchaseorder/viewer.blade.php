@@ -8,19 +8,21 @@ require_once $path;
 	<title>Profit ACC 365 ERP - Design Report Preview</title>
 
 	<!-- Report Office2013 style -->
-	<link href="{{asset('css/stimulsoft.viewer.office2013.whiteteal.css')}}" rel="stylesheet">
+	<link href="{{asset('stimulsoftV2/css/stimulsoft.viewer.office2013.whiteteal.css')}}" rel="stylesheet">
 
 	<!-- Stimusloft Reports.JS -->
-	<script src="{{asset('scripts/stimulsoft.reports.js')}}" type="text/javascript"></script>
-	<script src="{{asset('scripts/stimulsoft.viewer.js')}}" type="text/javascript"></script>
+	<script src="{{asset('stimulsoftV2/js/stimulsoft.reports.js')}}" type="text/javascript"></script>
+	<script src="{{asset('stimulsoftV2/js/stimulsoft.viewer.js')}}" type="text/javascript"></script>
 	
 	<?php 
 		$options = StiHelper::createOptions();
-		$options->handler = "../../../handler.php";
+		// $options->handler = "../../../handler.php";
+		 $options->handler = asset('stimulsoftV2/stimulsoft/adapters/handler.php');
 		$options->timeout = 30;
 		StiHelper::initialize($options);
 	?>
-	<script type="text/javascript">
+	
+	{{-- <script type="text/javascript">
 		var options = new Stimulsoft.Viewer.StiViewerOptions();
 		options.appearance.fullScreenMode = true;
 		options.toolbar.showSendEmailButton = true;
@@ -30,7 +32,7 @@ require_once $path;
 		// Process SQL data source
 		viewer.onBeginProcessData = function (event, callback) {
 			event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}
 		
 		// Manage export settings on the server side 
@@ -42,12 +44,12 @@ require_once $path;
 		// Process exported report file on the server side
 		/*viewer.onEndExportReport = function (event) {
 			event.preventDefault = true; // Prevent client default event handler (save the exported report as a file)
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}*/
 		
 		// Send exported report to Email
 		viewer.onEmailReport = function (event) {
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}
 		
 		// Load and show report
@@ -75,6 +77,52 @@ require_once $path;
 		 
 		 report.dictionary.variables.getByName("id").valueObject = qryPara;
 		//report.setVariable(id, 15);
+		viewer.report = report;
+		
+		function onLoad() {
+			viewer.renderHtml("viewerContent");
+		}
+	</script> --}}
+
+
+	
+<script type="text/javascript">
+		var options = new Stimulsoft.Viewer.StiViewerOptions();
+		options.appearance.fullScreenMode = true;
+		options.toolbar.showSendEmailButton = true;
+		
+		var viewer = new Stimulsoft.Viewer.StiViewer(options, "StiViewer", false);
+		
+		// Process SQL data source
+		viewer.onBeginProcessData = function (event, callback) {
+			// event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
+			<?php StiHelper::createHandler(); ?>
+		}
+		
+		// Manage export settings on the server side
+		viewer.onBeginExportReport = function (args) {
+			<?php //StiHelper::createHandler(); ?>
+			//args.fileName = "MyReportName";
+		}
+		
+		// Send exported report to Email
+		viewer.onEmailReport = function (event) {
+			<?php StiHelper::createHandler(); ?>
+		}
+		
+		var report = new Stimulsoft.Report.StiReport();
+		var view = '{{ $view }}';
+		report.loadFile("{{ asset('stimulsoftV2/reports/') }}/" + view);
+
+		// Set the id variable for the SQL query WHERE clause
+		var recordId = "{{ $id ?? '' }}";
+		if (recordId) {
+			var idVar = report.dictionary.variables.getByName("id");
+			if (idVar) {
+				idVar.valueObject = recordId;
+			}
+		}
+
 		viewer.report = report;
 		
 		function onLoad() {

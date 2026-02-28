@@ -761,28 +761,134 @@ class PurchaseReturnController extends Controller
 		Session::set('pr_ac_master', $request->get('ac_mstr'));
 	}
 	
-	public function getPrint($id,$rid=null)
+	// public function getPrint($id,$rid=null)
+	// {
+	// 	$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
+	// 	if($viewfile->print_name=='') {
+	// 		$attributes['document_id'] = $id;
+	// 		$attributes['is_fc'] = ($fc)?1:'';
+	// 		$result = $this->purchase_return->getOrder($attributes);
+	// 		$titles = ['main_head' => 'Purchase Invoice','subhead' => 'Purchase Return'];
+	// 		return view('body.purchasereturn.print')
+	// 					->withDetails($result['details'])
+	// 					->withTitles($titles)
+	// 					->withFc($attributes['is_fc'])
+	// 					->withItems($result['items']);
+	// 		//echo '<pre>';print_r($result);exit;
+	// 	} else {
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		if(env('STIMULSOFT_VER')==2)
+	// 	        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 	   else
+	// 	        return view('body.purchasereturn.viewer')->withPath($path)->withView($viewfile->print_name);
+		        
+	// 		//return view('body.purchasereturn.viewer')->withPath($path)->withView($viewfile->print_name);
+	// 	}
+	// }
+
+
+	public function getPrint($id, $rid = null)
 	{
-		$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
-		if($viewfile->print_name=='') {
+		\Log::info('Purchase Return getPrint START', [
+			'id'  => $id,
+			'rid' => $rid
+		]);
+
+		// ===============================
+		// 1️⃣ Department Check
+		// ===============================
+		$docDept = DB::table('purchase_return')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		\Log::info('Purchase Return Dept Check', [
+			'doc_id'    => $id,
+			'doc_dept'  => $docDept,
+			'user_dept' => $userDept
+		]);
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// ===============================
+		// 2️⃣ Get MRT Template (Department Match)
+		// ===============================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			$record = DB::table('report_view_detail')
+						->where('id', $rid)
+						->where('department_id', $userDept)
+						->first();
+
+			\Log::info('Purchase Return MRT Record', [
+				'rid'       => $rid,
+				'record'    => $record,
+				'user_dept' => $userDept
+			]);
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		\Log::info('Purchase Return getPrint MID', [
+			'viewfile' => $viewfile
+		]);
+
+		// ===============================
+		// 3️⃣ Default Blade Print
+		// ===============================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$fc = false;
+
 			$attributes['document_id'] = $id;
-			$attributes['is_fc'] = ($fc)?1:'';
+			$attributes['is_fc']       = ($fc) ? 1 : '';
+
 			$result = $this->purchase_return->getOrder($attributes);
-			$titles = ['main_head' => 'Purchase Invoice','subhead' => 'Purchase Return'];
+
+			$titles = [
+				'main_head' => 'Purchase Invoice',
+				'subhead'   => 'Purchase Return'
+			];
+
 			return view('body.purchasereturn.print')
 						->withDetails($result['details'])
 						->withTitles($titles)
 						->withFc($attributes['is_fc'])
 						->withItems($result['items']);
-			//echo '<pre>';print_r($result);exit;
+		}
+
+		// ===============================
+		// 4️⃣ Stimulsoft Print
+		// ===============================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		\Log::info('Purchase Return getPrint END - stimulsoft', [
+			'print_name' => $viewfile->print_name,
+			'id'         => $id
+		]);
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
 		} else {
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(env('STIMULSOFT_VER')==2)
-		        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
-		   else
-		        return view('body.purchasereturn.viewer')->withPath($path)->withView($viewfile->print_name);
-		        
-			//return view('body.purchasereturn.viewer')->withPath($path)->withView($viewfile->print_name);
+			return view('body.purchasereturn.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
 		}
 	}
 	

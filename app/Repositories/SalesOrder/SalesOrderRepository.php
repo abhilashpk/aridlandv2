@@ -9,6 +9,7 @@ use App\Models\ItemDescription;
 use App\Exceptions\Validation\ValidationException;
 use Illuminate\Support\Facades\File; 
 use App\Repositories\UpdateUtility;
+use Illuminate\Support\Facades\Log;
 
 use Session;
 use Config;
@@ -1869,6 +1870,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 	
 	public function getOrder($attributes)
 	{
+		\Log::info('getOrder START', ['attributes' => $attributes]);
 		$order = $this->sales_order->where('sales_order.id', $attributes['document_id'])
 								   ->join('account_master AS AM', function($join) {
 									   $join->on('AM.id','=','sales_order.customer_id');
@@ -1892,7 +1894,7 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 								   'V.name AS vehicle','V.reg_no','V.make','V.color','V.issue_plate','V.code_plate','SL.name AS salesman','TR.description AS terms')
 								   ->orderBY('sales_order.id', 'ASC')
 								   ->first();
-								   
+			\Log::info('getOrder MID - order fetched', ['order' => $order]);					   
 		$items = $this->sales_order->where('sales_order.id', $attributes['document_id'])
 								   ->join('sales_order_item AS PI', function($join) {
 									   $join->on('PI.sales_order_id','=','sales_order.id');
@@ -1907,9 +1909,24 @@ $this->mod_work_order = DB::table('parameter2')->where('keyname', 'mod_workorder
 								   ->whereNull('PI.deleted_at')
 								   ->select('PI.*','sales_order.id','IM.item_code','U.unit_name')
 								   ->get();
-								   
+		\Log::info('getOrder MID - items fetched', ['items_count' => $items->count()]);
+		\Log::info('getOrder END - returning result');						   
 		return $result = ['details' => $order, 'items' => $items];
 	}
+
+	public function getPrint($rid)
+	{
+		\Log::info('Repository getPrint START', ['rid' => $rid]);
+
+		$print = DB::table('prints')
+			->where('id', $rid)
+			->first();
+
+		\Log::info('Repository getPrint END', ['print' => $print]);
+
+		return $print;
+	}
+
 	public function findPOdata($id)
 	{
 		$query = $this->sales_order->where('sales_order.id', $id);

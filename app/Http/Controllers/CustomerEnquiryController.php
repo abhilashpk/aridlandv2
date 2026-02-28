@@ -802,22 +802,131 @@ class CustomerEnquiryController extends Controller
 					->withData($data);
 	}
 	
-	public function getPrint($id,$fc=null)
-	{
-		$attributes['document_id'] = $id;
-		$attributes['is_fc'] = ($fc)?1:'';
-		$result = $this->customer_enquiry->getQuotation($attributes);
-		$itemdesc = $this->makeTreeArr($this->customer_enquiry->getItemDesc($id));//echo '<pre>';print_r($result['details']);exit;
-		$titles = ['main_head' => 'Customer Enquiry','subhead' => 'Customer Enquiry'];
-		return view('body.customerenquiry.print')
-					->withDetails($result['details'])
-					->withTitles($titles)
-					->withFc($attributes['is_fc'])
-					->withItemdesc($itemdesc)
-					->withItems($result['items']);
+	// public function getPrint($id,$fc=null)
+	// {
+	// 	$attributes['document_id'] = $id;
+	// 	$attributes['is_fc'] = ($fc)?1:'';
+	// 	$result = $this->customer_enquiry->getQuotation($attributes);
+	// 	$itemdesc = $this->makeTreeArr($this->customer_enquiry->getItemDesc($id));//echo '<pre>';print_r($result['details']);exit;
+	// 	$titles = ['main_head' => 'Customer Enquiry','subhead' => 'Customer Enquiry'];
+	// 	return view('body.customerenquiry.print')
+	// 				->withDetails($result['details'])
+	// 				->withTitles($titles)
+	// 				->withFc($attributes['is_fc'])
+	// 				->withItemdesc($itemdesc)
+	// 				->withItems($result['items']);
 		
-	}
+	// }
 	
+	public function getPrint($id, $rid = null)
+	{
+		\Log::info('Customer Enquiry getPrint START', [
+			'id'  => $id,
+			'rid' => $rid
+		]);
+
+		// ===============================
+		// 1️⃣ Department Check
+		// ===============================
+		$docDept = DB::table('customer_enquiry')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		\Log::info('Customer Enquiry Dept Check', [
+			'doc_id'    => $id,
+			'doc_dept'  => $docDept,
+			'user_dept' => $userDept
+		]);
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// ===============================
+		// 2️⃣ Get MRT Template (Department Match)
+		// ===============================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			$record = DB::table('report_view_detail')
+						->where('id', $rid)
+						->where('department_id', $userDept)
+						->first();
+
+			\Log::info('Customer Enquiry MRT Record', [
+				'rid'       => $rid,
+				'record'    => $record,
+				'user_dept' => $userDept
+			]);
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		\Log::info('Customer Enquiry getPrint MID', [
+			'viewfile' => $viewfile
+		]);
+
+		// ===============================
+		// 3️⃣ Default Blade Print
+		// ===============================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$fc = false;
+
+			$attributes['document_id'] = $id;
+			$attributes['is_fc']       = ($fc) ? 1 : '';
+
+			$result   = $this->customer_enquiry->getQuotation($attributes);
+			$itemdesc = $this->makeTreeArr(
+							$this->customer_enquiry->getItemDesc($id)
+						);
+
+			$titles = [
+				'main_head' => 'Customer Enquiry',
+				'subhead'   => 'Customer Enquiry'
+			];
+
+			return view('body.customerenquiry.print')
+						->withDetails($result['details'])
+						->withTitles($titles)
+						->withFc($attributes['is_fc'])
+						->withItemdesc($itemdesc)
+						->withItems($result['items']);
+		}
+
+		// ===============================
+		// 4️⃣ Stimulsoft Print
+		// ===============================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		\Log::info('Customer Enquiry getPrint END - stimulsoft', [
+			'print_name' => $viewfile->print_name,
+			'id'         => $id
+		]);
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		} else {
+			return view('body.customerenquiry.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		}
+	}
+
 	protected function makeTreeItm($result)
 	{
 		$childs = array();

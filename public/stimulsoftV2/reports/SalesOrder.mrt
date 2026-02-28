@@ -4,7 +4,7 @@
   "ReportAlias": "Report",
   "ReportFile": "SalesOrder.mrt",
   "ReportCreated": "/Date(1575511966000+0530)/",
-  "ReportChanged": "/Date(1759979199000+0530)/",
+  "ReportChanged": "/Date(1771844507000+0530)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "HundredthsOfInch",
@@ -315,7 +315,7 @@
           }
         },
         "NameInSource": "Connection",
-        "SqlCommand": "SELECT groupcat.group_name AS brand,sales_order.voucher_no,sales_order.reference_no,sales_order.description,sales_order.foot_description,sales_order.voucher_date,sales_order.total,sales_order.vat_amount AS total_vat,sales_order.discount AS total_disc,sales_order.net_total,sales_order.subtotal,account_master.account_id,account_master.master_name,account_master.address,account_master.phone,account_master.vat_no,terms.description AS terms,salesman.name AS salesman,sales_order_item.item_name,sales_order_item.quantity,sales_order_item.unit_price,sales_order_item.vat,sales_order_item.vat_amount AS line_vat,sales_order_item.line_total,sales_order_item.tax_include,sales_order_item.item_total,itemmaster.item_code,itemmaster.description_ar,units.unit_name,V.reg_no AS reg,V.name AS vehicle,V.make AS make,V.color AS color,V.engine_no AS engine,V.chasis_no AS chasis,V.owner AS owner,V.km_done,V.model AS model,V.year AS year,V.issue_plate AS issue,V.code_plate AS code,V.color_code AS color,footer.description AS footer FROM sales_order JOIN account_master ON(account_master.id=sales_order.customer_id) LEFT JOIN terms ON(terms.id=sales_order.terms_id) LEFT JOIN vehicle AS V ON(V.id=sales_order.vehicle_id) LEFT JOIN salesman ON(salesman.id=sales_order.salesman_id) JOIN sales_order_item ON(sales_order_item.sales_order_id=sales_order.id) JOIN itemmaster ON(itemmaster.id=sales_order_item.item_id) JOIN units ON(units.id=sales_order_item.unit_id) LEFT JOIN header_footer footer ON(footer.id=sales_order.footer_id) LEFT JOIN groupcat ON(groupcat.id=itemmaster.group_id) WHERE sales_order_item.status=1 AND sales_order_item.deleted_at='0000-00-00 00:00:00' AND sales_order.id={id}"
+        "SqlCommand": "SELECT groupcat.group_name AS brand,sales_order.voucher_no,sales_order.reference_no,sales_order.description,sales_order.foot_description,sales_order.voucher_date,sales_order.total,sales_order.vat_amount AS total_vat,sales_order.discount AS total_disc,sales_order.net_total,sales_order.subtotal,account_master.account_id,account_master.master_name,account_master.address,account_master.phone,account_master.vat_no,terms.description AS terms,salesman.name AS salesman,sales_order_item.item_name,sales_order_item.quantity,sales_order_item.unit_price,sales_order_item.vat,sales_order_item.vat_amount AS line_vat,sales_order_item.line_total,sales_order_item.tax_include,sales_order_item.item_total,itemmaster.item_code,itemmaster.description_ar,units.unit_name,V.reg_no AS reg,V.name AS vehicle,V.make AS make,V.color AS color,V.engine_no AS engine,V.chasis_no AS chasis,V.owner AS owner,V.km_done,V.model AS model,V.year AS year,V.issue_plate AS issue,V.code_plate AS code,V.color_code AS color,footer.description AS footer FROM sales_order JOIN account_master ON(account_master.id=sales_order.customer_id) LEFT JOIN terms ON(terms.id=sales_order.terms_id) LEFT JOIN vehicle AS V ON(V.id=sales_order.vehicle_id) LEFT JOIN salesman ON(salesman.id=sales_order.salesman_id) JOIN sales_order_item ON(sales_order_item.sales_order_id=sales_order.id) JOIN itemmaster ON(itemmaster.id=sales_order_item.item_id) JOIN units ON(units.id=sales_order_item.unit_id) LEFT JOIN header_footer footer ON(footer.id=sales_order.footer_id) LEFT JOIN groupcat ON(groupcat.id=itemmaster.group_id) WHERE sales_order_item.status=1 AND sales_order_item.deleted_at IS NULL  AND sales_order.id={id}"
       }
     },
     "Databases": {
@@ -323,7 +323,7 @@
         "Ident": "StiMySqlDatabase",
         "Name": "Connection",
         "Alias": "Connection",
-        "ConnectionStringEncrypted": "4/rZ6819Y53BFQHMTnBuG9XE1cvMSzHdRkaxjGV06WP4btEC719DweF9xdhhtOQq+XTBCU1N04HhT7nkY0ThY94SvS1Id/tga1zZ8OFsJUbEYtErYVmz"
+        "ConnectionStringEncrypted": "41Tba2JWe93LUSnM5exlY4tg18LJXNnN3k39zGV0dxfCcK0JTlm7vGMVuVjlWKNjxMj3S81dS5VxR+2EanQiXg=="
       }
     }
   },

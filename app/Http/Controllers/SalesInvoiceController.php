@@ -2298,46 +2298,166 @@ class SalesInvoiceController extends Controller
 
 	}
 	
-	public function getPrint($id,$rid=null)
-	{ 
-		$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
+	// public function getPrint($id,$rid=null)
+	// { 
+	// 	$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
 			
-		if(isset($viewfile) && $viewfile->print_name=='') {
-			$fc='';
-			$attributes['document_id'] = $id; //echo "892 : ".$this->number_to_word(12495);exit;
-			$attributes['is_fc'] = ($fc)?1:'';
-			$result = $this->sales_invoice->getInvoiceById($attributes);
-			$titles = ['main_head' => 'Tax Invoice','subhead' => 'Tax Invoice'];//echo '<pre>';print_r($result);exit;
-			$itemdesc = $this->makeTreeArr($this->sales_invoice->getItemDesc($id));
-			$words = ($fc)?$this->number_to_word($result['details']->net_total_fc):$this->number_to_word($result['details']->net_total);
-			$vat_words = ($fc)?$this->number_to_word($result['details']->vat_amount_fc):$this->number_to_word($result['details']->vat_amount);
-			$amount = ($fc)?$result['details']->net_total_fc:$result['details']->net_total;
-			$vatamount = ($fc)?$result['details']->vat_amount_fc:$result['details']->vat_amount;
-			$vtype = $this->accountsetting->checkVoucher( $result['details']['voucher_id'] );
+	// 	if(isset($viewfile) && $viewfile->print_name=='') {
+	// 		$fc='';
+	// 		$attributes['document_id'] = $id; //echo "892 : ".$this->number_to_word(12495);exit;
+	// 		$attributes['is_fc'] = ($fc)?1:'';
+	// 		$result = $this->sales_invoice->getInvoiceById($attributes);
+	// 		$titles = ['main_head' => 'Tax Invoice','subhead' => 'Tax Invoice'];//echo '<pre>';print_r($result);exit;
+	// 		$itemdesc = $this->makeTreeArr($this->sales_invoice->getItemDesc($id));
+	// 		$words = ($fc)?$this->number_to_word($result['details']->net_total_fc):$this->number_to_word($result['details']->net_total);
+	// 		$vat_words = ($fc)?$this->number_to_word($result['details']->vat_amount_fc):$this->number_to_word($result['details']->vat_amount);
+	// 		$amount = ($fc)?$result['details']->net_total_fc:$result['details']->net_total;
+	// 		$vatamount = ($fc)?$result['details']->vat_amount_fc:$result['details']->vat_amount;
+	// 		$vtype = $this->accountsetting->checkVoucher( $result['details']['voucher_id'] );
 		
-			$view = 'printnew';
-			$arr = explode('.',number_format($amount,2));
-			if(sizeof($arr) >1 ) {
-				if($arr[1]!=00) {
-					$dec = $this->number_to_word($arr[1]);
-					$words .= ' and Fils '.$dec.' Only';
-				} else 
-					$words .= ' Only';
-			} else
+	// 		$view = 'printnew';
+	// 		$arr = explode('.',number_format($amount,2));
+	// 		if(sizeof($arr) >1 ) {
+	// 			if($arr[1]!=00) {
+	// 				$dec = $this->number_to_word($arr[1]);
+	// 				$words .= ' and Fils '.$dec.' Only';
+	// 			} else 
+	// 				$words .= ' Only';
+	// 		} else
+	// 			$words .= ' Only';
+			
+	// 		$arrv = explode('.',number_format($vatamount,2));
+	// 		if(sizeof($arrv) >1 ) {
+	// 			if($arrv[1]!=00) {
+	// 				$dec = $this->number_to_word($arrv[1]);
+	// 				$vat_words .= ' and Fils '.$dec.' Only';
+	// 			} else 
+	// 				$vat_words .= ' Only';
+	// 		} else
+	// 			$vat_words .= ' Only';
+			
+	// 		//echo '<pre>';print_r($result['details']);exit;
+	// 		return view('body.salesinvoice.'.$view)
+	// 					->withDetails($result['details'])
+	// 					->withTitles($titles)
+	// 					->withAmtwords($words)
+	// 					->withVatamtwords($vat_words)
+	// 					->withFc($attributes['is_fc'])
+	// 					->withItemdesc($itemdesc)
+	// 					->withFormdata($this->formData)
+	// 					->withId($id)
+	// 					->withItems($result['items']);
+	// 	} else {
+					
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		if(isset($viewfile))
+			
+	// 			if(env('STIMULSOFT_VER')==2)
+	// 		        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 		   else
+	// 		        return view('body.salesinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
+				
+	// 			//return view('body.salesinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
+				
+	// 			//return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 	}
+		
+	// }
+
+
+	public function getPrint($id, $rid = null)
+	{
+		\Log::info('Sales Invoice getPrint START', ['id' => $id, 'rid' => $rid]);
+
+		// ===============================
+		// 1️⃣ Department Check (STRICT)
+		// ===============================
+		$docDept = DB::table('sales_invoice')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// ===============================
+		// 2️⃣ STRICT Department MRT Match
+		// ===============================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			// Get base template
+			$base = DB::table('report_view_detail')
+						->where('id', $rid)
+						->first();
+
+			if (!$base) {
+				return back()->with('error', 'Print format not found.');
+			}
+
+			// STRICT department match only
+			$record = DB::table('report_view_detail')
+						->where('report_view_id', $base->report_view_id)
+						->where('department_id', $userDept)
+						->first();
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		// ===============================
+		// 3️⃣ Blade Print (Default)
+		// ===============================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$fc = '';
+			$attributes['document_id'] = $id;
+			$attributes['is_fc'] = ($fc) ? 1 : '';
+
+			$result = $this->sales_invoice->getInvoiceById($attributes);
+
+			$titles = [
+				'main_head' => 'Tax Invoice',
+				'subhead'   => 'Tax Invoice'
+			];
+
+			$itemdesc = $this->makeTreeArr(
+				$this->sales_invoice->getItemDesc($id)
+			);
+
+			$amount     = $result['details']->net_total;
+			$vatamount  = $result['details']->vat_amount;
+
+			$words      = $this->number_to_word($amount);
+			$vat_words  = $this->number_to_word($vatamount);
+
+			// Amount words formatting
+			$arr = explode('.', number_format($amount, 2));
+			if (sizeof($arr) > 1 && $arr[1] != 00) {
+				$dec = $this->number_to_word($arr[1]);
+				$words .= ' and Fils ' . $dec . ' Only';
+			} else {
 				$words .= ' Only';
-			
-			$arrv = explode('.',number_format($vatamount,2));
-			if(sizeof($arrv) >1 ) {
-				if($arrv[1]!=00) {
-					$dec = $this->number_to_word($arrv[1]);
-					$vat_words .= ' and Fils '.$dec.' Only';
-				} else 
-					$vat_words .= ' Only';
-			} else
+			}
+
+			$arrv = explode('.', number_format($vatamount, 2));
+			if (sizeof($arrv) > 1 && $arrv[1] != 00) {
+				$dec = $this->number_to_word($arrv[1]);
+				$vat_words .= ' and Fils ' . $dec . ' Only';
+			} else {
 				$vat_words .= ' Only';
-			
-			//echo '<pre>';print_r($result['details']);exit;
-			return view('body.salesinvoice.'.$view)
+			}
+
+			return view('body.salesinvoice.printnew')
 						->withDetails($result['details'])
 						->withTitles($titles)
 						->withAmtwords($words)
@@ -2347,21 +2467,24 @@ class SalesInvoiceController extends Controller
 						->withFormdata($this->formData)
 						->withId($id)
 						->withItems($result['items']);
-		} else {
-					
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(isset($viewfile))
-			
-				if(env('STIMULSOFT_VER')==2)
-			        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
-			   else
-			        return view('body.salesinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
-				
-				//return view('body.salesinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
-				
-				//return view('body.reports')->withPath($path)->withView($viewfile->print_name);
 		}
-		
+
+		// ===============================
+		// 4️⃣ Stimulsoft Print
+		// ===============================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		} else {
+			return view('body.salesinvoice.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		}
 	}
 	
 	public function getPrintFc($id,$rid=null)

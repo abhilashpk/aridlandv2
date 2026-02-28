@@ -1145,55 +1145,198 @@ private function createItem($row) {
 	// }
 
 	// public function getPrint($id, $rid = null, $pdf = null)
-	public function getPrint($id, $fc = null)
+	// public function getPrint($id, $fc = null)
+	// {
+	// 	$viewfile = DB::table('report_view_detail')
+	// 					->where('id', $rid)
+	// 					->select('print_name')
+	// 					->first();
+
+	// 	// ✅ Fix: handle null viewfile and use empty() check
+	// 	if (!$viewfile || empty($viewfile->print_name)) {
+
+	// 		$attributes['document_id'] = $id;
+	// 		// $attributes['is_fc']       = 0; // ✅ Fix: $fc was undefined, default to 0
+	// 		$attributes['is_fc'] = ($fc) ? 1 : '';
+
+	// 		$result   = $this->quotation_sales->getQuotation($attributes);
+	// 		$itemdesc = $this->makeTreeArr($this->quotation_sales->getItemDesc($id));
+	// 		$titles   = ['main_head' => 'Quotation', 'subhead' => 'Quotation'];
+	// 		$view     = ($pdf == 'PDF') ? 'pdfprint' : 'print';
+
+	// 		return view('body.quotation.' . $view)
+	// 					->withDetails($result['details'])
+	// 					->withTitles($titles)
+	// 					->withFc($attributes['is_fc'])
+	// 					->withItemdesc($itemdesc)
+	// 					->withItems($result['items']);
+
+	// 	} else {
+
+	// 		$path = app_path() . '/stimulsoft/classes.php';
+
+	// 		// ✅ Fix: pass document_id so report knows what data to load
+	// 		$attributes['document_id'] = $id;
+	// 		$result = $this->quotation_sales->getQuotation($attributes);
+
+	// 		if (env('STIMULSOFT_VER') == 2) {
+	// 			return view('body.reports')
+	// 						->withPath($path)
+	// 						->withView($viewfile->print_name)
+	// 						->withId($id)           // ✅ pass ID to blade
+	// 						->withDetails($result['details'])
+	// 						->withItems($result['items']);
+	// 		} else {
+	// 			return view('body.quotation.viewer')
+	// 						->withPath($path)
+	// 						->withView($viewfile->print_name)
+	// 						->withId($id)           // ✅ pass ID to blade
+	// 						->withDetails($result['details'])
+	// 						->withItems($result['items']);
+	// 		}
+	// 	}
+	// }
+
+
+	public function getPrint($id, $rid = null, $pdf = null)
 	{
-		$viewfile = DB::table('report_view_detail')
+		\Log::info('Quotation Sales getPrint START', [
+			'id'  => $id,
+			'rid' => $rid,
+			'pdf' => $pdf
+		]);
+
+		// ===============================
+		// 1️⃣ Department Check
+		// ===============================
+		$docDept = DB::table('quotation_sales')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		\Log::info('Quotation Sales Dept Check', [
+			'doc_id'    => $id,
+			'doc_dept'  => $docDept,
+			'user_dept' => $userDept
+		]);
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// ===============================
+		// 2️⃣ MRT Template (Department Based with Fallback)
+		// ===============================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			// Step 1: Get report_view_id from selected row
+			$base = DB::table('report_view_detail')
 						->where('id', $rid)
-						->select('print_name')
 						->first();
 
-		// ✅ Fix: handle null viewfile and use empty() check
+			if (!$base) {
+				return back()->with('error', 'Print format not found.');
+			}
+
+			// Step 2: Try department-specific version first
+			$record = DB::table('report_view_detail')
+						->where('report_view_id', $base->report_view_id)
+						->where('department_id', $userDept)
+						->first();
+
+			// Step 3: If not found, fallback to common (NULL department)
+			if (!$record) {
+				$record = DB::table('report_view_detail')
+							->where('report_view_id', $base->report_view_id)
+							->whereNull('department_id')
+							->first();
+			}
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		\Log::info('Quotation Sales getPrint MID', [
+			'viewfile' => $viewfile
+		]);
+
+		// ===============================
+		// 3️⃣ Default Blade Print
+		// ===============================
 		if (!$viewfile || empty($viewfile->print_name)) {
 
 			$attributes['document_id'] = $id;
-			// $attributes['is_fc']       = 0; // ✅ Fix: $fc was undefined, default to 0
-			$attributes['is_fc'] = ($fc) ? 1 : '';
+			$attributes['is_fc']       = '';
 
 			$result   = $this->quotation_sales->getQuotation($attributes);
-			$itemdesc = $this->makeTreeArr($this->quotation_sales->getItemDesc($id));
-			$titles   = ['main_head' => 'Quotation', 'subhead' => 'Quotation'];
-			$view     = ($pdf == 'PDF') ? 'pdfprint' : 'print';
+			$itemdesc = $this->makeTreeArr(
+							$this->quotation_sales->getItemDesc($id)
+						);
 
-			return view('body.quotation.' . $view)
+			$titles = [
+				'main_head' => 'Quotation Sales',
+				'subhead'   => 'Quotation'
+			];
+
+			$view = ($pdf == 'PDF') ? 'pdfprint' : 'print';
+
+			// ===============================
+			// Amount in Words Logic
+			// ===============================
+			$words  = $this->number_to_word($result['details']->net_total);
+			$amount = $result['details']->net_total;
+
+			$arr = explode('.', number_format($amount, 2));
+
+			if (sizeof($arr) > 1) {
+				if ($arr[1] != 00) {
+					$dec   = $this->number_to_word($arr[1]);
+					$words .= ' and Fils ' . $dec . ' Only';
+				} else {
+					$words .= ' Only';
+				}
+			} else {
+				$words .= ' Only';
+			}
+
+			return view('body.quotationsales.' . $view)
 						->withDetails($result['details'])
 						->withTitles($titles)
 						->withFc($attributes['is_fc'])
 						->withItemdesc($itemdesc)
+						->withAmtwords($words)
 						->withItems($result['items']);
+		}
 
+		// ===============================
+		// 4️⃣ Stimulsoft Print
+		// ===============================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		\Log::info('Quotation Sales getPrint END - stimulsoft', [
+			'print_name' => $viewfile->print_name,
+			'id'         => $id
+		]);
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
 		} else {
-
-			$path = app_path() . '/stimulsoft/classes.php';
-
-			// ✅ Fix: pass document_id so report knows what data to load
-			$attributes['document_id'] = $id;
-			$result = $this->quotation_sales->getQuotation($attributes);
-
-			if (env('STIMULSOFT_VER') == 2) {
-				return view('body.reports')
-							->withPath($path)
-							->withView($viewfile->print_name)
-							->withId($id)           // ✅ pass ID to blade
-							->withDetails($result['details'])
-							->withItems($result['items']);
-			} else {
-				return view('body.quotation.viewer')
-							->withPath($path)
-							->withView($viewfile->print_name)
-							->withId($id)           // ✅ pass ID to blade
-							->withDetails($result['details'])
-							->withItems($result['items']);
-			}
+			return view('body.quotationsales.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
 		}
 	}
 	

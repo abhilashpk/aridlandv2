@@ -465,28 +465,110 @@ class MaterialRequisitionController extends Controller
 		return redirect('material_requisition');
 	}
 	
-	public function getPrint($id,$rid=null)
-	{
+	// public function getPrint($id,$rid=null)
+	// {
 	    
-	    $viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
-			//echo '<pre>';print_r($viewfile);exit;
-		if(isset($viewfile) && $viewfile->print_name=='') {
-		$attributes['document_id'] = $id;
-		$result = $this->material_requisition->getInvoice($attributes);
-		$titles = ['main_head' => 'Material Requisition','subhead' => 'Material Requisition'];
-		return view('body.materialrequisition.print')
+	//     $viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
+	// 		//echo '<pre>';print_r($viewfile);exit;
+	// 	if(isset($viewfile) && $viewfile->print_name=='') {
+	// 	$attributes['document_id'] = $id;
+	// 	$result = $this->material_requisition->getInvoice($attributes);
+	// 	$titles = ['main_head' => 'Material Requisition','subhead' => 'Material Requisition'];
+	// 	return view('body.materialrequisition.print')
+	// 				->withDetails($result['details'])
+	// 				->withTitles($titles)
+	// 				->withItems($result['items']);
+	// 	//echo '<pre>';print_r($result);exit;
+	// 	}
+		
+	// 	else {
+					
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		if(isset($viewfile))
+	// 			return view('body.salesinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
+	// 	}
+	// }
+
+
+	public function getPrint($id, $rid = null)
+	{
+		\Log::info('MR getPrint START', ['id' => $id, 'rid' => $rid]);
+
+		// ===============================
+		// 1️⃣ Check Document Department
+		// ===============================
+		$docDept = DB::table('material_requisition')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		\Log::info('MR Dept Check', [
+			'doc_id' => $id,
+			'doc_dept' => $docDept,
+			'user_dept' => $userDept
+		]);
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// ===============================
+		// 2️⃣ Get MRT Template (Department Safe)
+		// ===============================
+		$viewfile = null;
+
+		if ($rid) {
+
+			$record = DB::table('report_view_detail')
+						->where('report_view_id', function($q) use ($rid) {
+							$q->select('report_view_id')
+							->from('report_view_detail')
+							->where('id', $rid)
+							->limit(1);
+						})
+						->where('department_id', $userDept)
+						->first();
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		\Log::info('MR Template Selected', ['viewfile' => $viewfile]);
+
+		// ===============================
+		// 3️⃣ If No MRT → Use Blade Print
+		// ===============================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$attributes['document_id'] = $id;
+			$result = $this->material_requisition->getInvoice($attributes);
+
+			$titles = [
+				'main_head' => 'Material Requisition',
+				'subhead' => 'Material Requisition'
+			];
+
+			return view('body.materialrequisition.print')
 					->withDetails($result['details'])
 					->withTitles($titles)
 					->withItems($result['items']);
-		//echo '<pre>';print_r($result);exit;
 		}
-		
-		else {
-					
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(isset($viewfile))
-				return view('body.salesinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
-		}
+
+		// ===============================
+		// 4️⃣ Stimulsoft Path
+		// ===============================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		return view('body.salesinvoice.viewer')
+				->withPath($path)
+				->withView($viewfile->print_name)
+				->with('id', $id);   // important
 	}
 		
 	

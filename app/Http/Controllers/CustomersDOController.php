@@ -782,28 +782,128 @@ class CustomersDOController extends Controller
 					->withData($data);
 	}
 	
-	public function getPrint($id,$rid=null)
+	// public function getPrint($id,$rid=null)
+	// {
+	// 	//$viewfile = DB::table('report_view')->where('code', 'DO')->where('status',1)->select('view_name')->first();
+	// 	$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
+	// 	if($viewfile->print_name=='') {
+	// 		$attributes['document_id'] = $id;
+	// 		$attributes['is_fc'] = ($fc)?1:'';
+	// 		$result = $this->customerdo->getOrder($attributes);
+	// 		return view('body.customersdo.print')
+	// 					->withDetails($result['details'])
+	// 					->withFc($attributes['is_fc'])
+	// 					->withItems($result['items']);
+	// 	} else {
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		if(env('STIMULSOFT_VER')==2)
+	// 		        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 		   else
+	// 		       return view('body.customersdo.viewer')->withPath($path)->withView($viewfile->print_name);
+			
+	// 	}
+		
+	// }
+
+
+	public function getPrint($id, $rid = null)
 	{
-		//$viewfile = DB::table('report_view')->where('code', 'DO')->where('status',1)->select('view_name')->first();
-		$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
-		if($viewfile->print_name=='') {
+		\Log::info('Customer DO getPrint START', ['id' => $id, 'rid' => $rid]);
+
+		// ===============================
+		// 1️⃣ Department Check
+		// ===============================
+		$docDept = DB::table('customer_do')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		\Log::info('Customer DO Dept Check', [
+			'doc_id'    => $id,
+			'doc_dept'  => $docDept,
+			'user_dept' => $userDept
+		]);
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// ===============================
+		// 2️⃣ MRT Template (Dept Based + Fallback)
+		// ===============================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			// Get report_view_id of selected template
+			$base = DB::table('report_view_detail')
+						->where('id', $rid)
+						->first();
+
+			if (!$base) {
+				return back()->with('error', 'Print format not found.');
+			}
+
+			// STRICT department match only
+			$record = DB::table('report_view_detail')
+						->where('report_view_id', $base->report_view_id)
+						->where('department_id', $userDept)
+						->first();
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		\Log::info('Customer DO getPrint MID', ['viewfile' => $viewfile]);
+
+		// ===============================
+		// 3️⃣ Blade Print (No MRT)
+		// ===============================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$fc = false;
+
 			$attributes['document_id'] = $id;
-			$attributes['is_fc'] = ($fc)?1:'';
+			$attributes['is_fc']       = ($fc) ? 1 : '';
+
 			$result = $this->customerdo->getOrder($attributes);
+
 			return view('body.customersdo.print')
 						->withDetails($result['details'])
 						->withFc($attributes['is_fc'])
 						->withItems($result['items']);
-		} else {
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(env('STIMULSOFT_VER')==2)
-			        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
-			   else
-			       return view('body.customersdo.viewer')->withPath($path)->withView($viewfile->print_name);
-			
 		}
-		
+
+		// ===============================
+		// 4️⃣ Stimulsoft Print
+		// ===============================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		\Log::info('Customer DO getPrint END - stimulsoft', [
+			'print_name' => $viewfile->print_name,
+			'id'         => $id
+		]);
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		} else {
+			return view('body.customersdo.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		}
 	}
+
 	
 	public function setSessionVal(Request $request)
 	{

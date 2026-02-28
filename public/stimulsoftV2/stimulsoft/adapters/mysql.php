@@ -98,13 +98,46 @@ class StiMySqlAdapter {
 	// 	return StiResult::success();
 	// }
 
+	private function loadLaravelEnv() {
+		// Adjust depth based on where mysql.php sits relative to project root
+		// Current: public/stimulsoftV2/stimulsoft/adapters/mysql.php = 4 levels deep
+		$envPath = __DIR__ . '/../../../../.env';
+
+		if (!file_exists($envPath)) {
+			error_log('Stimulsoft: .env not found at ' . realpath($envPath));
+			return;
+		}
+
+		$lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+		foreach ($lines as $line) {
+			$line = trim($line);
+			// Skip comments
+			if (strpos($line, '#') === 0) continue;
+			// Skip lines without =
+			if (strpos($line, '=') === false) continue;
+
+			[$key, $value] = explode('=', $line, 2);
+			$key   = trim($key);
+			$value = trim($value);
+
+			// Strip surrounding quotes if present
+			$value = trim($value, '"\'');
+
+			// Only set if not already set by system environment
+			if (!getenv($key)) {
+				putenv("$key=$value");
+			}
+		}
+	}
+
 	private function connect() {		 
 
-		// 🔥 FIX: FORCE override with Laravel's database credentials
+		 $this->loadLaravelEnv();
+
 		$this->info->database = getenv('DB_DATABASE') ?: 'laravel';
 		$this->info->host     = getenv('DB_HOST')     ?: 'localhost';
 		$this->info->userId   = getenv('DB_USERNAME') ?: 'root';
-		$this->info->password = getenv('DB_PASSWORD') ?: 'mysql';
+		$this->info->password = getenv('DB_PASSWORD') ?: '';
 		$this->info->port     = (int)(getenv('DB_PORT') ?: 3306);
 
 		if ($this->info->isPdo) {
@@ -372,6 +405,16 @@ public function getValue($type, $value) {
 }
 	
 	public function execute($queryString) {
+		// DEBUG - remove after fix
+		error_log('=== Stimulsoft Execute ===');
+		error_log('QueryString: ' . $queryString);
+		error_log('QueryString empty: ' . (empty($queryString) ? 'YES' : 'NO'));
+
+		if (empty($queryString)) {
+			error_log('EMPTY QUERY - dumping request: ' . print_r($_POST, true));
+			return StiResult::error('Query string is empty - check MRT report SQL and variable binding');
+		}
+
 		$result = $this->connect();
 		if ($result->success) {
 			$query = $this->link->query($queryString);

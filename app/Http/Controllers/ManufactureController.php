@@ -1165,40 +1165,145 @@ class ManufactureController extends Controller
 	}
 	
 	
-	public function getPrint($id)
+	// public function getPrint($id)
 	
-	{
+	// {
 	   
-		$attributes['document_id'] = $id;
-		$res = DB::table('manufacture')->find($id);
+	// 	$attributes['document_id'] = $id;
+	// 	$res = DB::table('manufacture')->find($id);
 		
-		$attributes['document_id'] = $res->stock_transferin_id;
-		//echo '<pre>';print_r($attributes);exit; 
-		$result = $this->stock_transferin->getDoc($attributes); //echo '<pre>';print_r($result['details']);exit;
-		foreach($result['items'] as $row) {
-			$rawmat[$row->item_id] = $this->getRawMaterials($row->item_id);
-		}
-		$ocrow = DB::table('sti_other_cost')
-							->join('account_master AS DrAC', 'DrAC.id', '=', 'sti_other_cost.dr_account_id')
-							->join('account_master AS CrAC', 'CrAC.id', '=', 'sti_other_cost.cr_account_id')
-							->where('sti_other_cost.transfer_id', $res->stock_transferin_id)
-							->where('sti_other_cost.deleted_at','0000-00-00 00:00:00')
-							->select('sti_other_cost.*','DrAC.master_name AS dr_name','CrAC.master_name AS cr_name')
-							->get();
+	// 	$attributes['document_id'] = $res->stock_transferin_id;
+	// 	//echo '<pre>';print_r($attributes);exit; 
+	// 	$result = $this->stock_transferin->getDoc($attributes); //echo '<pre>';print_r($result['details']);exit;
+	// 	foreach($result['items'] as $row) {
+	// 		$rawmat[$row->item_id] = $this->getRawMaterials($row->item_id);
+	// 	}
+	// 	$ocrow = DB::table('sti_other_cost')
+	// 						->join('account_master AS DrAC', 'DrAC.id', '=', 'sti_other_cost.dr_account_id')
+	// 						->join('account_master AS CrAC', 'CrAC.id', '=', 'sti_other_cost.cr_account_id')
+	// 						->where('sti_other_cost.transfer_id', $res->stock_transferin_id)
+	// 						->where('sti_other_cost.deleted_at','0000-00-00 00:00:00')
+	// 						->select('sti_other_cost.*','DrAC.master_name AS dr_name','CrAC.master_name AS cr_name')
+	// 						->get();
 							
-		//echo '<pre>';print_r($ocrow);exit;
+	// 	//echo '<pre>';print_r($ocrow);exit;
 		
-		$titles = ['main_head' => 'Manufacture Voucher','subhead' => 'Manufacture Voucher'];
-		return view('body.manufacture.print')
-					->withDetails($result['details'])
-					->withTitles($titles)
-					->withRawmat($rawmat)
-					->withOcost($ocrow)
-					->withMfgno($res->voucher_no)
-					->withId($id)
-					->withMres($res)
-					->withItems($result['items']);
+	// 	$titles = ['main_head' => 'Manufacture Voucher','subhead' => 'Manufacture Voucher'];
+	// 	return view('body.manufacture.print')
+	// 				->withDetails($result['details'])
+	// 				->withTitles($titles)
+	// 				->withRawmat($rawmat)
+	// 				->withOcost($ocrow)
+	// 				->withMfgno($res->voucher_no)
+	// 				->withId($id)
+	// 				->withMres($res)
+	// 				->withItems($result['items']);
 		
+	// }
+
+	public function getPrint($id, $rid = null)
+	{
+		\Log::info('Manufacturing Voucher getPrint START', ['id' => $id, 'rid' => $rid]);
+
+		// =====================================
+		// 1️⃣ STRICT Document Department Check
+		// =====================================
+		$res = DB::table('manufacture')->where('id', $id)->first();
+
+		if (!$res) {
+			return back()->with('error', 'Document not found.');
+		}
+
+		$docDept  = $res->department_id ?? null;
+		$userDept = auth()->user()->department_id ?? null;
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// =====================================
+		// 2️⃣ STRICT MRT Department Match
+		// =====================================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			$base = DB::table('report_view_detail')
+						->where('id', $rid)
+						->first();
+
+			if (!$base) {
+				return back()->with('error', 'Print format not found.');
+			}
+
+			$record = DB::table('report_view_detail')
+						->where('report_view_id', $base->report_view_id)
+						->where('department_id', $userDept)
+						->first();
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		// =====================================
+		// 3️⃣ Blade Print
+		// =====================================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$attributes['document_id'] = $res->stock_transferin_id;
+
+			$result = $this->stock_transferin->getDoc($attributes);
+
+			foreach ($result['items'] as $row) {
+				$rawmat[$row->item_id] = $this->getRawMaterials($row->item_id);
+			}
+
+			$ocrow = DB::table('sti_other_cost')
+				->join('account_master AS DrAC', 'DrAC.id', '=', 'sti_other_cost.dr_account_id')
+				->join('account_master AS CrAC', 'CrAC.id', '=', 'sti_other_cost.cr_account_id')
+				->where('sti_other_cost.transfer_id', $res->stock_transferin_id)
+				->where('sti_other_cost.deleted_at', '0000-00-00 00:00:00')
+				->select('sti_other_cost.*', 'DrAC.master_name AS dr_name', 'CrAC.master_name AS cr_name')
+				->get();
+
+			$titles = [
+				'main_head' => 'Manufacture Voucher',
+				'subhead'   => 'Manufacture Voucher'
+			];
+
+			return view('body.manufacture.print')
+						->withDetails($result['details'])
+						->withTitles($titles)
+						->withRawmat($rawmat ?? [])
+						->withOcost($ocrow)
+						->withMfgno($res->voucher_no)
+						->withId($id)
+						->withMres($res)
+						->withItems($result['items']);
+		}
+
+		// =====================================
+		// 4️⃣ Stimulsoft Print
+		// =====================================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		} else {
+			return view('body.manufacture.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		}
 	}
 	
 		public function printExport(Request $request)

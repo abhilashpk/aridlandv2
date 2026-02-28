@@ -142,6 +142,13 @@ if ($result->success) {
 	$result = getDataAdapter($request);
 	$dataAdapter = $result->object;
 	if ($result->success) {
+
+		// DEBUG - remove after fix
+		error_log('=== Handler Request ===');
+		error_log('Command: ' . $request->command);
+		error_log('QueryString: ' . $request->queryString);
+		error_log('Full POST: ' . print_r($_POST, true));
+
 		$result = $request->command == 'TestConnection'
 			? $dataAdapter->test()
 			: $dataAdapter->execute($request->queryString);

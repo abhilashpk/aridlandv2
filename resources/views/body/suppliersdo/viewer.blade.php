@@ -16,11 +16,13 @@ require_once $path;
 	
 	<?php 
 		$options = StiHelper::createOptions();
-		$options->handler = "../../../handler.php";
+		// $options->handler = "../../../handler.php";
+		$options->handler = "{{ asset('stimulsoft/handler.php') }}";
 		$options->timeout = 30;
 		StiHelper::initialize($options);
 	?>
-	<script type="text/javascript">
+
+	{{-- <script type="text/javascript">
 		var options = new Stimulsoft.Viewer.StiViewerOptions();
 		options.appearance.fullScreenMode = true;
 		options.toolbar.showSendEmailButton = true;
@@ -30,7 +32,7 @@ require_once $path;
 		// Process SQL data source
 		viewer.onBeginProcessData = function (event, callback) {
 			event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}
 		
 		// Manage export settings on the server side
@@ -42,12 +44,12 @@ require_once $path;
 		// Process exported report file on the server side
 		/*viewer.onEndExportReport = function (event) {
 			event.preventDefault = true; // Prevent client default event handler (save the exported report as a file)
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}*/
 		
 		// Send exported report to Email
 		viewer.onEmailReport = function (event) {
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}
 		
 		// Load and show report
@@ -75,6 +77,53 @@ require_once $path;
 		 
 		 report.dictionary.variables.getByName("id").valueObject = qryPara;
 		//report.setVariable(id, 15);
+		viewer.report = report;
+		
+		function onLoad() {
+			viewer.renderHtml("viewerContent");
+		}
+	</script> --}}
+
+
+
+	
+<script type="text/javascript">
+		var options = new Stimulsoft.Viewer.StiViewerOptions();
+		options.appearance.fullScreenMode = true;
+		options.toolbar.showSendEmailButton = true;
+		
+		var viewer = new Stimulsoft.Viewer.StiViewer(options, "StiViewer", false);
+		
+		// Process SQL data source
+		viewer.onBeginProcessData = function (event, callback) {
+			// event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
+			<?php StiHelper::createHandler(); ?>
+		}
+		
+		// Manage export settings on the server side
+		viewer.onBeginExportReport = function (args) {
+			<?php //StiHelper::createHandler(); ?>
+			//args.fileName = "MyReportName";
+		}
+		
+		// Send exported report to Email
+		viewer.onEmailReport = function (event) {
+			<?php StiHelper::createHandler(); ?>
+		}
+		
+		var report = new Stimulsoft.Report.StiReport();
+		var view = '{{ $view }}';
+		report.loadFile("{{ asset('stimulsoftV2/reports/') }}/" + view);
+
+		// Set the id variable for the SQL query WHERE clause
+		var recordId = "{{ $id ?? '' }}";
+		if (recordId) {
+			var idVar = report.dictionary.variables.getByName("id");
+			if (idVar) {
+				idVar.valueObject = recordId;
+			}
+		}
+
 		viewer.report = report;
 		
 		function onLoad() {

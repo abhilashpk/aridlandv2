@@ -794,7 +794,7 @@ Route::get('/purchase_order/print/{id}', ['as' => 'purchase_order.getPrint', 'us
 Route::get('/purchase_order/supplier_data/{txt}', [PurchaseOrderController::class, 'getSupplier']);
 Route::get('/purchase_order/report', [PurchaseOrderController::class, 'report']);
 Route::post('/purchase_order/search', [PurchaseOrderController::class, 'getSearch']);
-Route::get('/purchase_order/print/{id}/{fc}', ['as' => 'purchase_order.getPrintFc', 'uses' => PurchaseOrderController::class.'@getPrintFc', 'middleware' => ['permission:po-print']]);
+Route::get('/purchase_order/print/{id}/{fc}', ['as' => 'purchase_order.getPrintFc', 'uses' => PurchaseOrderController::class.'@getPrint', 'middleware' => ['permission:po-print']]);
 Route::post('/purchase_order/export', ['as' => 'purchase_order.dataExport', 'uses' => PurchaseOrderController::class.'@dataExport', 'middleware' => ['permission:po-print']]);
 Route::post('/purchase_order/export_po', [PurchaseOrderController::class, 'dataExportPo']);
 Route::post('/purchase_order/paging', [PurchaseOrderController::class, 'ajaxPaging']);

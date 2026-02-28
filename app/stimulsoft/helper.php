@@ -420,7 +420,7 @@ class StiHelper {
 		
 		StiHelper.prototype.getLicense = function () {
 			var request = new XMLHttpRequest();
-			request.open("get", "../stimulsoft/license.php", true);
+			request.open("get", "<?php echo url('/stimulsoftV2/license'); ?>", true);
 			request.timeout = this.timeout * 1000;
 			request.onload = function () {
 				if (request.status == 200) {

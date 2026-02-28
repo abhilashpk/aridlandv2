@@ -16,11 +16,11 @@ require_once $path;
 	
 	<?php 
 		$options = StiHelper::createOptions();
-		$options->handler = "../../../handler.php";
+		$options->handler = "{{ asset('stimulsoft/handler.php') }}";
 		$options->timeout = 30;
 		StiHelper::initialize($options);
 	?>
-	<script type="text/javascript">
+	{{-- <script type="text/javascript">
 		var options = new Stimulsoft.Viewer.StiViewerOptions();
 		options.appearance.fullScreenMode = true;
 		options.toolbar.showSendEmailButton = true;
@@ -30,7 +30,7 @@ require_once $path;
 		// Process SQL data source
 		viewer.onBeginProcessData = function (event, callback) {
 			event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}
 		
 		
@@ -43,12 +43,12 @@ require_once $path;
 		// Process exported report file on the server side
 		/*viewer.onEndExportReport = function (event) {
 			event.preventDefault = true; // Prevent client default event handler (save the exported report as a file)
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}*/
 		
 		// Send exported report to Email
 		viewer.onEmailReport = function (event) {
-			<?php StiHelper::createHandler(); ?>
+			<?php //StiHelper::createHandler(); ?>
 		}
 		
 		// Load and show report
@@ -94,7 +94,86 @@ require_once $path;
 		}
 		//report.print();
 		
+	</script> --}}
+
+<script type="text/javascript">
+		var options = new Stimulsoft.Viewer.StiViewerOptions();
+		options.appearance.fullScreenMode = true;
+		options.toolbar.showSendEmailButton = true;
+		
+		var viewer = new Stimulsoft.Viewer.StiViewer(options, "StiViewer", false);
+		
+		// Process SQL data source
+		viewer.onBeginProcessData = function (event, callback) {
+			// event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
+			<?php StiHelper::createHandler(); ?>
+		}
+		
+		// Manage export settings on the server side
+		viewer.onBeginExportReport = function (args) {
+			<?php //StiHelper::createHandler(); ?>
+			//args.fileName = "MyReportName";
+		}
+		
+		// Process exported report file on the server side
+		/*viewer.onEndExportReport = function (event) {
+			event.preventDefault = true; // Prevent client default event handler (save the exported report as a file)
+			<?php StiHelper::createHandler(); ?>
+		}*/
+		
+		// Send exported report to Email
+		viewer.onEmailReport = function (event) {
+			<?php StiHelper::createHandler(); ?>
+		}
+		
+		// Load and show report
+		// var report = new Stimulsoft.Report.StiReport(); var view = '{{$view}}';
+		// report.loadFile("{{asset('reports/')}}/"+view); var id; //Numak1.mrt Numak2.mrt Numak3.mrt
+		// report.loadFile("{{asset('stimulsoftV2/reports/')}}/"+view); var id;
+		
+		// var parts = window.location.href.split("/");
+		// var qryPara = parts[parts.length - 2];
+
+		//console.log(qryPara);
+		/* function getUrlVars() {
+			var vars = {};
+			var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi,
+				function (m, key, value) {
+					vars[key] = value;
+			});
+			return vars;
+		}
+		var vars = getUrlVars();
+		console.log(vars);
+		report.dictionary.variables.list.forEach(function(item, i, arr) {
+			if (typeof vars[item.name] != "undefined") item.valueObject = vars[item.name];
+		});
+		 */
+		 
+		//  report.dictionary.variables.getByName("id").valueObject = qryPara;
+		//report.setVariable(id, 15);
+
+
+		var report = new Stimulsoft.Report.StiReport();
+		var view = '{{ $view }}';
+		report.loadFile("{{ asset('stimulsoftV2/reports/') }}/" + view);
+
+		// Set the id variable for the SQL query WHERE clause
+		var recordId = "{{ $id ?? '' }}";
+		if (recordId) {
+			var idVar = report.dictionary.variables.getByName("id");
+			if (idVar) {
+				idVar.valueObject = recordId;
+			}
+		}
+
+		viewer.report = report;
+		
+		function onLoad() {
+			viewer.renderHtml("viewerContent");
+		}
 	</script>
+
 	</head>
 <body onload="onLoad();">
 	<div id="viewerContent"></div>

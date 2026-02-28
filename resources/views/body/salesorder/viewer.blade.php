@@ -16,7 +16,7 @@ require_once $path;
 	
 	<?php 
 		$options = StiHelper::createOptions();
-		$options->handler = "../../../handler.php";
+		$options->handler = "{{ asset('stimulsoft/handler.php') }}";
 		$options->timeout = 30;
 		StiHelper::initialize($options);
 	?>
@@ -29,7 +29,7 @@ require_once $path;
 		
 		// Process SQL data source
 		viewer.onBeginProcessData = function (event, callback) {
-			event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
+			// event.connectionString = 'Server=localhost;Database={{env('DB_DATABASE')}};uid={{env('DB_USERNAME')}};password={{env('DB_PASSWORD')}};';
 			<?php StiHelper::createHandler(); ?>
 		}
 		
@@ -51,12 +51,13 @@ require_once $path;
 		}
 		
 		// Load and show report
-		var report = new Stimulsoft.Report.StiReport(); var view = '{{$view}}';
-		report.loadFile("{{asset('reports/')}}/"+view); var id; //Numak1.mrt Numak2.mrt Numak3.mrt
+		// var report = new Stimulsoft.Report.StiReport(); var view = '{{$view}}';
+		// report.loadFile("{{asset('reports/')}}/"+view); var id; //Numak1.mrt Numak2.mrt Numak3.mrt
+		// report.loadFile("{{asset('stimulsoftV2/reports/')}}/"+view); var id;
 		
-		
-		var parts = window.location.href.split("/");
-		var qryPara = parts[parts.length - 2];
+		// var parts = window.location.href.split("/");
+		// var qryPara = parts[parts.length - 2];
+
 		//console.log(qryPara);
 		/* function getUrlVars() {
 			var vars = {};
@@ -73,8 +74,23 @@ require_once $path;
 		});
 		 */
 		 
-		 report.dictionary.variables.getByName("id").valueObject = qryPara;
+		//  report.dictionary.variables.getByName("id").valueObject = qryPara;
 		//report.setVariable(id, 15);
+
+
+		var report = new Stimulsoft.Report.StiReport();
+		var view = '{{ $view }}';
+		report.loadFile("{{ asset('stimulsoftV2/reports/') }}/" + view);
+
+		// Set the id variable for the SQL query WHERE clause
+		var recordId = "{{ $id ?? '' }}";
+		if (recordId) {
+			var idVar = report.dictionary.variables.getByName("id");
+			if (idVar) {
+				idVar.valueObject = recordId;
+			}
+		}
+
 		viewer.report = report;
 		
 		function onLoad() {

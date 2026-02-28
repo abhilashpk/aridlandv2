@@ -17,7 +17,8 @@ use App\Repositories\Country\CountryInterface;
 use App\Repositories\Acgroup\AcgroupInterface;
 use App\Repositories\Forms\FormsInterface;
 use App\Repositories\Location\LocationInterface;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -842,31 +843,126 @@ class SalesOrderController extends Controller
 	    
 	}
 	
-	public function getPrint($id,$rid=null)
-	{
-		//$viewfile = DB::table('report_view')->where('code', 'SO')->where('status',1)->select('view_name')->first();
-		$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first();
-		if($viewfile->print_name=='') {
-			$attributes['document_id'] = $id;
-			$attributes['is_fc'] = ($fc)?1:'';
-			$result = $this->sales_order->getOrder($attributes);
-			$titles = ['main_head' => 'Sales Order','subhead' => 'Sales Order'];
-			return view('body.salesorder.print') //printsp print
-						->withDetails($result['details'])
-						->withTitles($titles)
-						->withFc($attributes['is_fc'])
-						->withItems($result['items']);
-		} else {
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(env('STIMULSOFT_VER')==2)
-			        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
-			   else
-			       return view('body.salesorder.viewer')->withPath($path)->withView($viewfile->print_name);
+	// public function getPrint($id,$rid=null)
+	// {
+	// 	\Log::info('getPrint START', ['id' => $id, 'rid' => $rid]);
+	// 	//$viewfile = DB::table('report_view')->where('code', 'SO')->where('status',1)->select('view_name')->first();
+	// 	$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first();
+	// 	\Log::info('getPrint MID - viewfile', ['viewfile' => $viewfile]);
+	// 	if($viewfile->print_name=='') {
+	// 		$attributes['document_id'] = $id;
+	// 		$attributes['is_fc'] = ($fc)?1:'';
+	// 		$result = $this->sales_order->getOrder($attributes);
+	// 		$titles = ['main_head' => 'Sales Order','subhead' => 'Sales Order'];
+	// 		\Log::info('getPrint END1 - returning blade print', ['document_id' => $id]);
+	// 		return view('body.salesorder.print') //printsp print
+	// 					->withDetails($result['details'])
+	// 					->withTitles($titles)
+	// 					->withFc($attributes['is_fc'])
+	// 					->withItems($result['items']);
+	// 	} else {
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		\Log::info('getPrint END2 - returning stimulsoft viewer', ['print_name' => $viewfile->print_name]);
+	// 		if(env('STIMULSOFT_VER')==2)
+	// 		        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 		   else
+	// 		       return view('body.salesorder.viewer')->withPath($path)->withView($viewfile->print_name);
 			
-		}
+	// 	}
 		
+	// }
+
+
+	public function getPrint($id, $rid = null)
+	{
+		\Log::info('getPrint START', ['id' => $id, 'rid' => $rid]);
+		
+		// Get order department
+			$orderDept = DB::table('sales_order')
+							->where('id', $id)
+							->value('department_id');
+
+			$userDept = auth()->user()->department_id ?? null;
+
+			\Log::info('Order Dept Check', [
+				'order_id' => $id,
+				'order_dept' => $orderDept,
+				'user_dept' => $userDept
+			]);
+
+			if (!$orderDept || $orderDept != $userDept) {
+				return back()->with('error', 'This is other department copy.');
+				// OR
+				// abort(403, 'This is other department copy.');
+			}
+
+		 	// ===============================
+			// 2️⃣ Get MRT Template (Match Department)
+			// ===============================
+			$viewfile = null;
+
+			if ($rid) {
+
+				$record = DB::table('report_view_detail')
+							->where('report_view_id', function($q) use ($rid) {
+								$q->select('report_view_id')
+								->from('report_view_detail')
+								->where('id', $rid)
+								->limit(1);
+							})
+							->where('department_id', $userDept)
+							->first();
+
+				if (!$record) {
+					return back()->with('error', 'No print format configured for this department.');
+				}
+
+				$viewfile = (object)[
+					'print_name' => $record->print_name
+				];
+			}
+
+			\Log::info('getPrint MID', ['viewfile' => $viewfile]);
+
+		// $viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first();
+		// \Log::info('getPrint MID', ['viewfile' => $viewfile]);
+			\Log::info('Template Check', [
+				'rid' => $rid,
+				'record_dept' => $record->department_id,
+				'user_dept' => $userDept
+			]);
+		if (!$viewfile || empty($viewfile->print_name)) {
+			// Blade print path
+			$fc = false;
+			$attributes['document_id'] = $id;
+			$attributes['is_fc'] = ($fc) ? 1 : '';
+			$result = $this->sales_order->getOrder($attributes);
+			$titles = ['main_head' => 'Sales Order', 'subhead' => 'Sales Order'];
+			return view('body.salesorder.print')
+				->withDetails($result['details'])
+				->withTitles($titles)
+				->withFc($attributes['is_fc'])
+				->withItems($result['items']);
+		} else {
+			// Stimulsoft path — pass $id!
+			$path = app_path() . '/stimulsoft/helper.php';
+			\Log::info('getPrint END - stimulsoft', ['print_name' => $viewfile->print_name, 'id' => $id]);
+
+			if (env('STIMULSOFT_VER') == 2) {
+				return view('body.reports')
+					->withPath($path)
+					->withView($viewfile->print_name)
+					->with('id', $id);   // ← ADD THIS
+			} else {
+				return view('body.salesorder.viewer')
+					->withPath($path)
+					->withView($viewfile->print_name)
+					->with('id', $id);   // ← ADD THIS
+			}
+		}
 	}
 	
+
 	public function setSessionVal(Request $request)
 	{
 		Session::put('voucher_no', $request->get('vchr_no'));

@@ -952,27 +952,118 @@ class SalesReturnController extends Controller
 
 	}
 	
-	public function getPrint($id,$rid=null)
+	// public function getPrint($id,$rid=null)
+	// {
+	// 	$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
+	// 	if($viewfile->print_name=='') {
+	// 		$attributes['document_id'] = $id;
+	// 		$attributes['is_fc'] = ($fc)?1:'';
+	// 		$result = $this->sales_return->getReturn($attributes);
+	// 		$titles = ['main_head' => 'Sales Return','subhead' => 'Sales Return'];
+	// 		return view('body.salesreturn.print')
+	// 					->withDetails($result['details'])
+	// 					->withTitles($titles)
+	// 					->withFc($attributes['is_fc'])
+	// 					->withItems($result['items']);
+	// 		//echo '<pre>';print_r($result);exit;
+	// 	} else {
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		if(env('STIMULSOFT_VER')==2)
+	// 		        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 		   else
+	// 		        	return view('body.salesreturn.viewer')->withPath($path)->withView($viewfile->print_name);
+		
+	// 	}
+	// }
+
+
+	public function getPrint($id, $rid = null)
 	{
-		$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first(); 
-		if($viewfile->print_name=='') {
+		\Log::info('Sales Return getPrint START', ['id' => $id, 'rid' => $rid]);
+
+		// =====================================
+		// 1️⃣ STRICT Document Department Check
+		// =====================================
+		$docDept = DB::table('sales_return')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// =====================================
+		// 2️⃣ STRICT Department MRT Match
+		// =====================================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			// Get base template
+			$base = DB::table('report_view_detail')
+						->where('id', $rid)
+						->first();
+
+			if (!$base) {
+				return back()->with('error', 'Print format not found.');
+			}
+
+			// STRICT department match ONLY
+			$record = DB::table('report_view_detail')
+						->where('report_view_id', $base->report_view_id)
+						->where('department_id', $userDept)
+						->first();
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		// =====================================
+		// 3️⃣ Normal Blade Print
+		// =====================================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$fc = '';
 			$attributes['document_id'] = $id;
-			$attributes['is_fc'] = ($fc)?1:'';
+			$attributes['is_fc'] = ($fc) ? 1 : '';
+
 			$result = $this->sales_return->getReturn($attributes);
-			$titles = ['main_head' => 'Sales Return','subhead' => 'Sales Return'];
+
+			$titles = [
+				'main_head' => 'Sales Return',
+				'subhead'   => 'Sales Return'
+			];
+
 			return view('body.salesreturn.print')
 						->withDetails($result['details'])
 						->withTitles($titles)
 						->withFc($attributes['is_fc'])
 						->withItems($result['items']);
-			//echo '<pre>';print_r($result);exit;
+		}
+
+		// =====================================
+		// 4️⃣ Stimulsoft Print
+		// =====================================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
 		} else {
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(env('STIMULSOFT_VER')==2)
-			        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
-			   else
-			        	return view('body.salesreturn.viewer')->withPath($path)->withView($viewfile->print_name);
-		
+			return view('body.salesreturn.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
 		}
 	}
 	

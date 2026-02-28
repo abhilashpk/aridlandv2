@@ -1422,32 +1422,139 @@ class PurchaseInvoiceController extends Controller
 
 	}
 	
-	public function getPrint($id,$rid=null)
+	// public function getPrint($id,$rid=null)
+	// {
+	// 	//$viewfile = DB::table('report_view')->where('code', 'PI')->where('status',1)->select('view_name')->first();
+	// 	$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first();
+	// 	if($viewfile->print_name=='') {
+	// 		$attributes['document_id'] = $id;
+	// 		$attributes['is_fc'] = ($fc)?1:'';
+	// 		$result = $this->purchase_invoice->getInvoice($attributes);
+	// 		$titles = ['main_head' => 'Purchase Invoice','subhead' => 'Purchase Invoice'];
+	// 		return view('body.purchaseinvoice.print')
+	// 					->withDetails($result['details'])
+	// 					->withTitles($titles)
+	// 					->withFc($attributes['is_fc'])
+	// 					->withId($id)
+	// 					->withItems($result['items']);
+	// 	} else {
+					
+	// 		$path = app_path() . '/stimulsoft/helper.php';
+	// 		if(env('STIMULSOFT_VER')==2)
+	// 	        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
+	// 	   else
+	// 	        return view('body.purchaseinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
+			
+	// 		//return view('body.purchaseinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
+	// 	}
+		
+	// }
+
+	public function getPrint($id, $rid = null)
 	{
-		//$viewfile = DB::table('report_view')->where('code', 'PI')->where('status',1)->select('view_name')->first();
-		$viewfile = DB::table('report_view_detail')->where('id', $rid)->select('print_name')->first();
-		if($viewfile->print_name=='') {
+		\Log::info('Purchase Invoice getPrint START', [
+			'id'  => $id,
+			'rid' => $rid
+		]);
+
+		// ===============================
+		// 1️⃣ Department Check
+		// ===============================
+		$docDept = DB::table('purchase_invoice')
+						->where('id', $id)
+						->value('department_id');
+
+		$userDept = auth()->user()->department_id ?? null;
+
+		\Log::info('Purchase Invoice Dept Check', [
+			'doc_id'    => $id,
+			'doc_dept'  => $docDept,
+			'user_dept' => $userDept
+		]);
+
+		// Block if different department
+		if (!$docDept || $docDept != $userDept) {
+			return back()->with('error', 'This is other department copy.');
+		}
+
+		// ===============================
+		// 2️⃣ Get MRT Template (Match Department)
+		// ===============================
+		$viewfile = null;
+		$record   = null;
+
+		if ($rid) {
+
+			$record = DB::table('report_view_detail')
+						->where('id', $rid)
+						->where('department_id', $userDept)
+						->first();
+
+			\Log::info('Purchase Invoice MRT Record', [
+				'rid'       => $rid,
+				'record'    => $record,
+				'user_dept' => $userDept
+			]);
+
+			if (!$record) {
+				return back()->with('error', 'No print format configured for this department.');
+			}
+
+			$viewfile = (object)[
+				'print_name' => $record->print_name
+			];
+		}
+
+		\Log::info('Purchase Invoice getPrint MID', [
+			'viewfile' => $viewfile
+		]);
+
+		// ===============================
+		// 3️⃣ Default Blade Print
+		// ===============================
+		if (!$viewfile || empty($viewfile->print_name)) {
+
+			$fc = false;
+
 			$attributes['document_id'] = $id;
-			$attributes['is_fc'] = ($fc)?1:'';
+			$attributes['is_fc']       = ($fc) ? 1 : '';
+
 			$result = $this->purchase_invoice->getInvoice($attributes);
-			$titles = ['main_head' => 'Purchase Invoice','subhead' => 'Purchase Invoice'];
+
+			$titles = [
+				'main_head' => 'Purchase Invoice',
+				'subhead'   => 'Purchase Invoice'
+			];
+
 			return view('body.purchaseinvoice.print')
 						->withDetails($result['details'])
 						->withTitles($titles)
 						->withFc($attributes['is_fc'])
 						->withId($id)
 						->withItems($result['items']);
-		} else {
-					
-			$path = app_path() . '/stimulsoft/helper.php';
-			if(env('STIMULSOFT_VER')==2)
-		        return view('body.reports')->withPath($path)->withView($viewfile->print_name);
-		   else
-		        return view('body.purchaseinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
-			
-			//return view('body.purchaseinvoice.viewer')->withPath($path)->withView($viewfile->print_name);
 		}
-		
+
+		// ===============================
+		// 4️⃣ Stimulsoft Print
+		// ===============================
+		$path = app_path() . '/stimulsoft/helper.php';
+
+		\Log::info('Purchase Invoice getPrint END - stimulsoft', [
+			'print_name' => $viewfile->print_name,
+			'id'         => $id
+		]);
+
+		if (env('STIMULSOFT_VER') == 2) {
+			return view('body.reports')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		} else {
+			return view('body.purchaseinvoice.viewer')
+						->withPath($path)
+						->withView($viewfile->print_name)
+						->with('id', $id);
+		}
 	}
 	
 	public function getPrintFc($id,$rid=null)
