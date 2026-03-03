@@ -19,6 +19,8 @@ class RoleController extends Controller
      */
     public function index(Request $request)
     {
+        $departmentId = auth()->user()->department_id;
+
         $roles = Role::orderBy('id','DESC')->paginate(50);
         $roleIds = $roles->pluck('id')->all();
         $assignedCounts = [];
@@ -27,6 +29,7 @@ class RoleController extends Controller
                 ->select('role_id', DB::raw('COUNT(*) AS total'))
                 ->whereIn('role_id', $roleIds)
                 ->whereIn('model_type', [User::class, 'App\\User'])
+                ->where('department_id', $departmentId) // ✅ department filter
                 ->groupBy('role_id')
                 ->pluck('total', 'role_id')
                 ->toArray();
@@ -61,6 +64,8 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
+        $departmentId = auth()->user()->department_id;
+
         $this->validate($request, [
             'name' => 'required|unique:roles,name',
             'display_name' => 'required',
@@ -74,6 +79,7 @@ class RoleController extends Controller
         $role->guard_name = 'web';
         $role->display_name = $request->input('display_name');
         $role->description = $request->input('description');
+        $role->department_id = $departmentId;
         $role->save();
 
 
@@ -166,10 +172,13 @@ class RoleController extends Controller
      */
     public function destroy($id)
     {
+        $departmentId = auth()->user()->department_id;
+
         $role = Role::findOrFail($id);
         $assignedUsers = DB::table('model_has_roles')
             ->where('role_id', $role->id)
             ->whereIn('model_type', [User::class, 'App\\User'])
+            ->where('department_id', $departmentId)
             ->count();
 
         if ($assignedUsers > 0) {

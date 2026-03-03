@@ -9143,6 +9143,7 @@ class AccountMasterRepository extends AbstractValidator implements AccountMaster
 					return true;
 		}	
 	}
+	
 	public function getLedgerMomentsNew($attributes)
 	{
 		$date_from = ($attributes['date_from']!='')?date('Y-m-d', strtotime($attributes['date_from'])):'';
