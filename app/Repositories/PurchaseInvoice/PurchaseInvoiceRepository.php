@@ -85,6 +85,26 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		
 		return true;
 	}
+
+	private function getMaxVoucherNumeric($departmentId)
+	{
+		$voucherNos = DB::table('purchase_invoice')
+			->whereNull('deleted_at')
+			->where('status', 1)
+			->where('department_id', $departmentId)
+			->pluck('voucher_no');
+
+		$maxNumeric = 0;
+		foreach ($voucherNos as $voucherNo) {
+			$digits = preg_replace('/\\D+/', '', (string) $voucherNo);
+			$numericValue = $digits === '' ? 0 : (int) $digits;
+			if ($numericValue > $maxNumeric) {
+				$maxNumeric = $numericValue;
+			}
+		}
+
+		return $maxNumeric;
+	}
 	
 	private function getOtherCostSum($ocamount, $vatoc)
 	{ 
@@ -1518,10 +1538,9 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			
 			//VOUCHER NO LOGIC.....................
 			$dept = auth()->user()->department_id;
-				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_invoice')->whereNull('deleted_at')->where('status', 1)->where('department_id',auth()->user()->department_id);
+				 // â¿¢ Get the highest numeric part from voucher_master
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $this->getMaxVoucherNumeric($dept);
 			
 			$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 			//VOUCHER NO LOGIC.....................
@@ -1539,7 +1558,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							$this->purchase_invoice->created_at = date('Y-m-d H:i:s');
 							$this->purchase_invoice->created_by = Auth::User()->id;
 							$this->purchase_invoice->save();
-							$saved = true; // success ✅
+							$saved = true; // success âœ…
 
 						}	
 					} catch (\Illuminate\Database\QueryException $ex) {
@@ -1549,10 +1568,9 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 							$dept = auth()->user()->department_id;
-								// ⿢ Get the highest numeric part from voucher_master
-								$qry = DB::table('purchase_invoice')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
+								// â¿¢ Get the highest numeric part from voucher_master
 
-								$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+								$maxNumeric = $this->getMaxVoucherNumeric($dept);
 								
 								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -2580,7 +2598,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 					foreach($pirow as $prow) {
 						DB::table('item_location_pi')->where('department_id', auth()->user()->department_id)->where('id',$prow->id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 						
-						DB::table('item_location')->where('location_id', $prow->location_id)>where('department_id', auth()->user()->department_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+						DB::table('item_location')->where('location_id', $prow->location_id)->where('department_id', auth()->user()->department_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 									->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 					}
 					
@@ -2850,12 +2868,12 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			     DB::table('purchase_order_item')->where('purchase_order_id',$this->purchase_invoice->document_id)->where('item_id',$item->item_id)->where('id',$item->doc_row_id)
 								->update(['balance_quantity' => DB::raw('balance_quantity + '.$item->quantity),'is_transfer' => 2 ]);
 			    
-				$pirow = DB::table('item_location_pi')>where('department_id', auth()->user()->department_id)->where('invoice_id',$item->id)->where('is_sdo',0)->get();
+				$pirow = DB::table('item_location_pi')->where('department_id', auth()->user()->department_id)->where('invoice_id',$item->id)->where('is_sdo',0)->get();
 				
 				foreach($pirow as $prow) {
-					DB::table('item_location_pi')->where('id',$prow->id)>where('department_id', auth()->user()->department_id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
+					DB::table('item_location_pi')->where('id',$prow->id)->where('department_id', auth()->user()->department_id)->update(['status'=>0,'deleted_at'=>date('Y-m-d H:i:s')]);
 					
-					DB::table('item_location')->where('location_id', $prow->location_id)>where('department_id', auth()->user()->department_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
+					DB::table('item_location')->where('location_id', $prow->location_id)->where('department_id', auth()->user()->department_id)->where('item_id',$prow->item_id)->where('unit_id',$prow->unit_id)
 								->update(['quantity' => DB::raw('quantity - '.$prow->quantity) ]);
 				}
 			}
@@ -3795,7 +3813,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 	// 						$qtys = DB::table('item_location')->where('status',1)->where('location_id', $location_id)
 	// 														  ->where('item_id', $row['item_id'])->where('unit_id', $row['unit_id'])
-	// 												          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+	// 												          ->whereNull('deleted_at')->select('id')->first();
 	// 						if($qtys) {
 	// 							DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$row['quantity']) ]);
 	// 						} else {

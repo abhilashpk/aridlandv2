@@ -167,7 +167,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	{
 		$cr_acnt_id = $dr_acnt_id = '';
 		if($amount_type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//VAT OUTPUT
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//VAT OUTPUT
 			if($vatrow) {
 				$dr_acnt_id = $account_id = $vatrow->payment_account;
 			}
@@ -402,7 +402,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		$cr_acnt_id = $dr_acnt_id = '';
 		if($amount_type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//VAT OUTPUT
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//VAT OUTPUT
 			if($vatrow) {
 				$dr_acnt_id = $vatrow->payment_account;
 			}
@@ -629,10 +629,10 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 
 					//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
-				 // ⿢ Get the highest numeric part from voucher_master
+				 // ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
 				$qry = DB::table('sales_return')->whereNull('deleted_at')->where('status', 1)->where('department_id',auth()->user()->department_id ?? 1);
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -658,7 +658,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 
 					while (!$saved && $retryCount < $maxRetries) {
 						try {
-								// ✅ ADD THIS BLOCK before setInputValue
+								// ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ADD THIS BLOCK before setInputValue
 								if (empty($attributes['dr_account_id'])) {
 									// Try to get from sales_invoice
 									$invoice = DB::table('sales_invoice')
@@ -688,7 +688,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									}
 								}
 
-								// ✅ Guard: stop early with clear message
+								// ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Guard: stop early with clear message
 								if (empty($attributes['dr_account_id'])) {
 									throw new \Exception('dr_account_id could not be resolved for customer_id: ' . $attributes['customer_id']);
 								}
@@ -700,7 +700,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									$this->sales_return->created_by = Auth::User()->id;
 									$this->sales_return->save();
 
-									$saved = true; // success ✅
+									$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 									
 								}	
 							} catch (\Illuminate\Database\QueryException $ex) {
@@ -710,10 +710,10 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 									$dept = auth()->user()->department_id ?? 1;
-									// ⿢ Get the highest numeric part from voucher_master
+									// ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
 									$qry = DB::table('sales_return')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 
-									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 									
 									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -1164,7 +1164,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                         		        $lcqty = ($attributes['quantity'][$key] *  $pkgar[1]) / $pkgar[0];
                         		}
 
-								// ✅ $lq should be the raw entry quantity, 
+								// ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ $lq should be the raw entry quantity, 
 								 $lq = $attributes['quantity'][$key];
                         		
 								if($qtys) {
@@ -1937,7 +1937,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			//DB::table('account_master')->where('id', $this->sales_return->cr_account_id)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->total)]);
 			$this->objUtility->tallyClosingBalance($this->sales_return->cr_account_id);
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 			if($vatrow) {
 				//DB::table('account_master')->where('id', $vatrow->payment_account)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->vat_amount)]);
 				$this->objUtility->tallyClosingBalance($vatrow->payment_account);

@@ -589,11 +589,11 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
 
-				 // ⿢ Get the highest numeric part from voucher_master
+				 // Ã¢Â¿Â¢ Get the highest numeric part from voucher_master
 				$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('CDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -619,11 +619,11 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 
 							$dept = auth()->user()->department_id ?? 1;
 
-							// ⿢ Get the highest numeric part from voucher_master
+							// Ã¢Â¿Â¢ Get the highest numeric part from voucher_master
 							$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
-							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
 							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('CDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -1606,7 +1606,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				->get();
 
 			// =====================================================
-			// STEP 3: Restore stock — item_unit + FIFO + department
+			// STEP 3: Restore stock Ã¢â‚¬â€ item_unit + FIFO + department
 			// =====================================================
 			$this->updateLastPurchaseCostAndCostAvgonDelete($items, $id);
 
@@ -2352,7 +2352,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 				->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);
 
 			// =====================================================
-			// STEP 2: Get base unit — fix unit_id filter
+			// STEP 2: Get base unit Ã¢â‚¬â€ fix unit_id filter
 			// =====================================================
 			$baseUnit = DB::table('item_unit')
 				->where('itemmaster_id', $item->item_id)
@@ -2383,7 +2383,7 @@ class CustomerDoRepository extends AbstractValidator implements CustomerDoInterf
 			}
 
 			// =====================================================
-			// STEP 3: Restore item_unit — use id not unit_id filter
+			// STEP 3: Restore item_unit Ã¢â‚¬â€ use id not unit_id filter
 			// =====================================================
 			DB::table('item_unit')
 				->where('id', $baseUnit->id)

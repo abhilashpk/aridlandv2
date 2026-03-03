@@ -183,16 +183,16 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 			try {
 				 				
 				//VOUCHER NO LOGIC.....................
-				// 2️⃣ Get the highest numeric part from voucher_master
+				// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
 				$maxNumeric = DB::table('petty_cash')
-					->where('deleted_at', '0000-00-00 00:0:00')
+					->whereNull('deleted_at')
 					->where('department_id', auth()->user()->department_id ?? 1)
 					->where('status', 1)
-					->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+					->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 					->value('max_no');
 				
 				$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
-				$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->first();//echo '<pre>';print_r($accset);
+				$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->whereNull('deleted_at')->first();//echo '<pre>';print_r($accset);
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
 				//exit;
@@ -208,7 +208,7 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 							$this->pettycash->created_at = date('Y-m-d H:i:s');
 							$this->pettycash->created_by = 1;
 							$this->pettycash->fill($attributes)->save();
-							$saved = true; // success ✅
+							$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 
 						}	
 					} catch (\Illuminate\Database\QueryException $ex) {
@@ -218,14 +218,14 @@ class PettyCashRepository extends AbstractValidator implements PettyCashInterfac
 							strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 							$maxNumeric = DB::table('petty_cash')
-								->where('deleted_at', '0000-00-00 00:0:00')
+								->whereNull('deleted_at')
 								->where('department_id', auth()->user()->department_id ?? 1)
 								->where('status', 1)
-								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+								->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 								->value('max_no');
 							
 							$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
-							$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+							$accset = DB::table('account_setting')->where('voucher_type_id',$attributes['voucher'])->where('status',1)->where('department_id', auth()->user()->department_id ?? 1)->whereNull('deleted_at')->first();
 							$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($accset->id, $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
 							$retryCount++;

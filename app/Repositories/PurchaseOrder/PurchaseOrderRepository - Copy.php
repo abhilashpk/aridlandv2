@@ -241,23 +241,23 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		$ids = explode(',', $attributes['document_id']);
 		if(isset($attributes['document_type']) && $attributes['document_type']=='SO')  {
 		    foreach($ids as $id) {
-    			$count1 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    			$count2 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('is_transfer_po',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			$count1 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+    			$count2 = DB::table('sales_order_item')->where('sales_order_id',$id)->where('is_transfer_po',1)->where('status',1)->whereNull('deleted_at')->count();
     			if($count1 == $count2)
     				DB::table('sales_order')->where('id', $id)->update(['is_transfer_po' => 1]);
     		}
 		} else if(isset($attributes['document_type']) && $attributes['document_type']=='MR') {
     		foreach($ids as $id) {
-    			$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    			$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+    			$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
     			if($count1 == $count2)
     				DB::table('material_requisition')->where('id', $id)->update(['is_transfer' => 1]);
     		} 
 		}
 		else if(isset($attributes['document_type']) && $attributes['document_type']=='PE') {
     		foreach($ids as $id) {
-    			$count1 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    			$count2 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+    			$count1 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+    			$count2 = DB::table('purchase_enquiry_item')->where('purchase_enquiry_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
     			if($count1 == $count2)
     				DB::table('purchase_enquiry')->where('id', $id)->update(['is_transfer' => 1]);
     		} 
@@ -351,11 +351,11 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 			//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
 
-				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				 // ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+				$qry = DB::table('purchase_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -383,11 +383,11 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 
 							$dept = auth()->user()->department_id ?? 1;
 
-							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('purchase_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+							// ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+							$qry = DB::table('purchase_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
-							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
 							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -521,7 +521,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 								}
 								$attributes['curno'] = $attributes['voucher_no'];
 							}
-							$inv = DB::table('purchase_order')->where('id','!=',$this->purchase_order->id)->where('voucher_no',$attributes['voucher_no'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+							$inv = DB::table('purchase_order')->where('id','!=',$this->purchase_order->id)->where('voucher_no',$attributes['voucher_no'])->where('status',1)->whereNull('deleted_at')->count();
 							
 							$cnt++;
 						} while ($inv!=0);

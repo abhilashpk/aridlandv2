@@ -661,7 +661,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 		} else if ($doctype == 'CDO') {
 
 			// =====================================================
-			// No do_item_id from form — find DO item via document_id + item_id
+			// No do_item_id from form Ã¢â‚¬â€ find DO item via document_id + item_id
 			// =====================================================
 			if (!isset($attributes['document_id']) || $attributes['document_id'] == '') return;
 
@@ -1674,10 +1674,10 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 
 				//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
-				 // ⿢ Get the highest numeric part from voucher_master
+				 // Ã¢Â¿Â¢ Get the highest numeric part from voucher_master
 				$qry = DB::table('sales_invoice')->whereNull('deleted_at')->where('status', 1)->where('department_id',auth()->user()->department_id ?? 1);
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -1695,7 +1695,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							$this->sales_invoice->created_at = date('Y-m-d H:i:s');
 							$this->sales_invoice->created_by = Auth::User()->id;
 							$this->sales_invoice->save();
-							$saved = true; // success ✅
+							$saved = true; // success Ã¢Å“â€¦
 							
 							//check workshop version active...
 							if($this->module->is_active==1 && $this->sales_invoice->id) {
@@ -1709,10 +1709,10 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 								strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 								$dept = auth()->user()->department_id ?? 1;
-								// ⿢ Get the highest numeric part from voucher_master
+								// Ã¢Â¿Â¢ Get the highest numeric part from voucher_master
 								$qry = DB::table('sales_invoice')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 
-								$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+								$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 								
 								$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -1787,17 +1787,17 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							}
 
 							// =====================================================
-							// STOCK UPDATE — skip deduction if DO already did it
+							// STOCK UPDATE Ã¢â‚¬â€ skip deduction if DO already did it
 							// =====================================================
 							if ($this->mod_do_qty->is_active == 1) {
 
 								if (!$DOlogs) {
-									// Direct SI — deduct stock normally
+									// Direct SI Ã¢â‚¬â€ deduct stock normally
 									$sale_cost   = $this->objUtility->updateItemQuantitySales($attributes, $key);
 									$CostAvg_log = $this->objUtility->updateLastPurchaseCostAndCostAvg($attributes, $key, 0);
 									$logid       = $this->setSaleLog($attributes, $key, $this->sales_invoice->id, $CostAvg_log, $sale_cost, 'add');
 								} else {
-									// From CDO — use cost from DO log
+									// From CDO Ã¢â‚¬â€ use cost from DO log
 									$sale_cost = 0;
 									if ($DOlogs) {
 										if (!empty($DOlogs->sale_cost) && $DOlogs->sale_cost > 0) {
@@ -1805,7 +1805,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 										} elseif (!empty($DOlogs->unit_cost) && $DOlogs->unit_cost > 0) {
 											$sale_cost = $DOlogs->unit_cost; // fallback to unit_cost
 										} else {
-											// Final fallback — get from item_unit
+											// Final fallback Ã¢â‚¬â€ get from item_unit
 											$itemUnit = DB::table('item_unit')
 												->where('itemmaster_id', $attributes['item_id'][$key])
 												->where('is_baseqty', 1)
@@ -2422,7 +2422,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 				->where('item_id', $attributes['item_id'][$key])
 				->where('trtype', 1)
 				->where('status', 1)
-				->whereNull('deleted_at')  // ← FIXED: was '0000-00-00 00:00:00'
+				->whereNull('deleted_at')  // Ã¢â€ Â FIXED: was '0000-00-00 00:00:00'
 				->where('cur_quantity', '>', 0)
 				->orderBy('id', 'ASC')->get();
 			
@@ -2462,7 +2462,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 					->where('item_id', $attributes['item_id'][$key])
 					->where('trtype', 1)
 					->where('status', 1)
-					->whereNull('deleted_at')  // ← FIXED
+					->whereNull('deleted_at')  // Ã¢â€ Â FIXED
 					->select('pur_cost')
 					->orderBy('id', 'DESC')->first();
 				return $stocks ? $stocks->pur_cost : 0;
@@ -3772,7 +3772,7 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 					->where('department_id', auth()->user()->department_id ?? 1)
 					->where('invoice_id', $item->id)
 					->whereNull('deleted_at')
-					// No is_do filter — handle both cases below
+					// No is_do filter Ã¢â‚¬â€ handle both cases below
 					->get();
 
 				foreach ($siLocRows as $prow) {
@@ -3783,8 +3783,8 @@ class SalesInvoiceRepository extends AbstractValidator implements SalesInvoiceIn
 							'deleted_at' => date('Y-m-d H:i:s')
 						]);
 
-					// is_do=0: SI directly deducted → restore location
-					// is_do=1: DO deducted → restored in Step 4 via DO logic
+					// is_do=0: SI directly deducted Ã¢â€ â€™ restore location
+					// is_do=1: DO deducted Ã¢â€ â€™ restored in Step 4 via DO logic
 					if ($prow->is_do == 0) {
 						DB::table('item_location')
 							->where('department_id', auth()->user()->department_id ?? 1)

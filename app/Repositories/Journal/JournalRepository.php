@@ -540,12 +540,12 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 			try {
 				$attributes['version_no'] = 1;
 				//VOUCHER NO LOGIC.....................
-				// 2️⃣ Get the highest numeric part from voucher_master
+				// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
 				$maxNumeric = DB::table('journal')
-					->where('deleted_at', '0000-00-00 00:0:00')
+					->whereNull('deleted_at')
 					->where('department_id', auth()->user()->department_id ?? 1)
 					->where('status', 1)->where('voucher_type', $this->getVoucherType( $attributes['voucher_type'] ))
-					->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+					->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 					->value('max_no');
 				
 				$dept = auth()->user()->department_id ?? 1;
@@ -565,7 +565,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							$this->journal->created_at = date('Y-m-d H:i:s');
 							$this->journal->created_by = Auth::User()->id;
 							$this->journal->fill($attributes)->save();
-							$saved = true; // success ✅
+							$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 
 						}	
 					} catch (\Illuminate\Database\QueryException $ex) {
@@ -575,10 +575,10 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 							$maxNumeric = DB::table('journal')
-								->where('deleted_at', '0000-00-00 00:0:00')
+								->whereNull('deleted_at')
 								->where('department_id', auth()->user()->department_id ?? 1)
 								->where('status', 1)->where('voucher_type', 'JV')
-								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+								->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 								->value('max_no');
 							
 							$dept = auth()->user()->department_id ?? 1;
@@ -610,14 +610,14 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							//PDCR list inserting....
 							if($attributes['group_id'][$key]=='PDCR') {
 								
-								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
-								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->whereNull('deleted_at')->select('dr_account_master_id')->first();
 								
 								if(isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]=='') {
 									$party_id = '';
 									$ctrow = DB::table('journal_entry')->where('journal_id',$this->jv_entry_id->id)
 													->where('entry_type','Cr')->where('status',1)
-													->where('deleted_at','0000-00-00 00:00:00')
+													->whereNull('deleted_at')
 													->select('account_id')->first();
 									if($ctrow) {
 										$party_id = $ctrow->account_id;
@@ -651,14 +651,14 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							//PDCI list inserting....
 							if($attributes['group_id'][$key]=='PDCI') {
 								
-								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
-								$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('cr_account_master_id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 19)->where('status',1)->whereNull('deleted_at')->select('cr_account_master_id')->first();
 								
 								if(isset($attributes['partyac_id'][$key]) && $attributes['partyac_id'][$key]=='') {
 									$party_id = '';
 									$ctrow = DB::table('payment_voucher_entry')->where('payment_voucher_id',$this->payment_voucher->id)
 													->where('entry_type','Dr')->where('status',1)
-													->where('deleted_at','0000-00-00 00:00:00')
+													->whereNull('deleted_at')
 													->select('account_id')->first();
 									if($ctrow) {
 										$party_id = $ctrow->account_id;
@@ -761,12 +761,12 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 			try {
 			    $attributes['version_no'] = 1;
 				//VOUCHER NO LOGIC.....................
-				// 2️⃣ Get the highest numeric part from voucher_master
+				// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
 				$maxNumeric = DB::table('journal')
-					->where('deleted_at', '0000-00-00 00:0:00')
+					->whereNull('deleted_at')
 					->where('department_id', auth()->user()->department_id ?? 1)
 					->where('status', 1)->where('voucher_type', 'SIN')
-					->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+					->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 					->value('max_no');
 				
 				$dept = auth()->user()->department_id ?? 1;//isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -786,7 +786,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							$this->journal->created_at = date('Y-m-d H:i:s');
 							$this->journal->created_by = Auth::User()->id;
 							$this->journal->fill($attributes)->save();
-							$saved = true; // success ✅
+							$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 
 						}	
 					} catch (\Illuminate\Database\QueryException $ex) {
@@ -796,10 +796,10 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 							$maxNumeric = DB::table('journal')
-								->where('deleted_at', '0000-00-00 00:0:00')
+								->whereNull('deleted_at')
 								->where('department_id', auth()->user()->department_id ?? 1)
 								->where('status', 1)->where('voucher_type', 'SIN')
-								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+								->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 								->value('max_no');
 							
 							$dept =  auth()->user()->department_id ?? 1;//isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -975,8 +975,8 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 								
 								//UPDATE PDC...
 								$pdcrow = DB::table('pdc_received')->where('entry_id', $attributes['je_id'][$key])->where('entry_type','JV')->select('id')->first();
-								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
-								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->whereNull('deleted_at')->select('dr_account_master_id')->first();
 
 								if($pdcrow)	{			
 									DB::table('pdc_received')
@@ -1055,12 +1055,12 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 							//PDCR list inserting....
 							if($attributes['group_id'][$key]=='PDCR') {
 								
-								$acrow = DB::table('account_master')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('category','BANK')->select('id')->first();
+								$acrow = DB::table('account_master')->where('status',1)->whereNull('deleted_at')->where('category','BANK')->select('id')->first();
 								if($attributes['partyac_id'][$key]=='') {
 									$party_id = '';
 									$ctrow = DB::table('receipt_voucher_entry')->where('receipt_voucher_id',$this->receipt_voucher->id)
 													->where('entry_type','Cr')->where('status',1)
-													->where('deleted_at','0000-00-00 00:00:00')
+													->whereNull('deleted_at')
 													->select('account_id')->first();
 									if($ctrow) {
 										$party_id = $ctrow->account_id;
@@ -1068,7 +1068,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 								} else
 									$party_id = $attributes['partyac_id'][$key];
 									
-								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('dr_account_master_id')->first();
+								$bnk = DB::table('account_setting')->where('voucher_type_id', 18)->where('status',1)->whereNull('deleted_at')->select('dr_account_master_id')->first();
 								
 								DB::table('pdc_received')
 												->insert([ 'voucher_id' 	=>  $this->journal->id,
@@ -1198,7 +1198,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 				$entries = DB::table('journal_entry')
 					->where('journal_id', $id)
 					->where('status', 1)
-					->where('deleted_at', '0000-00-00 00:00:00')
+					->whereNull('deleted_at')
 					->get();
 
 				foreach ($entries as $row) {
@@ -1496,7 +1496,7 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 												->update(['cl_balance' => DB::raw('IF(cl_balance < 0, cl_balance - '.$row->amount.', cl_balance + '.$row->amount.')')]);
 					
 					//update sales invoice entry....
-					$entry = DB::table('journal_voucher_tr')->where('journal_entry_id', $row->id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+					$entry = DB::table('journal_voucher_tr')->where('journal_entry_id', $row->id)->where('status',1)->whereNull('deleted_at')->get();
 					if($entry) {
 						foreach($entry as $ent) {
 							if($ent->bill_type=='SI')
@@ -1768,10 +1768,10 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 		elseif($type ==6)
 			$result = $this->journal->where('journal.status', 1)->where('voucher_type','SIN')->orderBy('id','desc')->first();
 		elseif($type ==10)
-				$result = DB::table('payment_voucher')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','desc')->first();
+				$result = DB::table('payment_voucher')->where('status',1)->whereNull('deleted_at')->orderBy('id','desc')->first();
 
 		elseif($type ==9)
-			$result = DB::table('receipt_voucher')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->orderBy('id','desc')->first();
+			$result = DB::table('receipt_voucher')->where('status',1)->whereNull('deleted_at')->orderBy('id','desc')->first();
 		//echo '<pre>';print_r($result);exit;
 		return $result;
 	}
@@ -1801,27 +1801,27 @@ class JournalRepository extends AbstractValidator implements JournalInterface {
 	public function check_voucher_no($refno, $vtype, $id = null) { 
 		
 		if($id)
-			return $this->journal->where('voucher_no', $refno)->where('id', '!=', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+			return $this->journal->where('voucher_no', $refno)->where('id', '!=', $id)->where('status',1)->whereNull('deleted_at')->count();
 		else {
 			switch($vtype) {
 				case 16:
-					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'JV')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'JV')->where('status',1)->whereNull('deleted_at')->count();
 					break;
 				
 				case 9:
-					return DB::table('receipt_voucher')->where('voucher_no', $refno)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+					return DB::table('receipt_voucher')->where('voucher_no', $refno)->where('status',1)->whereNull('deleted_at')->count();
 					break;
 					
 				case 10:
-					return DB::table('payment_voucher')->where('voucher_no', $refno)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+					return DB::table('payment_voucher')->where('voucher_no', $refno)->where('status',1)->whereNull('deleted_at')->count();
 					break;
 					
 				case 5:
-					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'PIN')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'PIN')->where('status',1)->whereNull('deleted_at')->count();
 					break;
 					
 				case 6:
-					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'SIN')->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+					return $this->journal->where('voucher_no', $refno)->where('voucher_type', 'SIN')->where('status',1)->whereNull('deleted_at')->count();
 					break;
 			}
 		}

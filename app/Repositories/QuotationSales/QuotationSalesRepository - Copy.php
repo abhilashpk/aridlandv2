@@ -296,8 +296,8 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
     			if($idarr) {
     				foreach($idarr as $id) {
     					DB::table('customer_enquiry')->where('id', $id)->update(['is_editable' => 0]);
-    					$row1 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    					$row2 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+    					$row1 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->whereNull('deleted_at')->count();
+    					$row2 = DB::table('customer_enquiry_item')->where('customer_enquiry_id', $id)->where('status',1)->whereNull('deleted_at')->where('is_transfer',1)->count();
     					if($row1==$row2) {
     						DB::table('customer_enquiry')
     								->where('id', $id)
@@ -312,8 +312,8 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
     			if($idarr) {
     				foreach($idarr as $id) {
     					DB::table('sales_order')->where('id', $id)->update(['is_editable' => 0]);
-    					$row1 = DB::table('sales_order_item')->where('sales_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-    					$row2 = DB::table('sales_order_item')->where('sales_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+    					$row1 = DB::table('sales_order_item')->where('sales_order_id', $id)->where('status',1)->whereNull('deleted_at')->count();
+    					$row2 = DB::table('sales_order_item')->where('sales_order_id', $id)->where('status',1)->whereNull('deleted_at')->where('is_transfer',1)->count();
     					if($row1==$row2) {
     						DB::table('sales_order')->where('id', $id)->update(['is_transfer' => 1]);
     					}
@@ -574,11 +574,11 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 				//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
 
-				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				 // ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+				$qry = DB::table('quotation_sales')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -609,11 +609,11 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 
 							$dept = auth()->user()->department_id ?? 1;
 
-							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('quotation_sales')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+							// ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+							$qry = DB::table('quotation_sales')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
-							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
 							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -2039,7 +2039,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	
 	public function getjobDescription($id)
 	{
-		return DB::table('jobestimate_details')->where('jobestimate_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		return DB::table('jobestimate_details')->where('jobestimate_id',$id)->where('status',1)->whereNull('deleted_at')->get();
 	}
 	public function jobEstimateList($type,$start,$limit,$order,$dir,$search)
 	{

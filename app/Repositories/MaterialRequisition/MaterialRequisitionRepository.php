@@ -81,11 +81,11 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 				//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id;
 
-				 // ⿢ Get the highest numeric part from voucher_master
+				 // Ã¢Â¿Â¢ Get the highest numeric part from voucher_master
 				$qry = DB::table('material_requisition')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$manualVoucherNo = (
 					isset($attributes['autoincrement']) && (int)$attributes['autoincrement'] === 0
@@ -114,11 +114,11 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 
 							$dept = auth()->user()->department_id;
 
-							// ⿢ Get the highest numeric part from voucher_master
+							// Ã¢Â¿Â¢ Get the highest numeric part from voucher_master
 							$qry = DB::table('material_requisition')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
-							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
 							$manualVoucherNo = (
 								isset($attributes['autoincrement']) && (int)$attributes['autoincrement'] === 0
@@ -288,20 +288,20 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 			return false;
 		}
 
-		// ── Defaults for nullable fields ──
+		// Ã¢â€â‚¬Ã¢â€â‚¬ Defaults for nullable fields Ã¢â€â‚¬Ã¢â€â‚¬
 		$attributes['discount']     = $attributes['discount']     ?? 0;
 		$attributes['remove_item']  = $attributes['remove_item']  ?? '';
 
 		$line_total = 0;
 
-		// ── Update / Insert line items ──
+		// Ã¢â€â‚¬Ã¢â€â‚¬ Update / Insert line items Ã¢â€â‚¬Ã¢â€â‚¬
 		if (!empty(array_filter($attributes['item_id']))) {
 
 			foreach ($attributes['item_id'] as $key => $value) {
 
 				if (!empty($attributes['order_item_id'][$key])) {
 
-					// ── Existing item: UPDATE ──
+					// Ã¢â€â‚¬Ã¢â€â‚¬ Existing item: UPDATE Ã¢â€â‚¬Ã¢â€â‚¬
 					$lntotal = (float)($attributes['cost'][$key] ?? 0)
 							* (float)($attributes['quantity'][$key] ?? 0);
 					$line_total += $lntotal;
@@ -325,7 +325,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 
 				} else {
 
-					// ── New item: INSERT ──
+					// Ã¢â€â‚¬Ã¢â€â‚¬ New item: INSERT Ã¢â€â‚¬Ã¢â€â‚¬
 					$objMaterialReqItem = new MaterialRequisitionItem();
 					$arrResult = $this->setItemInputValue($attributes, $objMaterialReqItem, $key, $value);
 					$line_total += $arrResult['line_total'] ?? 0;
@@ -339,14 +339,14 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 			}
 		}
 
-		// ── Update header record ──
+		// Ã¢â€â‚¬Ã¢â€â‚¬ Update header record Ã¢â€â‚¬Ã¢â€â‚¬
 		if ($this->setInputValue($attributes)) {
 			$this->material_requisition->modify_at = date('Y-m-d H:i:s');
 			$this->material_requisition->modify_by = Auth::user()->id;
 			$this->material_requisition->fill($attributes)->save();
 		}
 
-		// ── Remove deleted items ──
+		// Ã¢â€â‚¬Ã¢â€â‚¬ Remove deleted items Ã¢â€â‚¬Ã¢â€â‚¬
 		if (!empty($attributes['remove_item'])) {
 			$arrids = explode(',', $attributes['remove_item']);
 			foreach ($arrids as $row) {
@@ -361,7 +361,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 			}
 		}
 
-		// ── Update totals ──
+		// Ã¢â€â‚¬Ã¢â€â‚¬ Update totals Ã¢â€â‚¬Ã¢â€â‚¬
 		$net_amount = $line_total - (float)$attributes['discount'];
 
 		DB::table('material_requisition')
@@ -374,7 +374,7 @@ class MaterialRequisitionRepository extends AbstractValidator implements Materia
 		return true;
 	}
 
-	// ── Helper to fix unit_id = 0 ──
+	// Ã¢â€â‚¬Ã¢â€â‚¬ Helper to fix unit_id = 0 Ã¢â€â‚¬Ã¢â€â‚¬
 	private function fixZeroUnitId(string $table, int $rowId, int $itemId): void
 	{
 		$zero = DB::table($table)->where('id', $rowId)->where('unit_id', 0)->first();

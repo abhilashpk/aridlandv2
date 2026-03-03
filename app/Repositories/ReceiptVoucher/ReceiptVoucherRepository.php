@@ -1086,7 +1086,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			$query = DB::table('receipt_voucher')
 				->where('voucher_no', $newattributes['voucher_no'])
 				->where('status', 1)
-				->whereNull('deleted_at'); // ✅ important
+				->whereNull('deleted_at'); // Ã¢Å“â€¦ important
 
 			if (isset($attributes['department_id']) && Session::get('department') == 1) {
 				$query->where('department_id', $this->getDepartmentId());
@@ -1096,7 +1096,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 			$cnt++; // increment counter and loop until unique number found
 		} while ($inv != 0);
 
-		// ✅ update base number in account_setting so next voucher starts from this
+		// Ã¢Å“â€¦ update base number in account_setting so next voucher starts from this
 		/*DB::table('account_setting')
 			->where('voucher_type_id', $voucher)
 			->update(['voucher_no' => $newattributes['vno']]);*/
@@ -1177,12 +1177,12 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 				if($continue) {
 						
 					//VOUCHER NO LOGIC.....................
-					// 2️⃣ Get the highest numeric part from voucher_master
+					// 2Ã¯Â¸ÂÃ¢Æ’Â£ Get the highest numeric part from voucher_master
 					$maxNumeric = DB::table('receipt_voucher')
 						->whereNull('deleted_at')
 						->where('department_id',$this->getDepartmentId())
 						->where('status', 1)
-						->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+						->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 						->value('max_no');
 					
 					$dept = $this->getDepartmentId();//isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -1211,7 +1211,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 								$this->receipt_voucher->save();
 
 								$receipt_voucher_id = $this->receipt_voucher->id;
-								$saved = true; // success ✅
+								$saved = true; // success Ã¢Å“â€¦
 
 							}	
 						} catch (\Illuminate\Database\QueryException $ex) {
@@ -1224,7 +1224,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 									->whereNull('deleted_at')
 									->where('department_id',$this->getDepartmentId())
 									->where('status', 1)
-									->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+									->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 									->value('max_no');
 								
 								$dept = $this->getDepartmentId();//isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -2379,7 +2379,7 @@ class ReceiptVoucherRepository extends AbstractValidator implements ReceiptVouch
 echo '<pre>';print_r($balanced);exit;
 					if (count($balanced) > 0) {
 
-							// 1️⃣ Get all receipt_voucher_entry.id for this RV
+							// 1Ã¯Â¸ÂÃ¢Æ’Â£ Get all receipt_voucher_entry.id for this RV
 							$entryIds = DB::table('receipt_voucher_entry')
 								->where('receipt_voucher_id', $rv_entry_id)
 								->whereNull('deleted_at')
@@ -2388,7 +2388,7 @@ echo '<pre>';print_r($balanced);exit;
 
 							if (!empty($entryIds)) {
 
-								// 2️⃣ Check DR / CR in account_transaction for all these lines
+								// 2Ã¯Â¸ÂÃ¢Æ’Â£ Check DR / CR in account_transaction for all these lines
 								$acc = DB::table('account_transaction')
 									->select(
 										DB::raw("SUM(CASE WHEN transaction_type = 'Dr' THEN amount ELSE 0 END) as acc_dr"),
@@ -2401,10 +2401,10 @@ echo '<pre>';print_r($balanced);exit;
 									->first();
 
 								if ($acc && $acc->acc_dr == $acc->acc_cr) {
-									// ✅ RV entries balanced AND account_transaction balanced
+									// Ã¢Å“â€¦ RV entries balanced AND account_transaction balanced
 									// put your success code here
 								} else {
-									// ❌ Posting not balanced in account_transaction
+									// Ã¢ÂÅ’ Posting not balanced in account_transaction
 									throw new ValidationException('Something went wrong1! Please try again.',$this->getErrors());
 									Session::flash('error', 'Something went wrong1, Please try again!');
 									return redirect('advance_set/add');
@@ -2415,7 +2415,7 @@ echo '<pre>';print_r($balanced);exit;
 							}
 
 					} else {
-						// ❌ RV entry table itself is not balanced
+						// Ã¢ÂÅ’ RV entry table itself is not balanced
 						throw new ValidationException('Something went wrong2! Please try again.',$this->getErrors());
 						Session::flash('error', 'Something went wrong1.1, Please try again!');
 						return redirect('advance_set/add');

@@ -161,7 +161,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 	{
 		$cr_acnt_id = $dr_acnt_id = '';
 		if($amount_type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//VAT OUTPUT
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//VAT OUTPUT
 			if($vatrow) {
 				$dr_acnt_id = $account_id = $vatrow->payment_account;
 			}
@@ -389,7 +389,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		
 		$cr_acnt_id = $dr_acnt_id = '';
 		if($amount_type=='VAT') {
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//VAT OUTPUT
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//VAT OUTPUT
 			if($vatrow) {
 				$dr_acnt_id = $vatrow->payment_account;
 			}
@@ -616,12 +616,12 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 
 					//VOUCHER NO LOGIC.....................
 					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-					// 2️⃣ Get the highest numeric part from voucher_master
-					$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+					// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
+					$qry = DB::table('sales_return')->whereNull('deleted_at')->where('status', 1);
 					if($dept > 0)	
 						$qry->where('department_id', $dept);
 
-					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 					
 					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
 					//VOUCHER NO LOGIC.....................
@@ -640,7 +640,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									$this->sales_return->created_by = Auth::User()->id;
 									$this->sales_return->save();
 
-									$saved = true; // success ✅
+									$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 									
 								}	
 							} catch (\Illuminate\Database\QueryException $ex) {
@@ -650,12 +650,12 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 									$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-									// 2️⃣ Get the highest numeric part from voucher_master
-									$qry = DB::table('sales_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+									// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
+									$qry = DB::table('sales_return')->whereNull('deleted_at')->where('status', 1);
 									if($dept > 0)	
 										$qry->where('department_id', $dept);
 
-									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 									
 									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
 
@@ -726,7 +726,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                                 		}
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys) {
 											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 										} else {
@@ -758,7 +758,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									
 									$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 																	  
 									//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
 									$lcqty = $attributes['quantity'][$key];
@@ -1049,7 +1049,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									$edit = DB::table('item_location_sr')->where('id', $attributes['editid'][$key][$lk])->first();
 									$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 																  //echo '<pre>';print_r($edit);exit;
 									if($edit) {
 										
@@ -1085,7 +1085,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 								
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+																  ->whereNull('deleted_at')->select('*')->first();
 																  
 								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
 								$lcqty = $attributes['quantity'][$key];
@@ -1202,7 +1202,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
                                 		}
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys) {
 											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 										} else {
@@ -1234,7 +1234,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 																  
 								//$lcqty = $attributes['quantity'][$key] * $attributes['packing'][$key];
 								$lcqty = $attributes['quantity'][$key];
@@ -1855,7 +1855,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 			//DB::table('account_master')->where('id', $this->sales_return->cr_account_id)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->total)]);
 			$this->objUtility->tallyClosingBalance($this->sales_return->cr_account_id);
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 			if($vatrow) {
 				//DB::table('account_master')->where('id', $vatrow->payment_account)->update(['cl_balance' => DB::raw('cl_balance + '.$this->sales_return->vat_amount)]);
 				$this->objUtility->tallyClosingBalance($vatrow->payment_account);
@@ -1959,7 +1959,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
 							 ->where('status', 1)
-							 ->where('deleted_at','0000-00-00 00:00:00')
+							 ->whereNull('deleted_at')
 							 ->select('pur_cost','sale_reference')
 							 ->first();
 		
@@ -1967,7 +1967,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('cur_quantity','pur_cost')
 										->get();
 										
@@ -2006,7 +2006,7 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 							 ->where('item_id', $attributes['item_id'][$key])
 							 ->where('unit_id', $attributes['unit_id'][$key])
 							 ->where('status', 1)
-							 ->where('deleted_at','0000-00-00 00:00:00')
+							 ->whereNull('deleted_at')
 							 ->select('pur_cost')
 							 ->first();
 		
@@ -2189,10 +2189,10 @@ class SalesReturnRepository extends AbstractValidator implements SalesReturnInte
 		if(Session::get('department')==1 && $department_id!=null) {
 			$vatres = DB::table('vat_department')->where('department_id', $department_id)->first();
 			if(!$vatres)
-				$vatres = DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+				$vatres = DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 			return $vatres;
 		} else {
-			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 		}
 	}
 	
