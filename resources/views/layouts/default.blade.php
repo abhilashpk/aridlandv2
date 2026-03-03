@@ -2170,6 +2170,52 @@
 <!-- wrapper-->
 <!-- global js -->
 <script src="{{asset('assets/js/app.js')}}" type="text/javascript"></script>
+<script>
+(function () {
+    var path = window.location.pathname.toLowerCase();
+    var inventoryHints = [
+        'purchase_',
+        'sales_',
+        'stock_transfer',
+        'goods_',
+        'material_requisition',
+        'manufacture',
+        'location_transfer',
+        'suppliers_do',
+        'customers_do',
+        'packing_list',
+        'proforma_invoice',
+        'quotation',
+        'item_template'
+    ];
+
+    var isInventoryPage = inventoryHints.some(function (hint) {
+        return path.indexOf(hint) !== -1;
+    });
+
+    if (!isInventoryPage) {
+        return;
+    }
+
+    function randomToken() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return 'tok-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    }
+
+    var forms = document.querySelectorAll('form[method="POST"], form[method="post"]');
+    forms.forEach(function (form) {
+        if (!form.querySelector('input[name="submit_token"]')) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'submit_token';
+            input.value = randomToken();
+            form.appendChild(input);
+        }
+    });
+})();
+</script>
 <!-- end of global js -->
 @yield('footer_scripts')
 <!-- end page level js -->

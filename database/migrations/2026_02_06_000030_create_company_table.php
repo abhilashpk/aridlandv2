@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('company', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('company_name', 200);
+            // Keep index length <= 767 bytes on older MySQL/InnoDB setups.
+            $table->string('company_name', 191);
             $table->string('email', 150);
             $table->string('phone', 40);
             $table->string('address', 220);

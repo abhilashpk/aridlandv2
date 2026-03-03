@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('itemmaster', function (Blueprint $table) {
             $table->increments('id');
             $table->string('item_code', 120);
-            $table->string('description', 1000);
+            // Indexed on old MySQL (767-byte limit), so keep <=191.
+            $table->string('description', 191);
             $table->tinyInteger('class_id');
             $table->string('model_no', 120)->nullable();
             $table->string('serial_no', 120)->nullable();

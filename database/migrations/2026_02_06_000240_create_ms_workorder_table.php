@@ -28,7 +28,8 @@ return new class extends Migration
             $table->integer('enquiry_id');
             $table->string('location', 250);
             $table->string('reference_no', 100);
-            $table->index(["job_id", "location_id", "customer_id", "type_id", "technician_id"], 'job_id');
+            // Old MySQL index-size compatibility: exclude long string column from composite index.
+            $table->index(["job_id", "location_id", "customer_id", "type_id"], 'job_id');
         });
     }
 
