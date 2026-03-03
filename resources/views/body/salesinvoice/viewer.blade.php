@@ -16,7 +16,8 @@ require_once $path;
 	
 	<?php 
 		$options = StiHelper::createOptions();
-		$options->handler = "{{ asset('stimulsoft/handler.php') }}";
+		// $options->handler = "{{ asset('stimulsoft/handler.php') }}";
+		$options->handler = "../../../handler.php";
 		$options->timeout = 30;
 		StiHelper::initialize($options);
 	?>

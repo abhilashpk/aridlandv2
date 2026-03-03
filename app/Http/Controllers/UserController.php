@@ -10,7 +10,7 @@ use App\Models\Role;
 use DB;
 use Hash;
 use Session;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 
 
@@ -78,7 +78,18 @@ class UserController extends Controller
         $input['password'] = Hash::make($input['password']);
 
         $user = User::create($input);
-        $user->syncRoles($request->input('roles', []));
+        // $user->syncRoles($request->input('roles', []));
+
+        $departmentId = Auth::user()->department_id;
+
+        foreach ($request->input('roles') as $roleId) {
+            DB::table('model_has_roles')->insert([
+                'role_id' => $roleId,
+                'model_type' => User::class,
+                'model_id' => $user->id,
+                'department_id' => $departmentId
+            ]);
+        }
 
         return redirect()->route('users.index')
                         ->with('success','User created successfully');
@@ -108,7 +119,15 @@ class UserController extends Controller
     {
         $user = User::find($id);
         $roles = Role::pluck('display_name', 'id');
-        $userRole = $user->roles->pluck('id', 'id')->toArray();
+        // $userRole = $user->roles->pluck('id', 'id')->toArray();
+        $departmentId = Auth::user()->department_id;
+
+        $userRole = DB::table('model_has_roles')
+            ->where('model_id', $user->id)
+            ->where('model_type', User::class)
+            ->where('department_id', $departmentId)
+            ->pluck('role_id', 'role_id')
+            ->toArray();
 		$depts = DB::table('department')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
 		$loc = DB::table('location')->where('status',1)->whereNull('deleted_at')->select('id','name')->get();
         //return view('users.edit',compact('user','roles','userRole'));
@@ -149,7 +168,26 @@ class UserController extends Controller
 
         $user = User::find($id);
         $user->update($input);
-        $user->syncRoles($request->input('roles', []));
+        // $user->syncRoles($request->input('roles', []));
+
+        $departmentId = Auth::user()->department_id;
+
+        /* delete only current department roles */
+        DB::table('model_has_roles')
+            ->where('model_id', $user->id)
+            ->where('model_type', User::class)
+            ->where('department_id', $departmentId)
+            ->delete();
+
+        /* insert new roles */
+        foreach ($request->input('roles') as $roleId) {
+            DB::table('model_has_roles')->insert([
+                'role_id' => $roleId,
+                'model_type' => User::class,
+                'model_id' => $user->id,
+                'department_id' => $departmentId
+            ]);
+        }
 
 
         return redirect()->route('users.index')
@@ -165,18 +203,45 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        User::find($id)->delete();
+        // User::find($id)->delete();
+        $departmentId = Auth::user()->department_id;
+
+        $user = User::where('id', $id)
+                    ->where('department_id', $departmentId)
+                    ->firstOrFail();
+
+        $user->delete();
         return redirect()->route('users.index')
                         ->with('success','User deleted successfully');
     }
 	
-	public function deluser($id)
+	// public function deluser($id)
+    // {
+    //     User::find($id)->delete();
+	// 	Session::flash('message', 'User deleted successfully.');
+    //     return redirect()->route('users.index');
+    //                     //->with('success','User deleted successfully');
+    // }
+
+    public function deluser($id)
     {
-        User::find($id)->delete();
-		Session::flash('message', 'User deleted successfully.');
+        $departmentId = Auth::user()->department_id;
+
+        $user = User::where('id', $id)
+                    ->where('department_id', $departmentId)
+                    ->first();
+
+        if (!$user) {
+            Session::flash('error', 'Unauthorized action.');
+            return redirect()->route('users.index');
+        }
+
+        $user->delete();
+
+        Session::flash('message', 'User deleted successfully.');
         return redirect()->route('users.index');
-                        //->with('success','User deleted successfully');
     }
+
 	
 	public function changePassword() {
 		

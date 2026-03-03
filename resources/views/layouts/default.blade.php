@@ -987,6 +987,14 @@
                             @endif
                             @endcan
 
+                            @can('loc-tran-list')
+							<li {!! (Request::is('location_transfer') || Request::is('location_transfer/*') ? 'class="active"' : '') !!}>
+                                <a href="{{ URL::to('location_transfer') }}">
+                                    <i class="fa fa-fw fa-share-square-o"></i> Material Transfer
+                                </a>
+                            </li>
+							@endcan
+
                             @can('mr-list')
                             <li {!! (Request::is('purchase_enquiry') || Request::is('purchase_enquiry/*') ? 'class="active"' : '') !!}>
                                 <a href="{{ URL::to('purchase_enquiry') }}">
@@ -1238,16 +1246,7 @@
                                     <i class="fa fa-fw fa-calendar"></i> Job Invoice
                                 </a>
                             </li>
-							@endcan
-							
-							@can('loc-tran-list')
-							<li {!! (Request::is('location_transfer') || Request::is('location_transfer/*') ? 'class="active"' : '') !!}>
-                                <a href="{{ URL::to('location_transfer') }}">
-                                    <i class="fa fa-fw fa-share-square-o"></i> Location Transfer
-                                </a>
-                            </li>
-							@endcan
-							
+							@endcan	
 						
 							
                             @can('cm-list')
