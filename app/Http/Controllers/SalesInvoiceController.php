@@ -559,7 +559,10 @@ class SalesInvoiceController extends Controller
 		
 		//RV FORM ENTRY............
 		$banks = $this->bank->activeBankList();
-		$vchrdata = $this->getVoucherRV(9,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['rv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherRV(9,'CASH');
+		}
 		$footertxt = DB::table('header_footer')->where('doc','SI')->where('status',1)->whereNull('deleted_at')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -847,7 +850,10 @@ class SalesInvoiceController extends Controller
 		
 		//RV FORM ENTRY............
 		$banks = $this->bank->activeBankList();
-		$vchrdata = $this->getVoucherRV(9,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['rv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherRV(9,'CASH');
+		}
 		$footertxt = DB::table('header_footer')->where('doc','SI')->where('status',1)->whereNull('deleted_at')->first();
 		$print = DB::table('report_view_detail')
 							->join('report_view','report_view.id','=','report_view_detail.report_view_id')
@@ -1470,7 +1476,10 @@ class SalesInvoiceController extends Controller
 		//RV FORM ENTRY............
 		$rventry = [];
 		$banks = $this->bank->activeBankList();
-		$vchrdata = $this->getVoucherRV(9,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['rv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherRV(9,'CASH');
+		}
 		if($orderrow->is_rventry==1) {
 			$rventry = DB::table('receipt_voucher')->where('receipt_voucher.sales_invoice_id',$orderrow->id)
 							->join('receipt_voucher_entry', 'receipt_voucher_entry.receipt_voucher_id', '=', 'receipt_voucher.id')
@@ -1841,7 +1850,10 @@ class SalesInvoiceController extends Controller
 		//RV FORM ENTRY............
 		$rventry = [];
 		$banks = $this->bank->activeBankList();
-		$vchrdata = $this->getVoucherRV(9,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['rv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherRV(9,'CASH');
+		}
 		if($orderrow->is_rventry==1) {
 			$rventry = DB::table('receipt_voucher')->where('receipt_voucher.sales_invoice_id',$orderrow->id)
 							->join('receipt_voucher_entry', 'receipt_voucher_entry.receipt_voucher_id', '=', 'receipt_voucher.id')
@@ -3174,7 +3186,7 @@ public function dataExport(Request $request)
 	public function getVoucherRV($id,$type) {
 		
 		 $row = $this->accountsetting->getDrVoucherByID2($id);//return $row;//print_r($row);
-		 $voucher = $master_name = $id = null;
+		 $voucher = $master_name = $id = $rid = null;
 		 if($row) {
 			 if($row->voucher_no != '' || $row->voucher_no != null) {
 				 if($row->is_prefix==0)
@@ -3372,7 +3384,10 @@ public function dataExport(Request $request)
 		//RV FORM ENTRY............
 		$rventry = [];
 		$banks = $this->bank->activeBankList();
-		$vchrdata = $this->getVoucherRV(9,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['rv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherRV(9,'CASH');
+		}
 		if($orderrow->is_rventry==1) {
 			$rventry = DB::table('receipt_voucher')->where('receipt_voucher.sales_invoice_id',$orderrow->id)
 							->join('receipt_voucher_entry', 'receipt_voucher_entry.receipt_voucher_id', '=', 'receipt_voucher.id')

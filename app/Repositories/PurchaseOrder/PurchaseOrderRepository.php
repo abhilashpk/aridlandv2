@@ -969,7 +969,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					DB::table('purchase_enquiry')->whereIn('id', $ids)
 										->update(['is_transfer' => 0]);
 										
-					DB::table('purchase_enquiry_item')->whereIn('material_requisition_id', $ids)
+					DB::table('purchase_enquiry_item')->whereIn('purchase_enquiry_id', $ids)
 										->update(['is_transfer' => 0,'is_editable' => 0]);
 					
 			}

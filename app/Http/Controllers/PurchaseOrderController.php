@@ -612,7 +612,7 @@ class PurchaseOrderController extends Controller
 	{
 		//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('purchase_order_id');
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			'location_id' =>'required','location_id' => 'required',
@@ -630,10 +630,7 @@ class PurchaseOrderController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('purchase_order/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		if($this->purchase_order->update($id, $request->all()))
 			Session::flash('message', 'Purchase Order updated successfully');
@@ -693,7 +690,7 @@ class PurchaseOrderController extends Controller
 	{
 		//echo '<pre>';print_r($request->all());exit;
 		$id = $request->input('purchase_order_id');
-		if( $this->validate(
+		$this->validate(
 			$request, 
 			[//'reference_no' => 'required',
 			 'supplier_name' => 'required','supplier_id' => 'required',
@@ -709,10 +706,7 @@ class PurchaseOrderController extends Controller
 			 'quantity.*' => 'Item quantity is required.',
 			 'cost.*' => 'Item cost is required.'
 			]
-		)) {
-
-			return redirect('purchase_order/edit/'.$id)->withInput()->withErrors();
-		}
+		);
 		
 		if($this->purchase_order->update($id, $request->all()))
 			Session::flash('message', 'Purchase Order draft updated successfully');
