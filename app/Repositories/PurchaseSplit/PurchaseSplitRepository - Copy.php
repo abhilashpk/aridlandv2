@@ -490,12 +490,12 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 			
 						
 			//VOUCHER NO LOGIC.....................
-			// 2️⃣ Get the highest numeric part from voucher_master
+			// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
 			$maxNumeric = DB::table('purchase_split')
-				->where('deleted_at', '0000-00-00 00:0:00')
+				->whereNull('deleted_at')
 				->where('department_id', auth()->user()->department_id ?? 1)
 				->where('status', 1)
-				->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+				->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 				->value('max_no');
 			
 			$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -515,7 +515,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 						$this->purchase_split->created_at = date('Y-m-d H:i:s');
 						$this->purchase_split->created_by = 1;
 						$this->purchase_split->fill($attributes)->save();
-						$saved = true; // success ✅
+						$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 
 					}	
 				} catch (\Illuminate\Database\QueryException $ex) {
@@ -525,10 +525,10 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 						strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 						$maxNumeric = DB::table('purchase_split')
-							->where('deleted_at', '0000-00-00 00:0:00')
+							->whereNull('deleted_at')
 							->where('department_id', auth()->user()->department_id ?? 1)
 							->where('status', 1)
-							->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+							->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 							->value('max_no');
 						
 						$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -870,7 +870,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 				$this->objUtility->tallyClosingBalance( $row->account_id );
 			}
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?auth()->user()->department_id ?? 1:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?auth()->user()->department_id ?? 1:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
 			if($vatrow) {
 				$this->objUtility->tallyClosingBalance($vatrow->collection_account);
 			}
@@ -975,7 +975,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 								   ->where('status',1)
 								   ->where('account_master_id', $supplier_id)
 								   ->where('amount','>',0)
-								   ->where('deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('deleted_at')
 								   ->whereIn('amount_transfer',$arr)
 								   ->orderBY('tr_date', 'ASC')
 								   ->select('*','amount AS net_amount')
@@ -1031,7 +1031,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		$arr = ($mod)?[0,1,2]:[0,2];
 		return DB::table('other_voucher_tr')->where('account_master_id', $supplier_id)
 										 ->whereIn('amount_transfer', $arr)
-										 ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+										 ->where('status',1)->whereNull('deleted_at')
 										 ->get();
 		
 	} //......May 15
@@ -1351,7 +1351,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 	
 	public function getItemLocation($id) {
 		
-		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->whereNull('deleted_at')->get();
 	}
 	
 	
@@ -1554,7 +1554,7 @@ class PurchaseSplitRepository extends AbstractValidator implements PurchaseSplit
 		if(Session::get('department')==1 && $department_id!=null) {
 			return DB::table('vat_department')->where('department_id', auth()->user()->department_id ?? 1)->first();
 		} else {
-			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 		}
 	}
 	

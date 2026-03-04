@@ -273,8 +273,8 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 			$ids = explode(',', $attributes['document_id']);
 			foreach($ids as $id) {
 				DB::table('purchase_order')->where('id', $id)->update(['is_editable' => 1]);
-				$count1 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-				$count2 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$count1 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+				$count2 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
 				if($count1 == $count2)
 					DB::table('purchase_order')->where('id', $id)->update(['is_transfer' => 1]);
 			} 
@@ -282,8 +282,8 @@ class SupplierDoRepository extends AbstractValidator implements SupplierDoInterf
 			$ids = explode(',', $attributes['document_id']);
 			foreach($ids as $id) {
 				//DB::table('material_requisition')->where('id', $id)->update(['is_editable' => 1]);
-				$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-				$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+				$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
 				if($count1 == $count2)
 					DB::table('material_requisition')->where('id', $id)->update(['is_transfer' => 1]);
 			} 
@@ -670,11 +670,11 @@ public function getReportExcel($attributes)
 			 //VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
 
-				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				 // ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+				$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -701,11 +701,11 @@ public function getReportExcel($attributes)
 
 							$dept = auth()->user()->department_id ?? 1;
 
-							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('customer_do')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+							// ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+							$qry = DB::table('customer_do')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
-							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
 							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SDO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -793,7 +793,7 @@ public function getReportExcel($attributes)
 								
 								$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $locid[$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+													          ->whereNull('deleted_at')->select('id')->first();
 								if($qtys) {
 									DB::table('item_location')->where('id', $qtys->id)->where('department_id',auth()->user()->department_id ?? 1)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 								} else {
@@ -828,7 +828,7 @@ public function getReportExcel($attributes)
 							
 						$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $attributes['default_location'])
 														  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-														  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+														  ->whereNull('deleted_at')->select('id')->first();
 														  
 						$lcqty = $attributes['quantity'][$key];
                 		if($attributes['packing'][$key]=="1") 
@@ -1208,7 +1208,7 @@ public function getReportExcel($attributes)
 									$edit = DB::table('item_location_pi')->where('department_id',auth()->user()->department_id ?? 1)->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',1)->first();
 									$idloc = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 																 
 									if($edit) {
 										
@@ -1255,7 +1255,7 @@ public function getReportExcel($attributes)
 								
 								$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $attributes['location_id'])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+																  ->whereNull('deleted_at')->select('*')->first();
 																  
 								//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 								
@@ -1438,7 +1438,7 @@ public function getReportExcel($attributes)
                             		
 									$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 									if($qtys) {
 										DB::table('item_location')->where('department_id',auth()->user()->department_id ?? 1)->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
 									} else {
@@ -1473,7 +1473,7 @@ public function getReportExcel($attributes)
 								
 							$qtys = DB::table('item_location')->where('status',1)->where('department_id',auth()->user()->department_id ?? 1)->where('location_id', $attributes['default_location'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-															  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+															  ->whereNull('deleted_at')->select('id')->first();
 															  
 							//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 							
@@ -2049,7 +2049,7 @@ public function getReportExcel($attributes)
 										->where('department_id',auth()->user()->department_id ?? 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('cur_quantity','pur_cost')
 										->get();
 										
@@ -2128,7 +2128,7 @@ public function getReportExcel($attributes)
 										->where('department_id',auth()->user()->department_id ?? 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->where(function ($query) use($pid) {
 											$query->where('document_id','!=',$pid)
 												  ->orWhere('document_type','!=','SDO');

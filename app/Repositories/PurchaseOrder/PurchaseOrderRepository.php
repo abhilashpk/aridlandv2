@@ -66,6 +66,26 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 		
 		return true;
 	}
+
+	private function getMaxVoucherNumeric($departmentId)
+	{
+		$voucherNos = DB::table('purchase_order')
+			->whereNull('deleted_at')
+			->where('status', 1)
+			->where('department_id', $departmentId)
+			->pluck('voucher_no');
+
+		$maxNumeric = 0;
+		foreach ($voucherNos as $voucherNo) {
+			$digits = preg_replace('/\\D+/', '', (string) $voucherNo);
+			$numericValue = $digits === '' ? 0 : (int) $digits;
+			if ($numericValue > $maxNumeric) {
+				$maxNumeric = $numericValue;
+			}
+		}
+
+		return $maxNumeric;
+	}
 	
 	private function setItemInputValue($attributes, $purchaseOrderItem, $key, $value,$other_cost, $lineTotal, $total_quantity=null) 
 	{
@@ -355,10 +375,9 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 				$dept = auth()->user()->department_id;
 
 				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('purchase_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 				
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $this->getMaxVoucherNumeric($dept);
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -386,10 +405,9 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 							$dept = auth()->user()->department_id;
 
 							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('purchase_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id);
 							
 
-							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							$maxNumeric = $this->getMaxVoucherNumeric($dept);
 							
 							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('PO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -951,7 +969,7 @@ class PurchaseOrderRepository extends AbstractValidator implements PurchaseOrder
 					DB::table('purchase_enquiry')->whereIn('id', $ids)
 										->update(['is_transfer' => 0]);
 										
-					DB::table('purchase_enquiry_item')->whereIn('material_requisition_id', $ids)
+					DB::table('purchase_enquiry_item')->whereIn('purchase_enquiry_id', $ids)
 										->update(['is_transfer' => 0,'is_editable' => 0]);
 					
 			}

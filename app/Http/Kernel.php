@@ -64,6 +64,7 @@ protected $middlewareAliases = [
     'signed' => \App\Http\Middleware\ValidateSignature::class,
     'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
     'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+    'inventory.idempotency' => \App\Http\Middleware\InventoryIdempotency::class,
 
     // ✅ Spatie Permission Middleware (required)
     'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
@@ -77,4 +78,3 @@ protected $routeMiddleware = [
 ];
 
 }
-

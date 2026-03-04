@@ -288,7 +288,10 @@ class PurchaseInvoiceController extends Controller
 							->select('report_view_detail.id')
 							->first();
 	//RV Entry
-		$vchrdata = $this->getVoucherPV(10,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['pv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherPV(10,'CASH');
+		}
 		$banks = $this->bank->activeBankList();
 
 		//CHECK DEPARTMENT.......
@@ -533,7 +536,7 @@ class PurchaseInvoiceController extends Controller
 		public function getVoucherPV($id,$type) {
 		
 		 $row = $this->accountsetting->getDrVoucherByID2($id);//return $row;//print_r($row);
-		 $voucher = $master_name = $id = null;
+		 $voucher = $master_name = $id = $rid = null;
 		 if($row) {
 			 if($row->voucher_no != '' || $row->voucher_no != null) {
 				 if($row->is_prefix==0)
@@ -849,7 +852,10 @@ class PurchaseInvoiceController extends Controller
 		//RV FORM ENTRY............
 		$rventry = [];
 		$banks = $this->bank->activeBankList();
-		$vchrdata = $this->getVoucherPV(10,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['pv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherPV(10,'CASH');
+		}
 		if($orderrow->is_pventry==1) {
 			$rventry = DB::table('payment_voucher')->where('payment_voucher.purchase_invoice_id',$orderrow->id)
 							->join('payment_voucher_entry', 'payment_voucher_entry.payment_voucher_id', '=', 'payment_voucher.id')
@@ -1157,7 +1163,10 @@ class PurchaseInvoiceController extends Controller
 		//RV FORM ENTRY............
 		$rventry = [];
 		$banks = $this->bank->activeBankList();
-		$vchrdata = $this->getVoucherPV(10,'CASH');
+		$vchrdata = ['voucher_no' => null, 'account_name' => null, 'id' => null, 'rid' => null];
+		if (($this->formData['pv_entry'] ?? 0) == 1) {
+			$vchrdata = $this->getVoucherPV(10,'CASH');
+		}
 		if($orderrow->is_pventry==1) {
 			$rventry = DB::table('payment_voucher')->where('payment_voucher.purchase_invoice_id',$orderrow->id)
 							->join('payment_voucher_entry', 'payment_voucher_entry.payment_voucher_id', '=', 'payment_voucher.id')

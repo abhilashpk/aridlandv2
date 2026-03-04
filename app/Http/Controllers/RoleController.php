@@ -26,11 +26,12 @@ class RoleController extends Controller
         $assignedCounts = [];
         if (!empty($roleIds)) {
             $assignedCounts = DB::table('model_has_roles')
-                ->select('role_id', DB::raw('COUNT(*) AS total'))
-                ->whereIn('role_id', $roleIds)
-                ->whereIn('model_type', [User::class, 'App\\User'])
-                ->where('department_id', $departmentId) // ✅ department filter
-                ->groupBy('role_id')
+                ->join('users', 'users.id', '=', 'model_has_roles.model_id')
+                ->select('model_has_roles.role_id', DB::raw('COUNT(*) AS total'))
+                ->whereIn('model_has_roles.role_id', $roleIds)
+                ->whereIn('model_has_roles.model_type', [User::class, 'App\\User'])
+                ->where('users.department_id', $departmentId)
+                ->groupBy('model_has_roles.role_id')
                 ->pluck('total', 'role_id')
                 ->toArray();
         }
@@ -176,9 +177,10 @@ class RoleController extends Controller
 
         $role = Role::findOrFail($id);
         $assignedUsers = DB::table('model_has_roles')
-            ->where('role_id', $role->id)
-            ->whereIn('model_type', [User::class, 'App\\User'])
-            ->where('department_id', $departmentId)
+            ->join('users', 'users.id', '=', 'model_has_roles.model_id')
+            ->where('model_has_roles.role_id', $role->id)
+            ->whereIn('model_has_roles.model_type', [User::class, 'App\\User'])
+            ->where('users.department_id', $departmentId)
             ->count();
 
         if ($assignedUsers > 0) {

@@ -338,12 +338,12 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 
 					//VOUCHER NO LOGIC.....................
 					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-					// 2️⃣ Get the highest numeric part from voucher_master
-					$qry = DB::table('goods_issued')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+					// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
+					$qry = DB::table('goods_issued')->whereNull('deleted_at')->where('status', 1);
 					if($dept > 0)	
 						$qry->where('department_id', $dept);
 
-					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 					
 					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
 					//VOUCHER NO LOGIC.....................
@@ -362,7 +362,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 									$this->goods_issued->created_by = Auth::User()->id;
 									$this->goods_issued->save();
 
-									$saved = true; // success ✅
+									$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 									
 								}	
 							} catch (\Illuminate\Database\QueryException $ex) {
@@ -372,12 +372,12 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 									strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 									$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-									// 2️⃣ Get the highest numeric part from voucher_master
-									$qry = DB::table('goods_issued')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+									// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
+									$qry = DB::table('goods_issued')->whereNull('deleted_at')->where('status', 1);
 									if($dept > 0)	
 										$qry->where('department_id', $dept);
 
-									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 									
 									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
 
@@ -424,7 +424,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 										$updated = true;
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys)
 											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lq) ]);
 										
@@ -447,7 +447,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 								if($qtys)
 									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
 									
@@ -516,9 +516,9 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 			}
 
 			if(Session::get('department')==1)
-				$inv = DB::table('goods_issued')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('department_id', $attributes['department_id'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$inv = DB::table('goods_issued')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('department_id', $attributes['department_id'])->where('status',1)->whereNull('deleted_at')->count();
 			else
-				$inv = DB::table('goods_issued')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$inv = DB::table('goods_issued')->where('id','!=',$attributes['rowid'])->where('voucher_no',$newattributes['voucher_no'])->where('status',1)->whereNull('deleted_at')->count();
 			//echo $inv.' - ';
 			$cnt++;
 		} while ($inv!=0);
@@ -608,7 +608,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 									$edit = DB::table('item_location_gi')->where('id', $attributes['editid'][$key][$lk])->first();
 									$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 									if($edit) {
 										if($edit->quantity < $lq) {
 											$balqty = $lq - $edit->quantity;
@@ -629,7 +629,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 						if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 															  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-															  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+															  ->whereNull('deleted_at')->select('*')->first();
 							if($qtys) {
 								DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
 								DB::table('item_location_gi')->where('invoice_id', $attributes['order_item_id'][$key] )
@@ -670,7 +670,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 										$updated = true;
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys)
 											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$lq) ]);
 										
@@ -693,7 +693,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 								if($qtys)
 									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity - '.$attributes['quantity'][$key]) ]);
 									
@@ -994,7 +994,7 @@ class GoodsIssuedRepository extends AbstractValidator implements GoodsIssuedInte
 							->where('item_id', $item->item_id)
 							->where('unit_id', $item->unit_id)
 							->where('status', 1)
-							->where('deleted_at', '0000-00-00 00:00:00')
+							->whereNull('deleted_at')
 							->select('id')->first();
 		if($girow)	{
 		    

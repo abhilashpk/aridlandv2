@@ -282,7 +282,7 @@ Auth::routes();
  
 // TODO: Laravel 10 removed Route::auth() → use Breeze/Jetstream.
 	
-Route::group(['middleware' => ['auth']], function() { 
+Route::group(['middleware' => ['auth', 'inventory.idempotency']], function() { 
 Route::get('/index', [DashboardController::class, 'index']);
 Route::get('/dashboard', [DashboardController::class, 'index']);
 Route::get('/index', [DashboardController::class, 'index']);
@@ -1209,10 +1209,10 @@ Route::get('/sales_invoice/get_salesinvoice', [SalesInvoiceController::class, 'g
 Route::get('/sales_invoice/refresh_do/{id}', [SalesInvoiceController::class, 'refreshDO']);
 Route::get('/sales_invoice/getjob/{id}', [SalesInvoiceController::class, 'getJob']);
 
-Route::get('/sales_invoice/cash', ['as' => 'sales_invoice.index', 'uses' => SalesInvoiceController::class.'@indexc', 'middleware' => ['permission:si-list|si-create|si-edit|si-delete']]);
+Route::get('/sales_invoice/cash', ['as' => 'sales_invoice.cash_index', 'uses' => SalesInvoiceController::class.'@indexc', 'middleware' => ['permission:si-list|si-create|si-edit|si-delete']]);
 Route::post('/sales_invoice/cashpaging', [SalesInvoiceController::class, 'ajaxPagingCash']);
-Route::get('/sales_invoice/addc', ['as'=>'sales_invoice.add','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
-Route::get('/sales_invoice/addc/{id}/{n}', ['as'=>'sales_invoice.add','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
+Route::get('/sales_invoice/addc', ['as'=>'sales_invoice.addc','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
+Route::get('/sales_invoice/addc/{id}/{n}', ['as'=>'sales_invoice.addcId','uses'=> SalesInvoiceController::class.'@addc','middleware' => ['permission:si-create']]);
 
 		//sales_invoice/edit/'.$sirow->id.'/SO/'.$id
 		
@@ -2963,6 +2963,4 @@ Route::get('/myorder/pending', [MyOrderController::class, 'pendingList']);//MAY2
 
 Route::get('/apicall', [ApicallController::class, 'index']);
 Route::post('/apicall/sts', [ApicallController::class, 'status_chk']);
-
-
 

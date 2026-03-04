@@ -270,7 +270,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('cur_quantity','pur_cost')
 										->get();
 										
@@ -330,7 +330,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->where(function ($query) use($pid) {
 											$query->where('document_id','!=',$pid)
 												  ->orWhere('document_type','!=','PI');
@@ -895,7 +895,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	private function setAccountTransactionUpdate($attributes, $amount, $voucher_id, $type, $amount_type=null, $key=null, $objOC=null)
 	{
 		$cr_acnt_id = $dr_acnt_id = ''; //Storage::prepend('stolog.txt', 'LG: '.$amount.' '.$amount_type); OC
-		$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+		$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 		if($amount!=0) {
 			if($amount_type=='VAT' || $amount_type=='VATOC') {
 				
@@ -1360,8 +1360,8 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			$ids = explode(',', $attributes['document_id']);
 			foreach($ids as $id) {
 				DB::table('purchase_order')->where('id', $id)->update(['is_editable' => 1]);
-				$count1 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-				$count2 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$count1 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+				$count2 = DB::table('purchase_order_item')->where('purchase_order_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
 				if($count1 == $count2)
 					DB::table('purchase_order')->where('id', $id)->update(['is_transfer' => 1]);
 			} 
@@ -1369,8 +1369,8 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			$ids = explode(',', $attributes['document_id']);
 			foreach($ids as $id) {
 				//DB::table('material_requisition')->where('id', $id)->update(['is_editable' => 1]);
-				$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-				$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$count1 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+				$count2 = DB::table('material_requisition_item')->where('material_requisition_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
 				if($count1 == $count2)
 					DB::table('material_requisition')->where('id', $id)->update(['is_transfer' => 1]);
 			} 
@@ -1378,8 +1378,8 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			$ids = explode(',', $attributes['document_id']);
 			foreach($ids as $id) {
 				DB::table('supplier_do')->where('id', $id)->update(['is_editable' => 1]);
-				$count1 = DB::table('supplier_do_item')->where('supplier_do_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-				$count2 = DB::table('supplier_do_item')->where('supplier_do_id',$id)->where('is_transfer',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
+				$count1 = DB::table('supplier_do_item')->where('supplier_do_id',$id)->where('status',1)->whereNull('deleted_at')->count();
+				$count2 = DB::table('supplier_do_item')->where('supplier_do_id',$id)->where('is_transfer',1)->where('status',1)->whereNull('deleted_at')->count();
 				if($count1 == $count2)
 					DB::table('supplier_do')->where('id', $id)->update(['is_transfer' => 1]);
 			} 
@@ -1416,12 +1416,12 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			Session::put('PI_amid', $attributes['account_master_id']);
 			
 			//VOUCHER NO LOGIC.....................
-			// 2️⃣ Get the highest numeric part from voucher_master
+			// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
 			$maxNumeric = DB::table('purchase_invoice')
-				->where('deleted_at', '0000-00-00 00:0:00')
+				->whereNull('deleted_at')
 				//->where('department_id', $departmentId)
 				->where('status', 1)
-				->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+				->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 				->value('max_no');
 			
 			$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -1442,7 +1442,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							$this->purchase_invoice->created_at = date('Y-m-d H:i:s');
 							$this->purchase_invoice->created_by = Auth::User()->id;
 							$this->purchase_invoice->save();
-							$saved = true; // success ✅
+							$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 
 						}	
 					} catch (\Illuminate\Database\QueryException $ex) {
@@ -1452,10 +1452,10 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 							$maxNumeric = DB::table('purchase_invoice')
-								->where('deleted_at', '0000-00-00 00:0:00')
+								->whereNull('deleted_at')
 								//->where('department_id', $departmentId)
 								->where('status', 1)
-								->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+								->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 								->value('max_no');
 							
 							$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -1567,7 +1567,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
                         		
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key]) *******COMMENTED AS PER MULTI UNIT ISSUE
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+													          ->whereNull('deleted_at')->select('id')->first();
 								if($qtys) { //NOV24
 								    if($attributes['document_type']!='SDO')
 								    	DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
@@ -1600,7 +1600,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 						$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 														  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-														  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+														  ->whereNull('deleted_at')->select('id')->first();
 														  
 						//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 						$lcqty = $attributes['quantity'][$key];
@@ -2070,7 +2070,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								$edit = DB::table('item_location_pi')->where('id', $attributes['editid'][$key][$lk])->where('is_sdo',0)->first();//NOV24
 								$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+													          ->whereNull('deleted_at')->select('id')->first();
 															  //echo '<pre>';print_r($edit);exit;
 															  
 								if($edit) {
@@ -2117,7 +2117,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+													          ->whereNull('deleted_at')->select('*')->first();
 													          
 							//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 							$lcqty = $attributes['quantity'][$key];
@@ -2293,7 +2293,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+													          ->whereNull('deleted_at')->select('id')->first();
 								if($qtys) { //NOV24
 								    if($attributes['document_type']!='SDO')
 								    	DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lcqty) ]);
@@ -2326,7 +2326,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 							$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['location_id'])
 															  ->where('item_id', $value)//->where('unit_id', $attributes['unit_id'][$key])
-													          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+													          ->whereNull('deleted_at')->select('id')->first();
 													          
 							//$lcqty =  $attributes['quantity'][$key] * $attributes['packing'][$key];
 							$lcqty = $attributes['quantity'][$key];
@@ -2688,7 +2688,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			
 			$this->objUtility->tallyClosingBalance( $this->purchase_invoice->account_master_id );
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
 			if($vatrow) {
 				//DB::table('account_master')->where('id', $vatrow->collection_account)->update(['cl_balance' => DB::raw('cl_balance - '.$this->purchase_invoice->vat_amount)]);
 				$this->objUtility->tallyClosingBalance($vatrow->collection_account);
@@ -2736,7 +2736,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		if($count > 0)
 			return false;
 		else {
-			$row = DB::table('purchase_return')->where('purchase_invoice_id', $id)->where('deleted_at','0000-00-00 00:00:00')->count();
+			$row = DB::table('purchase_return')->where('purchase_invoice_id', $id)->whereNull('deleted_at')->count();
 			if($row > 0)
 				return false;
 			else {
@@ -2900,7 +2900,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 								   ->where('status',1)
 								   ->where('account_master_id', $supplier_id)
 								   ->where('amount','>',0)
-								   ->where('deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('deleted_at')
 								   ->whereIn('amount_transfer',$arr)
 								   ->orderBY('tr_date', 'ASC')
 								   ->select('*','amount AS net_amount')
@@ -2956,7 +2956,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		$arr = ($mod)?[0,1,2]:[0,2];
 		return DB::table('other_voucher_tr')->where('account_master_id', $supplier_id)
 										 ->whereIn('amount_transfer', $arr)
-										 ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+										 ->where('status',1)->whereNull('deleted_at')
 										 ->get();
 		
 	} //......May 15
@@ -2970,7 +2970,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 						   ->where('supplier_id', $supplier_id)
 						   ->whereIn('amount_transfer',$arr)
 						   ->where('status',1)
-						   ->where('deleted_at','0000-00-00 00:00:00')
+						   ->whereNull('deleted_at')
 						   ->orderBY('voucher_date', 'ASC')
 						   ->orderBY('id', 'ASC')
 						   ->get();
@@ -3443,13 +3443,13 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 	
 	public function getItemLocation($id) {
 		
-		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->whereNull('deleted_at')->get();
 	}
 	
 	public function InvoiceLogProcess()
 	{
 		//API ...
-		$location = DB::table('location')->where('is_default',1)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->select('id')->first();
+		$location = DB::table('location')->where('is_default',1)->where('status',1)->whereNull('deleted_at')->select('id')->first();
 		$response = Curl::to($this->api_url.'silog-process.php')
 					->withData( array('id' => $location->id))
 					->get();
@@ -3634,7 +3634,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 							
 	// 						$qtys = DB::table('item_location')->where('status',1)->where('location_id', $location_id)
 	// 														  ->where('item_id', $row['item_id'])->where('unit_id', $row['unit_id'])
-	// 												          ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+	// 												          ->whereNull('deleted_at')->select('id')->first();
 	// 						if($qtys) {
 	// 							DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$row['quantity']) ]);
 	// 						} else {
@@ -3910,7 +3910,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		
 		if(Session::get('department')==1 && $department_id!=null) {
 			$vatdept = DB::table('vat_department')->where('department_id', $department_id)->first();
-			$vatacs = DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			$vatacs = DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 			if(!$vatdept)
 				return $vatacs;
 			else {
@@ -3928,7 +3928,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 			}
 			
 		} else {
-			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 		}
 	}
 	
@@ -3939,7 +3939,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 		$row = DB::table('item_log')->where('document_type','SDO')
 						->whereIn('document_id', $ids)
 						->where('item_id',$attributes['item_id'][$key])
-						->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+						->where('status',1)->whereNull('deleted_at')
 						->select('id', DB::raw('SUM(quantity) AS quantity'))
 						->groupBY('item_id')
 						->first();
@@ -4003,7 +4003,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->where(function ($query) use($pids) {
 											$query->whereNotIn('document_id',$pids)
 												  ->orWhere('document_type','!=','SDO');
@@ -4070,7 +4070,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->where(function ($query) use($pids) {
 											$query->whereNotIn('document_id',$pids)
 												  ->orWhere('document_type','!=','SDO');
@@ -4105,7 +4105,7 @@ class PurchaseInvoiceRepository extends AbstractValidator implements PurchaseInv
 										->where('status', 1)
 										->where('trtype', 0)
 										->where('cost_avg', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('id','quantity')
 										->get();
 		$quantity = 0;

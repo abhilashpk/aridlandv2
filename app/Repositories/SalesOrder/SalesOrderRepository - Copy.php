@@ -55,7 +55,7 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 	
 	private function jobmasterEntry($attributes) {
 		$jcount=DB::table('jobmaster')->where('jobmaster.id', $attributes['job_id'])->where('status',1)->where('is_salary_job',0)
-		                    ->where('deleted_at','0000-00-00 00:00:00')->count();
+		                    ->whereNull('deleted_at')->count();
       if($jcount==0){
 		$id = DB::table('jobmaster')
 							->insertGetId([
@@ -445,8 +445,8 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 				if($idarr) {
 					foreach($idarr as $id) {
 						DB::table('purchase_order')->where('id', $id)->update(['is_editable' => 1]);
-						$row1 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-						$row2 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+						$row1 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->whereNull('deleted_at')->count();
+						$row2 = DB::table('purchase_order_item')->where('purchase_order_id', $id)->where('status',1)->whereNull('deleted_at')->where('is_transfer',1)->count();
 						if($row1==$row2) {
 							DB::table('purchase_order')
 									->where('id', $id)
@@ -462,8 +462,8 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 					if($idarr) {
 						foreach($idarr as $id) {
 							DB::table('quotation_sales')->where('id', $id)->update(['is_editable' => 1]);
-							$row1 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->count();
-							$row2 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->where('is_transfer',1)->count();
+							$row1 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->whereNull('deleted_at')->count();
+							$row2 = DB::table('quotation_sales_item')->where('quotation_sales_id', $id)->where('status',1)->whereNull('deleted_at')->where('is_transfer',1)->count();
 							if($row1==$row2) {
 								DB::table('quotation_sales')
 										->where('id', $id)
@@ -737,11 +737,11 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 				//VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id ?? 1;
 
-				 // ⿢ Get the highest numeric part from voucher_master
-				$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				 // ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+				$qry = DB::table('sales_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 				
 
-				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
@@ -772,11 +772,11 @@ class SalesOrderRepository extends AbstractValidator implements SalesOrderInterf
 
 							$dept = auth()->user()->department_id ?? 1;
 
-							// ⿢ Get the highest numeric part from voucher_master
-							$qry = DB::table('sales_order')->where('deleted_at', '0000-00-00 00:00:00')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+							// ÃƒÂ¢Ã‚Â¿Ã‚Â¢ Get the highest numeric part from voucher_master
+							$qry = DB::table('sales_order')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
 							
 
-							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
 							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('SO', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 
@@ -2647,7 +2647,7 @@ public function getPendingReportJob($attributes)
 	
 	public function getjobDescription($id)
 	{
-		return DB::table('joborder_details')->where('joborder_id',$id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		return DB::table('joborder_details')->where('joborder_id',$id)->where('status',1)->whereNull('deleted_at')->get();
 	}
 
 

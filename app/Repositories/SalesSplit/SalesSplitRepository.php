@@ -487,12 +487,12 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 			
 			$attributes['version_no'] = 1;
 			//VOUCHER NO LOGIC.....................
-			// 2️⃣ Get the highest numeric part from voucher_master
+			// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
 			$maxNumeric = DB::table('sales_split')
-				->where('deleted_at', '0000-00-00 00:0:00')
+				->whereNull('deleted_at')
 				->where('department_id', auth()->user()->department_id ?? 1)
 				->where('status', 1)
-				->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+				->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 				->value('max_no');
 			
 			$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -511,7 +511,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 						$this->sales_split->status = 1;
 						$this->sales_split->created_at = date('Y-m-d H:i:s');
 						$this->sales_split->created_by = 1;
-						$saved = true; // success ✅
+						$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 
 					}	
 				} catch (\Illuminate\Database\QueryException $ex) {
@@ -521,10 +521,10 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 						strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 						$maxNumeric = DB::table('sales_split')
-							->where('deleted_at', '0000-00-00 00:0:00')
+							->whereNull('deleted_at')
 							->where('department_id', auth()->user()->department_id ?? 1)
 							->where('status', 1)
-							->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))
+							->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))
 							->value('max_no');
 						
 						$dept =auth()->user()->department_id ?? 1; //isset($attributes['department_id'])?$attributes['department_id']:0;
@@ -888,7 +888,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 				$this->objUtility->tallyClosingBalance( $row->account_id );
 			}
 			
-			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
+			$vatrow = $this->getVatAccounts((isset($attributes['department_id']))?$attributes['department_id']:null); //DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();//DB::table('account_master')->where('master_name', 'VAT INPUT')->where('status', 1)->first();
 			if($vatrow) {
 				$this->objUtility->tallyClosingBalance($vatrow->payment_account);
 			}
@@ -1024,7 +1024,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 								   ->where('status',1)
 								   ->where('account_master_id', $customer_id)
 								   ->where('amount','>',0)
-								   ->where('deleted_at','0000-00-00 00:00:00')
+								   ->whereNull('deleted_at')
 								   ->whereIn('amount_transfer',$arr)
 								   ->orderBY('tr_date', 'ASC')
 								   ->select('*','amount AS net_amount')
@@ -1080,7 +1080,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		$arr = ($mod)?[0,1,2]:[0,2];
 		return DB::table('other_voucher_tr')->where('account_master_id', $customer_id)
 										 ->whereIn('amount_transfer', $arr)
-										 ->where('status',1)->where('deleted_at','0000-00-00 00:00:00')
+										 ->where('status',1)->whereNull('deleted_at')
 										 ->get();
 		
 	} //......May 15
@@ -1494,7 +1494,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 	
 	public function getItemLocation($id) {
 		
-		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->where('deleted_at','0000-00-00 00:00:00')->get();
+		return DB::table('item_location_pi')->where('invoice_id', $id)->where('status',1)->whereNull('deleted_at')->get();
 	}
 	
 	
@@ -1698,7 +1698,7 @@ class SalesSplitRepository extends AbstractValidator implements SalesSplitInterf
 		if(Session::get('department')==1 && $department_id!=null) {
 			return DB::table('vat_department')->where('department_id', $department_id)->first();
 		} else {
-			return DB::table('vat_master')->where('status', 1)->where('deleted_at','0000-00-00 00:00:00')->first();
+			return DB::table('vat_master')->where('status', 1)->whereNull('deleted_at')->first();
 		}
 	}
 	

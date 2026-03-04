@@ -214,12 +214,12 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 
 				//VOUCHER NO LOGIC.....................
 					$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-					// 2️⃣ Get the highest numeric part from voucher_master
-					$qry = DB::table('goods_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+					// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
+					$qry = DB::table('goods_return')->whereNull('deleted_at')->where('status', 1);
 					if($dept > 0)	
 						$qry->where('department_id', $dept);
 
-					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+					$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 					
 					$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
 					//VOUCHER NO LOGIC.....................
@@ -238,7 +238,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 									$this->goods_return->created_by = 1;
 									$this->goods_return->save();
 
-									$saved = true; // success ✅
+									$saved = true; // success ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦
 									
 								}	
 							} catch (\Illuminate\Database\QueryException $ex) {
@@ -248,12 +248,12 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 									strpos($ex->getMessage(), 'duplicate key value') !== false) {
 
 									$dept = isset($attributes['department_id'])?$attributes['department_id']:0;
-									// 2️⃣ Get the highest numeric part from voucher_master
-									$qry = DB::table('goods_return')->where('deleted_at', '0000-00-00 00:0:00')->where('status', 1);
+									// 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Get the highest numeric part from voucher_master
+									$qry = DB::table('goods_return')->whereNull('deleted_at')->where('status', 1);
 									if($dept > 0)	
 										$qry->where('department_id', $dept);
 
-									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REGEXP_REPLACE(voucher_no, '[^0-9]', '') AS UNSIGNED)) AS max_no"))->value('max_no');
+									$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 									
 									$attributes['voucher_no'] = $this->objUtility->generateVoucherNo($attributes['voucher_id'], $maxNumeric, $dept, $attributes['voucher_no']);
 
@@ -298,7 +298,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 										$updated = true;
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys)
 											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lq) ]);
 										
@@ -321,7 +321,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 								if($qtys)
 									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
 									
@@ -428,7 +428,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 								$edit = DB::table('item_location_gr')->where('id', $attributes['editid'][$key][$lk])->first();
 								$idloc = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 															  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-															  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+															  ->whereNull('deleted_at')->select('id')->first();
 								if($edit) {
 									if($edit->quantity < $lq) {
 										$balqty = $lq - $edit->quantity;
@@ -449,7 +449,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 					if(isset($attributes['default_location']) && ($attributes['default_location'] > 0) && ($updated == false)) {
 						$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 														  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-														  ->where('deleted_at', '0000-00-00 00:00:00')->select('*')->first();
+														  ->whereNull('deleted_at')->select('*')->first();
 						if($qtys) {
 							DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
 							DB::table('item_location_gr')->where('invoice_id', $attributes['order_item_id'][$key] )
@@ -485,7 +485,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 										$updated = true;
 										$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['locid'][$key][$lk])
 																	  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																	  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																	  ->whereNull('deleted_at')->select('id')->first();
 										if($qtys)
 											DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$lq) ]);
 										
@@ -508,7 +508,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 									
 								$qtys = DB::table('item_location')->where('status',1)->where('location_id', $attributes['default_location'])
 																  ->where('item_id', $value)->where('unit_id', $attributes['unit_id'][$key])
-																  ->where('deleted_at', '0000-00-00 00:00:00')->select('id')->first();
+																  ->whereNull('deleted_at')->select('id')->first();
 								if($qtys)
 									DB::table('item_location')->where('id', $qtys->id)->update(['quantity' => DB::raw('quantity + '.$attributes['quantity'][$key]) ]);
 									
@@ -772,7 +772,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->select('cur_quantity','pur_cost')
 										->get();
 										
@@ -869,7 +869,7 @@ class GoodsReturnRepository extends AbstractValidator implements GoodsReturnInte
 										->where('status', 1)
 										->where('trtype', 1)
 										->where('cur_quantity', '>', 0)
-										->where('deleted_at','0000-00-00 00:00:00')
+										->whereNull('deleted_at')
 										->where(function ($query) use($pid) {
 											$query->where('document_id','!=',$pid)
 												  ->orWhere('document_type','!=','PI');

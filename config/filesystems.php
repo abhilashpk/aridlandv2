@@ -57,7 +57,7 @@ return [
         ],
         'reports' => [
 			'driver' => 'local',
-			'root'   => public_path('reports'),
+			'root'   => public_path('stimulsoftv2/reports'),
 		],
 
     ],
@@ -78,4 +78,3 @@ return [
     ],
 
 ];
-
