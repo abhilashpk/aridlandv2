@@ -174,7 +174,7 @@ class VoucherNoRepository extends AbstractValidator implements VoucherNoInterfac
 	{
 		return $this->voucherno
 					->where('status', 1)
-					// ->where('department_id', Auth::user()->department_id)
+					->where('department_id', Auth::user()->department_id)
 					->get();
 	}
 	

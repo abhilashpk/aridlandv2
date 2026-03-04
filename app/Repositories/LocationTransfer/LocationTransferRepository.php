@@ -7,6 +7,8 @@ use App\Repositories\AbstractValidator;
 use App\Exceptions\Validation\ValidationException;
 use App\Models\AccountTransaction;
 use App\Repositories\UpdateUtility;
+use Illuminate\Support\Facades\Auth;
+use Session;
 use Config;
 use DB;
 
@@ -162,7 +164,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 	}
 
 
-	public function stockUpdate($attributes, $key, $type)
+public function stockUpdate($attributes, $key, $type)
 {
     $itemId     = $attributes['item_id'][$key];
     $unitId     = $attributes['unit_id'][$key];
@@ -371,29 +373,110 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 		}
 	}
 	
-	public function delete($id)
-	{
-		$this->location_transfer = $this->location_transfer->find($id);//echo '<pre>';print_r($this->location_transfer);exit;
+	// public function delete($id)
+	// {
+	// 	$this->location_transfer = $this->location_transfer->find($id);//echo '<pre>';print_r($this->location_transfer);exit;
 		
-		$items = DB::table('location_transfer_item')->where('location_transfer_id',$id)->get();
+	// 	$items = DB::table('location_transfer_item')->where('location_transfer_id',$id)->get();
 		
-		foreach($items as $row) {
-			DB::table('item_location')->where('item_id', $this->location_transfer->item_id)
-										  ->where('unit_id', $row->unit_id)
-										  ->where('location_id', $this->location_transfer->locfrom_id)
-										  ->update(['quantity' => DB::raw('quantity + '.$row->quantity)]);
+	// 	foreach($items as $row) {
+	// 		DB::table('item_location')->where('item_id', $this->location_transfer->item_id)
+	// 									  ->where('unit_id', $row->unit_id)
+	// 									  ->where('location_id', $this->location_transfer->locfrom_id)
+	// 									  ->update(['quantity' => DB::raw('quantity + '.$row->quantity)]);
 													  
 										  
-			DB::table('item_location')->where('item_id', $this->location_transfer->item_id)
-										  ->where('unit_id', $row->unit_id)
-										  ->where('location_id', $this->location_transfer->locto_id)
-										  ->update(['quantity' => DB::raw('quantity - '.$row->quantity)]);
+	// 		DB::table('item_location')->where('item_id', $this->location_transfer->item_id)
+	// 									  ->where('unit_id', $row->unit_id)
+	// 									  ->where('location_id', $this->location_transfer->locto_id)
+	// 									  ->update(['quantity' => DB::raw('quantity - '.$row->quantity)]);
 										  
-		}
+	// 	}
 		
-		DB::table('location_transfer_item')->where('location_transfer_id',$id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);					  
-		$this->location_transfer->delete($id);
+	// 	DB::table('location_transfer_item')->where('location_transfer_id',$id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s')]);					  
+	// 	$this->location_transfer->delete($id);
+	// }
+
+
+	public function delete($id)
+	{
+		$this->location_transfer = $this->location_transfer->find($id);
+
+		if (!$this->location_transfer) {
+			Session::flash('error', 'Location transfer record not found.');
+			return false;
+		}
+
+		// Already deleted
+		if ($this->location_transfer->deleted_at !== null) {
+			Session::flash('error', 'This transfer has already been deleted.');
+			return false;
+		}
+
+		$items = DB::table('location_transfer_item')
+					->where('location_transfer_id', $id)
+					->where('status', 1)
+					->whereNull('deleted_at')
+					->get();
+
+		if ($items->isEmpty()) {
+			Session::flash('error', 'No transfer items found to reverse.');
+			return false;
+		}
+
+		DB::beginTransaction();
+		try {
+
+			foreach ($items as $row) {
+
+				// ✅ REVERSE: Add quantity back to FROM location (source)
+				DB::table('item_location')
+					->where('item_id', $row->item_id)         // ✅ use row's item_id, not header
+					->where('unit_id', $row->unit_id)
+					->where('location_id', $this->location_transfer->locfrom_id)
+					->update(['quantity' => DB::raw('quantity + ' . $row->quantity)]);
+
+				// ✅ REVERSE: Subtract quantity from TO location (destination)
+				DB::table('item_location')
+					->where('item_id', $row->item_id)         // ✅ use row's item_id, not header
+					->where('unit_id', $row->unit_id)
+					->where('location_id', $this->location_transfer->locto_id)
+					->update(['quantity' => DB::raw('quantity - ' . $row->quantity)]);
+			}
+
+			// Soft delete all child items
+			DB::table('location_transfer_item')
+				->where('location_transfer_id', $id)
+				->update([
+					'status'     => 0,
+					'deleted_at' => date('Y-m-d H:i:s'),
+				]);
+
+			// ✅ Soft delete the header with audit trail
+			DB::table('location_transfer')
+				->where('id', $id)
+				->update([
+					'status'     => 0,
+					'deleted_at' => date('Y-m-d H:i:s'),
+					'deleted_by' => Auth::user()->id,
+				]);
+
+			// Eloquent soft delete
+			$this->location_transfer->delete();
+
+			DB::commit();
+
+			Session::flash('message', 'Location transfer deleted and stock reversed successfully.');
+			return true;
+
+		} catch (\Exception $e) {
+			DB::rollback();
+			\Log::error('Location Transfer Delete Error: ' . $e->getMessage() . ' Line: ' . $e->getLine());
+			Session::flash('error', 'Failed to delete transfer. Stock has not been affected.');
+			return false;
+		}
 	}
+
 	
 	public function check_order($id)
 	{

@@ -398,58 +398,113 @@ class QuotationSalesController extends Controller
 		
 	}
 	
-	public function saveDraft(Request $request) { 
+	// public function saveDraft(Request $request) { 
 		
-		//echo '<pre>';print_r( $request->all() );exit;
-		/* $this->validate($request, [
-        'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
-    ]); */
-		if( $this->validate(
-			$request, 
-			[//'reference_no' => 'required',
-			 'location_id' =>'required','location_id' => 'required',
-			 'customer_name' => 'required','customer_id' => 'required',
-			 'item_code.*'  => 'required', 'item_id.*' => 'required',
-			 'unit_id.*' => 'required',
-			 'quantity.*' => 'required',
-			 'cost.*' => 'required'
-			],
-			[//'reference_no.required' => 'Reference no. is required.',
-			'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
-			 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
-			 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
-			 'unit_id.*' => 'Item unit is required.',
-			 'quantity.*' => 'Item quantity is required.',
-			 'cost.*' => 'Item cost is required.'
-			]
-		)) {
-			//echo '<pre>';print_r($request->flash());exit;
-			return redirect('quotation_sales/add')->withInput()->withErrors();
-		}
+	// 	//echo '<pre>';print_r( $request->all() );exit;
+	// 	/* $this->validate($request, [
+    //     'reference_no' => 'required', 'voucher_date' => 'required','item_code.*' => 'required'
+    // ]); */
+	// 	if( $this->validate(
+	// 		$request, 
+	// 		[//'reference_no' => 'required',
+	// 		 'location_id' =>'required','location_id' => 'required',
+	// 		 'customer_name' => 'required','customer_id' => 'required',
+	// 		 'item_code.*'  => 'required', 'item_id.*' => 'required',
+	// 		 'unit_id.*' => 'required',
+	// 		 'quantity.*' => 'required',
+	// 		 'cost.*' => 'required'
+	// 		],
+	// 		[//'reference_no.required' => 'Reference no. is required.',
+	// 		'location_id.required' => 'Location is required.','location_id.required' => 'Location  is invalid.',
+	// 		 'customer_name.required' => 'Customer Name is required.','customer_id.required' => 'Customer name is invalid.',
+	// 		 'item_code.*.required'   => 'Item code is required.', 'item_id.*' => 'Item code is invalid.',
+	// 		 'unit_id.*' => 'Item unit is required.',
+	// 		 'quantity.*' => 'Item quantity is required.',
+	// 		 'cost.*' => 'Item cost is required.'
+	// 		]
+	// 	)) {
+	// 		//echo '<pre>';print_r($request->flash());exit;
+	// 		return redirect('quotation_sales/add')->withInput()->withErrors();
+	// 	}
 
-		/*$request['voucher_no']='';
-		$res = $this->voucherno->getVoucherNo('QS');
-		$request['voucher_no']=$res->no;*/
+	// 	/*$request['voucher_no']='';
+	// 	$res = $this->voucherno->getVoucherNo('QS');
+	// 	$request['voucher_no']=$res->no;*/
 		
+	// 	$id = $this->quotation_sales->create($request->all());
+	// 	if($id) {
+	// 		Session::flash('message', 'Quotation saved as draft successfully.'); 
+	// 		return redirect('quotation_sales/add');
+	// 	} else {
+	// 		Session::flash('error', 'Something went wrong, Order failed to draft!');
+	// 		return redirect('quotation_sales/add');
+	// 	}
+		
+		
+	// }
+	
+
+	public function saveDraft(Request $request)
+	{
+		$this->validate(
+			$request,
+			[
+				'location_id'   => 'required',
+				'customer_name' => 'required',
+				'customer_id'   => 'required',
+				'item_code.*'   => 'required',
+				'item_id.*'     => 'required',
+				'unit_id.*'     => 'required',
+				'quantity.*'    => 'required',
+				'cost.*'        => 'required'
+			],
+			[
+				'location_id.required'   => 'Location is required.',
+				'customer_name.required' => 'Customer Name is required.',
+				'customer_id.required'   => 'Customer name is invalid.',
+				'item_code.*.required'   => 'Item code is required.',
+				'unit_id.*.required'     => 'Item unit is required.',
+				'quantity.*.required'    => 'Item quantity is required.',
+				'cost.*.required'        => 'Item cost is required.'
+			]
+		);
+
+		// If validation fails, Laravel auto-redirects with errors
+		// If here, validation passed
+
 		$id = $this->quotation_sales->create($request->all());
-		if($id) {
-			Session::flash('message', 'Quotation saved as draft successfully.'); 
-			return redirect('quotation_sales/add');
+
+		if ($id) {
+			Session::flash('message', 'Quotation saved as draft successfully.');
 		} else {
 			Session::flash('error', 'Something went wrong, Order failed to draft!');
-			return redirect('quotation_sales/add');
 		}
-		
-		
+
+		return redirect('quotation_sales/add');
 	}
+
+
+// public function destroy($id)
+// 	{
+// 		$this->quotation_sales->delete($id);
+// 		//check accountmaster name is already in use.........
+// 		// code here ********************************
+// 		Session::flash('message', 'Quotation deleted successfully.');
+// 		return redirect('quotation_sales');
+// 	}
+
 public function destroy($id)
-	{
-		$this->quotation_sales->delete($id);
-		//check accountmaster name is already in use.........
-		// code here ********************************
-		Session::flash('message', 'Quotation deleted successfully.');
-		return redirect('quotation_sales');
-	}
+{
+    $deleted = $this->quotation_sales->delete($id);
+
+    if ($deleted) {
+        Session::flash('message', 'Quotation deleted successfully.');
+    } else {
+        Session::flash('error', 'Failed to delete quotation. Please try again.');
+    }
+
+    return redirect('quotation_sales');
+}
 	
 	
 	

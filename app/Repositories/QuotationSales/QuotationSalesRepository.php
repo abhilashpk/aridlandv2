@@ -1267,29 +1267,76 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	}
 	
 	
-	public function delete($id)
-	{  //DOING........
-		$this->quotation_sales = $this->quotation_sales->find($id);
-    	DB::beginTransaction();
-    	try {
-    	    if($this->quotation_sales->document_id > 0 && $this->quotation_sales->document_type) {
-    	        $ids = explode(',', $this->quotation_sales->document_id);
+	// public function delete($id)
+	// {  //DOING........
+	// 	$this->quotation_sales = $this->quotation_sales->find($id);
+	// 	// Record doesn't exist at all
+	// 	if (!$this->quotation_sales) {
+	// 		return false;
+	// 	}
+    // 	DB::beginTransaction();
+    // 	try {
+    // 	    if($this->quotation_sales->document_id > 0 && $this->quotation_sales->document_type) {
+    // 	        $ids = explode(',', $this->quotation_sales->document_id);
     	        
-    	       // DB::table('customer_enquiry')->whereIn('id', $ids)->update(['is_transfer' => 0, 'is_editable' => 0]);
-				//DB::table('customer_enquiryitem')->whereIn('customer_do_id', $ids)->update(['is_transfer' => 0]);
+    // 	       // DB::table('customer_enquiry')->whereIn('id', $ids)->update(['is_transfer' => 0, 'is_editable' => 0]);
+	// 			//DB::table('customer_enquiryitem')->whereIn('customer_do_id', $ids)->update(['is_transfer' => 0]);
 					    
     	         
-        		DB::table('quotation_sales')->where('id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
-        		$this->quotation_sales->delete();
-    	    } 	
-        	DB::commit();
-			return true; 
-		} catch(\Exception $e) {
+    //     		DB::table('quotation_sales')->where('id', $id)->update(['status' => 0, 'deleted_at' => date('Y-m-d H:i:s'),'deleted_by' => Auth::User()->id ]);
+    //     		$this->quotation_sales->delete();
+    // 	    } 	
+    //     	DB::commit();
+	// 		return true; 
+	// 	} catch(\Exception $e) {
 			
-			DB::rollback(); echo $e->getLine().'-'.$e->getMessage().' '.$e->getFile();exit;
+	// 		DB::rollback(); echo $e->getLine().'-'.$e->getMessage().' '.$e->getFile();exit;
+	// 		 \Log::error($e->getMessage() . ' Line: ' . $e->getLine() . ' File: ' . $e->getFile());
+	// 		return false;
+	// 	}
+	// }
+
+
+	public function delete($id)
+	{
+		$this->quotation_sales = $this->quotation_sales->find($id);
+
+		if (!$this->quotation_sales) {
+			return false;
+		}
+
+		DB::beginTransaction();
+		try {
+			// Handle related records only if document_id exists
+			if ($this->quotation_sales->document_id > 0 && $this->quotation_sales->document_type) {
+				$ids = explode(',', $this->quotation_sales->document_id);
+
+				// Uncomment if needed:
+				// DB::table('customer_enquiry')->whereIn('id', $ids)->update(['is_transfer' => 0, 'is_editable' => 0]);
+				// DB::table('customer_enquiryitem')->whereIn('customer_do_id', $ids)->update(['is_transfer' => 0]);
+			}
+
+			// ✅ Always runs regardless of document_id condition
+			DB::table('quotation_sales')
+				->where('id', $id)
+				->update([
+					'status'     => 0,
+					'deleted_at' => date('Y-m-d H:i:s'),
+					'deleted_by' => Auth::user()->id,
+				]);
+
+			$this->quotation_sales->delete(); // Eloquent soft delete
+
+			DB::commit();
+			return true;
+
+		} catch (\Exception $e) {
+			DB::rollback();
+			\Log::error($e->getMessage() . ' Line: ' . $e->getLine() . ' File: ' . $e->getFile());
 			return false;
 		}
 	}
+
 	
 	public function quotationSalesList()
 	{

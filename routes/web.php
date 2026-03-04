@@ -1032,7 +1032,7 @@ Route::get('/quotation_sales/views/{id}',[QuotationSalesController::class, 'getV
 Route::get('/quotation_sales/approve/{id}', [QuotationSalesController::class, 'getApproval']);
 Route::get('/quotation_sales/getjob/{id}', [QuotationSalesController::class, 'getJob']);
 Route::get('/quotation_sales/refresh_qs/{id}', [QuotationSalesController::class, 'refreshQS']);
-
+Route::post('/quotation_sales/save_draft', [QuotationSalesController::class, 'saveDraft']);
 	
 		
 		

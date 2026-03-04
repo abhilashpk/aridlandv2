@@ -78,7 +78,7 @@ class LocationTransferController extends Controller
 	public function destroy($id)
 	{
 		$this->location_transfer->delete($id);
-		Session::flash('message', 'Location transfered deleted successfully.');
+		// Session::flash('message', 'Location transfered deleted successfully.');
 			
 		return redirect('location_transfer');
 	}

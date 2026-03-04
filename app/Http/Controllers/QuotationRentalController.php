@@ -203,6 +203,10 @@ class QuotationRentalController extends Controller
 		$jobs = $this->jobmaster->activeJobmasterList();
 		$currency = $this->currency->activeCurrencyList();
 		$res = $this->voucherno->getVoucherNo('QR');
+		if (!$res) {
+			Session::flash('error', 'Voucher number settings not configured for your department. Please set up QR voucher type first.');
+			return redirect()->back()->withErrors(['error' => 'Voucher number settings not configured for your department. Please set up QR voucher type first.']);
+		}
 		//$vno = $res->no;//echo '<pre>';print_r($currency);exit;
 		$location = $this->location->locationList();
 		$row = DB::table('quotation_sales')->where('status',1)->where('is_rental',1)->whereNull('deleted_at')->orderBy('id','DESC')->select('id','doc_status')->first();
@@ -356,12 +360,25 @@ class QuotationRentalController extends Controller
 	}
 
 	
+	// public function destroy($id)
+	// {
+	// 	$this->quotation_sales->delete($id);
+	// 	//check accountmaster name is already in use.........
+	// 	// code here ********************************
+	// 	Session::flash('message', 'Quotation deleted successfully.');
+	// 	return redirect('quotation_rental');
+	// }
+
 	public function destroy($id)
 	{
-		$this->quotation_sales->delete($id);
-		//check accountmaster name is already in use.........
-		// code here ********************************
-		Session::flash('message', 'Quotation deleted successfully.');
+		$deleted = $this->quotation_sales->delete($id);
+
+		if ($deleted) {
+			Session::flash('message', 'Quotation deleted successfully.');
+		} else {
+			Session::flash('error', 'Failed to delete quotation. Please try again.');
+		}
+
 		return redirect('quotation_rental');
 	}
 	
