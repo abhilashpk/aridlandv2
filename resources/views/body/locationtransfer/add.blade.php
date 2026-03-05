@@ -58,6 +58,20 @@
 			<p>{{ Session::get('message') }}</p>
 		</div>
 		@endif
+		@if(Session::has('error'))
+		<div class="alert alert-danger">
+			<p>{{ Session::get('error') }}</p>
+		</div>
+		@endif
+		@if($errors->any())
+		<div class="alert alert-danger">
+			<ul style="margin-bottom:0;">
+				@foreach($errors->all() as $error)
+				<li>{{ $error }}</li>
+				@endforeach
+			</ul>
+		</div>
+		@endif
 		
         <section class="content">
             <div class="row">
@@ -90,7 +104,7 @@
                                  <div id="locationRadioGroup">
                                    @foreach($location as $loc)
                                 <label class="radio-inline">
-                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}">{{ $loc['name'] }}
+                                    <input type="radio" class="locfrom-radio" name="location_from" value="{{ $loc['id'] }}" {{ (string)old('location_from', old('locfrom_id')) === (string)$loc['id'] ? 'checked' : '' }}>{{ $loc['name'] }}
                                  </label>
                                  @endforeach
 								 <small class="text-muted" id="locfrom-hint">
@@ -98,7 +112,7 @@
                                     </small>
                                  </div>
 
-                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id">
+                               <input type="hidden" id="selected_locfrom_id" name="locfrom_id" value="{{ old('locfrom_id') }}">
                                   <small class="text-muted" id="locfrom-mand">
                                              '*' is mandatory fields
                                     </small>
@@ -124,14 +138,14 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">Reference No.</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="reference_no" name="reference_no" autocomplete="off" placeholder="Reference No.">
+                                        <input type="text" class="form-control" id="reference_no" name="reference_no" autocomplete="off" placeholder="Reference No." value="{{ old('reference_no') }}">
                                     </div>
                                 </div>
 								
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label">LT. Date</label>
                                     <div class="col-sm-10">
-										<input type="text" class="form-control pull-right" autocomplete="off" name="voucher_date" data-language='en' id="voucher_date" placeholder="{{date('d-m-Y')}}"/>
+										<input type="text" class="form-control pull-right" autocomplete="off" name="voucher_date" data-language='en' id="voucher_date" placeholder="{{date('d-m-Y')}}" value="{{ old('voucher_date') }}"/>
                                     </div>
                                 </div>
 								
@@ -140,12 +154,12 @@
                                     <label for="input-text" class="col-sm-2 control-label"><b>Location To</b><span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
                                         <select id="locto_id" class="form-control select2" style="width:100%" name="locto_id">
+											<option value="">Select Location..</option>
 											<?php 
 											foreach($location as $loc) { 
 											?>
-											<option value="{{ $loc['id'] }}">{{ $loc['name'] }}</option>
+											<option value="{{ $loc['id'] }}" {{ (string)old('locto_id') === (string)$loc['id'] ? 'selected' : '' }}>{{ $loc['name'] }}</option>
 											<?php } ?>
-											<option value="" selected>Select Location..</option>
                                         </select>
                                     </div>
                                 </div>
@@ -153,7 +167,7 @@
 								<div class="form-group">
                                     <label for="input-text" class="col-sm-2 control-label"> Description</label>
                                     <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="description" name="description" autocomplete="off" placeholder="Description">
+                                        <input type="text" class="form-control" id="description" name="description" autocomplete="off" placeholder="Description" value="{{ old('description') }}">
                                     </div>
                                 </div>
 								
@@ -325,42 +339,44 @@ $(document).ready(function () {
 	
 	$('.infodivPrnt').toggle(); $('.infodivPrntItm').toggle();$('.locPrntItm').toggle();$('.locinPrntItm').toggle();
    
+  function applyLocationFrom(val, lockSelection) {
+	  if (!val) {
+		  return;
+	  }
+	  $('#selected_locfrom_id').val(val);
+	  $.get("{{ url('location/getCode') }}/" + val, function (locCode) {
+		  var basePrefix = $('#prefixBox').data('base-prefix') || $('input[name="prefix"]').val();
+		  var newPrefix = basePrefix + locCode;
+		  $('#prefixBox').text(newPrefix);
+		  $('input[name="prefix"]').val(newPrefix);
+		  if (lockSelection) {
+			  $('.locfrom-radio').prop('disabled', true);
+		  }
+		  $('#locfrom-hint').text('Default location selected and locked.');
+	  });
+
+	  $('#locto_id option').show();
+	  if ($('#locto_id').val() == val) {
+		  $('#locto_id').val('');
+	  }
+	  $('#locto_id option[value="' + val + '"]').hide();
+	  $('#locto_id').trigger('change.select2');
+  }
+
+  $('#prefixBox').attr('data-base-prefix', '{{ $voucherno->prefix }}');
 
   $(document).on('ifChecked', '.locfrom-radio', function (e) {
-          var val = $(this).val();
-		 
-         $.get("{{ url('location/getCode') }}/" + val, function (locCode) { 
-             
-			  let prefix = $('input[name="prefix"]').val();   // Example: LT
-             let newPrefix = prefix + locCode;               // LTWH1
-
-               // show new prefix on screen
-                $('#prefixBox').text(newPrefix);
-                $('input[name="prefix"]').val(newPrefix);
-
-               $('.locfrom-radio').prop('disabled', true);
-         // store the value in the hidden field
-              $('#selected_locfrom_id').val(val);
-
-        // update message
-        $('#locfrom-hint').text('Default location selected and locked.');
-     });
-
-	 // enable all options first
-             $('#locto_id option').show();
-
-    // reset dropdown if same was selected before
-    if ($('#locto_id').val() == val) {
-        $('#locto_id').val(''); 
-    }
-
-    // hide the selected "Location From" from the "Location To"
-    $('#locto_id option[value="' + val + '"]').hide();
-
-    // If using Select2, you must refresh it
-    $('#locto_id').trigger('change.select2');
+      applyLocationFrom($(this).val(), true);
     });
 
+  $(document).on('change', '.locfrom-radio', function () {
+      applyLocationFrom($(this).val(), true);
+  });
+
+  var oldLocFrom = $('#selected_locfrom_id').val() || $('input[name="location_from"]:checked').val();
+  if (oldLocFrom) {
+	  applyLocationFrom(oldLocFrom, false);
+  }
 
 	var urlcode = "{{ url('location_transfer/checkrefno/') }}";
     $('#frmLocTransfer').bootstrapValidator({
@@ -374,7 +390,7 @@ $(document).ready(function () {
                         url: urlcode,
                         data: function(validator) {
                             return {
-                                code: validator.getFieldElements('reference_no').val()
+                                reference_no: validator.getFieldElements('reference_no').val()
                             };
                         },
                         message: 'This Reference No. is already exist!'
@@ -382,7 +398,7 @@ $(document).ready(function () {
                 }
             },
 			location_from: { validators: { notEmpty: { message: 'Location from is required and cannot be empty!' } }},
-			location_to: { validators: { notEmpty: { message: 'Location to is required and cannot be empty!' } }},
+			locto_id: { validators: { notEmpty: { message: 'Location to is required and cannot be empty!' } }},
 			'item_code[]': { validators: { notEmpty: { message: 'The item code is required and cannot be empty!' } }},
 			//'item_name[]': { validators: { notEmpty: { message: 'The item description is required and cannot be empty!' } }}
         }

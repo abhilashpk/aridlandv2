@@ -11,6 +11,7 @@ use Notification;
 use Session;
 use DB;
 use App;
+use Illuminate\Support\Facades\Validator;
 
 class LocationTransferController extends Controller
 {
@@ -57,13 +58,45 @@ class LocationTransferController extends Controller
 	}
 	
 	public function save(Request $request) {
-		
-		if( $this->location_transfer->create($request->all()) )
+		$attributes = $request->all();
+		if (empty($attributes['locfrom_id']) && !empty($attributes['location_from'])) {
+			$attributes['locfrom_id'] = $attributes['location_from'];
+		}
+
+		$validator = Validator::make(
+			$attributes,
+			[
+				'locfrom_id' => 'required|integer|exists:location,id',
+				'locto_id' => 'required|integer|exists:location,id|different:locfrom_id',
+				'item_id' => 'required|array',
+			],
+			[
+				'locfrom_id.required' => 'Location from is required.',
+				'locto_id.required' => 'Location to is required.',
+				'locto_id.different' => 'Location from and location to must be different.',
+				'item_id.required' => 'At least one item is required.',
+			]
+		);
+
+		$validator->after(function ($validator) use ($attributes) {
+			$itemIds = array_filter($attributes['item_id'] ?? []);
+			if (empty($itemIds)) {
+				$validator->errors()->add('item_id', 'At least one valid item is required.');
+			}
+		});
+
+		if ($validator->fails()) {
+			return redirect()->back()->withErrors($validator)->withInput();
+		}
+
+		if ($this->location_transfer->create($attributes)) {
 			Session::flash('message', 'Location transfered successfully.');
-		else
-			Session::flash('error', 'Something went wrong, Location failed to transfer!');
-		
-		return redirect('location_transfer/add');
+			return redirect('location_transfer/add');
+		}
+
+		$repoError = method_exists($this->location_transfer, 'getErrors') ? $this->location_transfer->getErrors() : null;
+		$errorText = is_string($repoError) && $repoError !== '' ? $repoError : 'Something went wrong, Location failed to transfer!';
+		return redirect()->back()->with('error', $errorText)->withInput();
 	}
 	
 	public function checkRefNo(Request $request) {

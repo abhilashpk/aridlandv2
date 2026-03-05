@@ -152,7 +152,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 				return true;
 				
 		  } catch(\Exception $e) {
-				
+				$this->setErrors($e->getMessage());
 				DB::rollback();
 				return false;
 		  }
@@ -365,7 +365,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 			return true;
 			
 		 } catch(\Exception $e) {
-			
+			$this->setErrors($e->getMessage());
 			DB::rollback();
 			return false;
 		}
