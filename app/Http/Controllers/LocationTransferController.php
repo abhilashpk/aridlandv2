@@ -11,6 +11,7 @@ use Notification;
 use Session;
 use DB;
 use App;
+use Illuminate\Support\Facades\Log;
 
 class LocationTransferController extends Controller
 {
@@ -57,6 +58,8 @@ class LocationTransferController extends Controller
 	}
 	
 	public function save(Request $request) {
+
+		Log::info('with in location save controller');
 		
 		if( $this->location_transfer->create($request->all()) )
 			Session::flash('message', 'Location transfered successfully.');

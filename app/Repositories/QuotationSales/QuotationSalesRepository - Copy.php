@@ -50,7 +50,11 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 	private function setInputValue($attributes)
 	{
 		
-		$this->quotation_sales->voucher_no   = $attributes['voucher_no'];
+		// $this->quotation_sales->voucher_no   = $attributes['voucher_no'];
+		// FIXED ✅
+		$this->quotation_sales->voucher_no = (isset($attributes['is_draft']) && $attributes['is_draft'] == 1 && strpos($attributes['voucher_no'], 'Draft-') !== 0)
+			? 'Draft-' . $attributes['voucher_no']
+			: $attributes['voucher_no'];
 		$this->quotation_sales->reference_no = isset($attributes['reference_no'])?$attributes['reference_no']:'';
 		$this->quotation_sales->voucher_date = ($attributes['voucher_date']=='')?date('Y-m-d'):date('Y-m-d', strtotime($attributes['voucher_date']));
 		$this->quotation_sales->customer_id  = $attributes['customer_id'];
@@ -581,7 +585,6 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
 				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
-				//VOUCHER NO LOGIC.....................
 				
 				//exit;
 				$maxRetries = 5; // prevent infinite loop
@@ -615,9 +618,19 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 
 							$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 							
-							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+							// $attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+
+							// $retryCount++;
+
+							// FIXED ✅
+							$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'], $attributes['prefix']);
+
+							// Re-apply Draft- prefix after regeneration
+							if(isset($attributes['is_draft']) && $attributes['is_draft'] == 1)
+								$attributes['voucher_no'] = 'Draft-' . $attributes['voucher_no'];
 
 							$retryCount++;
+
 						} else {
 							throw $ex; // rethrow if different DB error
 						}
@@ -721,8 +734,9 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 					//update discount, total amount
 					DB::table('quotation_sales')
 								->where('id', $this->quotation_sales->id)
-								->update(['voucher_no' => (isset($attributes['is_draft']) && $attributes['is_draft']==1 )?'Draft-'.$attributes['voucher_no']:$attributes['voucher_no'],
-									      'total'      => $line_total,
+								// ->update(['voucher_no' => (isset($attributes['is_draft']) && $attributes['is_draft']==1 )?'Draft-'.$attributes['voucher_no']:$attributes['voucher_no'],
+								->update(['voucher_no' => $attributes['voucher_no'],
+										  'total'      => $line_total,
 										  'discount'   => (isset($attributes['discount']))?$attributes['discount']:0,
 										  'vat_amount' => $tax_total,
 										  'is_rental' => (isset($attributes['is_rental']))?$attributes['is_rental']:'', 

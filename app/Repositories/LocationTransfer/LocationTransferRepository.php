@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Session;
 use Config;
 use DB;
+use Illuminate\Support\Facades\Log;
 
 
 class LocationTransferRepository extends AbstractValidator implements LocationTransferInterface {
@@ -64,11 +65,12 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 	
 	public function create($attributes)
 	{
+		Log::info('with in repository create');
 		if($this->isValid($attributes)) {
 			
 		  DB::beginTransaction();
 		  try {
-
+				Log::info('with in repository create try1');
                //VOUCHER NO LOGIC.....................
 				$dept = auth()->user()->department_id;
 
@@ -87,6 +89,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 				$saved = false;
 
 				while (!$saved && $retryCount < $maxRetries) {
+					Log::info('with in repository create while');
 				try {
 						if($this->setInputValue($attributes)) {
 					$this->location_transfer->status = 1;
@@ -117,14 +120,12 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 						}
 					}
 				}
-
-
 				
 				
 				//order items insert
 				if($this->location_transfer->id && !empty( array_filter($attributes['item_id']))) {
 					$line_total = 0;
-					
+					Log::info('with in repository create order item insert');
 					foreach($attributes['item_id'] as $key => $value) { 
 						$locationTransferItem = new LocationTransferItem();
 						$arrResult 		= $this->setItemInputValue($attributes, $locationTransferItem, $key, $value);
@@ -145,9 +146,7 @@ class LocationTransferRepository extends AbstractValidator implements LocationTr
 								->where('id', $this->location_transfer->id)
 								->update(['total' => $line_total]); 
 								
-				}
-				
-											
+				}										
 				
 				
 				DB::commit();

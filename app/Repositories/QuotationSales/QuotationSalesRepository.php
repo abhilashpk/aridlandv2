@@ -588,14 +588,19 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 				$dept = auth()->user()->department_id ?? 1;
 
 				 // Ã¢Â¿Â¢ Get the highest numeric part from voucher_master
-				$qry = DB::table('quotation_sales')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1);
+				$qry = DB::table('quotation_sales')->whereNull('deleted_at')->where('status', 1)->where('department_id', auth()->user()->department_id ?? 1)->where('voucher_no', 'NOT LIKE', 'Draft-%');
 				
 
 				$maxNumeric = $qry->select(DB::raw("MAX(CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(voucher_no, 'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', ''), 'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', ''), 'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', ''), 'o', ''), 'p', ''), 'q', ''), 'r', ''), 's', ''), 't', ''), 'u', ''), 'v', ''), 'w', ''), 'x', ''), 'y', ''), 'z', ''), '-', ''), '_', ''), '/', ''), ' ', ''), '.', ''), ',', ''), ':', ''), ';', ''), '(', ''), ')', ''), '[', ''), ']', ''), '{', ''), '}', ''), '#', ''), '@', ''), '!', ''), '$', ''), '%', ''), '^', ''), '&', ''), '*', ''), '+', ''), '=', ''), '`', ''), '~', ''), '|', ''), '?', ''), '<', ''), '>', '') AS UNSIGNED)) AS max_no"))->value('max_no');
 				
-				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
+				// $attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'],$attributes['prefix']);
 				//VOUCHER NO LOGIC.....................
-				
+				$attributes['voucher_no'] = $this->objUtility->generateVoucherNoDoc('QS', $maxNumeric, $dept, $attributes['voucher_no'], $attributes['prefix']);
+
+				// ADD THIS LINE:
+				if(isset($attributes['is_draft']) && $attributes['is_draft'] == 1)
+					$attributes['voucher_no'] = 'Draft-' . $attributes['voucher_no'];
+
 				//exit;
 				$maxRetries = 5; // prevent infinite loop
 				$retryCount = 0;
@@ -736,7 +741,7 @@ class QuotationSalesRepository extends AbstractValidator implements QuotationSal
 					//update discount, total amount
 					DB::table('quotation_sales')
 								->where('id', $this->quotation_sales->id)
-								->update([//'voucher_no' => $attributes['voucher_no'],
+								->update(['voucher_no' => $attributes['voucher_no'],
 									      'total'      => $line_total,
 										  'discount'   => (isset($attributes['discount']))?$attributes['discount']:0,
 										  'vat_amount' => $tax_total,

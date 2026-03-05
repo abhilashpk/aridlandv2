@@ -313,7 +313,7 @@ class PurchaseEnquiryController extends Controller
 				[ 
 				// 'supplier_name' => 'required','supplier_id' => 'required',
 				// 'jobname' => 'required','job_id' => 'required',
-				'locfrom_id' => 'required|integer|not_in:0|exists:location,id',
+				// 'locfrom_id' => 'required|integer|not_in:0|exists:location,id',
 				'location_id' => 'required|integer|not_in:0|exists:location,id|different:locfrom_id',
 				  'item_code.*'  => 'required', 'item_id.*' => 'required',
 				// 'unit_id.*' => 'required',
@@ -324,7 +324,7 @@ class PurchaseEnquiryController extends Controller
 				
 				// 'supplier_name.required' => 'Supplier Name is required.','supplier_id.required' => 'Supplier name is invalid.',
 				// 'jobname.required' => 'Job Code is required.','job_id.required' => 'Job Code is invalid.',
-				'locfrom_id.required' => 'From Location is required.',
+				// 'locfrom_id.required' => 'From Location is required.',
 				'locfrom_id.not_in' => 'From Location is invalid.',
 				'locfrom_id.exists' => 'From Location is invalid.',
 				'location_id.required' => 'TO Location is required.',
